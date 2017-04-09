@@ -8,7 +8,8 @@
     "react": "^15.5.1",
     "react-dom": "^15.5.1",
     "react-mdl": "^1.9.0",
-    "unsplash-js": "^4.6.0"
+    "unsplash-js": "^4.6.0",
+    "url-search-params": "^0.7.0"
   },
   "devDependencies": {
     "react-scripts": "0.9.5"

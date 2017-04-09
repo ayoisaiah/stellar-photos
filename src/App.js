@@ -5,6 +5,8 @@ import { Snackbar } from 'react-mdl';
 
 import Dropbox from 'dropbox';
 import Unsplash from 'unsplash-js';
+import URLSearchParams from 'url-search-params';
+
 import './material.min';
 
 import './css/vendor/material.min.css';
