@@ -7,7 +7,6 @@ import Dropbox from 'dropbox';
 import Unsplash from 'unsplash-js';
 import './material.min';
 
-
 import './css/vendor/material.min.css';
 import './css/App.css';
 
@@ -21,11 +20,10 @@ class App extends Component {
       accessToken: "",
       searchTerm: "",
       searchKey: "",
-      results: [],
+      results: {},
       incomingResults: [],
       isLoading: false,
       isAuthenticated: false,
-      page: 1,
       isSnackbarActive: false,
       snackbarMsg: ""
     }
@@ -73,13 +71,31 @@ class App extends Component {
   handleSubmit(event) {
     event.preventDefault();
     const { searchTerm } = this.state;
-    this.setState({ searchKey: searchTerm, results: [], page: 1, isLoading: true }, () => this.searchPhotos(1));
+
+    this.setState({
+      searchKey: searchTerm.toLowerCase(),
+    }, () => {
+      const { searchKey, results } = this.state;
+      const page = (results[searchKey] && results[searchKey].page) ? results[searchKey].page : 1;
+      this.searchPhotos(page);
+    });
   }
 
   searchPhotos(page) {
     this.setState({ isLoading: true });
 
-    const { searchKey } = this.state;
+    const { searchKey, results } = this.state;
+
+    if (results[searchKey] && results[searchKey].page === page) {
+      this.setState({
+        results: {
+          ...results,
+          [searchKey]: results[searchKey]
+        },
+        isLoading: false
+      });
+      return;
+    }
 
     console.log(searchKey, page);
 
@@ -93,20 +109,28 @@ class App extends Component {
     .then(response => response.json())
     .then(json => {
       console.log(json);
-      this.setSearchPhotos(json.photos.results)
+      this.setSearchPhotos(json.photos.results, page);
     });
   }
 
-  setSearchPhotos (incomingResults) {
-    const { results } = this.state;
-    const oldResults = results;
+  setSearchPhotos (incomingResults, page) {
+    const { results, searchKey } = this.state;
+    const oldResults = (results[searchKey]) ? results[searchKey].hits : [];
+
     const updatedResults = [
       ...oldResults,
       ...incomingResults
     ];
+
+    const areThereMoreResults = (incomingResults.length >= 18) ? true : false;
+
     console.log(updatedResults);
+
     this.setState({
-      results: updatedResults,
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedResults, page, areThereMoreResults }
+      },
       incomingResults,
       isLoading: false
     });
@@ -118,9 +142,8 @@ class App extends Component {
   }
 
   requestForMorePhotos() {
-    let { page } = this.state;
-    page++;
-    this.setState({ page });
+    const { searchKey, results } = this.state;
+    const page = (results[searchKey] && results[searchKey].page) ? results[searchKey].page + 1 : 1;
     this.searchPhotos(page);
   }
 
@@ -137,8 +160,8 @@ class App extends Component {
   render() {
     const {
       searchTerm,
+      searchKey,
       results,
-      incomingResults,
       isSnackbarActive,
       snackbarMsg,
       isLoading
@@ -162,15 +185,15 @@ class App extends Component {
             >  {snackbarMsg}
             </Snackbar>
 
-            { (results.length === 0)
-              ? ""
-              : <PhotoGrid
-                photos={results}
-                incomingResults={incomingResults}
+            { (results[searchKey])
+              ? <PhotoGrid
+                photos={results[searchKey].hits}
+                areThereMoreResults={results[searchKey].areThereMoreResults}
                 dropbox={dropbox}
                 requestForMorePhotos={this.requestForMorePhotos}
                 isLoading={isLoading}
               />
+              : ""
             }
 
           </div>

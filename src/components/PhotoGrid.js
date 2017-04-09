@@ -6,17 +6,15 @@ import PhotoGridItem from './PhotoGridItem';
 import '../css/PhotoGrid.css';
 
 const PhotoGrid = (props) => {
-  const { photos, requestForMorePhotos, incomingResults, isLoading } = props;
+  const { photos, requestForMorePhotos, areThereMoreResults, isLoading } = props;
   const images = photos.map((imageData, index) => <PhotoGridItem dropbox={props.dropbox} imageData={imageData} key={index} />);
-
-  console.log(`photos length - ${photos.length}`)
 
   return (
     <div className="photo-grid">
       <Grid>
         {images}
 
-        { (incomingResults.length === 18)
+        { (areThereMoreResults)
           ? <div className="clearfix">
               <Button
                 raised
@@ -27,7 +25,7 @@ const PhotoGrid = (props) => {
               >
                 Load More
               </Button>
-              { (isLoading) ? <Spinner /> : "" }
+              { (isLoading) ? <Spinner className="loading-spinner" /> : "" }
             </div>
 
           : ""
@@ -39,7 +37,7 @@ const PhotoGrid = (props) => {
 }
 
 PhotoGrid.propTypes = {
-  photos: PropTypes.array.isRequired
+  photos: PropTypes.array
 }
 
 export default PhotoGrid;
