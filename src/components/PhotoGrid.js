@@ -6,8 +6,15 @@ import PhotoGridItem from './PhotoGridItem';
 import '../css/PhotoGrid.css';
 
 const PhotoGrid = (props) => {
-  const { photos, requestForMorePhotos, areThereMoreResults, isLoading } = props;
-  const images = photos.map((imageData, index) => <PhotoGridItem dropbox={props.dropbox} imageData={imageData} key={index} />);
+  const {
+    photos,
+    requestForMorePhotos,
+    areThereMoreResults,
+    isLoading,
+    handleSaveToDropbox
+  } = props;
+
+  const images = photos.map((imageData, index) => <PhotoGridItem dropbox={props.dropbox} imageData={imageData} key={index} handleSaveToDropbox={handleSaveToDropbox} />);
 
   return (
     <div className="photo-grid">

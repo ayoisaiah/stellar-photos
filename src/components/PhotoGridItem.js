@@ -1,30 +1,17 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-// import Dropbox from 'dropbox';
 import { Cell, Card, CardTitle, CardActions, Icon } from 'react-mdl';
 
 import '../css/PhotoGridItem.css';
 
 class PhotoGridItem extends Component {
 
-  constructor(props) {
-    super(props);
-    this.Auth = this.Auth.bind(this);
-  }
-
-  Auth() {
-    // const dropbox = new Dropbox({ clientID: "gscbxcjhou1jx21" });
-    // const url = dropbox.getAuthenticationUrl();
-    // const key = "gscbxcjhou1jx21"
-    // window.open(`https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=code`);
-    // console.log(url);
-  }
-
   render() {
-    const { imageData } = this.props;
+    const { imageData, handleSaveToDropbox } = this.props;
     const smallimageUrl = `${imageData.urls.small}`;
     const downloadUrl = `${imageData.links.download}`;
     const dimension = `${imageData.width} x ${imageData.height}`;
+    const imageId = `${imageData.id}`;
     const backgroundStyle = {
       background: `url(${smallimageUrl}) center center no-repeat`,
       backgroundSize: "cover"
@@ -44,7 +31,11 @@ class PhotoGridItem extends Component {
               <a className="download-photo" download href={downloadUrl} >
                 <Icon name="file_download" />
               </a>
-              <Icon name="cloud_download" className="save-to-dropbox" />
+              <Icon
+                name="cloud_download"
+                className="save-to-dropbox"
+                onClick={() => handleSaveToDropbox(imageId, downloadUrl) }
+              />
             </div>
           </CardActions>
         </Card>

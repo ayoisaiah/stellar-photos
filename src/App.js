@@ -10,8 +10,6 @@ import './material.min';
 import './css/vendor/material.min.css';
 import './css/App.css';
 
-const dropbox = new Dropbox({ accessToken: "ZPFxi0wm_TAAAAAAAAAArYU2dgHlu1UIU3D40fSvlOBJZj5106iOn4cVT9Jce8zX"});
-
 class App extends Component {
   constructor(props) {
     super(props);
@@ -24,8 +22,12 @@ class App extends Component {
       incomingResults: [],
       isLoading: false,
       isAuthenticated: false,
-      isSnackbarActive: false,
-      snackbarMsg: ""
+      snackbarParams: {
+        active: false,
+        message: "",
+        timeout: 2750,
+        action: ""
+      }
     }
 
     this.handleChange = this.handleChange.bind(this);
@@ -34,20 +36,31 @@ class App extends Component {
     this.setSearchPhotos = this.setSearchPhotos.bind(this);
     this.requestForMorePhotos = this.requestForMorePhotos.bind(this);
     this.saveToDropbox = this.saveToDropbox.bind(this);
-    this.getDropboxAuthentication = this.getDropboxAuthentication.bind(this);
+    this.authenticateDropbox = this.authenticateDropbox.bind(this);
     this.handleShowSnackbar = this.handleShowSnackbar.bind(this);
     this.handleTimeoutSnackbar = this.handleTimeoutSnackbar.bind(this);
+    this.handleSaveToDropbox = this.handleSaveToDropbox.bind(this);
   }
 
-  handleShowSnackbar(msg) {
+  handleShowSnackbar(message, action = "", timeout = 2750) {
     this.setState({
-      isSnackbarActive: true,
-      snackbarMsg: msg
+      snackbarParams: {
+        active: true,
+        message,
+        timeout,
+        action
+      }
     });
   }
 
   handleTimeoutSnackbar() {
-    this.setState({ isSnackbarActive: false });
+    const { snackbarParams } = this.state;
+    this.setState({
+      snackbarParams: {
+        ...snackbarParams,
+        active: false
+      }
+    });
   }
 
   componentWillMount() {
@@ -55,9 +68,23 @@ class App extends Component {
 
     if (localStorageRef) {
       this.setState({
-        accessToken: localStorageRef
+        accessToken: localStorageRef,
+        isAuthenticated: true
+      });
+      return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.hash);
+    const accessToken = urlParams.get("#access_token");
+
+    if (accessToken) {
+      localStorage.setItem(`stellar-dropbox-accessToken`, accessToken);
+      this.setState({
+        accessToken,
+        isAuthenticated: true
       });
     }
+
   }
 
   handleChange(event) {
@@ -147,14 +174,31 @@ class App extends Component {
     this.searchPhotos(page);
   }
 
-  getDropboxAuthentication () {
+  handleSaveToDropbox(id, url) {
+    const { isAuthenticated } = this.state;
 
+    if (isAuthenticated) {
+      this.saveToDropbox(id, url);
+      return;
+    }
+
+    this.handleShowSnackbar("You need to Authenticate Dropbox", "Connect to Dropbox", 5000);
   }
 
-  saveToDropbox(url) {
-    const { dropbox } = this.props;
-    dropbox.filesSaveUrl({ path: "/image.jpg", url: url })
-    .then(response => console.log(response))
+  authenticateDropbox() {
+    const key = "gscbxcjhou1jx21"
+    window.open(`https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=http://localhost:3000`, "_self");
+  }
+
+  saveToDropbox(id, url) {
+    console.log(id, url);
+    const { accessToken } = this.state;
+    const dropbox = new Dropbox({ accessToken });
+
+    dropbox.filesSaveUrl({ path: `/photo-${id}.jpg`, url: url })
+    .then(response => this.handleShowSnackbar("Image saved to your Dropbox successfully"))
+    .catch(error => this.handleShowSnackbar("Oops an error occured. Please check your internet connection"))
+
   }
 
   render() {
@@ -162,8 +206,7 @@ class App extends Component {
       searchTerm,
       searchKey,
       results,
-      isSnackbarActive,
-      snackbarMsg,
+      snackbarParams,
       isLoading
     } =  this.state;
 
@@ -180,16 +223,19 @@ class App extends Component {
           <div className="container">
 
             <Snackbar
-              active={isSnackbarActive}
+              active={snackbarParams.active}
               onTimeout={this.handleTimeoutSnackbar}
-            >  {snackbarMsg}
+              timeout={snackbarParams.timeout}
+              action={snackbarParams.action}
+              onActionClick={this.authenticateDropbox}
+            >  {snackbarParams.message}
             </Snackbar>
 
             { (results[searchKey])
               ? <PhotoGrid
                 photos={results[searchKey].hits}
                 areThereMoreResults={results[searchKey].areThereMoreResults}
-                dropbox={dropbox}
+                handleSaveToDropbox={this.handleSaveToDropbox}
                 requestForMorePhotos={this.requestForMorePhotos}
                 isLoading={isLoading}
               />

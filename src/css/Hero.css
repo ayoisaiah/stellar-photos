@@ -4,7 +4,7 @@
 }
 
 .hero-section-layout {
-  background: url("../images/wild.jpg") top center no-repeat;
+  background: url("../images/image.jpg") center center no-repeat;
   background-size: cover;
 }
 
@@ -16,4 +16,5 @@
   position: relative;
   padding-top: 3%;
   padding-bottom: 5%;
+  color: white;
 }
