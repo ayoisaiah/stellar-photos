@@ -1,0 +1,19 @@
+.hero-section {
+  min-height: 650px;
+  position: relative;
+}
+
+.hero-section-layout {
+  background: url("../images/wild.jpg") top center no-repeat;
+  background-size: cover;
+}
+
+.hero-section__content {
+  text-align: center;
+}
+
+.hero-section-title {
+  position: relative;
+  padding-top: 3%;
+  padding-bottom: 5%;
+}

@@ -1,0 +1,10 @@
+.photo-grid {
+  padding: 80px 0;
+}
+
+.clearfix {
+  width: 100%;
+  clear: both;
+  display: flex;
+  justify-content: center;
+}
