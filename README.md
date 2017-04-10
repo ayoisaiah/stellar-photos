@@ -2,7 +2,7 @@
 
 A [React](https://facebook.github.io/react/) app that helps you find free high resolution photos using the [Unsplash API](https://unsplash.com) and allows you to save them to Dropbox.  
 
-![]()
+![Stellar Photos](https://cdn.rawgit.com/ayoisaiah/stellar-photos/512bb493/screenshot.png)
 
 ## Contribute
 
