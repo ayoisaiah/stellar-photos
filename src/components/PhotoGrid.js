@@ -14,7 +14,14 @@ const PhotoGrid = (props) => {
     handleSaveToDropbox
   } = props;
 
-  const images = photos.map((imageData, index) => <PhotoGridItem dropbox={props.dropbox} imageData={imageData} key={index} handleSaveToDropbox={handleSaveToDropbox} />);
+  const images = photos.map((imageData, index) =>
+    <PhotoGridItem
+      dropbox={props.dropbox}
+      imageData={imageData}
+      key={index} 
+      handleSaveToDropbox={handleSaveToDropbox}
+    />
+  );
 
   return (
     <div className="photo-grid">
@@ -46,7 +53,11 @@ const PhotoGrid = (props) => {
 }
 
 PhotoGrid.propTypes = {
-  photos: PropTypes.array
+  photos: PropTypes.array.isRequired,
+  requestForMorePhotos: PropTypes.func.isRequired,
+  areThereMoreResults: PropTypes.bool.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  handleSaveToDropbox: PropTypes.func.isRequired
 }
 
 export default PhotoGrid;

@@ -1,5 +1,6 @@
 {
   "name": "image-search",
+  "homepage": "https://ayoisaiah.com/stellar-photos",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
