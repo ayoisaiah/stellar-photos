@@ -7,6 +7,7 @@ import '../css/PhotoGridItem.css';
 class PhotoGridItem extends Component {
 
   render() {
+    
     const { imageData, handleSaveToDropbox } = this.props;
     const smallimageUrl = `${imageData.urls.small}`;
     const downloadUrl = `${imageData.links.download}`;
@@ -47,7 +48,8 @@ class PhotoGridItem extends Component {
 }
 
 PhotoGridItem.propTypes = {
-  imageData: PropTypes.object.isRequired
+  imageData: PropTypes.object.isRequired,
+  handleSaveToDropbox: PropTypes.func.isRequired
 }
 
 export default PhotoGridItem;

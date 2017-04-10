@@ -32,37 +32,16 @@ class App extends Component {
       }
     }
 
+    this.setSearchPhotos = this.setSearchPhotos.bind(this);
+    this.searchPhotos = this.searchPhotos.bind(this);
+    this.requestForMorePhotos = this.requestForMorePhotos.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.searchPhotos = this.searchPhotos.bind(this);
-    this.setSearchPhotos = this.setSearchPhotos.bind(this);
-    this.requestForMorePhotos = this.requestForMorePhotos.bind(this);
-    this.saveToDropbox = this.saveToDropbox.bind(this);
-    this.authenticateDropbox = this.authenticateDropbox.bind(this);
     this.handleShowSnackbar = this.handleShowSnackbar.bind(this);
     this.handleTimeoutSnackbar = this.handleTimeoutSnackbar.bind(this);
     this.handleSaveToDropbox = this.handleSaveToDropbox.bind(this);
-  }
-
-  handleShowSnackbar(message, timeout = 2750, action = "") {
-    this.setState({
-      snackbarParams: {
-        active: true,
-        message,
-        timeout,
-        action
-      }
-    });
-  }
-
-  handleTimeoutSnackbar() {
-    const { snackbarParams } = this.state;
-    this.setState({
-      snackbarParams: {
-        ...snackbarParams,
-        active: false
-      }
-    });
+    this.authenticateDropbox = this.authenticateDropbox.bind(this);
+    this.saveToDropbox = this.saveToDropbox.bind(this);
   }
 
   componentWillMount() {
@@ -88,6 +67,27 @@ class App extends Component {
       this.handleShowSnackbar("Dropbox connected successfully!")
     }
 
+  }
+
+  handleShowSnackbar(message, timeout = 2750, action = "") {
+    this.setState({
+      snackbarParams: {
+        active: true,
+        message,
+        timeout,
+        action
+      }
+    });
+  }
+
+  handleTimeoutSnackbar() {
+    const { snackbarParams } = this.state;
+    this.setState({
+      snackbarParams: {
+        ...snackbarParams,
+        active: false
+      }
+    });
   }
 
   handleChange(event) {
@@ -190,7 +190,7 @@ class App extends Component {
 
   authenticateDropbox() {
     const key = "gscbxcjhou1jx21"
-    window.open(`https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=http://localhost:3000`, "_self");
+    window.open(`https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://ayoisaiah.com/stellar-photos/`, "_self");
   }
 
   saveToDropbox(id, url) {
@@ -205,6 +205,7 @@ class App extends Component {
   }
 
   render() {
+
     const {
       searchTerm,
       searchKey,
