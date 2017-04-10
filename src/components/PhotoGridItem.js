@@ -13,12 +13,11 @@ class PhotoGridItem extends Component {
     const dimension = `${imageData.width} x ${imageData.height}`;
     const imageId = `${imageData.id}`;
     const backgroundStyle = {
-      background: `url(${smallimageUrl}) center center no-repeat`,
-      backgroundSize: "cover"
+      background: `url(${smallimageUrl}) center center no-repeat`
     };
 
     return (
-      <Cell col={4}>
+      <Cell col={3}>
         <Card className="photo-grid__item" shadow={0} style={backgroundStyle}>
           <CardTitle expand />
           <CardActions style={{height: '52px', padding: '16px', background: 'rgba(0,0,0,0.2)', display: 'flex', boxSizing: 'border-box', alignItems: 'center', color: '#fff'}}>
@@ -28,14 +27,16 @@ class PhotoGridItem extends Component {
             </span>
             <div className="mdl-layout-spacer"></div>
             <div className="icons">
-              <a className="download-photo" download href={downloadUrl} >
+              <a className="download-photo" title="Download Image" download href={downloadUrl} target="_blank" >
                 <Icon name="file_download" />
               </a>
-              <Icon
-                name="cloud_download"
-                className="save-to-dropbox"
-                onClick={() => handleSaveToDropbox(imageId, downloadUrl) }
-              />
+              <a title="Save to Dropbox">
+                <Icon
+                  name="cloud_download"
+                  className="save-to-dropbox"
+                  onClick={() => handleSaveToDropbox(imageId, downloadUrl) }
+                />
+              </a>
             </div>
           </CardActions>
         </Card>

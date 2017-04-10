@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { Grid, Cell } from 'react-mdl';
 
 import '../css/Search.css';
 
@@ -10,14 +9,8 @@ class Search extends Component {
     const { handleSubmit, handleChange, searchTerm } = this.props;
     return (
       <form onSubmit={handleSubmit} className="search-form">
-        <Grid>
-          <Cell col={9}>
-            <input className="search-input" type="search" value={searchTerm} onChange={handleChange} />
-          </Cell>
-          <Cell col={3}>
-            <button className="submit-button" type="submit">Search</button>
-          </Cell>
-        </Grid>
+        <input className="search-input" type="search" value={searchTerm} onChange={handleChange} />
+        <button className="submit-button" type="submit">Search</button>
       </form>
     );
   }

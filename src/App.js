@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PhotoGrid from './components/PhotoGrid';
-import Hero from './components/Hero';
-import { Snackbar } from 'react-mdl';
+import Header from './components/Header';
+import { Snackbar, Spinner } from 'react-mdl';
 
 import Dropbox from 'dropbox';
 import Unsplash from 'unsplash-js';
@@ -44,7 +44,7 @@ class App extends Component {
     this.handleSaveToDropbox = this.handleSaveToDropbox.bind(this);
   }
 
-  handleShowSnackbar(message, action = "", timeout = 2750) {
+  handleShowSnackbar(message, timeout = 2750, action = "") {
     this.setState({
       snackbarParams: {
         active: true,
@@ -85,6 +85,7 @@ class App extends Component {
         accessToken,
         isAuthenticated: true
       });
+      this.handleShowSnackbar("Dropbox connected successfully!")
     }
 
   }
@@ -126,18 +127,15 @@ class App extends Component {
       return;
     }
 
-    console.log(searchKey, page);
-
     const unsplash = new Unsplash({
       applicationId: "dd0e4c053fe4fa6e93c7cacc463fafe6c5eeaf5f4f6a2d794332a875e2df96b3",
       secret: "d22a4cac1f7f1c570a0ba09f7b60a8c95217f81906fbb26ab365380fa4a04dd6",
       callbackUrl: "urn:ietf:wg:oauth:2.0:oob"
     });
 
-    unsplash.search.all(searchKey, page, 18)
+    unsplash.search.all(searchKey, page, 28)
     .then(response => response.json())
     .then(json => {
-      console.log(json);
       this.setSearchPhotos(json.photos.results, page);
     });
   }
@@ -151,9 +149,16 @@ class App extends Component {
       ...incomingResults
     ];
 
-    const areThereMoreResults = (incomingResults.length >= 18) ? true : false;
+    const areThereMoreResults = (incomingResults.length >= 28) ? true : false;
 
-    console.log(updatedResults);
+    if (incomingResults.length === 0 && page === 1) {
+      this.setState({
+        incomingResults,
+        isLoading: false
+      });
+      this.handleShowSnackbar("No images match your search");
+      return;
+    }
 
     this.setState({
       results: {
@@ -163,10 +168,6 @@ class App extends Component {
       incomingResults,
       isLoading: false
     });
-
-    if (incomingResults.length === 0) {
-      this.handleShowSnackbar("No images match your search");
-    }
 
   }
 
@@ -184,7 +185,7 @@ class App extends Component {
       return;
     }
 
-    this.handleShowSnackbar("You need to Authenticate Dropbox", "Connect to Dropbox", 5000);
+    this.handleShowSnackbar("You need to Authenticate Dropbox first", 5000, "Connect to Dropbox");
   }
 
   authenticateDropbox() {
@@ -193,7 +194,7 @@ class App extends Component {
   }
 
   saveToDropbox(id, url) {
-    console.log(id, url);
+    this.handleShowSnackbar("Saving to Dropbox...", 500);
     const { accessToken } = this.state;
     const dropbox = new Dropbox({ accessToken });
 
@@ -215,7 +216,21 @@ class App extends Component {
     return (
       <div className="App">
 
-        <Hero
+        { (isLoading && !results[searchKey])
+          ? <Spinner className="app-spinner" />
+          : ""
+        }
+
+        <Snackbar
+          active={snackbarParams.active}
+          onTimeout={this.handleTimeoutSnackbar}
+          timeout={snackbarParams.timeout}
+          action={snackbarParams.action}
+          onActionClick={this.authenticateDropbox}
+        >  {snackbarParams.message}
+        </Snackbar>
+
+        <Header
           searchTerm={searchTerm}
           handleChange={this.handleChange}
           handleSubmit={this.handleSubmit}
@@ -223,15 +238,6 @@ class App extends Component {
 
         <section>
           <div className="container">
-
-            <Snackbar
-              active={snackbarParams.active}
-              onTimeout={this.handleTimeoutSnackbar}
-              timeout={snackbarParams.timeout}
-              action={snackbarParams.action}
-              onActionClick={this.authenticateDropbox}
-            >  {snackbarParams.message}
-            </Snackbar>
 
             { (results[searchKey])
               ? <PhotoGrid
@@ -246,6 +252,7 @@ class App extends Component {
 
           </div>
         </section>
+
 
       </div>
     );

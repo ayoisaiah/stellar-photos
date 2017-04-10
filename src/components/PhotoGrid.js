@@ -20,7 +20,6 @@ const PhotoGrid = (props) => {
     <div className="photo-grid">
       <Grid>
         {images}
-
         { (areThereMoreResults)
           ? <div className="clearfix">
               <Button
@@ -39,6 +38,9 @@ const PhotoGrid = (props) => {
         }
 
       </Grid>
+      <span className="credit">
+        Made with <a href="https://unsplash.com/">Unsplash</a>
+      </span>
     </div>
   );
 }

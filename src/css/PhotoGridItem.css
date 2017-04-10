@@ -1,9 +1,12 @@
 .photo-grid__item {
-  width: 270px !important;
-  height: 270px !important;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   margin-left: auto;
   margin-right: auto;
+  background-size: cover !important;
+}
+
+.mdl-card {
+  width: auto;
 }
 
 .photo-grid__item a {
@@ -18,6 +21,10 @@
 }
 
 .download-photo {
-  padding-right: 10px;
+  margin-right: 10px;
+  color: #fff;
+}
+
+.save-to-dropbox {
   color: #fff;
 }
