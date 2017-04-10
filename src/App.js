@@ -62,8 +62,8 @@ class App extends Component {
       this.setState({
         accessToken,
         isAuthenticated: true
-      });
-      this.handleShowSnackbar("Dropbox connected successfully!")
+      }, () => this.handleShowSnackbar("Dropbox connected successfully!"));
+
     }
 
   }
