@@ -9,7 +9,13 @@ class Search extends Component {
     const { handleSubmit, handleChange, searchTerm } = this.props;
     return (
       <form onSubmit={handleSubmit} className="search-form">
-        <input className="search-input" type="search" value={searchTerm} onChange={handleChange} />
+        <input
+          className="search-input"
+          type="search"
+          value={searchTerm}
+          onChange={handleChange}
+          placeholder="Enter keyword e.g 'Sports'"
+        />
         <button className="submit-button" type="submit">Search</button>
       </form>
     );
