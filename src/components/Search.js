@@ -15,6 +15,7 @@ class Search extends Component {
           value={searchTerm}
           onChange={handleChange}
           placeholder="Enter keyword e.g 'Sports'"
+          autoFocus
         />
         <button className="submit-button" type="submit">Search</button>
       </form>
