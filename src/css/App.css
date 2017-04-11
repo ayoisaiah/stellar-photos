@@ -28,9 +28,11 @@ img {
 }
 
 .app-spinner {
-position: absolute;
-top: 50%;
-left: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -14px;
+  margin-top: -14px;
 }
 
 @media screen and (max-width: 550px) {
