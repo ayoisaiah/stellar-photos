@@ -14,7 +14,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
 }
 
@@ -35,6 +35,25 @@
 
 .header .links a:hover {
   text-decoration: underline;
+}
+
+.github-corner {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+.github-corner__svg {
+	fill: #82888a;
+	color: #2c2d31;
+	position: absolute;
+	top: 0;
+	border: 0;
+	right: 0;
+}
+
+.octo-arm {
+  transform-origin: 130px 106px;
 }
 
 @media screen and (max-width: 1024px) {
