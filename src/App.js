@@ -8,7 +8,7 @@ import Unsplash from 'unsplash-js';
 import URLSearchParams from 'url-search-params';
 
 import './material.min';
-
+import './css/vendor/material.min.css';
 import './css/App.css';
 
 class App extends Component {
