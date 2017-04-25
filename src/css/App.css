@@ -16,7 +16,7 @@ img {
 }
 
 .mdl-grid {
-  max-width: 1200px;
+  max-width: 1300px;
 }
 
 .mdl-card {
@@ -39,5 +39,11 @@ img {
   .mdl-cell {
     margin-left: auto;
     margin-right: auto;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .mdl-cell--3-col {
+    width: calc(100% - 16px)
   }
 }
