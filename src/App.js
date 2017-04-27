@@ -101,8 +101,12 @@ class App extends Component {
     event.preventDefault();
     const { searchTerm } = this.state;
 
+    if (searchTerm.trim().length === 0) {
+      return;
+    }
+
     this.setState({
-      searchKey: searchTerm.toLowerCase(),
+      searchKey: searchTerm.trim().toLowerCase(),
     }, () => {
       const { searchKey, results } = this.state;
       const page = (results[searchKey] && results[searchKey].page) ? results[searchKey].page : 1;
