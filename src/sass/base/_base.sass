@@ -1,0 +1,51 @@
+/**
+ *
+ * Inheriting box sizing slightly better best-practice
+ * https://css-tricks.com/inheriting-box-sizing-probably-slightly-better-best-practice/
+ *
+ */
+
+html
+  box-sizing: border-box
+  height: 100%
+  font-size: 10px
+
+*, *::before, *::after
+  box-sizing: inherit
+  margin: 0
+  padding: 0
+
+body
+  height: 100%
+  font-family: 'Inconsolata', sans-serif
+  background-color: #111
+  background-size: cover
+  background-position: 50%
+  background-attachment: fixed
+
+.s-overlay
+  position: fixed
+  top: 0
+  bottom: 0
+  left: 0
+  right: 0
+  animation: fadeIn 1s ease
+  background-color: #111
+  opacity: 0
+  z-index: -1000
+
+@keyframes fadeIn
+  0%
+    opacity: 0.5
+
+  100%
+    opacity: 0
+
+.s-container
+  max-width: 1920px
+  margin: 0 auto
+  padding: 70px 20px 100px 20px
+  z-index: 200
+
+.hidden
+  display: none

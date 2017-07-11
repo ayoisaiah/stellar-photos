@@ -1,0 +1,49 @@
+{
+  "manifest_version": 2,
+  "name": "Stellar Photos",
+  "version": "0.1",
+  "description": "A new tab extension for Chrome and Firefox",
+
+  "icons": {
+    "48": "icons/48.png"
+  },
+
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+
+  "permissions": [
+    "geolocation", 
+    "storage", 
+    "unlimitedStorage", 
+    "tabs", 
+    "identity",
+    "notifications",
+    "alarms",
+    "https://www.dropbox.com/1/oauth2/*"
+  ],
+  "background": {
+    "scripts": [ "js/background.js"],
+    "persistent": false
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://ayoisaiah.com/*"],
+      "js": ["js/tab.js"]
+    }
+  ],
+
+  "options_ui": {
+    "page": "options.html",
+    "chrome_style": true
+  },
+
+  "oauth2": {
+    "client_id":"41706871424-uh55glk535q0kmep26quftv18gk16uo8.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive"
+    ]
+  }
+
+}
