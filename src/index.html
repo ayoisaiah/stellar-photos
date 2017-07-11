@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>New Tab - Stellar Photos</title>
+  <link rel="stylesheet" href="css/alertify.min.css">
+  <link rel="stylesheet" href="css/alertify-default.min.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <div class="s-overlay"></div>
+
+  <main class="s-main">
+
+    <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form">
+      <svg class="icon icon--search">
+        <use xlink:href="#icon-search"></use>
+      </svg>
+    </button>
+
+    <!-- Search ====================================================================== -->
+
+    <section class="s-search" id="s-search">
+      <button id="searchButton-close" class="searchButton searchButton-close" aria-label="Close search form">
+        <svg class="icon icon--cross">
+          <use xlink:href="#icon-cross"></use>
+        </svg>
+      </button>
+      <form class="searchForm" id="searchForm" action="">
+        <input class="searchForm-input" id="searchForm-input" name="search" type="search" placeholder="find hi-res photos" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <span class="searchForm-info">Hit enter to search or ESC to close</span>
+      </form>
+    </section>
+
+    <!-- Search Results  ====================================================================== -->
+
+    <section class="s-container">
+
+      <ul class="searchResults" id="searchResults"></ul>
+      
+      <section class="moreResults">
+        <p class="hidden">No more results. Begin a new search.</p>
+        <button class="moreResults-button hidden">More Photos</button>
+      </section>
+
+    </section>
+
+    <!-- Footer ====================================================================== -->
+
+    <footer class="s-footer">
+
+      <section class="weather">
+        <span class="location">
+          <svg class="icon location-icon"><use xlink:href="#icon-location"></use></svg>
+          <span class="location-text"></span>
+        </span>
+        <span class="temperature">
+          <svg class="icon temperature-icon">
+            <use xlink:href="#icon-temperature"></use>
+          </svg>
+          <span class="temperature-text"></span>
+        </span>
+      </section>
+
+      <section class="controls">
+
+        <a class="control-button download-button" title="Download photo">
+          Download
+        </a>
+
+        <button class="control-button dropbox-button" title="Save photo to Dropbox">
+          Save to Dropbox
+        </button>
+
+        <div class="popover">
+          <button class="control-button info-button">Info</button> 
+          <ul class="popover-content">
+            <li class="popover-content-item">
+              <a class='photographer-info'>
+                <img class="photographer-dp" />
+                <span class="photographer-name"></span>
+              </a>
+            </li>
+            <li class="popover-content-item">
+              <span class="label">Resolution</span>
+              <span class="resolution"></span>
+            </li>
+            <li class="popover-content-item">
+              <span class="label">Created On</span>
+              <span class="created-date"></span>
+            </li>
+            <li class="popover-content-item">
+              <span class="label">Likes</span>
+              <div class="wrapper">
+                <span class="likes"></span>
+                <svg class="icon heart-icon"><use xlink:href="#icon-heart"></use></svg>
+              </div>
+            </li>
+            <li class="popover-content-item">
+              <span class="label"><a class="linkToPhoto">View photo on Unsplash.com</a></span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </footer>
+  </main>
+
+  <!-- SVG Symbol Definitions ====================================================================== -->
+  
+  <svg class="hidden">
+    <defs>
+      <symbol id="icon-location" viewBox="0 0 490 490">
+        <title>Location</title>
+        <path d="M245,0C157.687,0,86.905,70.781,86.905,158.094c0,14.641,1.999,28.812,5.724,42.266c1.491,5.388,3.252,10.663,5.283,15.803 l4.794,10.894L245,490l142.481-263.316l4.321-9.818c2.149-5.363,4.011-10.871,5.57-16.505c3.724-13.455,5.724-27.626,5.724-42.266 C403.095,70.781,332.313,0,245,0z M245,234.271c-42.797,0-77.609-34.812-77.609-77.609c0-42.79,34.812-77.602,77.609-77.602 s77.609,34.812,77.609,77.602C322.609,199.459,287.797,234.271,245,234.271z"/>
+      </symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24">
+        <title>Search</title>
+        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+      </symbol>
+      <symbol id="icon-temperature" viewBox="0 0 32 32" style="enable-background:new 0 0 32 32;" >
+        <path style="fill: #fafafa;" d="M20,21.527V4.006C20,1.793,18.205,0,16,0c-2.209,0-4,1.787-4,4.006v17.521
+          c-1.228,1.099-2,2.696-2,4.473c0,3.312,2.687,6,6,6c3.312,0,6-2.688,6-6C22,24.223,21.229,22.626,20,21.527z M16,30 c-2.209,0-4-1.791-4-4c0-1.48,0.805-2.773,2-3.465V4.005C14,2.897,14.896,2,16,2c1.111,0,2,0.897,2,2.005v18.53
+          c1.195,0.691,2,1.984,2,3.465C20,28.209,18.209,30,16,30z"/>
+        <circle style="fill:#fafafa;" cx="16" cy="26" r="3"/>
+      </symbol>
+      <symbol id="icon-heart" viewBox="0 0 133.8 133.8" style="enable-background:new 0 0 133.8 133.8;">
+        <path style="fill: #DD2424;" d="M41.9,100.7L11.8,70.6C-2,56.8-2,34.3,11.8,20.5l0,0c13.8-13.8,36.3-13.8,50.1,0L92,50.6 c13.8,13.8,13.8,36.3,0,50.1l0,0C78.2,114.5,55.6,114.5,41.9,100.7z"/>
+        <path style="fill: #DD2424;" d="M41.9,50.6l30.1-30.1c13.8-13.8,36.3-13.8,50.1,0l0,0c13.8,13.8,13.8,36.3,0,50.1L92,100.7 c-13.8,13.8-36.3,13.8-50.1,0l0,0C28.1,86.9,28.1,64.4,41.9,50.6z"/>
+        <path style="fill: #DD2424;" d="M63.4,122.2L36.6,95.4c-1.9-1.9-1.9-5.1,0-7.1l26.8-26.8c1.9-1.9,5.1-1.9,7.1,0l26.8,26.8 c1.9,1.9,1.9,5.1,0,7.1l-26.8,26.8C68.5,124.1,65.3,124.1,63.4,122.2z"/>
+      </symbol>
+      <symbol id="icon-cross" viewBox="0 0 24 24">
+        <title>Close</title>
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+      </symbol>
+      <symbol id="icon-download" viewBox="0 0 510 510" style="enable-background:new 0 0 510 510;">
+        <title>Download</title>
+        <path d="M467.083,318.627c-5.324-5.328-11.8-7.994-19.41-7.994H315.195l-38.828,38.827c-11.04,10.657-23.982,15.988-38.828,15.988 c-14.843,0-27.789-5.324-38.828-15.988l-38.543-38.827H27.408c-7.612,0-14.083,2.669-19.414,7.994 C2.664,323.955,0,330.427,0,338.044v91.358c0,7.614,2.664,14.085,7.994,19.414c5.33,5.328,11.801,7.99,19.414,7.99h420.266 c7.61,0,14.086-2.662,19.41-7.99c5.332-5.329,7.994-11.8,7.994-19.414v-91.358C475.078,330.427,472.416,323.955,467.083,318.627z M360.025,414.841c-3.621,3.617-7.905,5.424-12.854,5.424s-9.227-1.807-12.847-5.424c-3.614-3.617-5.421-7.898-5.421-12.844 c0-4.948,1.807-9.236,5.421-12.847c3.62-3.62,7.898-5.431,12.847-5.431s9.232,1.811,12.854,5.431 c3.613,3.61,5.421,7.898,5.421,12.847C365.446,406.942,363.638,411.224,360.025,414.841z M433.109,414.841 c-3.614,3.617-7.898,5.424-12.848,5.424c-4.948,0-9.229-1.807-12.847-5.424c-3.613-3.617-5.42-7.898-5.42-12.844 c0-4.948,1.807-9.236,5.42-12.847c3.617-3.62,7.898-5.431,12.847-5.431c4.949,0,9.233,1.811,12.848,5.431 c3.617,3.61,5.427,7.898,5.427,12.847C438.536,406.942,436.729,411.224,433.109,414.841z"/>
+        <path d="M224.692,323.479c3.428,3.613,7.71,5.421,12.847,5.421c5.141,0,9.418-1.808,12.847-5.421l127.907-127.908 c5.899-5.519,7.234-12.182,3.997-19.986c-3.23-7.421-8.847-11.132-16.844-11.136h-73.091V36.543c0-4.948-1.811-9.231-5.421-12.847 c-3.62-3.617-7.901-5.426-12.847-5.426h-73.096c-4.946,0-9.229,1.809-12.847,5.426c-3.615,3.616-5.424,7.898-5.424,12.847V164.45 h-73.089c-7.998,0-13.61,3.715-16.846,11.136c-3.234,7.801-1.903,14.467,3.999,19.986L224.692,323.479z"/>
+      </symbol>
+      <symbol id="icon-cloud" viewBox="0 0 548.176 548.176" style="enable-background:new 0 0 548.176 548.176;">
+        <title>Save to Dropbox</title>
+        <path d="M524.326,297.352c-15.896-19.89-36.21-32.782-60.959-38.684c7.81-11.8,11.704-24.934,11.704-39.399 c0-20.177-7.139-37.401-21.409-51.678c-14.273-14.272-31.498-21.411-51.675-21.411c-18.083,0-33.879,5.901-47.39,17.703
+        c-11.225-27.41-29.171-49.393-53.817-65.95c-24.646-16.562-51.818-24.842-81.514-24.842c-40.349,0-74.802,14.279-103.353,42.83
+        c-28.553,28.544-42.825,62.999-42.825,103.351c0,2.474,0.191,6.567,0.571,12.275c-22.459,10.469-40.349,26.171-53.676,47.106
+        C6.661,299.594,0,322.43,0,347.179c0,35.214,12.517,65.329,37.544,90.358c25.028,25.037,55.15,37.548,90.362,37.548h310.636
+        c30.259,0,56.096-10.711,77.512-32.12c21.413-21.409,32.121-47.246,32.121-77.516C548.172,339.944,540.223,317.248,524.326,297.352
+        z M362.595,308.344L262.38,408.565c-1.711,1.707-3.901,2.566-6.567,2.566c-2.664,0-4.854-0.859-6.567-2.566L148.75,308.063
+        c-1.713-1.711-2.568-3.901-2.568-6.567c0-2.474,0.9-4.616,2.708-6.423c1.812-1.808,3.949-2.711,6.423-2.711h63.954V191.865
+        c0-2.474,0.905-4.616,2.712-6.427c1.809-1.805,3.949-2.708,6.423-2.708h54.823c2.478,0,4.609,0.9,6.427,2.708
+        c1.804,1.811,2.707,3.953,2.707,6.427v100.497h63.954c2.665,0,4.855,0.855,6.563,2.566c1.714,1.711,2.562,3.901,2.562,6.567
+        C365.438,303.789,364.494,306.064,362.595,308.344z"/>
+      </symbol>
+      <symbol id="icon-info" viewBox="0 0 475.078 475.077" style="enable-background:new 0 0 475.078 475.077;">
+        <title>Info</title>
+        <path d="M255,0C114.75,0,0,114.75,0,255s114.75,255,255,255s255-114.75,255-255S395.25,0,255,0z M280.5,382.5h-51v-153h51V382.5z
+        M280.5,178.5h-51v-51h51V178.5z"/>
+      </symbol>
+    </defs>
+  </svg>
+  
+  <script src="js/index.js"></script>
+</body>
+</html>
