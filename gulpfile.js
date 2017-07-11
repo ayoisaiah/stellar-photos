@@ -16,7 +16,7 @@ gulp.task('copyStaticFiles', () => gulp.src([
   .pipe(gulp.dest('./dist')));
 
 gulp.task('build', (done) => {
-  glob('./src/js/**/*.js', (err, files) => {
+  glob('./src/js/*.js', (err, files) => {
     if (err) done(err);
     const tasks = files.map(entry => browserify({
       entries: [entry],
