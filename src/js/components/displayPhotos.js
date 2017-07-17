@@ -7,6 +7,7 @@ const displayPhotos = (photos, total) => {
     const width = photo.width;
     const height = photo.height;
     const imageId = photo.id;
+    const linkToPhoto = photo.links.html;
     const downloadUrl = photo.links.download;
     const user = `${photo.user.links.html}`;
     const userDp = `${photo.user.profile_image.small}`;
@@ -16,16 +17,17 @@ const displayPhotos = (photos, total) => {
     searchResults.insertAdjacentHTML('beforeend',
       `<li class='s-photo' id='photo-${imageId}' data-largesrc='${largeSrc}' style='background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;'>
        <div class="s-photo-actions">
-          <div class='s-photo-user'>
+          <div class='top'>
             <a class='user' href='${user}'>
               <img class="user-dp" src='${userDp}' />
               <span class="username">${username}</span>
             </a>
+            <a href="${linkToPhoto}" target="_blank" title="View photo on Unsplash"><svg style='fill: #fafafa;' class='icon icon--anchor'><use xlink:href="#icon-anchor"></use></a>
           </div>
-          <div class='s-photo-controls'>
+          <div class='bottom'>
             <span class='s-photo-dimension'>${width} x ${height}</span>
             <div><a href='${downloadUrl}?force=true' target='_blank' download title='Download Photo'><svg style='fill: #fafafa;' class='icon icon--download'><use xlink:href="#icon-download"></use></svg></a>
-            <svg style="fill: #fafafa;" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud"><use xlink:href="#icon-cloud" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud"></use></svg></div>
+            <svg style="fill: #fafafa;" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud"></use></svg></div>
           </div>
         </div>
       </li>`,
@@ -36,7 +38,6 @@ const displayPhotos = (photos, total) => {
 
   if (state.results.length >= total) {
     loadMore.classList.add('hidden');
-    document.querySelector('.moreResults p').classList.remove('hidden');
     return;
   }
 

@@ -1,15 +1,20 @@
 import alertify from 'alertifyjs';
 
 const saveToDropbox = (imageId, downloadUrl) => {
+  if (!localStorage.getItem('dropbox-token')) {
+    chrome.runtime.openOptionsPage();
+    return;
+  }
   const token = localStorage.getItem('dropbox-token');
   alertify.notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3, () => {});
 
   console.log(imageId, downloadUrl);
 
-  fetch(`http://localhost:3000/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
+  fetch(`http://localhost:8080/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
     .then(response => response.json())
     .then((json) => {
       console.log(json);
+      alertify.dismissAll();
       if (json.error) {
         alertify.error('Oh Snap! There was a problem saving to Drobox', 3, () => {});
         return;
@@ -18,6 +23,7 @@ const saveToDropbox = (imageId, downloadUrl) => {
     })
     .catch(error => {
       console.log(error);
+      alertify.dismissAll();
       alertify.error('Oh Snap! There was a problem saving to Drobox', 3, () => {});
     });
 };

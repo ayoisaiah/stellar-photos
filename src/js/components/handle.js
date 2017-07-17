@@ -5,15 +5,6 @@ import state from './state';
 const handleClick = (e) => {
   console.log(e.target);
 
-  if (e.target.matches('.icon--download')) {
-    const downloadIcon = e.target;
-    downloadIcon.classList.add('icon-active');
-    setTimeout(() => {
-      downloadIcon.classList.remove('icon-active');
-    }, 500);
-    return;
-  }
-
   if (!e.target.matches('.icon--cloud')) return;
   const target = e.target;
   const imageid = target.dataset.imageid;

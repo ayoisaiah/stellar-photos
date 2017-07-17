@@ -52,20 +52,20 @@ if (weatherData) {
   const locationText = document.querySelector('.location-text');
   const temperatureText = document.querySelector('.temperature-text');
   locationText.innerHTML = weatherData.name;
-  temperatureText.innerHTML = `${(weatherData.main.temp - 273).toFixed(0)}° - ${weatherData.weather[0].description}`;
+  temperatureText.innerHTML = `${Math.round(weatherData.main.temp)}° - ${weatherData.weather[0].description}`;
 }
 
 const dropboxButton = document.querySelector('.dropbox-button');
 dropboxButton.addEventListener('click', () => {
-  if (!localStorage.getItem('dropbox-token')) {
-    chrome.runtime.openOptionsPage();
-    return;
-  }
-
   const imageId = dropboxButton.dataset.imageid;
   const downloadUrl = dropboxButton.dataset.downloadurl;
 
   saveToDropbox(imageId, downloadUrl);
+});
+
+const optionsButton = document.querySelector('.options-button');
+optionsButton.addEventListener('click', () => {
+  chrome.runtime.openOptionsPage();
 });
 
 const popover = document.querySelector('.popover');

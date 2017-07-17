@@ -1,4 +1,16 @@
 const getCoords = () => new Promise((resolve, reject) => {
+  let coords;
+  chrome.storage.sync.get('s-coords', (obj) => {
+    coords = obj.coords;
+  });
+
+  if (coords) {
+    console.log('coooooooords', coords);
+    localStorage.setItem('s-coords', JSON.stringify(coords));
+    resolve(coords);
+    return;
+  }
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition((position) => {
       const { longitude, latitude } = position.coords;
@@ -6,7 +18,11 @@ const getCoords = () => new Promise((resolve, reject) => {
         longitude,
         latitude,
       };
-      localStorage.setItem('s-coords', JSON.stringify(obj));
+      chrome.storage.sync.set({
+        's-coords': obj,
+      }, () => {
+        localStorage.setItem('s-coords', JSON.stringify(obj));
+      });
       resolve(obj);
     });
   } else {
@@ -17,7 +33,9 @@ const getCoords = () => new Promise((resolve, reject) => {
 const getWeatherInfo = (data) => {
   const coords = data || JSON.parse(localStorage.getItem('s-coords'));
   const { longitude, latitude } = coords;
-  fetch(`http://localhost:3000/api/weather/${latitude},${longitude}`)
+  const tempUnit = localStorage.getItem('s-tempUnit') || 'celsius';
+  const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
+  fetch(`http://localhost:8080/api/weather/${latitude},${longitude},${metricSystem}`)
     .then(response => response.json())
     .then((forecast) => {
       console.log(forecast);
@@ -27,14 +45,13 @@ const getWeatherInfo = (data) => {
 };
 
 const fetchRandomPhoto = () => {
-  fetch('http://localhost:3000/api/photos/random')
+  fetch('http://localhost:8080/api/photos/random')
     .then(response => response.json())
     .then((data) => {
       console.log(data);
       localStorage.setItem('nextImage', JSON.stringify(data));
     });
 };
-
 
 const init = () => {
   getCoords()
@@ -46,12 +63,14 @@ const init = () => {
 
 const setBackgroundPhoto = () => {
   fetchRandomPhoto();
+
   if (!localStorage.getItem('s-coords')) {
     getCoords();
   }
 
   if (!localStorage.getItem('s-weather')) {
     getWeatherInfo();
+    return;
   }
 
   const weatherData = JSON.parse(localStorage.getItem('s-weather'));
@@ -79,7 +98,9 @@ chrome.runtime.onMessage.addListener((request, sender) => {
       localStorage.setItem('dropbox-token', request.token);
       chrome.notifications.create('dropbox-notification', {
         type: 'basic',
-        title: 'Dropbox connected successfully',
+        iconUrl: chrome.extension.getURL("icons/48.png"),
+        title: 'Stellar Photos',
+        message: 'Dropbox authenticated successfully',
       });
       break;
     }
@@ -88,5 +109,16 @@ chrome.runtime.onMessage.addListener((request, sender) => {
       chrome.tabs.remove(sender.tab.id);
       break;
     }
+
+    case 'update-weather': {
+      getWeatherInfo();
+      break;
+    }
   }
+});
+
+chrome.runtime.onConnect.addListener((options) => {
+  options.onDisconnect.addListener(() => {
+    getWeatherInfo();
+  });
 });
