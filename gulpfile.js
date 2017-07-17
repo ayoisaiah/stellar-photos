@@ -1,15 +1,17 @@
 const gulp = require('gulp');
 const sass = require('gulp-sass');
-const prefix = require('gulp-autoprefixer');
 const babelify = require('babelify');
 const browserify = require('browserify');
 const vinylSource = require('vinyl-source-stream');
 const es = require('event-stream');
 const flatten = require('gulp-flatten');
 const glob = require('glob');
+const uglify = require('gulp-uglify');
+const buffer = require('vinyl-buffer');
 
 gulp.task('copyStaticFiles', () => gulp.src([
   './src/**/*.*',
+  '!./src/css/*.css',
   '!./src/js/**/*.js',
   '!./src/sass/**/*.sass',
 ])
@@ -24,6 +26,8 @@ gulp.task('build', (done) => {
       .transform(babelify)
       .bundle()
       .pipe(vinylSource(entry))
+      .pipe(buffer())
+      .pipe(uglify())
       .pipe(flatten())
       .pipe(gulp.dest('./dist/js')));
     es.merge(tasks).on('end', done);
@@ -31,8 +35,7 @@ gulp.task('build', (done) => {
 });
 
 gulp.task('sass', () => gulp.src('./src/sass/main.sass')
-  .pipe(sass())
-  .pipe(prefix(['last 15 versions', '> 1%', 'ie 8', 'ie 7'], { cascade: true }))
+  .pipe(sass({ outputStyle: 'compressed' }))
   .pipe(gulp.dest('./dist/css')));
 
 gulp.task('default', () => {
