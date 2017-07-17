@@ -2,10 +2,12 @@
   "manifest_version": 2,
   "name": "Stellar Photos",
   "version": "0.1",
-  "description": "A new tab extension for Chrome and Firefox",
+  "description": "Experience a beautiful photo from Unsplash every time you open a new tab.",
 
   "icons": {
-    "48": "icons/48.png"
+    "48": "icons/48.png",
+    "64": "icons/64.png",
+    "128": "icons/128.png"
   },
 
   "chrome_url_overrides": {
@@ -37,13 +39,6 @@
   "options_ui": {
     "page": "options.html",
     "chrome_style": true
-  },
-
-  "oauth2": {
-    "client_id":"41706871424-uh55glk535q0kmep26quftv18gk16uo8.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/drive"
-    ]
   }
 
 }
