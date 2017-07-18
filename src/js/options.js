@@ -1,7 +1,7 @@
 const authorizeDropbox = () => new Promise((resolve) => {
   const key = 'gscbxcjhou1jx21';
   // TODO: Use Chrome Identity API to authenticate Dropbox https://developer.chrome.com/extensions/app_identity#non
-  chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://ayoisaiah.com/stellar-photos/` });
+  chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
 
   const interval = setInterval(() => {
     const token = localStorage.getItem('dropbox-token');
