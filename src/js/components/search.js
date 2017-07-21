@@ -22,7 +22,7 @@ const searchPhotos = (key, page) => {
   }
   const spinner = Ladda.create(document.querySelector('.moreResults-button'));
   spinner.start();
-  fetch(`http://localhost:8080/api/photos/search/${key},${page}`)
+  fetch(`https://stellar-photos.herokuapp.com/api/photos/search/${key},${page}`)
     .then(response => response.json())
     .then((json) => {
       loader.classList.remove('loader-active');
@@ -39,7 +39,6 @@ const searchPhotos = (key, page) => {
       loader.classList.remove('loader-active');
       spinner.stop();
       alertify.error('Oh Snap! An error occurred', 3, () => {});
-      console.log(error);
     });
 };
 

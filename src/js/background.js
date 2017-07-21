@@ -5,7 +5,6 @@ const getCoords = () => new Promise((resolve, reject) => {
   });
 
   if (coords) {
-    console.log('coooooooords', coords);
     localStorage.setItem('s-coords', JSON.stringify(coords));
     resolve(coords);
     return;
@@ -35,20 +34,18 @@ const getWeatherInfo = (data) => {
   const { longitude, latitude } = coords;
   const tempUnit = localStorage.getItem('s-tempUnit') || 'celsius';
   const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
-  fetch(`http://localhost:8080/api/weather/${latitude},${longitude},${metricSystem}`)
+  fetch(`https://stellar-photos.herokuapp.com/api/weather/${latitude},${longitude},${metricSystem}`)
     .then(response => response.json())
     .then((forecast) => {
-      console.log(forecast);
       localStorage.setItem('s-weather', JSON.stringify(forecast));
     })
     .catch(error => console.log(error));
 };
 
 const fetchRandomPhoto = () => {
-  fetch('http://localhost:8080/api/photos/random')
+  fetch('https://stellar-photos.herokuapp.com/api/photos/random')
     .then(response => response.json())
     .then((data) => {
-      console.log(data);
       localStorage.setItem('nextImage', JSON.stringify(data));
     });
 };

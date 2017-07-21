@@ -10,7 +10,7 @@ const saveToDropbox = (imageId, downloadUrl) => {
 
   console.log(imageId, downloadUrl);
 
-  fetch(`http://localhost:8080/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
+  fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
     .then(response => response.json())
     .then((json) => {
       console.log(json);
