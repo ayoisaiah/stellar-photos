@@ -3,8 +3,6 @@ import { searchPhotos } from './search';
 import state from './state';
 
 const handleClick = (e) => {
-  console.log(e.target);
-
   if (!e.target.matches('.icon--cloud')) return;
   const target = e.target;
   const imageid = target.dataset.imageid;

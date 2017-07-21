@@ -7,7 +7,6 @@ const authorizeDropbox = () => new Promise((resolve) => {
     const token = localStorage.getItem('dropbox-token');
     if (token) {
       clearInterval(interval);
-      console.log(token);
       resolve(token);
     }
   }, 100);
