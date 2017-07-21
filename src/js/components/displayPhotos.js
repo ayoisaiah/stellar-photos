@@ -18,11 +18,11 @@ const displayPhotos = (photos, total) => {
       `<li class='s-photo' id='photo-${imageId}' data-largesrc='${largeSrc}' style='background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;'>
        <div class="s-photo-actions">
           <div class='top'>
-            <a class='user' href='${user}'>
+            <a class='user' href='${user}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit'>
               <img class="user-dp" src='${userDp}' />
               <span class="username">${username}</span>
             </a>
-            <a href="${linkToPhoto}" target="_blank" title="View photo on Unsplash"><svg style='fill: #fafafa;' class='icon icon--anchor'><use xlink:href="#icon-anchor"></use></a>
+            <a href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" title="View photo on Unsplash"><svg style='fill: #fafafa;' class='icon icon--anchor'><use xlink:href="#icon-anchor"></use></a>
           </div>
           <div class='bottom'>
             <span class='s-photo-dimension'>${width} x ${height}</span>
@@ -43,7 +43,6 @@ const displayPhotos = (photos, total) => {
 
   state.page += 1;
   loadMore.classList.remove('hidden');
-  console.log(state);
 };
 
 export default displayPhotos;

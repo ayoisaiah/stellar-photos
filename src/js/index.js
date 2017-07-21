@@ -21,10 +21,10 @@ if (nextImage) {
   downloadButton.setAttribute('download', '');
 
   const linkToPhoto = document.querySelector('.linkToPhoto');
-  linkToPhoto.setAttribute('href', `${nextImage.links.html}`);
+  linkToPhoto.setAttribute('href', `${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit`);
 
   const photographerInfo = document.querySelector('.photographer-info');
-  photographerInfo.setAttribute('href', `${nextImage.user.links.html}`);
+  photographerInfo.setAttribute('href', `${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit`);
 
   const photographerDp = document.querySelector('.photographer-dp');
   photographerDp.setAttribute('src', `${nextImage.user.profile_image.small}`);
