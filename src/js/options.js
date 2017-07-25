@@ -1,4 +1,4 @@
-const authorizeDropbox = () => new Promise((resolve) => {
+const authorizeDropbox = () => {
   const key = 'gscbxcjhou1jx21';
   // TODO: Use Chrome Identity API to authenticate Dropbox https://developer.chrome.com/extensions/app_identity#non
   chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
@@ -7,10 +7,10 @@ const authorizeDropbox = () => new Promise((resolve) => {
     const token = localStorage.getItem('dropbox-token');
     if (token) {
       clearInterval(interval);
-      resolve(token);
+      return Promise.resolve(token);
     }
   }, 100);
-});
+};
 
 const selectCloud = document.querySelector('.chooseCloudStorage');
 

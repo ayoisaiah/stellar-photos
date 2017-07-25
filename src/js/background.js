@@ -1,4 +1,4 @@
-const getCoords = () => new Promise((resolve, reject) => {
+const getCoords = () => {
   let coords;
   chrome.storage.sync.get('s-coords', (obj) => {
     coords = obj.coords;
@@ -6,8 +6,7 @@ const getCoords = () => new Promise((resolve, reject) => {
 
   if (coords) {
     localStorage.setItem('s-coords', JSON.stringify(coords));
-    resolve(coords);
-    return;
+    return Promise.resolve(coords);
   }
 
   if (navigator.geolocation) {
@@ -22,12 +21,12 @@ const getCoords = () => new Promise((resolve, reject) => {
       }, () => {
         localStorage.setItem('s-coords', JSON.stringify(obj));
       });
-      resolve(obj);
+      return Promise.resolve(obj);
     });
   } else {
-    reject(new Error('failed to get coords'));
+    return Promise.reject(new Error('failed to get coords'));
   }
-});
+};
 
 const getWeatherInfo = (data) => {
   const coords = data || JSON.parse(localStorage.getItem('s-coords'));
@@ -74,10 +73,10 @@ const setBackgroundPhoto = () => {
   const timestamp = weatherData.dt;
 
   if (timestamp) {
-    const lessThanOneHourAgo = (timestamp) => {
+    const lessThanOneHourAgo = (ts) => {
       const twoHours = 2 * (1000 * 60 * 60);
       const twoHoursAgo = Date.now() - twoHours;
-      return timestamp > twoHoursAgo;
+      return ts > twoHoursAgo;
     };
 
     if (!lessThanOneHourAgo()) {
