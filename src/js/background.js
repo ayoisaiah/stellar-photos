@@ -1,7 +1,7 @@
 const getCoords = () => {
   let coords;
-  chrome.storage.sync.get('s-coords', (obj) => {
-    coords = obj.coords;
+  chrome.storage.sync.get('s-coords', (details) => {
+    coords = details.coords;
   });
 
   if (coords) {
@@ -10,6 +10,7 @@ const getCoords = () => {
   }
 
   if (navigator.geolocation) {
+    let coords;
     navigator.geolocation.getCurrentPosition((position) => {
       const { longitude, latitude } = position.coords;
       const obj = {
@@ -21,15 +22,17 @@ const getCoords = () => {
       }, () => {
         localStorage.setItem('s-coords', JSON.stringify(obj));
       });
-      return Promise.resolve(obj);
+      coords = obj;
     });
-  } else {
-    return Promise.reject(new Error('failed to get coords'));
+    return Promise.resolve(coords);
   }
+
+  return Promise.reject(new Error('failed to get coords'));
 };
 
 const getWeatherInfo = (data) => {
   const coords = data || JSON.parse(localStorage.getItem('s-coords'));
+  if (!coords) return;
   const { longitude, latitude } = coords;
   const tempUnit = localStorage.getItem('s-tempUnit') || 'celsius';
   const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
@@ -49,19 +52,13 @@ const fetchRandomPhoto = () => {
     });
 };
 
-const init = () => {
-  getCoords()
-    .then(data => getWeatherInfo(data))
-    .catch(error => console.log(error));
-  fetchRandomPhoto();
-};
-
-
 const setBackgroundPhoto = () => {
   fetchRandomPhoto();
 
   if (!localStorage.getItem('s-coords')) {
-    getCoords();
+    getCoords()
+      .then(data => getWeatherInfo(data));
+    return;
   }
 
   if (!localStorage.getItem('s-weather')) {
@@ -85,7 +82,7 @@ const setBackgroundPhoto = () => {
   }
 };
 
-chrome.runtime.onInstalled.addListener(init);
+chrome.runtime.onInstalled.addListener(setBackgroundPhoto);
 chrome.tabs.onCreated.addListener(setBackgroundPhoto);
 
 chrome.runtime.onMessage.addListener((request, sender) => {
