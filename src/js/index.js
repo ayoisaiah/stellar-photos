@@ -103,5 +103,4 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
 });
 
 document.getElementById('searchResults').addEventListener('click', handleClick);
-document.getElementById('historyButton-open').addEventListener('click', toggleHistory);
-document.getElementById('historyButton-close').addEventListener('click', toggleHistory);
+document.getElementById('historyButton').addEventListener('click', toggleHistory);
