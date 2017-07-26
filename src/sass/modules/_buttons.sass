@@ -2,6 +2,11 @@
   cursor: pointer
   border: none
   outline: none
+  width: 40px
+  height: 40px
+  display: flex
+  align-items: center
+  justify-content: center
 
   svg
     fill: $white
@@ -41,15 +46,10 @@
 .historyButton
   i
     display: block
-    width: 35px
+    width: 30px
     height: 5px
     background-color: $white
-    margin: 6px 0
-
-  .bar1, .bar2, .bar3
-    width: 35px
-    height: 5px
-    margin: 6px 0
+    margin: 5px 0
     transition: 0.4s
 
   &.transform .bar1
@@ -64,4 +64,5 @@
 .historyButton-open
   left: 20px
   right: auto
+  padding: 0
 
