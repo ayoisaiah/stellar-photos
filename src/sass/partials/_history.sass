@@ -1,20 +1,23 @@
 .s-history
-  height: 100%
-  overflow-x: hidden
-  top: 0
+  height: 0
+  width: 100%
+  overflow: hidden
+  bottom: 0
   left: 0
+  right: 0
   background-color: #111
-  padding: 60px 0
   position: fixed
-  width: 0
   transition: all 0.5s
   z-index: 1000
   list-style: none
+  display: flex
 
   &.open
-    width: 300px
+    height: 150px
 
   .s-photo
-    width: 290px
-    height: 290px
-    margin: 0 auto 5px
+    width: 10%
+    height: 140px
+    margin-left: 4px
+    margin-top: 4px
+    display: inline-block

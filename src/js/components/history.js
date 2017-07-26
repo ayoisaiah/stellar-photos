@@ -1,9 +1,7 @@
-const openHistory = () => {
-  document.getElementById('s-history').classList.add('open');
-};
-
-const closeHistory = () => {
-  document.getElementById('s-history').classList.remove('open');
+const toggleHistory = () => {
+  document.getElementById('s-history').classList.toggle('open');
+  document.getElementById('s-footer').classList.toggle('history-open');
+  document.getElementById('historyButton-open').classList.toggle('transform');
 };
 
 const displayHistory = (history) => {
@@ -26,14 +24,12 @@ const displayHistory = (history) => {
           <div class='top'>
             <a class='user' href='${user}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit'>
               <img class="user-dp" src='${userDp}' />
-              <span class="username">${username}</span>
             </a>
             <a href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" title="View photo on Unsplash"><svg style='fill: #fafafa;' class='icon icon--anchor'><use xlink:href="#icon-anchor"></use></a>
           </div>
           <div class='bottom'>
-            <span class='s-photo-dimension'>${width} x ${height}</span>
-            <div><a href='${downloadUrl}?force=true' target='_blank' download title='Download Photo'><svg style='fill: #fafafa;' class='icon icon--download'><use xlink:href="#icon-download"></use></svg></a>
-            <svg style="fill: #fafafa;" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud"></use></svg></div>
+            <a href='${downloadUrl}?force=true' target='_blank' download title='Download Photo'><svg style='fill: #fafafa;' class='icon icon--download'><use xlink:href="#icon-download"></use></svg></a>
+            <svg style="fill: #fafafa;" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud"></use></svg>
           </div>
         </div>
       </li>`,
@@ -41,4 +37,4 @@ const displayHistory = (history) => {
   });
 }
 
-export { openHistory, closeHistory, displayHistory };
+export { toggleHistory, displayHistory };

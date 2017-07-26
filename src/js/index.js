@@ -2,7 +2,7 @@ import alertify from 'alertifyjs';
 import convertTimeStamp from './components/helpers';
 import saveToDropbox from './components/dropbox';
 import { openSearch, closeSearch, searchPhotos } from './components/search';
-import { openHistory, closeHistory, displayHistory } from './components/history';
+import { toggleHistory, displayHistory } from './components/history';
 import { handleClick, handleSubmit } from './components/handle';
 import state from './components/state';
 
@@ -103,5 +103,5 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
 });
 
 document.getElementById('searchResults').addEventListener('click', handleClick);
-document.getElementById('historyButton-open').addEventListener('click', openHistory);
-document.getElementById('historyButton-close').addEventListener('click', closeHistory);
+document.getElementById('historyButton-open').addEventListener('click', toggleHistory);
+document.getElementById('historyButton-close').addEventListener('click', toggleHistory);
