@@ -1,7 +1,7 @@
 const toggleHistory = () => {
   document.getElementById('s-history').classList.toggle('open');
   document.getElementById('s-footer').classList.toggle('history-open');
-  document.getElementById('historyButton-open').classList.toggle('transform');
+  document.getElementById('historyButton').classList.toggle('transform');
 };
 
 const displayHistory = (history) => {

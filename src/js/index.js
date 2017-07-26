@@ -90,7 +90,6 @@ const searchButtonClose = document.getElementById('searchButton-close');
 searchButtonClose.addEventListener('click', closeSearch);
 
 document.addEventListener('keyup', (e) => {
-  // If Esc is pressed
   if (e.keyCode === 27) {
     closeSearch();
   }
@@ -103,5 +102,5 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
 });
 
 document.getElementById('searchResults').addEventListener('click', handleClick);
-document.getElementById('historyButton-open').addEventListener('click', toggleHistory);
-document.getElementById('historyButton-close').addEventListener('click', toggleHistory);
+document.getElementById('s-history').addEventListener('click', handleClick);
+document.getElementById('historyButton').addEventListener('click', toggleHistory);
