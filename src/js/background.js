@@ -106,6 +106,7 @@ chrome.runtime.onMessage.addListener((request, sender) => {
         title: 'Stellar Photos',
         message: 'Dropbox authenticated successfully',
       });
+      chrome.runtime.sendMessage({ command: 'update-cloud-status' });
       break;
     }
 
@@ -119,10 +120,4 @@ chrome.runtime.onMessage.addListener((request, sender) => {
       break;
     }
   }
-});
-
-chrome.runtime.onConnect.addListener((options) => {
-  options.onDisconnect.addListener(() => {
-    getWeatherInfo();
-  });
 });

@@ -1,10 +1,11 @@
 import alertify from 'alertifyjs';
-import convertTimeStamp from './components/helpers';
+import { convertTimeStamp, togglePopover } from './components/helpers';
 import saveToDropbox from './components/dropbox';
 import { openSearch, closeSearch, searchPhotos } from './components/search';
 import { toggleHistory, displayHistory } from './components/history';
 import { handleClick, handleSubmit } from './components/handle';
 import state from './components/state';
+import { cloudStatus, tempUnit, updateCoords } from './components/options';
 
 alertify.defaults = {
   notifier: {
@@ -69,15 +70,9 @@ dropboxButton.addEventListener('click', () => {
   saveToDropbox(imageId, downloadUrl);
 });
 
-const optionsButton = document.querySelector('.options-button');
-optionsButton.addEventListener('click', () => {
-  chrome.runtime.openOptionsPage();
-});
-
-const popover = document.querySelector('.popover');
-popover.addEventListener('click', () => {
-  const popoverContent = document.querySelector('.popover-content');
-  popoverContent.classList.toggle('popover-content--is-visible');
+const infoPopover = document.querySelector('.info-popover');
+infoPopover.addEventListener('click', () => {
+  togglePopover('.info-popover');
 });
 
 const loadMore = document.querySelector('.moreResults-button');
@@ -104,3 +99,66 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
 document.getElementById('searchResults').addEventListener('click', handleClick);
 document.getElementById('s-history').addEventListener('click', handleClick);
 document.getElementById('historyButton').addEventListener('click', toggleHistory);
+
+// Options
+
+const optionsButton = document.querySelector('.options-button');
+optionsButton.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ command: 'update-weather' });
+  togglePopover('.options-popover');
+});
+
+const selectCloud = document.querySelector('.chooseCloudStorage');
+
+selectCloud.addEventListener('change', () => {
+  cloudStatus(selectCloud);
+});
+
+cloudStatus(selectCloud);
+
+const selectTempUnit = document.querySelector('.chooseTempUnit');
+
+
+selectTempUnit.addEventListener('change', () => {
+  tempUnit(selectTempUnit);
+});
+
+if (!localStorage.getItem('s-tempUnit')) {
+  tempUnit(selectTempUnit);
+} else {
+  const unit = localStorage.getItem('s-tempUnit');
+  selectTempUnit.value = unit;
+}
+
+const longitudeInput = document.querySelector('.longitude');
+const latitudeInput = document.querySelector('.latitude');
+const coords = localStorage.getItem('s-coords');
+if (coords) {
+  const longitude = JSON.parse(coords).longitude;
+  const latitude = JSON.parse(coords).latitude;
+  longitudeInput.value = longitude;
+  latitudeInput.value = latitude;
+}
+
+longitudeInput.addEventListener('change', () => {
+  const longitude = longitudeInput.value;
+  if (typeof Number(longitude) === 'number' && longitude <= 180 && longitude >= -180) {
+    updateCoords(longitudeInput, latitudeInput);
+  }
+});
+
+latitudeInput.addEventListener('change', () => {
+  const latitude = latitudeInput.value;
+  if (typeof Number(latitude) === 'number' && latitude <= 90 && latitude >= -90) {
+    updateCoords(longitudeInput, latitudeInput);
+  }
+});
+
+chrome.runtime.onMessage.addListener((request) => {
+  switch (request.command) {
+    case 'update-cloud-status': {
+      cloudStatus(selectCloud);
+      break;
+    }
+  }
+});

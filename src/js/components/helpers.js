@@ -16,4 +16,10 @@ const convertTimeStamp = (timestamp) => {
   };
 };
 
-export default convertTimeStamp;
+const togglePopover = (element) => {
+  const popoverContent = document.querySelector(`${element} .popover-content`);
+  popoverContent.classList.toggle('popover-content--is-visible');
+};
+
+
+export { convertTimeStamp, togglePopover };

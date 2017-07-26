@@ -16,9 +16,11 @@
   <main class="s-main">
 
     <button id="historyButton" class="historyButton historyButton-open" title="toggle history menu" aria-label="Toggle History Menu">
-      <i class="bar1"></i>
-      <i class="bar2"></i>
-      <i class="bar3"></i>
+      <div>
+        <i class="bar1"></i>
+        <i class="bar2"></i>
+        <i class="bar3"></i>
+      </div>
     </button>
 
     <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form">
@@ -76,9 +78,33 @@
 
       <section class="controls">
 
-        <a href="" class="control-button options-button" title="Options">
-          Options
-        </a>
+
+        <div class="popover options-popover">
+          <button class="control-button options-button" title="Options">Options</button> 
+          <div class="popover-content">
+            <section class="saveTo">
+              <span class="label">Save to cloud storage</span>
+              <select class="chooseCloudStorage">
+                <option value="dropbox-token" selected>Dropbox</option>
+              </select>
+              <span class="action"></span>
+            </section>
+
+            <section class="weather-coords">
+              <span class="label">Paste your coordinates here for accurate location and weather information. Changes are saved automatically</span>
+              <label for="latitude">Latitude: <input type="text" name="latitude" class="latitude" value=""></label>      
+              <label for="longitude">Longitude: <input type="text" name="longitude" class="longitude" value=""></label>
+            </section>
+
+            <section class="temperature-unit">
+              <span class="label">Choose Temperature Unit</span>
+              <select class="chooseTempUnit">
+                <option value="celsius">Celsius</option>
+                <option value="fahrenheit">Fahrenheit</option>
+              </select>
+            </section>
+          </div>
+        </div>
 
         <a class="control-button download-button" title="Download photo">
           Download
@@ -88,7 +114,7 @@
           Save to Dropbox
         </button>
 
-        <div class="popover">
+        <div class="popover info-popover">
           <button class="control-button info-button">Info</button> 
           <ul class="popover-content">
             <li class="popover-content-item">
