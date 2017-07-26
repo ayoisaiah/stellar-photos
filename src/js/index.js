@@ -2,6 +2,7 @@ import alertify from 'alertifyjs';
 import convertTimeStamp from './components/helpers';
 import saveToDropbox from './components/dropbox';
 import { openSearch, closeSearch, searchPhotos } from './components/search';
+import { openHistory, closeHistory, displayHistory } from './components/history';
 import { handleClick, handleSubmit } from './components/handle';
 import state from './components/state';
 
@@ -55,6 +56,11 @@ if (weatherData) {
   temperatureText.innerHTML = `${Math.round(weatherData.main.temp)}° - ${weatherData.weather[0].description}`;
 }
 
+const history = JSON.parse(localStorage.getItem('s-history'));
+if (history) {
+  displayHistory(history);
+}
+
 const dropboxButton = document.querySelector('.dropbox-button');
 dropboxButton.addEventListener('click', () => {
   const imageId = dropboxButton.dataset.imageid;
@@ -78,10 +84,10 @@ const loadMore = document.querySelector('.moreResults-button');
 loadMore.addEventListener('click', () => searchPhotos(state.searchKey, state.page));
 
 const searchButtonOpen = document.getElementById('searchButton-open');
-searchButtonOpen.addEventListener('click', () => openSearch());
+searchButtonOpen.addEventListener('click', openSearch);
 
 const searchButtonClose = document.getElementById('searchButton-close');
-searchButtonClose.addEventListener('click', () => closeSearch());
+searchButtonClose.addEventListener('click', closeSearch);
 
 document.addEventListener('keyup', (e) => {
   // If Esc is pressed
@@ -97,3 +103,5 @@ document.getElementById('searchForm').addEventListener('submit', (e) => {
 });
 
 document.getElementById('searchResults').addEventListener('click', handleClick);
+document.getElementById('historyButton-open').addEventListener('click', openHistory);
+document.getElementById('historyButton-close').addEventListener('click', closeHistory);

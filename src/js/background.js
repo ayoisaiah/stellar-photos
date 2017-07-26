@@ -48,11 +48,22 @@ const fetchRandomPhoto = () => {
   fetch('https://stellar-photos.herokuapp.com/api/photos/random')
     .then(response => response.json())
     .then((data) => {
+      const history = JSON.parse(localStorage.getItem('s-history'));
+      if (history.length >= 10) {
+        history.pop();
+      }
+      history.unshift(data);
+      localStorage.setItem('s-history', JSON.stringify(history));
       localStorage.setItem('nextImage', JSON.stringify(data));
     });
 };
 
-const setBackgroundPhoto = () => {
+const loadNewData = () => {
+  if (!localStorage.getItem('s-history')) {
+    const history = [];
+    localStorage.setItem('s-history', JSON.stringify(history));
+  }
+
   fetchRandomPhoto();
 
   if (!localStorage.getItem('s-coords')) {
@@ -82,8 +93,8 @@ const setBackgroundPhoto = () => {
   }
 };
 
-chrome.runtime.onInstalled.addListener(setBackgroundPhoto);
-chrome.tabs.onCreated.addListener(setBackgroundPhoto);
+chrome.runtime.onInstalled.addListener(loadNewData);
+chrome.tabs.onCreated.addListener(loadNewData);
 
 chrome.runtime.onMessage.addListener((request, sender) => {
   switch (request.command) {
