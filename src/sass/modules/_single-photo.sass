@@ -8,6 +8,7 @@
   position: relative
   color: #fafafa
   background-position: 50% !important
+  animation: show 0.5s forwards ease-in-out
 
   &:hover &-actions
     opacity: 1
@@ -67,3 +68,12 @@
       margin-left: 10px
       overflow: visible
       transition: color 0.7s
+
+@keyframes show
+  0%
+    opacity: 0
+    transform: translateY(100px)
+
+  100%
+    opacity: 1
+    transform: translateY(0)
