@@ -47,4 +47,4 @@ const updateCoords = (longitudeInput, latitudeInput) => {
   });
 };
 
-export { cloudStatus, tempUnit, updateCoords };
+export { authorizeDropbox, cloudStatus, tempUnit, updateCoords };

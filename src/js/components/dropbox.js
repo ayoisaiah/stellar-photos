@@ -1,10 +1,9 @@
 import alertify from 'alertifyjs';
+import { authorizeDropbox } from './options';
 
 const saveToDropbox = (imageId, downloadUrl) => {
   if (!localStorage.getItem('dropbox-token')) {
-    alertify.error('You need to authenticate Dropbox first', 3, () => {});
-    const popoverContent = document.querySelector('.options-popover .popover-content');
-    popoverContent.classList.add('popover-content--is-visible');
+    authorizeDropbox();
     return;
   }
   const token = localStorage.getItem('dropbox-token');
