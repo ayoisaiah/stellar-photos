@@ -18,11 +18,7 @@
     "geolocation", 
     "storage", 
     "unlimitedStorage", 
-    "tabs", 
-    "identity",
-    "notifications",
-    "alarms",
-    "https://www.dropbox.com/1/oauth2/*"
+    "notifications"
   ],
   "background": {
     "scripts": [ "js/background.js"],
