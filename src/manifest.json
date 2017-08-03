@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Stellar Photos",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Experience a beautiful photo from Unsplash every time you open a new tab.",
 
   "icons": {
