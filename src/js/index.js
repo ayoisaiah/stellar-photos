@@ -162,3 +162,9 @@ chrome.runtime.onMessage.addListener((request) => {
     }
   }
 });
+
+document.addEventListener('click', (node) => {
+  if (node.target.matches('.popover *')) return;
+  const popover = document.querySelectorAll('.popover .popover-content');
+  popover.forEach(e => e.classList.remove('popover-content--is-visible'));
+});
