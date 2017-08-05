@@ -38,8 +38,8 @@ gulp.task('sass', () => gulp.src('./src/sass/main.sass')
   .pipe(sass({ outputStyle: 'compressed' }))
   .pipe(gulp.dest('./dist/css')));
 
-gulp.task('default', () => {
-  gulp.watch('src/js/**/*.js', ['build']);
+gulp.task('default', ['copyStaticFiles', 'build', 'sass'], () => {
+  gulp.watch(['src/js/**/*.js'], ['build']);
   gulp.watch(['src/**/*.*', '!./src/js/**/*.js', '!./src/sass/**/*.sass'], ['copyStaticFiles']);
   gulp.watch(['src/sass/**/*.sass'], ['sass']);
 });
