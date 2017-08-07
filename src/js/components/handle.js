@@ -14,7 +14,9 @@ const handleSubmit = () => {
   const loadMore = document.querySelector('.moreResults-button');
   loadMore.classList.add('hidden');
   const searchResults = document.querySelector('.searchResults');
-  searchResults.innerHTML = '';
+  while (searchResults.hasChildNodes()) {
+    searchResults.removeChild(searchResults.lastChild);
+  }
   const key = document.getElementById('searchForm-input').value;
   const page = 1;
   state.page = page;

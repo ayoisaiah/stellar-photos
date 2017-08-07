@@ -53,8 +53,8 @@ const weatherData = JSON.parse(localStorage.getItem('s-weather'));
 if (weatherData) {
   const locationText = document.querySelector('.location-text');
   const temperatureText = document.querySelector('.temperature-text');
-  locationText.innerHTML = weatherData.name;
-  temperatureText.innerHTML = `${Math.round(weatherData.main.temp)}° - ${weatherData.weather[0].description}`;
+  locationText.appendChild(document.createTextNode(weatherData.name));
+  temperatureText.appendChild(document.createTextNode(`${Math.round(weatherData.main.temp)}° - ${weatherData.weather[0].description}`));
 }
 
 const history = JSON.parse(localStorage.getItem('s-history'));
