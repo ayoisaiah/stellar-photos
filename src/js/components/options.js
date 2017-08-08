@@ -1,13 +1,16 @@
 import alertify from 'alertifyjs';
+import saveToDropbox from './dropbox';
 
-const authorizeDropbox = () => {
+const authorizeDropbox = (imageId, downloadUrl) => {
   const key = 'gscbxcjhou1jx21';
-  // TODO: Use Chrome Identity API to authenticate Dropbox https://developer.chrome.com/extensions/app_identity#non
   chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
 
   const interval = setInterval(() => {
     const token = localStorage.getItem('dropbox-token');
     if (token) {
+      if (imageId) {
+        saveToDropbox(imageId, downloadUrl);
+      }
       clearInterval(interval);
     }
   }, 100);
@@ -16,7 +19,9 @@ const authorizeDropbox = () => {
 const cloudStatus = (selectCloud) => {
   const selected = selectCloud[selectCloud.selectedIndex].value;
   const action = document.querySelector('.action');
-  action.innerHTML = '';
+  while (action.hasChildNodes()) {
+    action.removeChild(action.lastChild);
+  }
 
   if (!localStorage.getItem(`${selected}`)) {
     action.insertAdjacentHTML('beforeend', '<button class="authorize">Authorize</button>');

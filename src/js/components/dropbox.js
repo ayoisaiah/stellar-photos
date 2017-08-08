@@ -2,11 +2,11 @@ import alertify from 'alertifyjs';
 import { authorizeDropbox } from './options';
 
 const saveToDropbox = (imageId, downloadUrl) => {
-  if (!localStorage.getItem('dropbox-token')) {
-    authorizeDropbox();
+  const token = localStorage.getItem('dropbox-token');
+  if (!token) {
+    authorizeDropbox(imageId, downloadUrl);
     return;
   }
-  const token = localStorage.getItem('dropbox-token');
   alertify.notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3);
 
   fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
