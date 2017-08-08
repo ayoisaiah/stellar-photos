@@ -15,14 +15,6 @@
 
   <main class="s-main">
 
-    <button id="historyButton" class="historyButton historyButton-open" title="toggle history menu" aria-label="Toggle History Menu">
-      <div>
-        <i class="bar1"></i>
-        <i class="bar2"></i>
-        <i class="bar3"></i>
-      </div>
-    </button>
-
     <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form">
       <svg class="icon icon--search">
         <use xlink:href="#icon-search"></use>
@@ -62,88 +54,8 @@
     <!-- Footer ====================================================================== -->
 
     <footer class="s-footer" id="s-footer">
-
-      <section class="weather">
-        <span class="location">
-          <svg class="icon location-icon"><use xlink:href="#icon-location"></use></svg>
-          <span class="location-text"></span>
-        </span>
-        <span class="temperature">
-          <svg class="icon temperature-icon">
-            <use xlink:href="#icon-temperature"></use>
-          </svg>
-          <span class="temperature-text"></span>
-        </span>
-      </section>
-
-      <section class="controls">
-
-
-        <div class="popover options-popover">
-          <button class="control-button options-button" title="Options">Options</button> 
-          <div class="popover-content">
-            <section class="saveTo">
-              <span class="label">Save to cloud storage</span>
-              <select class="chooseCloudStorage">
-                <option value="dropbox-token" selected>Dropbox</option>
-              </select>
-              <span class="action"></span>
-            </section>
-
-            <section class="weather-coords">
-              <span class="label">Paste your coordinates here for accurate location and weather information. Changes are saved automatically</span>
-              <label class="label" for="latitude">Latitude: <br> <input type="text" name="latitude" class="latitude" value=""></label>      
-              <label class="label" for="longitude">Longitude: <br> <input type="text" name="longitude" class="longitude" value=""></label>
-            </section>
-
-            <section class="temperature-unit">
-              <span class="label">Choose Temperature Unit</span>
-              <select class="chooseTempUnit">
-                <option value="celsius">Celsius</option>
-                <option value="fahrenheit">Fahrenheit</option>
-              </select>
-            </section>
-          </div>
-        </div>
-
-        <a class="control-button download-button" title="Download photo">
-          Download
-        </a>
-
-        <button class="control-button dropbox-button" title="Save photo to Dropbox">
-          Save to Dropbox
-        </button>
-
-        <div class="popover info-popover">
-          <button class="control-button info-button">Info</button> 
-          <ul class="popover-content">
-            <li class="popover-content-item">
-              <a class='photographer-info'>
-                <img class="photographer-dp" />
-                <span class="photographer-name"></span>
-              </a>
-            </li>
-            <li class="popover-content-item">
-              <span class="label">Resolution</span>
-              <span class="resolution"></span>
-            </li>
-            <li class="popover-content-item">
-              <span class="label">Created On</span>
-              <span class="created-date"></span>
-            </li>
-            <li class="popover-content-item">
-              <span class="label">Likes</span>
-              <div class="wrapper">
-                <span class="likes"></span>
-                <svg class="icon heart-icon"><use xlink:href="#icon-heart"></use></svg>
-              </div>
-            </li>
-            <li class="popover-content-item">
-              <span class="label"><a class="linkToPhoto" target="_blank">View photo on Unsplash.com</a></span>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <section class="weather"></section>
+      <section class="controls"></section>
     </footer>
   </main>
 

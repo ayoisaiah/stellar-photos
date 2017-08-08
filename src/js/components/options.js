@@ -1,3 +1,5 @@
+import alertify from 'alertifyjs';
+
 const authorizeDropbox = () => {
   const key = 'gscbxcjhou1jx21';
   // TODO: Use Chrome Identity API to authenticate Dropbox https://developer.chrome.com/extensions/app_identity#non
@@ -35,16 +37,15 @@ const tempUnit = (selectTempUnit) => {
   chrome.runtime.sendMessage({ command: 'update-weather' });
 };
 
-const updateCoords = (longitudeInput, latitudeInput) => {
-  const obj = {
-    longitude: longitudeInput.value,
-    latitude: latitudeInput.value,
-  };
+const updateCoords = (coords) => {
   chrome.storage.sync.set({
-    's-coords': obj,
+    's-coords': coords,
   }, () => {
-    localStorage.setItem('s-coords', JSON.stringify(obj));
+    localStorage.setItem('s-coords', JSON.stringify(coords));
+    alertify.success('Coordinates saved', 3);
   });
+
+  chrome.runtime.sendMessage({ command: 'update-weather' });
 };
 
 export { authorizeDropbox, cloudStatus, tempUnit, updateCoords };

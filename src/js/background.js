@@ -1,45 +1,18 @@
-const getCoords = () => {
-  let coords;
-  chrome.storage.sync.get('s-coords', (details) => {
-    coords = details.coords;
-  });
-
-  if (coords) {
-    localStorage.setItem('s-coords', JSON.stringify(coords));
-    return Promise.resolve(coords);
-  }
-
-  if (navigator.geolocation) {
-    let coords;
-    navigator.geolocation.getCurrentPosition((position) => {
-      const { longitude, latitude } = position.coords;
-      const obj = {
-        longitude,
-        latitude,
-      };
-      chrome.storage.sync.set({
-        's-coords': obj,
-      }, () => {
-        localStorage.setItem('s-coords', JSON.stringify(obj));
-      });
-      coords = obj;
-    });
-    return Promise.resolve(coords);
-  }
-
-  return Promise.reject(new Error('failed to get coords'));
-};
-
-const getWeatherInfo = (data) => {
-  const coords = data || JSON.parse(localStorage.getItem('s-coords'));
+const getWeatherInfo = () => {
+  const coords = JSON.parse(localStorage.getItem('s-coords'));
   if (!coords) return;
   const { longitude, latitude } = coords;
   const tempUnit = localStorage.getItem('s-tempUnit') || 'celsius';
   const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
+
   fetch(`https://stellar-photos.herokuapp.com/api/weather/${latitude},${longitude},${metricSystem}`)
     .then(response => response.json())
     .then((forecast) => {
-      localStorage.setItem('s-weather', JSON.stringify(forecast));
+      const f = Object.assign({
+        timestamp: Date.now(),
+      }, forecast);
+      console.log(f);
+      localStorage.setItem('s-weather', JSON.stringify(f));
     })
     .catch(error => console.log(error));
 };
@@ -48,52 +21,43 @@ const fetchRandomPhoto = () => {
   fetch('https://stellar-photos.herokuapp.com/api/photos/random')
     .then(response => response.json())
     .then((data) => {
-      const history = JSON.parse(localStorage.getItem('s-history'));
+      localStorage.setItem('nextImage', JSON.stringify(data));
+      const history = JSON.parse(localStorage.getItem('s-history')) || [];
       if (history.length >= 10) {
         history.pop();
       }
       history.unshift(data);
       localStorage.setItem('s-history', JSON.stringify(history));
-      localStorage.setItem('nextImage', JSON.stringify(data));
     });
 };
 
 const loadNewData = () => {
-  if (!localStorage.getItem('s-history')) {
-    const history = [];
-    localStorage.setItem('s-history', JSON.stringify(history));
-  }
-
   fetchRandomPhoto();
 
-  if (!localStorage.getItem('s-coords')) {
-    getCoords()
-      .then(data => getWeatherInfo(data));
-    return;
-  }
-
-  if (!localStorage.getItem('s-weather')) {
+  if (!localStorage.getItem('s-weather') && localStorage.getItem('s-coords')) {
     getWeatherInfo();
     return;
   }
 
-  const weatherData = JSON.parse(localStorage.getItem('s-weather'));
-  const timestamp = weatherData.dt;
+  if (localStorage.getItem('s-weather')) {
+    const weatherData = JSON.parse(localStorage.getItem('s-weather'));
+    const { timestamp } = weatherData;
 
-  if (timestamp) {
-    const lessThanOneHourAgo = (ts) => {
-      const twoHours = 2 * (1000 * 60 * 60);
-      const twoHoursAgo = Date.now() - twoHours;
-      return ts > twoHoursAgo;
-    };
+    if (timestamp) {
+      const lessThanOneHourAgo = () => {
+        const oneHour = 1000 * 60 * 60;
+        const oneHourAgo = Date.now() - oneHour;
+        return timestamp > oneHourAgo;
+      };
 
-    if (!lessThanOneHourAgo()) {
-      getWeatherInfo();
+      if (!lessThanOneHourAgo()) {
+        getWeatherInfo();
+      }
     }
   }
 };
 
-chrome.runtime.onInstalled.addListener(loadNewData);
+chrome.runtime.onInstalled.addListener(fetchRandomPhoto);
 chrome.tabs.onCreated.addListener(loadNewData);
 
 chrome.runtime.onMessage.addListener((request, sender) => {
@@ -102,7 +66,7 @@ chrome.runtime.onMessage.addListener((request, sender) => {
       localStorage.setItem('dropbox-token', request.token);
       chrome.notifications.create('dropbox-notification', {
         type: 'basic',
-        iconUrl: chrome.extension.getURL("icons/48.png"),
+        iconUrl: chrome.extension.getURL('icons/48.png'),
         title: 'Stellar Photos',
         message: 'Dropbox authenticated successfully',
       });

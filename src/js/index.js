@@ -1,4 +1,5 @@
 import alertify from 'alertifyjs';
+import timeago from 'timeago.js';
 import { convertTimeStamp, togglePopover } from './components/helpers';
 import saveToDropbox from './components/dropbox';
 import { openSearch, closeSearch, searchPhotos } from './components/search';
@@ -18,47 +19,110 @@ if (nextImage) {
   const body = document.querySelector('body');
   body.style.backgroundImage = `url(${nextImage.base64})`;
 
-  const downloadButton = document.querySelector('.download-button');
-  downloadButton.setAttribute('href', `${nextImage.links.download}?force=true`);
-  downloadButton.setAttribute('download', '');
+  const controls = document.querySelector('.controls');
+  controls.insertAdjacentHTML('beforeend', `
+    <div class="popover options-popover">
+      <button class="control-button options-button" title="Options">Options</button> 
+      <div class="popover-content">
+        <section class="saveTo">
+          <span class="label">Save to cloud storage</span>
+          <select class="chooseCloudStorage">
+            <option value="dropbox-token" selected>Dropbox</option>
+          </select>
+          <span class="action"></span>
+        </section>
 
-  const linkToPhoto = document.querySelector('.linkToPhoto');
-  linkToPhoto.setAttribute('href', `${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit`);
+        <form class="weather-coords">
+          <span class="label">Paste your coordinates here to get current weather information.</span>
+          <label class="label" for="latitude">Latitude: <br> <input type="text" name="latitude" class="latitude" value=""></label>      
+          <label class="label" for="longitude">Longitude: <br> <input type="text" name="longitude" class="longitude" value=""></label>
+          <button type="submit" class="update-coords">Save</button>
+        </form>
 
-  const photographerInfo = document.querySelector('.photographer-info');
-  photographerInfo.setAttribute('href', `${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit`);
+        <section class="temperature-unit">
+          <span class="label">Choose Temperature Unit</span>
+          <select class="chooseTempUnit">
+            <option value="celsius">Celsius</option>
+            <option value="fahrenheit">Fahrenheit</option>
+          </select>
+        </section>
+      </div>
+    </div>
 
-  const photographerDp = document.querySelector('.photographer-dp');
-  photographerDp.setAttribute('src', `${nextImage.user.profile_image.small}`);
+    <a href="${nextImage.links.download}?force=true" class="control-button download-button" title="Download photo">
+      Download
+    </a>
 
-  const photographerName = document.querySelector('.photographer-name');
-  photographerName.insertAdjacentText('beforeend', `${nextImage.user.first_name || ''} ${nextImage.user.last_name || ''}`);
+    <button data-imageid="${nextImage.id}" data-downloadurl="${nextImage.links.download}" class="control-button dropbox-button" title="Save photo to Dropbox">
+      Save to Dropbox
+    </button>
 
-  const resolution = document.querySelector('.resolution');
-  resolution.insertAdjacentText('beforeend', `${nextImage.width} x ${nextImage.height}`);
+    <div class="popover info-popover">
+      <button class="control-button info-button">Info</button> 
+      <ul class="popover-content"></ul>
+    </div>
+  `);
 
-  const created = document.querySelector('.created-date');
   const fullDate = convertTimeStamp(Math.floor(new Date(`${nextImage.created_at}`).getTime() / 1000)).fullDate;
-  created.insertAdjacentText('beforeend', `${fullDate}`);
 
-  const likes = document.querySelector('.likes');
-  likes.insertAdjacentText('beforeend', `${nextImage.likes}`);
-
-  const dropboxButton = document.querySelector('.dropbox-button');
-  dropboxButton.setAttribute('data-imageid', `${nextImage.id}`);
-  dropboxButton.setAttribute('data-downloadurl', `${nextImage.links.download}`);
+  const infoPopoverContent = document.querySelector('.info-popover .popover-content');
+  infoPopoverContent.insertAdjacentHTML('beforeend', `
+    <li class="popover-content-item">
+      <a href="${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credi" class="photographer-info">
+        <img src="${nextImage.user.profile_image.small}" class="photographer-dp" />
+        <span class="photographer-name">${nextImage.user.first_name || ''} ${nextImage.user.last_name || ''}</span>
+      </a>
+    </li>
+    <li class="popover-content-item">
+      <span class="label">Resolution</span>
+      <span class="resolution">${nextImage.width} x ${nextImage.height}</span>
+    </li>
+    <li class="popover-content-item">
+      <span class="label">Created On</span>
+      <span class="created-date">${fullDate}</span>
+    </li>
+    <li class="popover-content-item">
+      <span class="label">Likes</span>
+      <div class="wrapper">
+        <span class="likes">${nextImage.likes}</span>
+        <svg class="icon heart-icon"><use xlink:href="#icon-heart"></use></svg>
+      </div>
+    </li>
+    <li class="popover-content-item">
+      <span class="label"><a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" class="linkToPhoto" target="_blank">View photo on Unsplash.com</a></span>
+    </li>
+  `);
 }
 
 const weatherData = JSON.parse(localStorage.getItem('s-weather'));
 if (weatherData) {
-  const locationText = document.querySelector('.location-text');
-  const temperatureText = document.querySelector('.temperature-text');
-  locationText.appendChild(document.createTextNode(weatherData.name));
-  temperatureText.appendChild(document.createTextNode(`${Math.round(weatherData.main.temp)}° - ${weatherData.weather[0].description}`));
+  const weather = document.querySelector('.weather');
+  weather.insertAdjacentHTML('beforeend', `
+    <span class="location">
+      <svg class="icon location-icon"><use xlink:href="#icon-location"></use></svg>
+      <span class="location-text">${weatherData.name}</span>
+    </span>
+    <span class="temperature">
+      <svg class="icon temperature-icon">
+        <use xlink:href="#icon-temperature"></use>
+      </svg>
+      <span class="temperature-text">${Math.round(weatherData.main.temp)}° - ${weatherData.weather[0].description}</span>
+    </span>
+    <span class="last-updated">${timeago().format(new Date(weatherData.timestamp))}</span>
+  `);
 }
 
 const history = JSON.parse(localStorage.getItem('s-history'));
 if (history) {
+  document.querySelector('.s-main').insertAdjacentHTML('afterbegin', `
+    <button id="historyButton" class="historyButton historyButton-open" title="toggle history menu" aria-label="Toggle History Menu">
+      <div>
+        <i class="bar1"></i>
+        <i class="bar2"></i>
+        <i class="bar3"></i>
+      </div>
+    </button>
+  `);
   displayHistory(history);
 }
 
@@ -104,7 +168,6 @@ document.getElementById('historyButton').addEventListener('click', toggleHistory
 
 const optionsButton = document.querySelector('.options-button');
 optionsButton.addEventListener('click', () => {
-  chrome.runtime.sendMessage({ command: 'update-weather' });
   togglePopover('.options-popover');
 });
 
@@ -118,7 +181,6 @@ cloudStatus(selectCloud);
 
 const selectTempUnit = document.querySelector('.chooseTempUnit');
 
-
 selectTempUnit.addEventListener('change', () => {
   tempUnit(selectTempUnit);
 });
@@ -130,6 +192,21 @@ if (!localStorage.getItem('s-tempUnit')) {
   selectTempUnit.value = unit;
 }
 
+const weatherCoords = document.querySelector('.weather-coords');
+weatherCoords.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const longitude = document.querySelector('.longitude').value;
+  const latitude = document.querySelector('.latitude').value;
+  if (typeof Number(longitude) === 'number' && longitude <= 180 && longitude >= -180
+    && typeof Number(latitude) === 'number' && latitude <= 90 && latitude >= -90) {
+    const coords = {
+      longitude,
+      latitude,
+    };
+    updateCoords(coords);
+  }
+});
+
 const longitudeInput = document.querySelector('.longitude');
 const latitudeInput = document.querySelector('.latitude');
 const coords = localStorage.getItem('s-coords');
@@ -139,20 +216,6 @@ if (coords) {
   longitudeInput.value = longitude;
   latitudeInput.value = latitude;
 }
-
-longitudeInput.addEventListener('change', () => {
-  const longitude = longitudeInput.value;
-  if (typeof Number(longitude) === 'number' && longitude <= 180 && longitude >= -180) {
-    updateCoords(longitudeInput, latitudeInput);
-  }
-});
-
-latitudeInput.addEventListener('change', () => {
-  const latitude = latitudeInput.value;
-  if (typeof Number(latitude) === 'number' && latitude <= 90 && latitude >= -90) {
-    updateCoords(longitudeInput, latitudeInput);
-  }
-});
 
 chrome.runtime.onMessage.addListener((request) => {
   switch (request.command) {
