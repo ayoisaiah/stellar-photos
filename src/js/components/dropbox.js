@@ -7,24 +7,21 @@ const saveToDropbox = (imageId, downloadUrl) => {
     return;
   }
   const token = localStorage.getItem('dropbox-token');
-  alertify.notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3, () => {});
-
-  console.log(imageId, downloadUrl);
+  alertify.notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3);
 
   fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
     .then(response => response.json())
     .then((json) => {
       alertify.dismissAll();
       if (json.error) {
-        alertify.error('Oh Snap! There was a problem saving to Drobox', 3, () => {});
+        alertify.error('Oh Snap! There was a problem saving to Drobox', 3);
         return;
       }
-      alertify.success(`photo-${imageId} saved successfully to Dropbox`, 3, () => {});
+      alertify.success(`photo-${imageId} saved successfully to Dropbox`, 3);
     })
-    .catch((error) => {
-      console.log(error);
+    .catch(() => {
       alertify.dismissAll();
-      alertify.error('Oh Snap! There was a problem saving to Drobox', 3, () => {});
+      alertify.error('Oh Snap! There was a problem saving to Drobox', 3);
     });
 };
 

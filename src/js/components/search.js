@@ -22,23 +22,24 @@ const searchPhotos = (key, page) => {
   }
   const spinner = Ladda.create(document.querySelector('.moreResults-button'));
   spinner.start();
+
   fetch(`https://stellar-photos.herokuapp.com/api/photos/search/${key},${page}`)
     .then(response => response.json())
     .then((json) => {
       loader.classList.remove('loader-active');
       spinner.stop();
       if (json.photos.total === 0) {
-        alertify.error('Oh Snap! No images match your search', 3, () => {});
+        alertify.error('Oh Snap! No images match your search', 3);
         return;
       }
       state.incomingResults = json.photos.results;
       state.results = [...state.results, ...state.incomingResults];
       displayPhotos(state.incomingResults, json.photos.total);
     })
-    .catch((error) => {
+    .catch(() => {
       loader.classList.remove('loader-active');
       spinner.stop();
-      alertify.error('Oh Snap! An error occurred', 3, () => {});
+      alertify.error('Oh Snap! An error occurred', 3);
     });
 };
 
