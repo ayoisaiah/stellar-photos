@@ -58,7 +58,6 @@ const loadNewData = () => {
 };
 
 chrome.runtime.onInstalled.addListener(fetchRandomPhoto);
-chrome.tabs.onCreated.addListener(loadNewData);
 
 chrome.runtime.onMessage.addListener((request, sender) => {
   switch (request.command) {
@@ -82,6 +81,10 @@ chrome.runtime.onMessage.addListener((request, sender) => {
     case 'update-weather': {
       getWeatherInfo();
       break;
+    }
+
+    case 'load-data': {
+      loadNewData();
     }
   }
 });
