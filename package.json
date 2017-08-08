@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "alertifyjs": "^1.10.0",
-    "ladda": "^1.0.0"
+    "ladda": "^1.0.0",
+    "timeago.js": "^3.0.2"
   }
 }
