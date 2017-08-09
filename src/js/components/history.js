@@ -19,18 +19,18 @@ const displayHistory = (history) => {
     const username = `${photo.user.first_name || ''} ${photo.user.last_name || ''}`;
 
     historyMenu.insertAdjacentHTML('beforeend',
-      `<li class='s-photo' id='photo-${imageId}' data-largesrc='${largeSrc}' style='background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;'>
+      `<li class="s-photo" id="photo-${imageId}" data-largesrc="${largeSrc}" style="background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;">
        <div class="s-photo-actions">
-          <div class='top'>
-            <a href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" title="View photo on Unsplash"><svg style='fill: #fafafa;' class='icon icon--anchor'><use xlink:href="#icon-anchor"></use></a>
+          <div class="top">
+            <a href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" rel="noreferrer" title="View photo on Unsplash"><svg style="fill: #fafafa;" class="icon icon--anchor"><use xlink:href="#icon-anchor"></use></a>
           </div>
-          <div class='bottom'>
-            <a class='user' href='${user}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit'>
-              <img class="user-dp" src='${userDp}' />
+          <div class="bottom">
+            <a class="user" href="${user}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" rel="noreferrer">
+              <img class="user-dp" src="${userDp}" />
             </a>
             <div>
-              <a href='${downloadUrl}?force=true' target='_blank' download title='Download Photo'><svg style='fill: #fafafa;' class='icon icon--download'><use xlink:href="#icon-download"></use></svg></a>
-              <svg style="fill: #fafafa;" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid='${imageId}' data-downloadurl='${downloadUrl}' class="icon icon--cloud"></use></svg>
+              <a href="${downloadUrl}?force=true" target="_blank" rel="noreferrer" download title="Download Photo"><svg style="fill: #fafafa;" class="icon icon--download"><use xlink:href="#icon-download"></use></svg></a>
+              <svg style="fill: #fafafa;" data-imageid="${imageId}" data-downloadurl="${downloadUrl}" class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid="${imageId}" data-downloadurl="${downloadUrl}" class="icon icon--cloud"></use></svg>
             </div>
           </div>
         </div>

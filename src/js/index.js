@@ -49,7 +49,7 @@ if (nextImage) {
       </div>
     </div>
 
-    <a href="${nextImage.links.download}?force=true" class="control-button download-button" title="Download photo">
+    <a href="${nextImage.links.download}?force=true" class="control-button download-button" download title="Download photo">
       Download
     </a>
 
@@ -68,7 +68,7 @@ if (nextImage) {
   const infoPopoverContent = document.querySelector('.info-popover .popover-content');
   infoPopoverContent.insertAdjacentHTML('beforeend', `
     <li class="popover-content-item">
-      <a href="${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credi" class="photographer-info">
+      <a href="${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credi" class="photographer-info" target="_blank" rel="noreferrer">
         <img src="${nextImage.user.profile_image.small}" class="photographer-dp" />
         <span class="photographer-name">${nextImage.user.first_name || ''} ${nextImage.user.last_name || ''}</span>
       </a>
@@ -89,7 +89,7 @@ if (nextImage) {
       </div>
     </li>
     <li class="popover-content-item">
-      <span class="label"><a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" class="linkToPhoto" target="_blank">View photo on Unsplash.com</a></span>
+      <span class="label"><a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" class="linkToPhoto" target="_blank" rel="noreferrer">View photo on Unsplash.com</a></span>
     </li>
   `);
 }
