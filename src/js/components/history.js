@@ -9,14 +9,11 @@ const displayHistory = (history) => {
   history.map((photo) => {
     const backgroundImg = photo.base64;
     const largeSrc = photo.urls.regular;
-    const width = photo.width;
-    const height = photo.height;
     const imageId = photo.id;
     const linkToPhoto = photo.links.html;
     const downloadUrl = photo.links.download;
     const user = `${photo.user.links.html}`;
     const userDp = `${photo.user.profile_image.small}`;
-    const username = `${photo.user.first_name || ''} ${photo.user.last_name || ''}`;
 
     historyMenu.insertAdjacentHTML('beforeend',
       `<li class="s-photo" id="photo-${imageId}" data-largesrc="${largeSrc}" style="background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;">
@@ -37,6 +34,6 @@ const displayHistory = (history) => {
       </li>`,
     );
   });
-}
+};
 
 export { toggleHistory, displayHistory };

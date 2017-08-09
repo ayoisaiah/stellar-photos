@@ -11,7 +11,6 @@ const getWeatherInfo = () => {
       const f = Object.assign({
         timestamp: Date.now(),
       }, forecast);
-      console.log(f);
       localStorage.setItem('s-weather', JSON.stringify(f));
     })
     .catch(error => console.log(error));
