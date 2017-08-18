@@ -1,4 +1,4 @@
-import alertify from 'alertifyjs';
+import { success } from 'alertifyjs';
 import saveToDropbox from './dropbox';
 
 const authorizeDropbox = (imageId, downloadUrl) => {
@@ -47,7 +47,7 @@ const updateCoords = (coords) => {
     's-coords': coords,
   }, () => {
     localStorage.setItem('s-coords', JSON.stringify(coords));
-    alertify.success('Coordinates saved', 3);
+    success('Coordinates saved', 3);
   });
 
   chrome.runtime.sendMessage({ command: 'update-weather' });

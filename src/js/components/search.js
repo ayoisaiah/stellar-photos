@@ -1,4 +1,4 @@
-import alertify from 'alertifyjs';
+import { error } from 'alertifyjs';
 import Ladda from 'ladda';
 import state from './state';
 import displayPhotos from './displayPhotos';
@@ -29,7 +29,7 @@ const searchPhotos = (key, page) => {
       loader.classList.remove('loader-active');
       spinner.stop();
       if (json.photos.total === 0) {
-        alertify.error('Oh Snap! No images match your search', 3);
+        error('Oh Snap! No images match your search', 3);
         return;
       }
       state.incomingResults = json.photos.results;
@@ -39,7 +39,7 @@ const searchPhotos = (key, page) => {
     .catch(() => {
       loader.classList.remove('loader-active');
       spinner.stop();
-      alertify.error('Oh Snap! An error occurred', 3);
+      error('Oh Snap! An error occurred', 3);
     });
 };
 

@@ -1,4 +1,4 @@
-import alertify from 'alertifyjs';
+import { error, dismissAll, success, notify } from 'alertifyjs';
 import { authorizeDropbox } from './options';
 
 const saveToDropbox = (imageId, downloadUrl) => {
@@ -7,21 +7,21 @@ const saveToDropbox = (imageId, downloadUrl) => {
     authorizeDropbox(imageId, downloadUrl);
     return;
   }
-  alertify.notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3);
+  notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3);
 
   fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${token}`)
     .then(response => response.json())
     .then((json) => {
-      alertify.dismissAll();
+      dismissAll();
       if (json.error) {
-        alertify.error('Oh Snap! There was a problem saving to Drobox', 3);
+        error('Oh Snap! There was a problem saving to Drobox', 3);
         return;
       }
-      alertify.success(`photo-${imageId} saved successfully to Dropbox`, 3);
+      success(`photo-${imageId} saved successfully to Dropbox`, 3);
     })
     .catch(() => {
-      alertify.dismissAll();
-      alertify.error('Oh Snap! There was a problem saving to Drobox', 3);
+      dismissAll();
+      error('Oh Snap! There was a problem saving to Drobox', 3);
     });
 };
 
