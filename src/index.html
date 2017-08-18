@@ -11,11 +11,11 @@
 
   <div class="s-overlay"></div>
 
-  <div class="loader" id="loader"></div>
+  <div class="loader" id="loader" style="transform: translateX(100%) translateY(-100%) rotate(45deg);"></div>
 
   <main class="s-main">
 
-    <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form">
+    <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
       <svg class="icon icon--search">
         <use xlink:href="#icon-search"></use>
       </svg>
@@ -27,7 +27,7 @@
 
     <!-- Search ====================================================================== -->
 
-    <section class="s-search" id="s-search">
+    <section class="s-search" id="s-search" style="opacity: 0">
       <button id="searchButton-close" class="searchButton searchButton-close" aria-label="Close search form">
         <svg class="icon icon--cross">
           <use xlink:href="#icon-cross"></use>
