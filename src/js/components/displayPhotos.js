@@ -1,4 +1,5 @@
 import state from './state';
+import observer from './observer';
 
 const displayPhotos = (photos, total) => {
   photos.map((photo) => {
@@ -38,6 +39,7 @@ const displayPhotos = (photos, total) => {
 
   if (state.results.length >= total) {
     loadMore.classList.add('hidden');
+    observer.disconnect();
     return;
   }
 

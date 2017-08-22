@@ -16,6 +16,7 @@ const closeSearch = () => {
 };
 
 const searchPhotos = (key, page) => {
+  state.isLoading = true;
   const loader = document.getElementById('loader');
   if (page === 1) {
     loader.classList.add('loader-active');
@@ -26,6 +27,7 @@ const searchPhotos = (key, page) => {
   fetch(`https://stellar-photos.herokuapp.com/api/photos/search/${key},${page}`)
     .then(response => response.json())
     .then((json) => {
+      state.isLoading = false;
       loader.classList.remove('loader-active');
       spinner.stop();
       if (json.photos.total === 0) {
@@ -37,6 +39,7 @@ const searchPhotos = (key, page) => {
       displayPhotos(state.incomingResults, json.photos.total);
     })
     .catch(() => {
+      state.isLoading = false;
       loader.classList.remove('loader-active');
       spinner.stop();
       error('Oh Snap! An error occurred', 3);
