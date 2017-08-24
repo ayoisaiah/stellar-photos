@@ -21,13 +21,13 @@ const handleSubmit = () => {
     searchResults.removeChild(searchResults.lastChild);
   }
 
-  const key = document.getElementById('searchForm-input').value;
-  const page = 1;
-  state.page = page;
-  state.searchKey = key;
+  // Reset state
+  state.page = 1;
+  state.searchKey =  document.getElementById('searchForm-input').value;
   state.results = [];
+  state.incomingResults = [];
 
-  searchPhotos(key, page);
+  searchPhotos(state.searchKey, state.page);
 };
 
 export { handleClick, handleSubmit };
