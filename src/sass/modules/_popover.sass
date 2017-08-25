@@ -43,11 +43,12 @@
 
   .label 
     text-transform: uppercase
-    font-size: 1.5rem
+    font-size: 1.4rem
     font-weight: 700
     color: #999
     display: block
     margin-bottom: 10px
+    line-height: 1.4
 
   .linkToPhoto 
     text-decoration: underline
@@ -74,15 +75,33 @@
   .wrapper .icon 
     margin-left: 10px
 
+  button
+    padding: 6px 20px
+    background-color: #5b5c5d
+    border: 1px solid #5b5c5d
+    font-size: 1.4rem
+    color: $white
+    cursor: pointer
+    margin-top: 15px
+
 .options-popover
   .popover-content
+    display: flex
     text-align: left
+    width: 550px
 
-    select, button
+    > div
+      padding: 10px
+      width: 50%
+
+    select
       background-color: #f3f3f3
       border: 1px solid #a5a5a5
       border-radius: $global-border-radius
-      padding: 3px
+      padding: 6px 3px
+
+    .authorize
+      margin-top: 0
     
   .success-message
     color: green
@@ -93,6 +112,10 @@
   section, form
     margin-bottom: 20px
 
-  label
+  .label
     display: block
     margin-bottom: 10px
+    // color: $white
+
+  input
+    padding: 5px 10px
