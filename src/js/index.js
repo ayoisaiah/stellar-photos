@@ -22,7 +22,9 @@ if (nextImage) {
   const controls = document.querySelector('.controls');
   controls.insertAdjacentHTML('beforeend', `
     <div class="popover options-popover">
-      <button class="control-button options-button" title="Options">Options</button> 
+      <button class="control-button options-button" title="Options">
+        <svg class="icon icon-settings"><use xlink:href="#icon-settings"></use></svg>
+      </button> 
       <div class="popover-content">
         <div>
           <section class="saveTo">
@@ -63,15 +65,17 @@ if (nextImage) {
     </div>
 
     <a href="${nextImage.links.download}?force=true" class="control-button download-button" download title="Download photo">
-      Download
+      <svg class="icon icon-download"><use xlink:href="#icon-download"></use></svg>
     </a>
 
     <button data-imageid="${nextImage.id}" data-downloadurl="${nextImage.links.download}" class="control-button dropbox-button" title="Save photo to Dropbox">
-      Save to Dropbox
+      <svg class="icon icon-cloud"><use xlink:href="#icon-cloud"></use></svg>
     </button>
 
     <div class="popover info-popover">
-      <button class="control-button info-button">Info</button> 
+      <button class="control-button info-button">
+        <svg class="icon icon-info"><use xlink:href="#icon-info"></use></svg>
+      </button> 
       <ul class="popover-content"></ul>
     </div>
   `);
