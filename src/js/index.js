@@ -6,7 +6,7 @@ import { openSearch, closeSearch, searchPhotos } from './components/search';
 import { toggleHistory, displayHistory } from './components/history';
 import { handleClick, handleSubmit } from './components/handle';
 import state from './components/state';
-import { cloudStatus, tempUnit, updateCoords } from './components/options';
+import { cloudStatus, tempUnit, updateCoords, updateCollections } from './components/options';
 
 alertify.defaults = {
   notifier: {
@@ -24,28 +24,41 @@ if (nextImage) {
     <div class="popover options-popover">
       <button class="control-button options-button" title="Options">Options</button> 
       <div class="popover-content">
-        <section class="saveTo">
-          <span class="label">Save to cloud storage</span>
-          <select class="chooseCloudStorage">
-            <option value="dropbox-token" selected>Dropbox</option>
-          </select>
-          <span class="action"></span>
-        </section>
+        <div>
+          <section class="saveTo">
+            <span class="label">Cloud storage</span>
+            <select class="chooseCloudStorage">
+              <option value="dropbox-token" selected>Dropbox</option>
+            </select>
+            <span class="action"></span>
+          </section>
 
-        <form class="weather-coords">
-          <span class="label">Paste your coordinates here to get current weather information.</span>
-          <label class="label" for="latitude">Latitude: <br> <input type="text" name="latitude" class="latitude" value=""></label>      
-          <label class="label" for="longitude">Longitude: <br> <input type="text" name="longitude" class="longitude" value=""></label>
-          <button type="submit" class="update-coords">Save</button>
-        </form>
+          <form class="s-collections">
+            <span class="label">Load photos from multiple custom collections by adding their IDs below separated by commas:</span>
+            <input type="text" name="latitude" class="s-collections__input" value="" placeholder="Collection IDs" /> <br>
+            <button type="submit" class="update-collections ladda-button" data-spinner-color="#ffffff" data-style="expand-right"><span class="ladda-label">Save Collections</span></button>
+          </form>
+        </div>
 
-        <section class="temperature-unit">
-          <span class="label">Choose Temperature Unit</span>
-          <select class="chooseTempUnit">
-            <option value="celsius">Celsius</option>
-            <option value="fahrenheit">Fahrenheit</option>
-          </select>
-        </section>
+        <div>
+          <section class="temperature-unit">
+            <span class="label">Temperature Unit</span>
+            <select class="chooseTempUnit">
+              <option value="celsius">Celsius</option>
+              <option value="fahrenheit">Fahrenheit</option>
+            </select>
+          </section>
+
+          <form class="weather-coords">
+            <span class="label">Paste your coordinates here to get current weather information.</span>
+            <label class="label" for="latitude">Latitude:</label>
+            <input type="text" name="latitude" class="latitude" placeholder="latitude" value="">
+            <label class="label" for="longitude" style="margin-top: 10px">Longitude:</label>
+            <input type="text" name="longitude" class="longitude" placeholder="longitude" value="">
+            <button type="submit" class="update-coords">Save Coordinates</button>
+          </form>
+        </div>
+
       </div>
     </div>
 
@@ -191,6 +204,17 @@ if (!localStorage.getItem('s-tempUnit')) {
   const unit = localStorage.getItem('s-tempUnit');
   selectTempUnit.value = unit;
 }
+
+const collections = localStorage.getItem('s-collections');
+const collectionsInput = document.querySelector('.s-collections__input');
+collectionsInput.value = collections;
+
+const collectionsForm = document.querySelector('.s-collections');
+collectionsForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const value = collectionsInput.value.trim().replace(/ /g, '');
+  updateCollections(value);
+});
 
 const weatherCoords = document.querySelector('.weather-coords');
 weatherCoords.addEventListener('submit', (e) => {

@@ -17,7 +17,13 @@ const getWeatherInfo = () => {
 };
 
 const fetchRandomPhoto = () => {
-  fetch('https://stellar-photos.herokuapp.com/api/photos/random')
+  if (!localStorage.getItem('s-collections')) {
+    localStorage.setItem('s-collections', '998309');
+  }
+
+  const collections = localStorage.getItem('s-collections');
+
+  fetch(`https://stellar-photos.herokuapp.com/api/photos/random/${collections}`)
     .then(response => response.json())
     .then((data) => {
       localStorage.setItem('nextImage', JSON.stringify(data));

@@ -1,4 +1,5 @@
-import { success } from 'alertifyjs';
+import Ladda from 'ladda';
+import { success, error } from 'alertifyjs';
 import saveToDropbox from './dropbox';
 
 const authorizeDropbox = (imageId, downloadUrl) => {
@@ -53,4 +54,31 @@ const updateCoords = (coords) => {
   chrome.runtime.sendMessage({ command: 'update-weather' });
 };
 
-export { authorizeDropbox, cloudStatus, tempUnit, updateCoords };
+const updateCollections = (collections) => {
+  if (!collections) {
+    error('Collection IDs not valid!');
+    return;
+  }
+
+  const spinner = Ladda.create(document.querySelector('.update-collections'));
+  spinner.start();
+
+  fetch(`https://stellar-photos.herokuapp.com/api/validate/${collections}`)
+    .then(response => response.text())
+    .then((data) => {
+      spinner.stop();
+      const json = JSON.parse(data);
+      if (json.error) {
+        error(json.message, 3);
+        return;
+      }
+
+      localStorage.setItem('s-collections', collections);
+      success(json.message, 3);
+    }).catch(() => {
+      spinner.stop();
+      error('Oh Snap! An error occurred', 3);
+    });
+};
+
+export { authorizeDropbox, cloudStatus, tempUnit, updateCoords, updateCollections };
