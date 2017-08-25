@@ -2,8 +2,8 @@ import state from './state';
 import { searchPhotos } from './search';
 
 const options = {
-  // If user scrolls within 600px of the `More Photos` button, request next page
-  rootMargin: '600px 0px',
+  // If user scrolls within 1200px of the `More Photos` button, request next page
+  rootMargin: '1200px 0px',
   threshold: 1.0,
 };
 
