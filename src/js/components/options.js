@@ -75,6 +75,7 @@ const updateCollections = (collections) => {
 
       localStorage.setItem('s-collections', collections);
       success(json.message, 3);
+      chrome.runtime.sendMessage({ command: 'load-data' });
     }).catch(() => {
       spinner.stop();
       error('Oh Snap! An error occurred', 3);
