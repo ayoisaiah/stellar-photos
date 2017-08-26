@@ -6,15 +6,19 @@ const authorizeDropbox = (imageId, downloadUrl) => {
   const key = 'gscbxcjhou1jx21';
   chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
 
-  const interval = setInterval(() => {
-    const token = localStorage.getItem('dropbox-token');
-    if (token) {
-      if (imageId) {
-        saveToDropbox(imageId, downloadUrl);
+  chrome.storage.local.get('dropboxToken', (result) => {
+    const { dropboxToken } = result;
+
+    const interval = setInterval(() => {
+      if (dropboxToken) {
+        if (imageId) {
+          saveToDropbox(imageId, downloadUrl);
+        }
+
+        clearInterval(interval);
       }
-      clearInterval(interval);
-    }
-  }, 100);
+    }, 100);
+  });
 };
 
 const cloudStatus = (selectCloud) => {
@@ -24,34 +28,33 @@ const cloudStatus = (selectCloud) => {
     action.removeChild(action.lastChild);
   }
 
-  if (!localStorage.getItem(`${selected}`)) {
-    action.insertAdjacentHTML('beforeend', '<button class="authorize">Authorize</button>');
-    const authorize = document.querySelector('.authorize');
-    if (selected === 'dropbox-token') {
-      authorize.addEventListener('click', () => {
-        authorizeDropbox();
-      });
+  chrome.storage.local.get(`${selected}`, (result) => {
+    if (!result[`${selected}`]) {
+      action.insertAdjacentHTML('beforeend', '<button class="authorize">Authorize</button>');
+
+      const authorize = document.querySelector('.authorize');
+      if (selected === 'dropboxToken') {
+        authorize.addEventListener('click', () => {
+          authorizeDropbox();
+        });
+      }
+    } else {
+      action.insertAdjacentHTML('beforeend', '<span class="success-message">Authenticated</span>');
     }
-  } else {
-    action.insertAdjacentHTML('beforeend', '<span class="success-message">Authenticated</span>');
-  }
+  });
 };
 
 const tempUnit = (selectTempUnit) => {
   const selected = selectTempUnit[selectTempUnit.selectedIndex].value;
-  localStorage.setItem('s-tempUnit', selected);
+  chrome.storage.sync.set({ tempUnit: selected });
   chrome.runtime.sendMessage({ command: 'update-weather' });
 };
 
 const updateCoords = (coords) => {
-  chrome.storage.sync.set({
-    's-coords': coords,
-  }, () => {
-    localStorage.setItem('s-coords', JSON.stringify(coords));
+  chrome.storage.sync.set({ coords }, () => {
     success('Coordinates saved', 3);
+    chrome.runtime.sendMessage({ command: 'update-weather' });
   });
-
-  chrome.runtime.sendMessage({ command: 'update-weather' });
 };
 
 const updateCollections = (collections) => {
@@ -73,7 +76,7 @@ const updateCollections = (collections) => {
         return;
       }
 
-      localStorage.setItem('s-collections', collections);
+      chrome.storage.sync.set({ collections });
       success(json.message, 3);
       chrome.runtime.sendMessage({ command: 'load-data' });
     }).catch(() => {
