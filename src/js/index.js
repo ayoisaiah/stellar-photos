@@ -120,8 +120,8 @@ chrome.storage.local.get('nextImage', (result) => {
     saveToDropbox(imageId, downloadUrl);
   });
 
-  const infoPopover = document.querySelector('.info-popover');
-  infoPopover.addEventListener('click', () => {
+  const infoButton = document.querySelector('.info-button');
+  infoButton.addEventListener('click', () => {
     togglePopover('.info-popover');
   });
 
