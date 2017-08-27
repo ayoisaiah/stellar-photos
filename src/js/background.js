@@ -8,6 +8,11 @@ const getWeatherInfo = () => {
         }, forecast);
 
         chrome.storage.local.set({ forecast: f });
+
+        chrome.alarms.create('updateWeather', {
+          when: Date.now() + (1000 * 60 * 60),
+          periodInMinutes: 60,
+        });
       })
       .catch(error => console.log(error));
   };
@@ -16,12 +21,12 @@ const getWeatherInfo = () => {
     const { coords } = result;
     if (!coords) return;
 
-    const { longitude, latitude } = coords;
+    const { latitude, longitude } = coords;
 
     chrome.storage.sync.get('tempUnit', (data) => {
       const tempUnit = data.tempUnit || 'celsius';
       const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
-      sendRequest(longitude, latitude, metricSystem);
+      sendRequest(latitude, longitude, metricSystem);
     });
   });
 };
@@ -68,22 +73,6 @@ const loadNewData = () => {
 
       if (!forecast && coords) {
         getWeatherInfo();
-        return;
-      }
-
-      if (forecast) {
-        const { timestamp } = forecast;
-        if (timestamp) {
-          const lessThanOneHourAgo = () => {
-            const oneHour = 1000 * 60 * 60;
-            const oneHourAgo = Date.now() - oneHour;
-            return timestamp > oneHourAgo;
-          };
-
-          if (!lessThanOneHourAgo()) {
-            getWeatherInfo();
-          }
-        }
       }
     });
   });
@@ -119,5 +108,11 @@ chrome.runtime.onMessage.addListener((request, sender) => {
     case 'load-data': {
       loadNewData();
     }
+  }
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'updateWeather') {
+    getWeatherInfo();
   }
 });
