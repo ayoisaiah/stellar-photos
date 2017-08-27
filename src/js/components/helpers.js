@@ -17,6 +17,13 @@ const convertTimeStamp = (timestamp) => {
 };
 
 const togglePopover = (element) => {
+  const popover = document.querySelectorAll('.popover-content--is-visible');
+  if (popover) {
+    popover.forEach((e) => {
+      if (e.matches(`${element} .popover-content--is-visible`)) return;
+      e.classList.remove('popover-content--is-visible');
+    });
+  }
   const popoverContent = document.querySelector(`${element} .popover-content`);
   popoverContent.classList.toggle('popover-content--is-visible');
 };
