@@ -43,7 +43,8 @@ const fetchRandomPhoto = () => {
           history.unshift(data);
           chrome.storage.local.set({ history });
         });
-      });
+      })
+      .catch(error => console.log(error));
   };
 
   chrome.storage.sync.get('collections', (result) => {
