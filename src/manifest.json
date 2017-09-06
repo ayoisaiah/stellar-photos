@@ -21,8 +21,7 @@
   ],
   
   "background": {
-    "scripts": [ "js/background.js"],
-    "persistent": false
+    "scripts": [ "js/background.js"]
   },
 
   "content_scripts": [
@@ -30,5 +29,13 @@
       "matches": ["https://stellarapp.photos/*"],
       "js": ["js/tab.js"]
     }
-  ]
+  ],
+  
+  "applications": {
+    "gecko": {
+      "id": "stellar@stellarapp.photos",
+      "strict_min_version": "54.0",
+      "update_url": "https://stellarapp.photos/updates.json"
+    }
+  }
 }
