@@ -1,6 +1,10 @@
 {
-    "extends": "airbnb-base",
-    "plugins": [
-        "import"
-    ]
+    "extends": [
+      "airbnb-base"
+    ],
+
+    "env": {
+      "browser": true,
+      "webextensions": true
+    }
 }
