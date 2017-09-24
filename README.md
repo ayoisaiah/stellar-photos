@@ -6,9 +6,9 @@ Experience a beautiful photo from [Unsplash](https://unsplash.com/developers) ev
 
 ## Install Stellar
 
-Chrome | Firefox 
+Chrome | Firefox
 -------|---------
-<a href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo?hl=en"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/chrome/chrome_256x256.png" alt="Chrome browser logo"></a> | <a href="https://stellarapp.photos/downloads/stellar_photos-latest.xpi"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/firefox/firefox_256x256.png" alt="Firefox browser logo"></a> 
+<a href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo?hl=en"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/chrome/chrome_256x256.png" alt="Chrome browser logo"></a> | <a href="https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/firefox/firefox_256x256.png" alt="Firefox browser logo"></a>
 
 ## Features
 
