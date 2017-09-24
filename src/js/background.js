@@ -21,7 +21,7 @@ const getWeatherInfo = () => {
     chrome.storage.sync.get('tempUnit', (data) => {
       const tempUnit = data.tempUnit || 'celsius';
       const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
-      sendRequest(longitude, latitude, metricSystem);
+      sendRequest(latitude, longitude, metricSystem);
     });
   });
 };

@@ -37,8 +37,8 @@ chrome.storage.local.get('nextImage', (result) => {
             </section>
   
             <form class="s-collections">
-              <span class="label">Load photos from multiple custom collections by adding their IDs below separated by commas:</span>
-              <input type="text" name="latitude" class="s-collections__input" value="" placeholder="Collection IDs" /> <br>
+              <span class="label">Load photos from multiple <a style="text-decoration: underline;" href="https://unsplash.com/collections/">Unsplash collections</a> by adding their IDs below separated by commas:</span>
+              <input type="text" name="s-collections__input" class="s-collections__input" value="" placeholder="Collection IDs" /> <br>
               <button type="submit" class="update-collections ladda-button" data-spinner-color="#ffffff" data-style="expand-right"><span class="ladda-label">Save Collections</span></button>
             </form>
           </div>
@@ -186,8 +186,7 @@ chrome.storage.local.get('nextImage', (result) => {
     if (coords) {
       const longitudeInput = document.querySelector('.longitude');
       const latitudeInput = document.querySelector('.latitude');
-      const longitude = coords.longitude;
-      const latitude = coords.latitude;
+      const { longitude, latitude } = coords;
       longitudeInput.value = longitude;
       latitudeInput.value = latitude;
     }
