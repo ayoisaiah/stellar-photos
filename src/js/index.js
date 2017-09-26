@@ -14,12 +14,13 @@ alertify.defaults = {
   },
 };
 
+performance.mark('wastedTimeEnd');
+performance.measure('wastedTime', 'wastedTimeBegin', 'wastedTimeEnd');
+console.log('Time wasted:', performance.getEntriesByName('wastedTime')[0].duration);
+
 chrome.storage.local.get('nextImage', (result) => {
   const { nextImage } = result;
   if (nextImage) {
-    const body = document.querySelector('body');
-    body.style.backgroundImage = `url(${nextImage.base64})`;
-
     const controls = document.querySelector('.controls');
     controls.insertAdjacentHTML('beforeend', `
       <div class="popover options-popover">
