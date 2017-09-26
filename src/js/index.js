@@ -245,6 +245,7 @@ const loadMore = document.querySelector('.moreResults-button');
 loadMore.addEventListener('click', () => searchPhotos(state.searchKey, state.page));
 
 const searchButtonOpen = document.getElementById('searchButton-open');
+searchButtonOpen.classList.remove('hidden');
 searchButtonOpen.addEventListener('click', openSearch);
 
 const searchButtonClose = document.getElementById('searchButton-close');

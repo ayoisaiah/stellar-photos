@@ -5,8 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>New Tab - Stellar Photos</title>
+  <style>
+    /* Inline the critical CSS needed to display the background image */
+    body {
+      height: 100%;
+      background-color: #111;
+      background-size: cover;
+      background-position: 50%;
+      background-attachment: fixed;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .loader {
+      width: 300px;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .s-overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      animation: fadeIn 1s ease;
+      background-color: #111;
+      opacity: 0;
+      z-index: -1000;
+    }
+  </style>
   <script src="js/set-image.js"></script>
-  <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
 
@@ -16,7 +55,7 @@
 
   <main class="s-main">
 
-    <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
+    <button id="searchButton-open" class="searchButton searchButton-open hidden" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
       <svg class="icon icon--search">
         <use xlink:href="#icon-search"></use>
       </svg>
@@ -130,7 +169,5 @@
 
     </defs>
   </svg>
-  
-  <script src="js/index.js"></script>
 </body>
 </html>
