@@ -44,6 +44,26 @@
       opacity: 0;
       z-index: -1000;
     }
+
+    /* Also inline CSS for history pane to allow for smooth animation when main CSS
+    file is eventually loaded */
+
+    .s-history {
+      height: 150px;
+      transform: translateY(150px);
+      width: 100%;
+      overflow: hidden;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #111;
+      position: fixed;
+      transition: transform 0.5s;
+      z-index: 1000;
+      list-style: none;
+      display: flex;
+    }
+
   </style>
   <script src="js/set-image.js"></script>
 </head>
@@ -54,6 +74,13 @@
   <div class="loader" id="loader" style="transform: translateX(100%) translateY(-100%) rotate(45deg);"></div>
 
   <main class="s-main">
+    <button id="historyButton" class="historyButton historyButton-open hidden" title="toggle history menu" aria-label="Toggle History Menu">
+      <div>
+        <i class="bar1"></i>
+        <i class="bar2"></i>
+        <i class="bar3"></i>
+      </div>
+    </button>
 
     <button id="searchButton-open" class="searchButton searchButton-open hidden" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
       <svg class="icon icon--search">
@@ -93,7 +120,7 @@
 
     <!-- Footer ====================================================================== -->
 
-    <footer class="s-footer" id="s-footer">
+    <footer class="s-footer hidden" id="s-footer">
       <section class="weather"></section>
       <section class="controls"></section>
     </footer>
