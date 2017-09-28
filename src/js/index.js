@@ -225,17 +225,9 @@ chrome.storage.local.get('forecast', (result) => {
 chrome.storage.local.get('history', (result) => {
   const { history } = result;
   if (history) {
-    document.querySelector('.s-main').insertAdjacentHTML('afterbegin', `
-      <button id="historyButton" class="historyButton historyButton-open" title="toggle history menu" aria-label="Toggle History Menu">
-        <div>
-          <i class="bar1"></i>
-          <i class="bar2"></i>
-          <i class="bar3"></i>
-        </div>
-      </button>
-    `);
-
-    document.getElementById('historyButton').addEventListener('click', toggleHistory);
+    const historyButton = document.getElementById('historyButton');
+    historyButton.classList.remove('hidden');
+    historyButton.addEventListener('click', toggleHistory);
     displayHistory(history);
   }
 });
@@ -245,10 +237,13 @@ const loadMore = document.querySelector('.moreResults-button');
 loadMore.addEventListener('click', () => searchPhotos(state.searchKey, state.page));
 
 const searchButtonOpen = document.getElementById('searchButton-open');
+searchButtonOpen.classList.remove('hidden');
 searchButtonOpen.addEventListener('click', openSearch);
 
 const searchButtonClose = document.getElementById('searchButton-close');
 searchButtonClose.addEventListener('click', closeSearch);
+
+document.getElementById('s-footer').classList.remove('hidden');
 
 document.addEventListener('keyup', (e) => {
   if (e.keyCode === 27) {

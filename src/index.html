@@ -5,8 +5,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>New Tab - Stellar Photos</title>
+  <style>
+    /* Inline the critical CSS needed to display the background image */
+    body {
+      height: 100%;
+      background-color: #111;
+      background-size: cover;
+      background-position: 50%;
+      background-attachment: fixed;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .loader {
+      width: 300px;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .s-overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      animation: fadeIn 1s ease;
+      background-color: #111;
+      opacity: 0;
+      z-index: -1000;
+    }
+
+    /* Also inline CSS for history pane to allow for smooth animation when main CSS
+    file is eventually loaded */
+
+    .s-history {
+      height: 150px;
+      transform: translateY(150px);
+      width: 100%;
+      overflow: hidden;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #111;
+      position: fixed;
+      transition: transform 0.5s;
+      z-index: 1000;
+      list-style: none;
+      display: flex;
+    }
+
+  </style>
   <script src="js/set-image.js"></script>
-  <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
 
@@ -15,8 +74,15 @@
   <div class="loader" id="loader" style="transform: translateX(100%) translateY(-100%) rotate(45deg);"></div>
 
   <main class="s-main">
+    <button id="historyButton" class="historyButton historyButton-open hidden" title="toggle history menu" aria-label="Toggle History Menu">
+      <div>
+        <i class="bar1"></i>
+        <i class="bar2"></i>
+        <i class="bar3"></i>
+      </div>
+    </button>
 
-    <button id="searchButton-open" class="searchButton searchButton-open" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
+    <button id="searchButton-open" class="searchButton searchButton-open hidden" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
       <svg class="icon icon--search">
         <use xlink:href="#icon-search"></use>
       </svg>
@@ -54,7 +120,7 @@
 
     <!-- Footer ====================================================================== -->
 
-    <footer class="s-footer" id="s-footer">
+    <footer class="s-footer hidden" id="s-footer">
       <section class="weather"></section>
       <section class="controls"></section>
     </footer>
@@ -130,7 +196,5 @@
 
     </defs>
   </svg>
-  
-  <script src="js/index.js"></script>
 </body>
 </html>
