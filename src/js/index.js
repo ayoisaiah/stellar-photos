@@ -34,7 +34,7 @@ chrome.storage.local.get('nextImage', (result) => {
             </section>
   
             <form class="s-collections">
-              <span class="label">Load photos from multiple <a style="text-decoration: underline;" href="https://unsplash.com/collections/">Unsplash collections</a> by adding their IDs below separated by commas:</span>
+              <span class="label">Load photos from multiple <a href="https://unsplash.com/collections/">Unsplash collections</a> by adding their IDs below separated by commas:</span>
               <input type="text" name="s-collections__input" class="s-collections__input" value="" placeholder="Collection IDs" /> <br>
               <button type="submit" class="update-collections ladda-button" data-spinner-color="#ffffff" data-style="expand-right"><span class="ladda-label">Save Collections</span></button>
             </form>
@@ -50,11 +50,11 @@ chrome.storage.local.get('nextImage', (result) => {
             </section>
   
             <form class="weather-coords">
-              <span class="label">Paste your coordinates here to get current weather information.</span>
-              <label class="label" for="latitude">Latitude:</label>
-              <input type="text" name="latitude" class="latitude" placeholder="latitude" value="">
-              <label class="label" for="longitude" style="margin-top: 10px">Longitude:</label>
+              <span class="label">Paste <a href="https://www.latlong.net/">your coordinates</a> here to get current weather information.</span>
+              <label class="label longitude-label" for="longitude">Longitude:</label>
               <input type="text" name="longitude" class="longitude" placeholder="longitude" value="">
+              <label class="label latitude-label" for="latitude">Latitude:</label>
+              <input type="text" name="latitude" class="latitude" placeholder="latitude" value="">
               <button type="submit" class="update-coords">Save Coordinates</button>
             </form>
           </div>
