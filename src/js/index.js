@@ -1,6 +1,6 @@
 import alertify from 'alertifyjs';
 import timeago from 'timeago.js';
-import { convertTimeStamp, togglePopover } from './components/helpers';
+import { convertTimeStamp, togglePopover, chainableClassList } from './components/helpers';
 import saveToDropbox from './components/dropbox';
 import { openSearch, closeSearch, searchPhotos } from './components/search';
 import { toggleHistory, displayHistory } from './components/history';
@@ -226,7 +226,6 @@ chrome.storage.local.get('history', (result) => {
   const { history } = result;
   if (history) {
     const historyButton = document.getElementById('historyButton');
-    historyButton.classList.remove('hidden');
     historyButton.addEventListener('click', toggleHistory);
     displayHistory(history);
   }
@@ -237,13 +236,13 @@ const loadMore = document.querySelector('.moreResults-button');
 loadMore.addEventListener('click', () => searchPhotos(state.searchKey, state.page));
 
 const searchButtonOpen = document.getElementById('searchButton-open');
-searchButtonOpen.classList.remove('hidden');
 searchButtonOpen.addEventListener('click', openSearch);
 
 const searchButtonClose = document.getElementById('searchButton-close');
 searchButtonClose.addEventListener('click', closeSearch);
 
-document.getElementById('s-footer').classList.remove('hidden');
+const uiElements = document.querySelectorAll('.s-ui');
+uiElements.forEach(element => chainableClassList(element).remove('hidden'));
 
 document.addEventListener('keyup', (e) => {
   if (e.keyCode === 27) {

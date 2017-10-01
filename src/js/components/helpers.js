@@ -28,5 +28,27 @@ const togglePopover = (element) => {
   popoverContent.classList.toggle('popover-content--is-visible');
 };
 
+/* Because the native implementation of the classList API is not chainable */
+const chainableClassList = (element) => {
+  const { classList } = element;
 
-export { convertTimeStamp, togglePopover };
+  return {
+    toggle: function toggle(c) {
+      classList.toggle(c);
+      return this;
+    },
+
+    add: function add(c) {
+      classList.add(c);
+      return this;
+    },
+
+    remove: function remove(c) {
+      classList.remove(c);
+      return this;
+    },
+
+  };
+};
+
+export { convertTimeStamp, togglePopover, chainableClassList };

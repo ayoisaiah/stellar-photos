@@ -16,14 +16,14 @@
     }
 
     .hidden {
-      display: none;
+      display: none !important;
     }
 
     .loader {
       width: 300px;
     }
 
-    @keyframes fadeIn {
+    @keyframes fadeOut {
       0% {
         opacity: 0.5;
       }
@@ -39,7 +39,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      animation: fadeIn 1s ease;
+      animation: fadeOut 1s ease;
       background-color: #111;
       opacity: 0;
       z-index: -1000;
@@ -76,7 +76,7 @@
   <div class="loader" id="loader" style="transform: translateX(100%) translateY(-100%) rotate(45deg);"></div>
 
   <main class="s-main">
-    <button id="historyButton" class="historyButton historyButton-open hidden" title="toggle history menu" aria-label="Toggle History Menu">
+    <button id="historyButton" class="s-ui historyButton historyButton-open hidden" title="toggle history menu" aria-label="Toggle History Menu">
       <div>
         <i class="bar1"></i>
         <i class="bar2"></i>
@@ -84,7 +84,7 @@
       </div>
     </button>
 
-    <button id="searchButton-open" class="searchButton searchButton-open hidden" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
+    <button id="searchButton-open" class="s-ui searchButton searchButton-open hidden" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
       <svg class="icon icon--search">
         <use xlink:href="#icon-search"></use>
       </svg>
@@ -92,7 +92,7 @@
 
     <!-- History ====================================================================== -->
 
-    <ul class="s-history" id="s-history"></ul>
+    <ul class="hidden s-history" id="s-history"></ul>
 
     <!-- Search ====================================================================== -->
 
@@ -122,7 +122,7 @@
 
     <!-- Footer ====================================================================== -->
 
-    <footer class="s-footer hidden" id="s-footer">
+    <footer class="s-ui s-footer hidden" id="s-footer">
       <section class="weather"></section>
       <section class="controls"></section>
     </footer>

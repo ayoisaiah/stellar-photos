@@ -6,6 +6,8 @@ const toggleHistory = () => {
 
 const displayHistory = (history) => {
   const historyMenu = document.getElementById('s-history');
+  historyMenu.classList.remove('hidden');
+
   history.map((photo) => {
     const backgroundImg = photo.base64;
     const largeSrc = photo.urls.regular;
