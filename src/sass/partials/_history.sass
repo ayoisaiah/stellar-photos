@@ -1,14 +1,15 @@
 .s-history
 
+  @media screen and (max-width: 1440px)
+    grid-template-rows: repeat(2, 1fr)
+    grid-template-columns: repeat(5, 1fr)
+    
+  
   &.open
     transform: translateY(0)
 
   .s-photo
-    width: 10%
     height: 140px
-    margin-left: 4px
-    margin-top: 4px
-    display: inline-block
 
   .s-photo-actions
     padding: 8px

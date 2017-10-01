@@ -45,9 +45,6 @@
       z-index: -1000;
     }
 
-    /* Also inline CSS for history pane to allow for smooth animation when main CSS
-    file is eventually loaded */
-
     .s-history {
       height: 150px;
       transform: translateY(150px);
@@ -60,8 +57,13 @@
       position: fixed;
       transition: transform 0.5s;
       z-index: 1000;
+      padding-top: 4px;
+      overflow-y: auto;
       list-style: none;
-      display: flex;
+      display: grid;
+      grid-template-rows: 1fr;
+      grid-template-columns: repeat(10, 1fr);
+      grid-gap: 4px;
     }
 
   </style>
