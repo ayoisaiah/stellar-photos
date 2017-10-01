@@ -8,6 +8,8 @@ const flatten = require('gulp-flatten');
 const glob = require('glob');
 const uglify = require('gulp-uglify');
 const buffer = require('vinyl-buffer');
+const plumber = require('gulp-plumber');
+const notify = require('gulp-notify');
 
 gulp.task('copyStaticFiles', () => gulp.src([
   './src/**/*.*',
@@ -25,6 +27,14 @@ gulp.task('build', (done) => {
     })
       .transform(babelify)
       .bundle()
+      .pipe(plumber({
+        errorhandler: (error) => {
+          notify.onError({
+            title: `Gulp error in ${error.plugin}`,
+            message: error.toString(),
+          })(err);
+        },
+      }))
       .pipe(vinylSource(entry))
       .pipe(buffer())
       .pipe(uglify())
@@ -35,6 +45,14 @@ gulp.task('build', (done) => {
 });
 
 gulp.task('sass', () => gulp.src('./src/sass/main.sass')
+  .pipe(plumber({
+    errorhandler: (err) => {
+      notify.onError({
+        title: `Gulp error in ${err.plugin}`,
+        message: err.toString(),
+      })(err);
+    },
+  }))
   .pipe(sass({ outputStyle: 'compressed' }))
   .pipe(gulp.dest('./dist/css')));
 
