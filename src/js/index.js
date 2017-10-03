@@ -264,5 +264,3 @@ document.addEventListener('click', (node) => {
   const popover = document.querySelectorAll('.popover .popover-content');
   popover.forEach(e => e.classList.remove('popover-content--is-visible'));
 });
-
-chrome.runtime.sendMessage({ command: 'load-data' });

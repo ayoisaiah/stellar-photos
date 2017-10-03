@@ -6,6 +6,8 @@ chrome.storage.local.get('nextImage', (result) => {
   }
 });
 
+chrome.runtime.sendMessage({ command: 'load-data' });
+
 const loadCss = url => new Promise((resolve, reject) => {
   const link = document.createElement('link');
   link.type = 'text/css';
