@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Stellar Photos",
-  "version": "1.11.45",
+  "version": "1.11.50",
   "description": "Experience a beautiful photo from Unsplash every time you open a new tab alongside current weather information for your city",
 
   "icons": {
