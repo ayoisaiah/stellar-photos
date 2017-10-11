@@ -1,5 +1,6 @@
 import state from './state';
 import observer from './observer';
+import purify from './purify-dom';
 
 const displayPhotos = (photos, total) => {
   photos.map((photo) => {
@@ -16,7 +17,7 @@ const displayPhotos = (photos, total) => {
     const searchResults = document.querySelector('.searchResults');
 
     searchResults.insertAdjacentHTML('beforeend',
-      `<li class="s-photo" id="photo-${imageId}" data-largesrc="${largeSrc}" style="background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;">
+      purify.sanitize(`<li class="s-photo" id="photo-${imageId}" data-largesrc="${largeSrc}" style="background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;">
        <div class="s-photo-actions">
           <div class="top">
             <a class="user" href="${user}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" rel="noreferrer">
@@ -31,8 +32,8 @@ const displayPhotos = (photos, total) => {
             <svg style="fill: #fafafa;" data-imageid="${imageId}" data-downloadurl="${downloadUrl}" class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid="${imageId}" data-downloadurl="${downloadUrl}" class="icon icon--cloud"></use></svg></div>
           </div>
         </div>
-      </li>`,
-    );
+      </li>`, { ADD_TAGS: ['use'] },
+      ));
   });
 
   const loadMore = document.querySelector('.moreResults-button');

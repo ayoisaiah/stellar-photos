@@ -1,3 +1,5 @@
+import purify from './purify-dom';
+
 const toggleHistory = () => {
   document.getElementById('s-history').classList.toggle('open');
   document.getElementById('s-footer').classList.toggle('history-open');
@@ -18,7 +20,7 @@ const displayHistory = (history) => {
     const userDp = `${photo.user.profile_image.small}`;
 
     historyMenu.insertAdjacentHTML('beforeend',
-      `<li class="s-photo" id="photo-${imageId}" data-largesrc="${largeSrc}" style="background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;">
+      purify.sanitize(`<li class="s-photo" id="photo-${imageId}" data-largesrc="${largeSrc}" style="background: url(${backgroundImg}) rgb(239, 239, 239) top center no-repeat; background-size: cover;">
        <div class="s-photo-actions">
           <div class="top">
             <a href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" target="_blank" rel="noreferrer" title="View photo on Unsplash"><svg style="fill: #fafafa;" class="icon icon--anchor"><use xlink:href="#icon-anchor"></use></a>
@@ -33,8 +35,8 @@ const displayHistory = (history) => {
             </div>
           </div>
         </div>
-      </li>`,
-    );
+      </li>`, { ADD_TAGS: ['use'] },
+      ));
   });
 };
 
