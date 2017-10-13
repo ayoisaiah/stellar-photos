@@ -99,8 +99,8 @@ chrome.runtime.onMessage.addListener((request, sender) => {
       chrome.notifications.create('dropbox-notification', {
         type: 'basic',
         iconUrl: chrome.extension.getURL('icons/48.png'),
-        title: 'Stellar Photos',
-        message: 'Dropbox authenticated successfully',
+        title: 'Dropbox authentication was successful',
+        message: 'You can now save photos to your Dropbox!',
       });
 
       chrome.runtime.sendMessage({ command: 'update-cloud-status' });

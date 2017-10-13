@@ -1,4 +1,3 @@
-import { error, dismissAll, success, notify } from 'alertifyjs';
 import { authorizeDropbox } from './options';
 
 const saveToDropbox = (imageId, downloadUrl) => {
@@ -10,21 +9,39 @@ const saveToDropbox = (imageId, downloadUrl) => {
       return;
     }
 
-    notify(`Saving photo-${imageId} to your Dropbox`, 'notify', 3);
+    const loader = document.getElementById('loader');
+    loader.classList.add('loader-active');
 
     fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${dropboxToken}`)
       .then(response => response.json())
       .then((json) => {
-        dismissAll();
+        loader.classList.remove('loader-active');
         if (json.error) {
-          error('Oh Snap! There was a problem saving to Drobox', 3)
+          chrome.notifications.create(`notify-dropbox-${imageId}`, {
+            type: 'basic',
+            iconUrl: chrome.extension.getURL('icons/48.png'),
+            title: 'Oh Snap!',
+            message: 'There was a problem saving to Dropbox',
+          });
+
           return;
         }
-        success(`photo-${imageId} saved successfully to Dropbox`, 3);
+
+        chrome.notifications.create(`notify-dropbox-${imageId}`, {
+          type: 'basic',
+          iconUrl: chrome.extension.getURL('icons/48.png'),
+          title: '1 file uploaded',
+          message: `photo-${imageId} was saved successfully to Dropbox`,
+        });
       })
       .catch(() => {
-        dismissAll();
-        error('Oh Snap! There was a problem saving to Drobox', 3);
+        loader.classList.remove('loader-active');
+        chrome.notifications.create(`notify-dropbox-${imageId}`, {
+          type: 'basic',
+          iconUrl: chrome.extension.getURL('icons/48.png'),
+          title: 'Oh Snap!',
+          message: 'There was a problem saving to Dropbox',
+        });
       });
   });
 };

@@ -1,4 +1,3 @@
-import alertify from 'alertifyjs';
 import timeago from 'timeago.js';
 import { convertTimeStamp, togglePopover, chainableClassList } from './components/helpers';
 import purify from './components/purify-dom';
@@ -8,12 +7,6 @@ import { toggleHistory, displayHistory } from './components/history';
 import { handleClick, handleSubmit } from './components/handle';
 import state from './components/state';
 import { cloudStatus, tempUnit, updateCoords, updateCollections } from './components/options';
-
-alertify.defaults = {
-  notifier: {
-    position: 'top-right',
-  },
-};
 
 chrome.storage.local.get('nextImage', (result) => {
   const { nextImage } = result;

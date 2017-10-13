@@ -1,4 +1,3 @@
-import { error } from 'alertifyjs';
 import Ladda from 'ladda';
 import state from './state';
 import displayPhotos from './displayPhotos';
@@ -44,7 +43,13 @@ const searchPhotos = (key, page) => {
       }
 
       if (json.photos.total === 0) {
-        error('Oh Snap! No images match your search', 3);
+        chrome.notifications.create('notify-search', {
+          type: 'basic',
+          iconUrl: chrome.extension.getURL('icons/48.png'),
+          title: 'Oh Snap! No images match your search',
+          message: 'Try different or more general keywords',
+        });
+
         return;
       }
 
@@ -63,7 +68,12 @@ const searchPhotos = (key, page) => {
         spinner.stop();
       }
 
-      error('Oh Snap! An error occurred', 3);
+      chrome.notifications.create('notify-search', {
+        type: 'basic',
+        iconUrl: chrome.extension.getURL('icons/48.png'),
+        title: 'Stellar Photos',
+        message: 'Oh Snap! An error occurred',
+      });
     });
 };
 

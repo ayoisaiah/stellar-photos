@@ -1,5 +1,5 @@
 import Ladda from 'ladda';
-import { success, error } from 'alertifyjs';
+import purify from './purify-dom';
 import saveToDropbox from './dropbox';
 
 const authorizeDropbox = (imageId, downloadUrl) => {
@@ -30,7 +30,7 @@ const cloudStatus = (selectCloud) => {
 
   chrome.storage.local.get(`${selected}`, (result) => {
     if (!result[`${selected}`]) {
-      action.insertAdjacentHTML('beforeend', '<button class="authorize">Authorize</button>');
+      action.insertAdjacentHTML('beforeend', purify.sanitize('<button class="authorize">Authorize</button>'));
 
       const authorize = document.querySelector('.authorize');
       if (selected === 'dropboxToken') {
@@ -39,7 +39,7 @@ const cloudStatus = (selectCloud) => {
         });
       }
     } else {
-      action.insertAdjacentHTML('beforeend', '<span class="success-message">Authenticated</span>');
+      action.insertAdjacentHTML('beforeend', purify.sanitize('<span class="success-message">Authenticated</span>'));
     }
   });
 };
@@ -52,14 +52,26 @@ const tempUnit = (selectTempUnit) => {
 
 const updateCoords = (coords) => {
   chrome.storage.sync.set({ coords }, () => {
-    success('Coordinates saved', 3);
+    chrome.notifications.create('update-coords', {
+      type: 'basic',
+      iconUrl: chrome.extension.getURL('icons/48.png'),
+      title: 'Stellar Photos',
+      message: 'Coordinates updated successfully',
+    });
+
     chrome.runtime.sendMessage({ command: 'update-weather' });
   });
 };
 
 const updateCollections = (collections) => {
   if (!collections) {
-    error('Collection IDs not valid!');
+    chrome.notifications.create('update-collections', {
+      type: 'basic',
+      iconUrl: chrome.extension.getURL('icons/48.png'),
+      title: 'Stellar Photos',
+      message: 'Collection IDs not valid!',
+    });
+
     return;
   }
 
@@ -72,16 +84,31 @@ const updateCollections = (collections) => {
       spinner.stop();
       const json = JSON.parse(data);
       if (json.error) {
-        error(json.message, 3);
+        chrome.notifications.create('update-collections', {
+          type: 'basic',
+          iconUrl: chrome.extension.getURL('icons/48.png'),
+          title: 'Stellar Photos',
+          message: json.message,
+        });
         return;
       }
 
       chrome.storage.sync.set({ collections });
-      success(json.message, 3);
+      chrome.notifications.create('update-collections', {
+        type: 'basic',
+        iconUrl: chrome.extension.getURL('icons/48.png'),
+        title: 'Stellar Photos',
+        message: json.message,
+      });
       chrome.runtime.sendMessage({ command: 'load-data' });
     }).catch(() => {
       spinner.stop();
-      error('Oh Snap! An error occurred', 3);
+      chrome.notifications.create('update-collections', {
+        type: 'basic',
+        iconUrl: chrome.extension.getURL('icons/48.png'),
+        title: 'Stellar Photos',
+        message: 'Oh Snap! An error occurred',
+      });
     });
 };
 
