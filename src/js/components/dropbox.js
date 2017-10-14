@@ -20,8 +20,8 @@ const saveToDropbox = (imageId, downloadUrl) => {
           chrome.notifications.create(`notify-dropbox-${imageId}`, {
             type: 'basic',
             iconUrl: chrome.extension.getURL('icons/48.png'),
-            title: 'Oh Snap!',
-            message: 'There was a problem saving to Dropbox',
+            title: 'Unable to save photo to Dropbox',
+            message: 'Having problems? Please try again.',
           });
 
           return;
@@ -35,12 +35,14 @@ const saveToDropbox = (imageId, downloadUrl) => {
         });
       })
       .catch(() => {
+        const message = (navigator.onLine) ? 'Unable to upload photo due to a server error' : 'There is no internet connection';
+
         loader.classList.remove('loader-active');
         chrome.notifications.create(`notify-dropbox-${imageId}`, {
           type: 'basic',
           iconUrl: chrome.extension.getURL('icons/48.png'),
-          title: 'Oh Snap!',
-          message: 'There was a problem saving to Dropbox',
+          title: 'We can\'t connect to Dropbox',
+          message,
         });
       });
   });

@@ -46,7 +46,7 @@ const searchPhotos = (key, page) => {
         chrome.notifications.create('notify-search', {
           type: 'basic',
           iconUrl: chrome.extension.getURL('icons/48.png'),
-          title: 'Oh Snap! No images match your search',
+          title: 'No images match your search',
           message: 'Try different or more general keywords',
         });
 
@@ -68,11 +68,13 @@ const searchPhotos = (key, page) => {
         spinner.stop();
       }
 
+      const message = (navigator.onLine) ? 'Oh Snap! An error occurred' : 'There is no internet connection';
+
       chrome.notifications.create('notify-search', {
         type: 'basic',
         iconUrl: chrome.extension.getURL('icons/48.png'),
         title: 'Stellar Photos',
-        message: 'Oh Snap! An error occurred',
+        message,
       });
     });
 };
