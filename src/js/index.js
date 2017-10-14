@@ -20,7 +20,7 @@ chrome.storage.local.get('nextImage', (result) => {
         <div class="popover-content">
           <div>
             <section class="saveTo">
-              <span class="label">Cloud storage</span>
+              <span class="label">Connect and sync photos to your Dropbox. <a href="https://github.com/ayoisaiah/stellar-photos/wiki/Privacy-Policy">Privacy Policy</a></span>
               <select class="chooseCloudStorage">
                 <option value="dropboxToken" selected>Dropbox</option>
               </select>
