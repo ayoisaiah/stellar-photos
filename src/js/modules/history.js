@@ -1,4 +1,4 @@
-import purify from './purify-dom';
+import purify from '../libs/purify-dom';
 
 const toggleHistory = () => {
   document.getElementById('s-history').classList.toggle('open');

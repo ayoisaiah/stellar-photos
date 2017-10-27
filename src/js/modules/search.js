@@ -1,5 +1,5 @@
 import Ladda from 'ladda';
-import state from './state';
+import state from '../libs/state';
 import displayPhotos from './displayPhotos';
 
 const openSearch = () => {

@@ -1,5 +1,5 @@
 import saveToDropbox from './dropbox';
-import { searchPhotos } from './search';
+import { searchPhotos } from '../modules/search';
 import state from './state';
 import observer from './observer';
 
@@ -23,7 +23,7 @@ const handleSubmit = () => {
 
   // Reset state
   state.page = 1;
-  state.searchKey =  document.getElementById('searchForm-input').value;
+  state.searchKey = document.getElementById('searchForm-input').value;
   state.results = [];
   state.incomingResults = [];
 

@@ -1,6 +1,6 @@
-import state from './state';
-import observer from './observer';
-import purify from './purify-dom';
+import state from '../libs/state';
+import observer from '../libs/observer';
+import purify from '../libs/purify-dom';
 
 const displayPhotos = (photos, total) => {
   photos.map((photo) => {

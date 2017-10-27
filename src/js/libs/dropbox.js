@@ -1,4 +1,4 @@
-import { authorizeDropbox } from './options';
+import { authorizeDropbox } from '../modules/options';
 
 const saveToDropbox = (imageId, downloadUrl) => {
   chrome.storage.local.get('dropboxToken', (result) => {

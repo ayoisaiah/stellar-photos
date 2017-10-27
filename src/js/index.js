@@ -1,12 +1,12 @@
 import timeago from 'timeago.js';
-import { convertTimeStamp, togglePopover, chainableClassList } from './components/helpers';
-import purify from './components/purify-dom';
-import saveToDropbox from './components/dropbox';
-import { openSearch, closeSearch, searchPhotos } from './components/search';
-import { toggleHistory, displayHistory } from './components/history';
-import { handleClick, handleSubmit } from './components/handle';
-import state from './components/state';
-import { cloudStatus, tempUnit, updateCoords, updateCollections } from './components/options';
+import { convertTimeStamp, togglePopover, chainableClassList } from './libs/helpers';
+import purify from './libs/purify-dom';
+import saveToDropbox from './libs/dropbox';
+import { openSearch, closeSearch, searchPhotos } from './modules/search';
+import { toggleHistory, displayHistory } from './modules/history';
+import { handleClick, handleSubmit } from './libs/handle';
+import state from './libs/state';
+import { cloudStatus, tempUnit, updateCoords, updateCollections } from './modules/options';
 
 chrome.storage.local.get('nextImage', (result) => {
   const { nextImage } = result;

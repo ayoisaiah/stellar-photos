@@ -1,5 +1,5 @@
 import state from './state';
-import { searchPhotos } from './search';
+import { searchPhotos } from '../modules/search';
 
 const options = {
   // If user scrolls within 1200px of the `More Photos` button, request next page

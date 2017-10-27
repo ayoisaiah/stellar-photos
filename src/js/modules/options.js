@@ -1,6 +1,6 @@
 import Ladda from 'ladda';
-import purify from './purify-dom';
-import saveToDropbox from './dropbox';
+import purify from '../libs/purify-dom';
+import saveToDropbox from '../libs/dropbox';
 
 const authorizeDropbox = (imageId, downloadUrl) => {
   const key = 'gscbxcjhou1jx21';
