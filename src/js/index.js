@@ -8,15 +8,14 @@ import { handleClick, handleSubmit } from './components/handle';
 import state from './components/state';
 import { cloudStatus, tempUnit, updateCoords, updateCollections } from './components/options';
 
-chrome.storage.local.get('nextImage', (result) => {
-  const { nextImage } = result;
+window.nextImage.then(nextImage => {
   if (nextImage) {
     const controls = document.querySelector('.controls');
     controls.insertAdjacentHTML('beforeend', purify.sanitize(`
       <div class="popover options-popover">
         <button class="control-button options-button" title="Options">
           <svg class="icon icon-settings"><use href="#icon-settings"></use></svg>
-        </button> 
+        </button>
         <div class="popover-content">
           <div>
             <section class="saveTo">
@@ -26,14 +25,14 @@ chrome.storage.local.get('nextImage', (result) => {
               </select>
               <span class="action"></span>
             </section>
-  
+
             <form class="s-collections">
               <span class="label">Load photos from multiple <a href="https://unsplash.com/collections/">Unsplash collections</a> by adding their IDs below separated by commas:</span>
               <input type="text" name="s-collections__input" class="s-collections__input" value="" placeholder="Collection IDs" /> <br>
               <button type="submit" class="update-collections ladda-button" data-spinner-color="#ffffff" data-style="expand-right"><span class="ladda-label">Save Collections</span></button>
             </form>
           </div>
-  
+
           <div>
             <section class="temperature-unit">
               <span class="label">Temperature Unit</span>
@@ -42,7 +41,7 @@ chrome.storage.local.get('nextImage', (result) => {
                 <option value="fahrenheit">Fahrenheit</option>
               </select>
             </section>
-  
+
             <form class="weather-coords">
               <span class="label">Paste <a href="https://www.latlong.net/">your coordinates</a> here to get current weather information.</span>
               <label class="label longitude-label" for="longitude">Longitude:</label>
@@ -52,22 +51,22 @@ chrome.storage.local.get('nextImage', (result) => {
               <button type="submit" class="update-coords">Save Coordinates</button>
             </form>
           </div>
-  
+
         </div>
       </div>
-  
+
       <a href="${nextImage.links.download}?force=true" class="control-button download-button" download title="Download photo">
         <svg class="icon icon-download"><use href="#icon-download"></use></svg>
       </a>
-  
+
       <button data-imageid="${nextImage.id}" data-downloadurl="${nextImage.links.download}" class="control-button dropbox-button" title="Save photo to Dropbox">
         <svg class="icon icon-cloud"><use href="#icon-cloud"></use></svg>
       </button>
-  
+
       <div class="popover info-popover">
         <button class="control-button info-button">
           <svg class="icon icon-info"><use href="#icon-info"></use></svg>
-        </button> 
+        </button>
         <ul class="popover-content"></ul>
       </div>
     `, { ADD_TAGS: ['use'] }));

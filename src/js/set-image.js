@@ -1,9 +1,13 @@
-chrome.storage.local.get('nextImage', (result) => {
-  const { nextImage } = result;
-  if (nextImage) {
-    const body = document.querySelector('body');
-    body.style.backgroundImage = `url(${nextImage.base64})`;
-  }
+window.nextImage = new Promise(resolve => {
+  chrome.storage.local.get('nextImage', (result) => {
+    const { nextImage } = result;
+    if (nextImage) {
+      window.currentImage = nextImage;
+      const body = document.querySelector('body');
+      body.style.backgroundImage = `url(${nextImage.base64})`;
+    }
+    resolve(nextImage);
+  });
 });
 
 chrome.runtime.sendMessage({ command: 'load-data' });
