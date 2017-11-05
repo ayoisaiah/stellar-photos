@@ -1,6 +1,11 @@
 import Ladda from 'ladda';
-import state from '../libs/state';
 import displayPhotos from './displayPhotos';
+import purify from '../libs/purify-dom';
+import state from '../libs/state';
+import { handleClick, handleSubmit } from '../libs/handle';
+import loadingIndicator from '../libs/loading-indicator';
+import searchButton from '../components/search-button';
+import searchForm from '../components/search-form';
 
 const openSearch = () => {
   document.getElementById('searchButton-open').classList.add('hidden');
@@ -16,11 +21,10 @@ const closeSearch = () => {
 
 const searchPhotos = (key, page) => {
   state.isLoading = true;
-  const loader = document.getElementById('loader');
 
   // Activate circular loader on first search
   if (page === 1) {
-    loader.classList.add('loader-active');
+    loadingIndicator().start();
   }
 
   const spinner = Ladda.create(document.querySelector('.moreResults-button'));
@@ -35,7 +39,7 @@ const searchPhotos = (key, page) => {
       state.isLoading = false;
 
       if (page === 1) {
-        loader.classList.remove('loader-active');
+        loadingIndicator().stop();
       }
 
       if (page > 1) {
@@ -61,7 +65,7 @@ const searchPhotos = (key, page) => {
       state.isLoading = false;
 
       if (page === 1) {
-        loader.classList.remove('loader-active');
+        loadingIndicator().stop();
       }
 
       if (page > 1) {
@@ -79,4 +83,37 @@ const searchPhotos = (key, page) => {
     });
 };
 
-export { openSearch, closeSearch, searchPhotos };
+const initializeSearch = () => {
+  const main = document.querySelector('.s-main');
+  main.insertAdjacentHTML('beforeend',
+    purify.sanitize(`${searchButton()} ${searchForm()}`, {
+      SANITIZE_DOM: false, ADD_TAGS: ['use'],
+    }));
+
+  const loadMore = document.querySelector('.moreResults-button');
+  loadMore
+    .addEventListener('click', () => searchPhotos(state.searchKey, state.page));
+
+  const searchButtonOpen = document.getElementById('searchButton-open');
+  searchButtonOpen.addEventListener('click', openSearch);
+
+  const searchButtonClose = document.getElementById('searchButton-close');
+  searchButtonClose.addEventListener('click', closeSearch);
+
+  document.addEventListener('keyup', (e) => {
+    if (e.keyCode === 27) {
+      closeSearch();
+    }
+  });
+
+  document.getElementById('searchForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    closeSearch();
+    handleSubmit();
+  });
+
+  document.getElementById('searchResults')
+    .addEventListener('click', handleClick);
+};
+
+export { openSearch, closeSearch, searchPhotos, initializeSearch };

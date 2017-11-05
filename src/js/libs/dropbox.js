@@ -1,21 +1,28 @@
-import { authorizeDropbox } from '../modules/options';
+import loadingIndicator from '../libs/loading-indicator';
+
+const authorizeDropbox = () => {
+  const key = 'gscbxcjhou1jx21';
+  chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
+};
 
 const saveToDropbox = (imageId, downloadUrl) => {
   chrome.storage.local.get('dropboxToken', (result) => {
     const { dropboxToken } = result;
 
     if (!dropboxToken) {
-      authorizeDropbox(imageId, downloadUrl);
+      // TODO: Find a way to save image to dropbox if authorizing succeeds
+      authorizeDropbox();
       return;
     }
 
-    const loader = document.getElementById('loader');
-    loader.classList.add('loader-active');
+
+    loadingIndicator().start();
 
     fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${dropboxToken}`)
       .then(response => response.json())
       .then((json) => {
-        loader.classList.remove('loader-active');
+        loadingIndicator().stop();
+
         if (json.error) {
           chrome.notifications.create(`notify-dropbox-${imageId}`, {
             type: 'basic',
@@ -37,7 +44,8 @@ const saveToDropbox = (imageId, downloadUrl) => {
       .catch(() => {
         const message = (navigator.onLine) ? 'Unable to upload photo due to a server error' : 'There is no internet connection';
 
-        loader.classList.remove('loader-active');
+        loadingIndicator().stop();
+
         chrome.notifications.create(`notify-dropbox-${imageId}`, {
           type: 'basic',
           iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -48,4 +56,4 @@ const saveToDropbox = (imageId, downloadUrl) => {
   });
 };
 
-export default saveToDropbox;
+export { authorizeDropbox, saveToDropbox };

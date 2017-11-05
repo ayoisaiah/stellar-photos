@@ -1,9 +1,9 @@
-import saveToDropbox from './dropbox';
+import { saveToDropbox } from './dropbox';
 import { searchPhotos } from '../modules/search';
 import state from './state';
 import observer from './observer';
 
-const handleClick = (e) => {
+const handleClick = function handleClick(e) {
   if (!e.target.matches('.icon--cloud')) return;
   const target = e.target;
   const imageid = target.dataset.imageid;

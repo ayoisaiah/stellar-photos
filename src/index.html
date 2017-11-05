@@ -73,43 +73,7 @@
 
   <div class="s-overlay"></div>
 
-  <div class="loader" id="loader" style="transform: translateX(100%) translateY(-100%) rotate(45deg);"></div>
-
-  <main class="s-main">
-    <button id="historyButton" class="s-ui historyButton historyButton-open hidden" title="toggle history menu" aria-label="Toggle History Menu">
-      <div>
-        <i class="bar1"></i>
-        <i class="bar2"></i>
-        <i class="bar3"></i>
-      </div>
-    </button>
-
-    <button id="searchButton-open" class="s-ui searchButton searchButton-open hidden" aria-label="Open search form" style="position:fixed; width: 40px; height: 40px; top: 20px; right: 20px;">
-      <svg class="icon icon--search">
-        <use xlink:href="#icon-search"></use>
-      </svg>
-    </button>
-
-    <!-- History ====================================================================== -->
-
-    <ul class="hidden s-history" id="s-history"></ul>
-
-    <!-- Search ====================================================================== -->
-
-    <section class="s-search" id="s-search" style="opacity: 0">
-      <button id="searchButton-close" class="searchButton searchButton-close" aria-label="Close search form">
-        <svg class="icon icon--cross">
-          <use xlink:href="#icon-cross"></use>
-        </svg>
-      </button>
-      <form class="searchForm" id="searchForm" action="">
-        <input class="searchForm-input" id="searchForm-input" name="search" type="search" placeholder="find hi-res photos" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        <span class="searchForm-info">Hit Enter to search or ESC to close</span>
-      </form>
-    </section>
-
-    <!-- Search Results  ====================================================================== -->
-
+  <main class="s-main" id="s-main">
     <section class="s-container">
 
       <ul class="searchResults" id="searchResults"></ul>
@@ -119,13 +83,6 @@
       </section>
 
     </section>
-
-    <!-- Footer ====================================================================== -->
-
-    <footer class="s-ui s-footer hidden" id="s-footer">
-      <section class="weather"></section>
-      <section class="controls"></section>
-    </footer>
   </main>
 
   <!-- SVG Symbol Definitions ====================================================================== -->

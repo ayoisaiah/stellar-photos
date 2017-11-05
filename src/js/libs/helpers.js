@@ -51,4 +51,6 @@ const chainableClassList = (element) => {
   };
 };
 
-export { convertTimeStamp, togglePopover, chainableClassList };
+const $ = document.getElementById.bind(document);
+
+export { convertTimeStamp, togglePopover, chainableClassList, $ };

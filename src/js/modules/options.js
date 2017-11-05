@@ -1,29 +1,13 @@
 import Ladda from 'ladda';
 import purify from '../libs/purify-dom';
-import saveToDropbox from '../libs/dropbox';
-
-const authorizeDropbox = (imageId, downloadUrl) => {
-  const key = 'gscbxcjhou1jx21';
-  chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
-
-  chrome.storage.local.get('dropboxToken', (result) => {
-    const { dropboxToken } = result;
-
-    const interval = setInterval(() => {
-      if (dropboxToken) {
-        if (imageId) {
-          saveToDropbox(imageId, downloadUrl);
-        }
-
-        clearInterval(interval);
-      }
-    }, 100);
-  });
-};
+import { authorizeDropbox } from '../libs/dropbox';
+import { togglePopover } from '../libs/helpers';
+import optionsPopover from '../components/options-popover';
 
 const cloudStatus = (selectCloud) => {
   const selected = selectCloud[selectCloud.selectedIndex].value;
   const action = document.querySelector('.action');
+
   while (action.hasChildNodes()) {
     action.removeChild(action.lastChild);
   }
@@ -112,4 +96,89 @@ const updateCollections = (collections) => {
     });
 };
 
-export { authorizeDropbox, cloudStatus, tempUnit, updateCoords, updateCollections };
+const loadOptions = () => {
+  const controls = document.querySelector('.controls');
+
+  controls.insertAdjacentHTML('afterbegin', purify.sanitize(`
+    ${optionsPopover()}
+    
+      `, { ADD_TAGS: ['use'] }));
+
+  const optionsButton = document.querySelector('.options-button');
+  optionsButton.addEventListener('click', () => {
+    togglePopover('.options-popover');
+  });
+
+  const selectCloud = document.querySelector('.chooseCloudStorage');
+  selectCloud.addEventListener('change', () => {
+    cloudStatus(selectCloud);
+  });
+
+  cloudStatus(selectCloud);
+
+  const selectTempUnit = document.querySelector('.chooseTempUnit');
+  selectTempUnit.addEventListener('change', () => {
+    tempUnit(selectTempUnit);
+  });
+
+  chrome.storage.sync.get('tempUnit', (d) => {
+    if (!d.tempUnit) {
+      tempUnit(selectTempUnit);
+    } else {
+      const unit = d.tempUnit;
+      selectTempUnit.value = unit;
+    }
+  });
+
+  chrome.storage.sync.get('collections', (d) => {
+    const { collections } = d;
+    const collectionsInput = document.querySelector('.s-collections__input');
+    collectionsInput.value = collections;
+
+    const collectionsForm = document.querySelector('.s-collections');
+    collectionsForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const value = collectionsInput.value.trim().replace(/ /g, '');
+      updateCollections(value);
+    });
+  });
+
+
+  const weatherCoords = document.querySelector('.weather-coords');
+  weatherCoords.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const longitude = document.querySelector('.longitude').value;
+    const latitude = document.querySelector('.latitude').value;
+    if (typeof Number(longitude) === 'number' && longitude <= 180 && longitude >= -180
+     && typeof Number(latitude) === 'number' && latitude <= 90 && latitude >= -90) {
+      const coords = {
+        longitude,
+        latitude,
+      };
+      updateCoords(coords);
+    }
+  });
+
+
+  chrome.storage.sync.get('coords', (d) => {
+    const { coords } = d;
+    if (coords) {
+      const longitudeInput = document.querySelector('.longitude');
+      const latitudeInput = document.querySelector('.latitude');
+      const { longitude, latitude } = coords;
+      longitudeInput.value = longitude;
+      latitudeInput.value = latitude;
+    }
+  });
+
+  chrome.runtime.onMessage.addListener((request) => {
+    switch (request.command) {
+      case 'update-cloud-status': {
+        cloudStatus(selectCloud);
+        break;
+      }
+    }
+  });
+};
+
+export { cloudStatus, tempUnit, updateCoords, updateCollections, loadOptions };

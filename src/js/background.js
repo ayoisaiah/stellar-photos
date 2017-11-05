@@ -93,20 +93,6 @@ const loadNewData = () => {
 chrome.runtime.onInstalled.addListener(fetchRandomPhoto);
 chrome.runtime.onMessage.addListener((request, sender) => {
   switch (request.command) {
-    case 'set-dropbox-token': {
-      chrome.storage.local.set({ dropboxToken: request.token });
-
-      chrome.notifications.create('dropbox-notification', {
-        type: 'basic',
-        iconUrl: chrome.extension.getURL('icons/48.png'),
-        title: 'Dropbox authentication was successful',
-        message: 'You can now save photos to your Dropbox!',
-      });
-
-      chrome.runtime.sendMessage({ command: 'update-cloud-status' });
-      break;
-    }
-
     case 'close-tab': {
       chrome.tabs.remove(sender.tab.id);
       break;
