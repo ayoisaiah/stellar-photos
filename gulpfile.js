@@ -15,7 +15,7 @@ gulp.task('copyStaticFiles', () => gulp.src([
   './src/**/*.*',
   '!./src/css/*.css',
   '!./src/js/**/*.js',
-  '!./src/sass/**/*.sass',
+  '!./src/sass/**/*.scss',
 ])
   .pipe(gulp.dest('./dist')));
 
@@ -44,7 +44,7 @@ gulp.task('build', (done) => {
   });
 });
 
-gulp.task('sass', () => gulp.src('./src/sass/main.sass')
+gulp.task('sass', () => gulp.src('./src/sass/main.scss')
   .pipe(plumber({
     errorhandler: (err) => {
       notify.onError({
@@ -58,6 +58,6 @@ gulp.task('sass', () => gulp.src('./src/sass/main.sass')
 
 gulp.task('default', ['copyStaticFiles', 'build', 'sass'], () => {
   gulp.watch(['src/js/**/*.js'], ['build']);
-  gulp.watch(['src/**/*.*', '!./src/js/**/*.js', '!./src/sass/**/*.sass'], ['copyStaticFiles']);
-  gulp.watch(['src/sass/**/*.sass'], ['sass']);
+  gulp.watch(['src/**/*.*', '!./src/js/**/*.js', '!./src/sass/**/*.scss'], ['copyStaticFiles']);
+  gulp.watch(['src/sass/**/*.scss'], ['sass']);
 });
