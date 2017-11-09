@@ -2,17 +2,22 @@ import { chainableClassList } from './libs/helpers';
 import purify from './libs/purify-dom';
 import { initializeSearch } from './modules/search';
 import initializeHistory from './modules/history';
-import { loadOptions } from './modules/options';
-import loadFooter from './modules/load-footer';
+import loadOptions from './modules/options';
 import loadNextImage from './modules/load-next-image';
 import weatherInfo from './components/weather-info';
+import main from './components/main';
 import loader from './components/loader';
+import footer from './components/footer';
+import header from './components/header';
 
 
-const body = document.querySelector('body');
-body.insertAdjacentHTML('afterbegin', purify.sanitize(`${loader()}`));
-
-loadFooter();
+const body = document.getElementById('app');
+body.insertAdjacentHTML('afterbegin', purify.sanitize(`
+    ${loader()}
+    ${header()}
+    ${main()}
+    ${footer()}
+  `));
 
 loadNextImage();
 
@@ -26,8 +31,8 @@ chrome.storage.local.get('forecast', (result) => {
   const { forecast } = result;
 
   if (forecast) {
-    const footer = document.querySelector('.s-footer');
-    footer.insertAdjacentHTML('afterbegin',
+    const footerComponent = document.getElementById('s-footer');
+    footerComponent.insertAdjacentHTML('afterbegin',
       purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] }));
   }
 });

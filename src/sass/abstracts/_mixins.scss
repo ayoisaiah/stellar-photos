@@ -1,0 +1,79 @@
+@mixin search-transition {
+  opacity: 0;
+  transform: scale3d(0.8, 0.8, 1);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+@mixin popover {
+  position: relative;
+
+  .popover-content {
+    list-style: none;
+    opacity: 0;
+    position: absolute;
+    bottom: 60px;
+    z-index: -10;
+    right: 0;
+    text-align: right;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: $white;
+    font-size: 1.6rem;
+    cursor: default;
+    border-radius: 4px;
+    pointer-events: none;
+    transform: scale(0.85) translateY(10%);
+    transition: all 0.25s cubic-bezier(0.24, 0.22, 0.015, 1.56), opacity 0.1s ease-in-out;
+
+    &--is-visible {
+      pointer-events: auto;
+      opacity: 1;
+      z-index: 300;
+      transform: scale(1) translate(0);
+    }
+
+    &::before {
+      border-top: 7px solid rgba(0, 0, 0, 0.9);
+      border-right: 7px solid transparent;
+      border-left: 7px solid transparent;
+      bottom: -7px;
+      content: "";
+      display: block;
+      right: 10px;
+      margin-left: -7px;
+      position: absolute;
+    }
+
+    a {
+      text-decoration: underline;
+      color: inherit;
+    }
+
+    .label {
+      text-transform: uppercase;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #999;
+      display: block;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    button, .button {
+      display: block;
+      padding: 6px 20px;
+      background-color: #5b5c5d;
+      border: 1px solid #5b5c5d;
+      font-size: 1.4rem;
+      color: $white;
+      cursor: pointer;
+      margin-bottom: 15px;
+      border-radius: 2px;
+      text-decoration: none;
+
+      &:hover {
+        border-color: #888;
+        background-color: #888;
+      }
+    }
+  }
+}

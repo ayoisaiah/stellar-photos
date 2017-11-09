@@ -11,7 +11,7 @@ const dropboxButton = nextImage => `
         class="control-button dropbox-button" 
         title="Save photo to Dropbox">
 
-        <svg class="icon icon-cloud"><use href="#icon-cloud"></use></svg>
+        <svg class="icon icon-cloud"><use href="#icon-dropbox"></use></svg>
       </button>
 `;
 

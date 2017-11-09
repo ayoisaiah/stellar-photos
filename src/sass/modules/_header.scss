@@ -1,0 +1,15 @@
+// #HEADER
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 2;
+  display: flex;
+  padding: 20px 20px;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+}

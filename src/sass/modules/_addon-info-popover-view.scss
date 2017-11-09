@@ -1,0 +1,34 @@
+/* ==========================================================================
+   #ADDON INFO POPOVER VIEw
+   ========================================================================== */
+
+/**
+ * Styles for the Addon Info View
+ *
+ */
+
+.addon-info {
+  .button {
+    display: inline-block !important;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+
+  & > div, .github-button {
+    margin-bottom: 15px;
+  }
+
+
+  .share-addon a {
+    display: flex;
+    align-items: center;
+
+    svg {
+      margin-right: 10px;
+    }
+
+  }
+}

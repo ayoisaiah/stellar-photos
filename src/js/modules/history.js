@@ -24,9 +24,12 @@ const initializeHistory = () => {
   chrome.storage.local.get('history', (result) => {
     const { history } = result;
     if (history) {
+      const header = document.getElementById('header');
+      header.insertAdjacentHTML('afterbegin', purify.sanitize(hamburgerMenu()));
+
       const main = document.querySelector('.s-main');
       main.insertAdjacentHTML('beforeend',
-        purify.sanitize(`${historyPane()} ${hamburgerMenu()}`, {
+        purify.sanitize(historyPane(), {
           SANITIZE_DOM: false,
         }));
 

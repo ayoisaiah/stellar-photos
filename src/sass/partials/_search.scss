@@ -1,0 +1,110 @@
+.s-search {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.9);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -100;
+
+  &::before {
+    top: 0;
+    left: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    transform: translate3d(-15px, -15px, 0);
+  }
+
+  &::after {
+    right: 0;
+    bottom: 0;
+    border-top-width: 0;
+    border-left-width: 0;
+    transform: translate3d(15px, 15px, 0);
+  }
+
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    width: calc(100% - 15px);
+    height: calc(100% - 15px);
+    pointer-events: none;
+    border: none;
+    transition: transform 0.3s;
+  }
+
+  &.search--open {
+    opacity: 1 !important;
+    z-index: 1000;
+    pointer-events: auto;
+
+    &::before, &::after {
+      transform: translate3d(0, 0, 0);
+    }
+
+    & .searchButton-close {
+      display: block;
+      opacity: 1;
+      transform: scale3d(1, 1, 1);
+    }
+
+    & .searchForm {
+      opacity: 1;
+      transform: scale3d(1, 1, 1);
+    }
+  }
+}
+
+.searchForm {
+  margin: 5em 0;
+
+  @include search-transition;
+
+  &-input {
+    font-family: inherit;
+    font-size: 5vw;
+    line-height: 1;
+    display: inline-block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.05em auto;
+    border: none;
+    outline: none;
+    color: #fafafa;
+    border-bottom: 2px solid;
+    background-color: transparent;
+  }
+
+  &-input::-webkit-input-placeholder {
+    opacity: 0.3;
+    color: whitesmoke;
+  }
+
+  &-input::-moz-placeholder {
+    opacity: 0.3;
+    color: whitesmoke;
+  }
+
+  &-input::-webkit-search-cancel-button,
+  &-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+
+  &-info {
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0.85em 0;
+    text-align: right;
+    color: #d17c7c;
+  }
+}

@@ -4,7 +4,8 @@
  */
 
 const photoCard = (photo) => {
-  const backgroundPhoto = photo.urls.small;
+  // Base64 for history pane because this is stored in the browser storage
+  const backgroundPhoto = photo.base64 || photo.urls.small;
   const width = photo.width;
   const height = photo.height;
   const photoId = photo.id;
@@ -27,7 +28,7 @@ const photoCard = (photo) => {
           <div class="bottom">
             <span class="s-photo-dimension">${width} x ${height}</span>
             <div><a href="${downloadLink}?force=true" target="_blank" target="_blank" rel="noreferrer" download title="Download Photo"><svg style="fill: #fafafa;" class="icon icon--download"><use xlink:href="#icon-download"></use></svg></a>
-            <svg style="fill: #fafafa;" data-imageid="${photoId}" data-downloadurl="${downloadLink}" class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-cloud" data-imageid="${photoId}" data-downloadurl="${downloadLink}" class="icon icon--cloud"></use></svg></div>
+            <svg style="fill: #fafafa;" data-imageid="${photoId}" data-downloadurl="${downloadLink}" class="icon icon--cloud" title="Save to Dropbox"><use xlink:href="#icon-dropbox" data-imageid="${photoId}" data-downloadurl="${downloadLink}" class="icon icon--cloud"></use></svg></div>
           </div>
         </div>
       </li>`;

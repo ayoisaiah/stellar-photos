@@ -84,9 +84,14 @@ const searchPhotos = (key, page) => {
 };
 
 const initializeSearch = () => {
+  const header = document.getElementById('header');
+  header.insertAdjacentHTML('beforeend', purify.sanitize(searchButton(), {
+    ADD_TAGS: ['use'],
+  }));
+
   const main = document.querySelector('.s-main');
   main.insertAdjacentHTML('beforeend',
-    purify.sanitize(`${searchButton()} ${searchForm()}`, {
+    purify.sanitize(searchForm(), {
       SANITIZE_DOM: false, ADD_TAGS: ['use'],
     }));
 

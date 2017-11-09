@@ -53,4 +53,11 @@ const chainableClassList = (element) => {
 
 const $ = document.getElementById.bind(document);
 
-export { convertTimeStamp, togglePopover, chainableClassList, $ };
+const removeChildElements = (element) => {
+  while (element.hasChildNodes()) {
+    element.removeChild(element.lastChild);
+  }
+};
+
+export { convertTimeStamp, togglePopover,
+  chainableClassList, $, removeChildElements };
