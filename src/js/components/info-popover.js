@@ -62,14 +62,16 @@ const infoPopover = (nextImage, fullDate) => `
       <li class="popover-content-item">
         <span class="label">Camera Model</span>
         <div class="wrapper">
-          <span class="camera-model">${nextImage.exif.model}</span>
+          <span class="camera-model">${nextImage.exif.model ?
+    nextImage.exif.model : '--'}</span>
           <svg class="icon camera-icon"><use href="#icon-camera"></use></svg>
         </div>
       </li>
 
       <li class="popover-content-item">
         <span class="label">Camera Make</span>
-        <span class="camera-make">${nextImage.exif.make}</span>
+        <span class="camera-make">${nextImage.exif.make ?
+    nextImage.exif.make : '--'}</span>
       </li>
 
       <li class="popover-content-item">
