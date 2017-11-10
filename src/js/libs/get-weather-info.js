@@ -12,6 +12,10 @@ const getWeatherInfo = () => {
         }, forecast);
 
         chrome.storage.local.set({ forecast: f });
+
+        chrome.alarms.create('loadweather', {
+          periodInMinutes: 60,
+        });
       })
       .catch(error => console.log(error));
   };
