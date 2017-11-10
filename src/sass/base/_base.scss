@@ -18,7 +18,9 @@ html {
 }
 
 body {
-  font-family: $code-font-stack;
+  font-family: $font-stack;
+  line-height: 1.6;
+  font-weight: 400;
 }
 
 .hidden {

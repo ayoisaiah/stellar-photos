@@ -5,7 +5,7 @@
 const cloudPopoverView = () => `
   <section id="cloud-settings" class="cloud-settings">
     <div class="saveTo">
-      <span class="label">Connect and sync photos to your Dropbox. 
+      <span class="popover-label">Connect and sync photos to your Dropbox. 
         <a href="https://github.com/ayoisaiah/stellar-photos/wiki/Privacy-Policy">
         Privacy Policy</a>
       </span>

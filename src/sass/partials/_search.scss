@@ -40,6 +40,11 @@
     transition: transform 0.3s;
   }
 
+  .searchForm {
+    width: 50%;
+    margin: 0 auto;
+  }
+
   &.search--open {
     opacity: 1 !important;
     z-index: 1000;
@@ -69,8 +74,8 @@
 
   &-input {
     font-family: inherit;
-    font-size: 5vw;
-    line-height: 1;
+    font-size: 4vw;
+    letter-spacing: 2px;
     display: inline-block;
     box-sizing: border-box;
     width: 100%;

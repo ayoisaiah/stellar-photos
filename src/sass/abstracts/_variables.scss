@@ -1,10 +1,6 @@
-@font-face {
-  font-family: "inconsolata-webfont";
-  src: url("../fonts/inconsolata-webfont.woff2") format("woff2"), url("../fonts/inconsolata-webfont.woff") format("woff");
-}
-
 $black: #111;
 $white: #fff;
 
-$code-font-stack: "inconsolata-webfont";
+$font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", "Oxygen",
+"Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Roboto", "Helvetica Neue", sans-serif;
 $global-border-radius: 2px;

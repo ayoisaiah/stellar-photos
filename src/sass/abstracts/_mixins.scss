@@ -17,7 +17,7 @@
     text-align: right;
     background-color: rgba(0, 0, 0, 0.9);
     color: $white;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     cursor: default;
     border-radius: 4px;
     pointer-events: none;
@@ -48,21 +48,20 @@
       color: inherit;
     }
 
-    .label {
-      text-transform: uppercase;
+    .popover-label {
       font-size: 1.4rem;
-      font-weight: 700;
-      color: #999;
+      font-weight: 500;
+      color: rgb(179,179,179);
       display: block;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
       line-height: 1.4;
     }
 
     button, .button {
       display: block;
       padding: 6px 20px;
-      background-color: #5b5c5d;
-      border: 1px solid #5b5c5d;
+      background-color: rgb(68,68,69);
+      border: 1px solid rgb(68,68,69);
       font-size: 1.4rem;
       color: $white;
       cursor: pointer;

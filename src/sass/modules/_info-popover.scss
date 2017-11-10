@@ -11,11 +11,11 @@
   }
 
   .popover-content {
-    width: 380px;
-    padding: 10px 20px;
+    width: 300px;
+    padding: 10px 20px 10px 10px;
   }
 
-  .popover-content-item {
+  .photo-info-item {
     padding: 8px 0;
   }
 
@@ -42,5 +42,9 @@
 
   .wrapper .icon {
     margin-left: 10px;
+  }
+
+  .button {
+    display: inline-block !important;
   }
 }
