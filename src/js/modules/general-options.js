@@ -1,6 +1,6 @@
 import Ladda from 'ladda';
 import purify from '../libs/purify-dom';
-import { $ } from '../libs/helpers';
+import { $, getMinutesUntilNextHour, getMinutesUntilMidNight } from '../libs/helpers';
 import generalPopoverView from '../components/general-popover-view';
 
 /*
@@ -26,6 +26,7 @@ const updateCollections = (collections) => {
     .then(response => response.text())
     .then((data) => {
       spinner.stop();
+
       const json = JSON.parse(data);
       if (json.error) {
         chrome.notifications.create('update-collections', {
@@ -62,6 +63,23 @@ const updateCollections = (collections) => {
 
 const updatePhotoFrequency = (selected) => {
   chrome.storage.sync.set({ photoFrequency: selected });
+  chrome.alarms.clearAll();
+
+  if (selected === 'everyhour') {
+    chrome.alarms.create('loadphoto', {
+      when: new Date(Date.now()).setSeconds(0)
+        + (getMinutesUntilNextHour() * 60 * 1000),
+      periodInMinutes: 60,
+    });
+  }
+
+  if (selected === 'every24hours') {
+    chrome.alarms.create('loadphoto', {
+      when: Date.now() + (getMinutesUntilMidNight() * 60 * 1000),
+      periodInMinutes: 1440,
+    });
+  }
+
   chrome.notifications.create('preferences', {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),

@@ -22,3 +22,13 @@ chrome.runtime.onMessage.addListener((request, sender) => {
   }
 });
 
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'loadphoto') {
+    fetchRandomPhoto();
+    return;
+  }
+
+  if (alarm.name === 'loadweather') {
+    getWeatherInfo();
+  }
+});

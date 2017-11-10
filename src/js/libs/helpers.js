@@ -16,6 +16,15 @@ const convertTimeStamp = (timestamp) => {
   };
 };
 
+const getMinutesUntilNextHour = () => 60 - new Date().getMinutes();
+
+const getMinutesUntilMidNight = () => {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return (midnight - now) / 6e4;
+};
+
 const togglePopover = (element) => {
   const popover = document.querySelectorAll('.popover-content--is-visible');
   if (popover) {
@@ -60,4 +69,5 @@ const removeChildElements = (element) => {
 };
 
 export { convertTimeStamp, togglePopover,
-  chainableClassList, $, removeChildElements };
+  chainableClassList, $, removeChildElements, getMinutesUntilNextHour,
+  getMinutesUntilMidNight };
