@@ -42,7 +42,7 @@ const generalPopoverView = () => `
         class="select-photo-frequency" name="photo-frequency">
         <option value="newtab">On every new tab (default)</option>
         <option value="everyhour">Every hour</option>
-        <option value="everyday">Once a day</option>
+        <option value="everyday">At the beginning of each day</option>
       </select>
 
       <button id="save-photo-frequency">Save</button>

@@ -11,19 +11,17 @@ const weatherInfo = (forecast) => {
   const lastUpdatedTime = timeago().format(new Date(forecast.timestamp));
 
   return `
-      <section class="weather">
-        <span class="location">
-          <svg class="icon location-icon"><use href="#icon-location"></use></svg>
-          <span class="location-text">${location}</span>
-        </span>
-        <span class="temperature">
-          <svg class="icon temperature-icon">
-            <use href="#icon-temperature"></use>
-          </svg>
-          <span class="temperature-text">${temperature}° - ${description}</span>
-        </span>
-        <span class="last-updated">${lastUpdatedTime}</span>
-      </section>
+      <span class="location">
+        <svg class="icon location-icon"><use href="#icon-location"></use></svg>
+        <span class="location-text">${location}</span>
+      </span>
+      <span class="temperature">
+        <svg class="icon temperature-icon">
+          <use href="#icon-temperature"></use>
+        </svg>
+        <span class="temperature-text">${temperature}° - ${description}</span>
+      </span>
+      <span class="last-updated">${lastUpdatedTime}</span>
   `;
 };
 
