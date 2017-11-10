@@ -29,10 +29,10 @@ initializeSearch();
 
 chrome.storage.local.get('forecast', (result) => {
   const { forecast } = result;
+  const weatherArea = document.getElementById('s-footer .weather');
 
   if (forecast) {
-    const footerComponent = document.getElementById('s-footer');
-    footerComponent.insertAdjacentHTML('afterbegin',
+    weatherArea.insertAdjacentHTML('afterbegin',
       purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] }));
   }
 });
