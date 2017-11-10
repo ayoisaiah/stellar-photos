@@ -55,7 +55,7 @@ const changeActiveOption = (e) => {
 };
 
 const loadOptions = () => {
-  const controls = document.querySelector('.controls');
+  const controls = $('footer-controls');
 
   controls.insertAdjacentHTML('afterbegin', purify.sanitize(`
     ${optionsPopover()}

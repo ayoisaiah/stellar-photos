@@ -1,4 +1,4 @@
-import { chainableClassList } from './libs/helpers';
+import { $, chainableClassList } from './libs/helpers';
 import purify from './libs/purify-dom';
 import { initializeSearch } from './modules/search';
 import initializeHistory from './modules/history';
@@ -29,7 +29,7 @@ initializeSearch();
 
 chrome.storage.local.get('forecast', (result) => {
   const { forecast } = result;
-  const weatherArea = document.getElementById('s-footer .weather');
+  const weatherArea = $('footer-weather');
 
   if (forecast) {
     weatherArea.insertAdjacentHTML('afterbegin',
