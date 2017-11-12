@@ -1,4 +1,4 @@
-import { chainableClassList } from './libs/helpers';
+import { chainableClassList, $ } from './libs/helpers';
 import purify from './libs/purify-dom';
 import { initializeSearch } from './modules/search';
 import initializeHistory from './modules/history';
@@ -36,6 +36,18 @@ const showControls = () => {
 };
 
 const hideControls = () => {
+  // Check if one popover is active
+  const popovers = Array.from(document.querySelectorAll('.popover-content'));
+  const arePopoversOpen = popovers.some(e => e.classList
+    .contains('popover-content--is-visible'));
+
+  // Don't hide controls if any popover is open
+  if (arePopoversOpen) return;
+
+  // Also don't hide controls if history pane is open
+  const historyPane = $('s-history');
+  if (historyPane.classList.contains('open')) return;
+
   uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
 };
 

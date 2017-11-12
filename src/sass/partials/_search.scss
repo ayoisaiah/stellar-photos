@@ -12,7 +12,7 @@
   height: 100vh;
   opacity: 0;
   transition: opacity 0.3s;
-  z-index: -100;
+  z-index: -2;
 
   &::before {
     top: 0;
@@ -47,7 +47,7 @@
 
   &.search--open {
     opacity: 1 !important;
-    z-index: 1000;
+    z-index: 3;
     pointer-events: auto;
 
     &::before, &::after {
