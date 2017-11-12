@@ -4,7 +4,7 @@
 
 const hamburgerMenu = () => `
     <button id="historyButton" class="s-ui historyButton historyButton-open 
-    hidden" title="toggle history menu" aria-label="Toggle History Menu">
+    " title="toggle history menu" aria-label="Toggle History Menu">
       <div>
         <i class="bar1"></i>
         <i class="bar2"></i>

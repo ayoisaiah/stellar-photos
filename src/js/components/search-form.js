@@ -10,7 +10,7 @@ const searchForm = () => `
         </svg>
       </button>
       <form class="searchForm" id="searchForm" action="">
-        <input class="searchForm-input" id="searchForm-input" name="search" type="search" placeholder="find free high-res photos" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input class="searchForm-input" id="searchForm-input" name="search" type="search" placeholder="find free hi-res photos" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
         <span class="searchForm-info">Hit Enter to search or ESC to close</span>
       </form>
     </section>

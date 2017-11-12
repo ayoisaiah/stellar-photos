@@ -1,10 +1,10 @@
-import { $, chainableClassList } from './libs/helpers';
+import { chainableClassList } from './libs/helpers';
 import purify from './libs/purify-dom';
 import { initializeSearch } from './modules/search';
 import initializeHistory from './modules/history';
+import initializeWeather from './modules/weather';
 import loadOptions from './modules/options';
-import loadNextImage from './modules/load-next-image';
-import weatherInfo from './components/weather-info';
+import loadNextImageDetails from './modules/load-next-image-details';
 import main from './components/main';
 import loader from './components/loader';
 import footer from './components/footer';
@@ -19,7 +19,7 @@ body.insertAdjacentHTML('afterbegin', purify.sanitize(`
     ${footer()}
   `));
 
-loadNextImage();
+loadNextImageDetails();
 
 loadOptions();
 
@@ -27,21 +27,30 @@ initializeHistory();
 
 initializeSearch();
 
-chrome.storage.local.get('forecast', (result) => {
-  const { forecast } = result;
-  const weatherArea = $('footer-weather');
-
-  if (forecast) {
-    weatherArea.insertAdjacentHTML('afterbegin',
-      purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] }));
-  }
-});
-
+initializeWeather();
 
 const uiElements = document.querySelectorAll('.s-ui');
-uiElements.forEach(element => chainableClassList(element).remove('hidden'));
 
+const showControls = () => {
+  uiElements.forEach(element => chainableClassList(element).remove('hide-ui'));
+};
 
+const hideControls = () => {
+  uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
+};
+
+setTimeout(() => showControls(), 200);
+
+// Hide the buttons and bars after 2 seconds of inactivity
+
+let timeout;
+document.addEventListener('mousemove', () => {
+  showControls();
+  if (timeout) clearTimeout(timeout);
+  timeout = setTimeout(() => hideControls(), 2000);
+});
+
+// Close all popovers when click is detected outside
 document.addEventListener('click', (node) => {
   if (node.target.matches('.popover *')) return;
   const popover = document.querySelectorAll('.popover .popover-content');

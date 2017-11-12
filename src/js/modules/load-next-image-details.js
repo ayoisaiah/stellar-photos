@@ -20,7 +20,7 @@ const listen = () => {
   });
 };
 
-const loadNextImage = () => {
+const loadNextImageDetails = () => {
   chrome.storage.local.get('nextImage', (result) => {
     const { nextImage } = result;
     if (nextImage) {
@@ -41,4 +41,4 @@ const loadNextImage = () => {
   });
 };
 
-export default loadNextImage;
+export default loadNextImageDetails;

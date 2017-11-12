@@ -1,17 +1,18 @@
 import purify from '../libs/purify-dom';
 import { handleClick } from '../libs/handle';
+import { $ } from '../libs/helpers';
 import historyPane from '../components/history-pane';
 import hamburgerMenu from '../components/hamburger-menu';
 import photoCard from '../components/photo-card';
 
 const toggleHistoryPane = () => {
-  document.getElementById('s-history').classList.toggle('open');
-  document.getElementById('s-footer').classList.toggle('history-open');
-  document.getElementById('historyButton').classList.toggle('transform');
+  $('s-history').classList.toggle('open');
+  $('s-footer').classList.toggle('history-open');
+  $('historyButton').classList.toggle('transform');
 };
 
 const displayHistory = (history) => {
-  const historyMenu = document.getElementById('s-history');
+  const historyMenu = $('s-history');
   historyMenu.classList.remove('hidden');
 
   history.map(photo => historyMenu.insertAdjacentHTML('beforeend',
@@ -21,24 +22,23 @@ const displayHistory = (history) => {
 };
 
 const initializeHistory = () => {
+  const header = $('header');
+  header.insertAdjacentHTML('afterbegin', purify.sanitize(hamburgerMenu()));
+
   chrome.storage.local.get('history', (result) => {
     const { history } = result;
     if (history) {
-      const header = document.getElementById('header');
-      header.insertAdjacentHTML('afterbegin', purify.sanitize(hamburgerMenu()));
-
       const main = document.querySelector('.s-main');
       main.insertAdjacentHTML('beforeend',
         purify.sanitize(historyPane(), {
           SANITIZE_DOM: false,
         }));
 
-      document.getElementById('s-history')
+      $('s-history')
         .addEventListener('click', handleClick);
 
-      const historyButton = document.getElementById('historyButton');
+      const historyButton = $('historyButton');
       historyButton.addEventListener('click', toggleHistoryPane);
-      historyButton.classList.remove('hidden');
       displayHistory(history);
     }
   });

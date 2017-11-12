@@ -1,5 +1,5 @@
 import Ladda from 'ladda';
-import displayPhotos from './displayPhotos';
+import displayPhotos from './display-photos';
 import purify from '../libs/purify-dom';
 import state from '../libs/state';
 import { handleClick, handleSubmit } from '../libs/handle';
