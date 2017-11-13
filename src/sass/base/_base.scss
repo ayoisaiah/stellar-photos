@@ -33,6 +33,7 @@ body {
 }
 
 .s-ui.hide-ui {
+  pointer-events: none;
   opacity: 0 !important;
   animation: fadeOutControls 0.7s ease;
 }
