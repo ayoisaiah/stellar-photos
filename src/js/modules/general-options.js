@@ -1,10 +1,11 @@
 import Ladda from 'ladda';
 import purify from '../libs/purify-dom';
-import { $, getMinutesUntilNextHour, getMinutesUntilMidNight } from '../libs/helpers';
+import { $, getMinutesUntilNextHour,
+  getMinutesUntilMidNight } from '../libs/helpers';
 import generalPopoverView from '../components/general-popover-view';
 
 /*
- * Handles Unsplash Options
+ * Handles General Options
  */
 
 const updateCollections = (collections) => {

@@ -79,8 +79,8 @@ const infoPopover = (nextImage, fullDate) => `
       </li>
 
       <li class="photo-info-item">
-        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" 
-        class="button linkToPhoto" 
+        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+        class="button linkToPhoto"
         target="_blank" rel="noopener">View photo on Unsplash.com</a>
       </li>
 
