@@ -64,7 +64,11 @@ const infoPopover = (nextImage, fullDate) => `
         <div class="wrapper">
           <span class="camera-model">${nextImage.exif.model ?
     nextImage.exif.model : '--'}</span>
-          <svg class="icon camera-icon"><use href="#icon-camera"></use></svg>
+          ${nextImage.exif.model ? `
+            <svg class="icon camera-icon">
+              <use href="#icon-camera"></use>
+            </svg>
+            ` : ''}
         </div>
       </li>
 
@@ -75,7 +79,9 @@ const infoPopover = (nextImage, fullDate) => `
       </li>
 
       <li class="photo-info-item">
-        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" class="button linkToPhoto" target="_blank" rel="noreferrer">View photo on Unsplash.com</a>
+        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" 
+        class="button linkToPhoto" 
+        target="_blank" rel="noopener">View photo on Unsplash.com</a>
       </li>
 
 
