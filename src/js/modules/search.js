@@ -2,6 +2,7 @@ import Ladda from 'ladda';
 import displayPhotos from './display-photos';
 import purify from '../libs/purify-dom';
 import state from '../libs/state';
+import { $ } from '../libs/helpers';
 import { handleClick, handleSubmit } from '../libs/handle';
 import loadingIndicator from '../libs/loading-indicator';
 import searchButton from '../components/search-button';
@@ -61,7 +62,8 @@ const searchPhotos = (key, page) => {
       state.results = [...state.results, ...state.incomingResults];
       displayPhotos(state.incomingResults, json.photos.total);
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e);
       state.isLoading = false;
 
       if (page === 1) {
@@ -84,8 +86,8 @@ const searchPhotos = (key, page) => {
 };
 
 const initializeSearch = () => {
-  const header = document.getElementById('header');
-  header.insertAdjacentHTML('beforeend', purify.sanitize(searchButton(), {
+  const headerContent = $('header-content');
+  headerContent.insertAdjacentHTML('beforeend', purify.sanitize(searchButton(), {
     ADD_TAGS: ['use'],
   }));
 

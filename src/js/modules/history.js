@@ -1,6 +1,7 @@
 import purify from '../libs/purify-dom';
 import { handleClick } from '../libs/handle';
 import { $ } from '../libs/helpers';
+import cloudButton from '../libs/cloud-button';
 import historyPane from '../components/history-pane';
 import hamburgerMenu from '../components/hamburger-menu';
 import photoCard from '../components/photo-card';
@@ -16,14 +17,14 @@ const displayHistory = (history) => {
   historyMenu.classList.remove('hidden');
 
   history.map(photo => historyMenu.insertAdjacentHTML('beforeend',
-    purify.sanitize(photoCard(photo), { ADD_TAGS: ['use'] },
+    purify.sanitize(photoCard(photo, cloudButton), { ADD_TAGS: ['use'] },
     )),
   );
 };
 
 const initializeHistory = () => {
-  const header = $('header');
-  header.insertAdjacentHTML('afterbegin', purify.sanitize(hamburgerMenu()));
+  const headerContent = $('header-content');
+  headerContent.insertAdjacentHTML('afterbegin', purify.sanitize(hamburgerMenu()));
 
   chrome.storage.local.get('history', (result) => {
     const { history } = result;

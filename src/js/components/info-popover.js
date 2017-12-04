@@ -6,14 +6,14 @@ const infoPopover = (nextImage, fullDate) => `
   <div class="popover info-popover">
     <button class="control-button info-button">
       <svg class="icon icon-info"><use href="#icon-info"></use></svg>
-    </button> 
+    </button>
 
     <ul class="popover-content">
 
       <li class="photo-info-item">
-        <a href="${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit" 
-        class="photographer-info" target="_blank" rel="noreferrer">
-          <img src="${nextImage.user.profile_image.small}" 
+        <a href="${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+        class="photographer-info">
+          <img src="${nextImage.user.profile_image.small}"
             class="photographer-dp" />
           <span class="photographer-name">
             ${nextImage.user.first_name || ''} ${nextImage.user.last_name || ''}
@@ -81,7 +81,7 @@ const infoPopover = (nextImage, fullDate) => `
       <li class="photo-info-item">
         <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
         class="button linkToPhoto"
-        target="_blank" rel="noopener">View photo on Unsplash.com</a>
+        >View photo on Unsplash.com</a>
       </li>
 
 

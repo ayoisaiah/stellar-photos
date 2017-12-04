@@ -1,5 +1,6 @@
 import getWeatherInfo from './get-weather-info';
 import fetchRandomPhoto from './fetch-random-photo';
+import { lessThanOneHourAgo, lessThan24HoursAgo } from './helpers';
 
 /*
  * Load the next image and update the weather
@@ -8,37 +9,44 @@ import fetchRandomPhoto from './fetch-random-photo';
 const loadNewData = () => {
   chrome.storage.sync.get('photoFrequency', (result) => {
     const { photoFrequency } = result;
+
     if (photoFrequency === 'newtab') {
+      fetchRandomPhoto();
+      return;
+    }
+
+    const nextImage = JSON.parse(localStorage.getItem('nextImage'));
+
+    if (photoFrequency === 'everyhour'
+      && !(lessThanOneHourAgo(nextImage.timestamp))) {
+      fetchRandomPhoto();
+      return;
+    }
+
+    if (photoFrequency === 'everyday'
+      && !(lessThan24HoursAgo(nextImage.timestamp))) {
       fetchRandomPhoto();
     }
   });
 
-  chrome.storage.local.get('forecast', (result) => {
-    const { forecast } = result;
+  const forecast = JSON.parse(localStorage.getItem('weather-forecast'));
 
-    chrome.storage.sync.get('coords', (d) => {
-      const { coords } = d;
+  chrome.storage.sync.get('coords', (d) => {
+    const { coords } = d;
 
-      if (!forecast && coords) {
-        getWeatherInfo();
-        return;
-      }
+    if (!forecast && coords) {
+      getWeatherInfo();
+      return;
+    }
 
-      if (forecast) {
-        const { timestamp } = forecast;
-        if (timestamp) {
-          const lessThanOneHourAgo = () => {
-            const oneHour = 1000 * 60 * 60;
-            const oneHourAgo = Date.now() - oneHour;
-            return timestamp > oneHourAgo;
-          };
-
-          if (!lessThanOneHourAgo()) {
-            getWeatherInfo();
-          }
+    if (forecast) {
+      const { timestamp } = forecast;
+      if (timestamp) {
+        if (!lessThanOneHourAgo(timestamp)) {
+          getWeatherInfo();
         }
       }
-    });
+    }
   });
 };
 

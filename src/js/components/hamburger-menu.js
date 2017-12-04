@@ -3,7 +3,7 @@
  */
 
 const hamburgerMenu = () => `
-    <button id="historyButton" class="s-ui historyButton historyButton-open 
+    <button id="historyButton" class="historyButton historyButton-open
     " title="toggle history menu" aria-label="Toggle History Menu">
       <div>
         <i class="bar1"></i>

@@ -13,6 +13,7 @@
   opacity: 0;
   transition: opacity 0.3s;
   z-index: -2;
+  font-family: $monospace;
 
   &::before {
     top: 0;
@@ -41,7 +42,7 @@
   }
 
   .searchForm {
-    width: 50%;
+    width: 60%;
     margin: 0 auto;
   }
 
@@ -74,8 +75,7 @@
 
   &-input {
     font-family: inherit;
-    font-size: 4vw;
-    letter-spacing: 2px;
+    font-size: 5vw;
     display: inline-block;
     box-sizing: border-box;
     width: 100%;

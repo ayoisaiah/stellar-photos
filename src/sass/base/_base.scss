@@ -33,9 +33,12 @@ body {
 }
 
 .s-ui.hide-ui {
-  pointer-events: none;
   opacity: 0 !important;
-  animation: fadeOutControls 0.7s ease;
+  animation: fadeOutControls 0.4s ease;
+
+  .searchButton, .historyButton {
+    pointer-events: none;
+  }
 }
 
 svg > use {
@@ -60,4 +63,8 @@ svg > use {
   to {
     opacity: 0;
   }
+}
+
+.cloud-button * {
+  pointer-events: none;
 }

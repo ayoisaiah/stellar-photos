@@ -51,15 +51,21 @@ const hideControls = () => {
   uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
 };
 
-setTimeout(() => showControls(), 200);
+showControls();
 
 // Hide the buttons and bars after 2 seconds of inactivity
 
-let timeout;
-document.addEventListener('mousemove', () => {
-  showControls();
-  if (timeout) clearTimeout(timeout);
-  timeout = setTimeout(() => hideControls(), 2000);
+let timeout = setTimeout(() => hideControls(), 2000);
+
+uiElements.forEach((element) => {
+  element.addEventListener('mouseenter', () => {
+    showControls();
+    if (timeout) clearTimeout(timeout);
+  });
+
+  element.addEventListener('mouseleave', () => {
+    timeout = setTimeout(() => hideControls(), 2000);
+  });
 });
 
 // Close all popovers when click is detected outside

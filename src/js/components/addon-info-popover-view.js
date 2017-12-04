@@ -6,7 +6,7 @@ const addonInfoPopoverView = () => `
   <section id="addon-info" class="addon-info">
     <span class="popover-label">Star this extension on Github</span>
 
-    <a class="button github-button" 
+    <a class="button github-button"
       href="https://github.com/ayoisaiah/stellar-photos">
         Star on Github
       </a>
@@ -25,24 +25,24 @@ const addonInfoPopoverView = () => `
     <div class="report-issue">
       <span class="popover-label">Having trouble?</span>
       <a class="button" href="https://github.com/ayoisaiah/stellar-photos/issues">
-       Report an issue!</a> 
+       Report an issue!</a>
     </div>
 
     <div class="share-addon">
       <span class="popover-label">Spread the word about the extension</span>
-      <a href="https://facebook.com/sharer/sharer.php?u=https://stellarapp.photos" 
+      <a href="https://facebook.com/sharer/sharer.php?u=https://stellarapp.photos"
         aria-label="Share on Facebook">
-        
+
         <svg class="icon icon-facebook">
           <use href="#icon-facebook"></use>
         </svg>
-        
+
         Share on Facebook
       </a>
 
       <br>
 
-      <a href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos." 
+      <a href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos."
         aria-label="Share on Twitter">
         <svg class="icon icon-twitter">
           <use href="#icon-twitter"></use>

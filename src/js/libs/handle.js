@@ -1,14 +1,30 @@
-import { saveToDropbox } from './dropbox';
 import { searchPhotos } from '../modules/search';
+import { saveToOneDrive } from './onedrive';
+import { saveToDropbox } from './dropbox';
+import { saveToGoogleDrive } from './googledrive';
 import state from './state';
 import observer from './observer';
 
-const handleClick = function handleClick(e) {
-  if (!e.target.matches('.icon--cloud')) return;
-  const target = e.target;
-  const imageid = target.dataset.imageid;
-  const downloadurl = target.dataset.downloadurl;
-  saveToDropbox(imageid, downloadurl);
+const handleClick = (e) => {
+  if (!e.target.matches('.cloud-button')) return;
+
+  const { target } = e;
+  const { imageid } = target.dataset;
+  const { downloadurl } = target.dataset;
+
+  if (target.classList.contains('dropbox-button')) {
+    saveToDropbox(imageid, downloadurl);
+    return;
+  }
+
+  if (target.classList.contains('onedrive-button')) {
+    saveToOneDrive(imageid, downloadurl);
+    return;
+  }
+
+  if (target.classList.contains('googledrive-button')) {
+    saveToGoogleDrive(imageid, downloadurl);
+  }
 };
 
 const handleSubmit = () => {

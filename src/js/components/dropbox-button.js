@@ -3,12 +3,12 @@
  * to Dropbox
  */
 
-const dropboxButton = nextImage => `
-      <button 
-        data-imageid="${nextImage.id}" 
-        data-downloadurl="${nextImage.links.download}" 
+const dropboxButton = photo => `
+      <button
+        data-imageid="${photo.id}"
+        data-downloadurl="${photo.links.download}"
         id="dropbox-button"
-        class="control-button dropbox-button" 
+        class="control-button cloud-button dropbox-button"
         title="Save photo to Dropbox">
 
         <svg class="icon icon-cloud"><use href="#icon-dropbox"></use></svg>

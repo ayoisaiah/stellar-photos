@@ -1,3 +1,5 @@
+import { validateResponse } from '../libs/helpers';
+
 /*
  * Fetch current weather information
  */
@@ -5,11 +7,13 @@
 const getWeatherInfo = () => {
   const sendRequest = (latitude, longitude, metricSystem) => {
     fetch(`https://stellar-photos.herokuapp.com/api/weather/${latitude},${longitude},${metricSystem}`)
-      .then(response => response.json())
+      .then(validateResponse)
       .then((forecast) => {
         const f = Object.assign({
           timestamp: Date.now(),
         }, forecast);
+
+        localStorage.setItem('weather-forecast', JSON.stringify(f));
 
         chrome.storage.local.set({ forecast: f });
 

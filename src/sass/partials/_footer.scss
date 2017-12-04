@@ -3,20 +3,28 @@
   bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 50px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: $white;
   z-index: 2;
   transition: transform 0.5s;
+  height: 150px;
+
+  .footer-content {
+    color: $white;
+    height: 50px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
   &.history-open {
     transform: translateY(-150px);
   }
 
   svg {
+    fill: #fff;
     width: 20px;
     height: 20px;
   }

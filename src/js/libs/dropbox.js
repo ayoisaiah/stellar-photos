@@ -1,4 +1,9 @@
-import loadingIndicator from '../libs/loading-indicator';
+import loadingIndicator from './loading-indicator';
+import { validateResponse } from './helpers';
+import {
+  notifySaveToCloudSuccessful,
+  notifyUnableToUpload,
+} from './notifications';
 
 const authorizeDropbox = () => {
   const key = 'gscbxcjhou1jx21';
@@ -6,54 +11,23 @@ const authorizeDropbox = () => {
 };
 
 const saveToDropbox = (imageId, downloadUrl) => {
-  chrome.storage.local.get('dropboxToken', (result) => {
-    const { dropboxToken } = result;
+  const dropboxToken = localStorage.getItem('dropbox');
 
-    if (!dropboxToken) {
-      // TODO: Find a way to save image to dropbox if authorizing succeeds
-      authorizeDropbox();
-      return;
-    }
+  if (!dropboxToken) {
+    authorizeDropbox();
+    return;
+  }
 
+  loadingIndicator().start();
 
-    loadingIndicator().start();
+  fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${dropboxToken}`)
+    .then(validateResponse)
+    .then(() => {
+      loadingIndicator().stop();
 
-    fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${dropboxToken}`)
-      .then(response => response.json())
-      .then((json) => {
-        loadingIndicator().stop();
-
-        if (json.error) {
-          chrome.notifications.create(`notify-dropbox-${imageId}`, {
-            type: 'basic',
-            iconUrl: chrome.extension.getURL('icons/48.png'),
-            title: 'Unable to save photo to Dropbox',
-            message: 'Having problems? Please try again.',
-          });
-
-          return;
-        }
-
-        chrome.notifications.create(`notify-dropbox-${imageId}`, {
-          type: 'basic',
-          iconUrl: chrome.extension.getURL('icons/48.png'),
-          title: '1 file uploaded',
-          message: `photo-${imageId} was saved successfully to Dropbox`,
-        });
-      })
-      .catch(() => {
-        const message = (navigator.onLine) ? 'Unable to upload photo due to a server error' : 'There is no internet connection';
-
-        loadingIndicator().stop();
-
-        chrome.notifications.create(`notify-dropbox-${imageId}`, {
-          type: 'basic',
-          iconUrl: chrome.extension.getURL('icons/48.png'),
-          title: 'We can\'t connect to Dropbox',
-          message,
-        });
-      });
-  });
+      notifySaveToCloudSuccessful('Dropbox', imageId);
+    })
+    .catch(() => notifyUnableToUpload('Dropbox', imageId));
 };
 
 export { authorizeDropbox, saveToDropbox };

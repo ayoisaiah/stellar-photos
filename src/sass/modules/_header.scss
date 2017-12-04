@@ -5,11 +5,15 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
   z-index: 2;
-  display: flex;
+  background: transparent;
+  height: 150px;
+}
+
+.header-content {
+  height: 60px;
   padding: 20px 20px;
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  background: transparent;
 }

@@ -1,3 +1,5 @@
+import { validateResponse } from '../libs/helpers';
+
 /**
  * Fetch a random phot from the server
  */
@@ -5,9 +7,13 @@
 const fetchRandomPhoto = () => {
   const sendRequest = (collections) => {
     fetch(`https://stellar-photos.herokuapp.com/api/photos/random/${collections}`)
-      .then(response => response.json())
+      .then(validateResponse)
       .then((data) => {
-        chrome.storage.local.set({ nextImage: data });
+        const nextImage = Object.assign({
+          timestamp: Date.now(),
+        }, data);
+
+        localStorage.setItem('nextImage', JSON.stringify(nextImage));
 
         chrome.storage.local.get('history', (result) => {
           const history = result.history || [];
@@ -18,6 +24,22 @@ const fetchRandomPhoto = () => {
 
           history.unshift(data);
           chrome.storage.local.set({ history });
+        });
+
+        chrome.storage.sync.get('photoFrequency', (result) => {
+          const { photoFrequency } = result;
+
+          if (photoFrequency === 'everyhour') {
+            chrome.alarms.create('loadphoto', {
+              periodInMinutes: 60,
+            });
+          }
+
+          if (photoFrequency === 'everyday') {
+            chrome.alarms.create('loadphoto', {
+              periodInMinutes: 1440,
+            });
+          }
         });
       })
       .catch(error => console.log(error));

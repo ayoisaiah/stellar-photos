@@ -1,30 +1,69 @@
 import { $, removeChildElements as empty } from '../libs/helpers';
 import purify from '../libs/purify-dom';
 import { authorizeDropbox } from '../libs/dropbox';
+import { authorizeOneDrive } from '../libs/onedrive';
+import { authorizeGoogleDrive } from '../libs/googledrive';
 import cloudPopoverView from '../components/cloud-popover-view';
 
-const cloudStatus = (selectCloud) => {
-  const selected = selectCloud[selectCloud.selectedIndex].value;
-  const action = $('action');
+/**
+ *
+ * Handles options related to syncing photos to supported cloud services
+ */
 
+
+const updateCloudStatus = (selected) => {
+  const action = $('action');
   empty(action);
 
-  chrome.storage.local.get(`${selected}`, (result) => {
-    if (!result[`${selected}`]) {
-      action.insertAdjacentHTML('beforeend',
-        purify.sanitize(`<button class="authorize" 
-          id="authorize">Authorize</button>`));
+  if (selected === 'noneselected') return;
 
-      const authorize = $('authorize');
+  localStorage.setItem('cloudService', selected);
 
-      if (selected === 'dropboxToken') {
-        authorize.addEventListener('click', () => {
-          authorizeDropbox();
-        });
-      }
-    } else {
-      action.insertAdjacentHTML('beforeend',
-        purify.sanitize('<span class="success-message">Authenticated</span>'));
+  const token = localStorage.getItem(selected);
+
+  if (!token) {
+    action.insertAdjacentHTML('beforeend',
+      purify.sanitize(`<button class="authorize"
+        id="authorize">Authorize</button>`));
+
+    const authorize = $('authorize');
+
+    if (selected === 'dropbox') {
+      authorize.addEventListener('click', () => {
+        authorizeDropbox();
+      });
+    }
+
+    if (selected === 'onedrive') {
+      authorize.addEventListener('click', () => {
+        authorizeOneDrive();
+      });
+    }
+
+    if (selected === 'googledrive') {
+      authorize.addEventListener('click', () => {
+        authorizeGoogleDrive();
+      });
+    }
+  } else {
+    action.insertAdjacentHTML('beforeend',
+      purify.sanitize('<span class="success-message">Authenticated</span>'));
+  }
+};
+
+const selectCloudService = () => {
+  const selectCloud = $('select-cloud-storage');
+
+  selectCloud.addEventListener('change', () => {
+    const selected = selectCloud[selectCloud.selectedIndex].value;
+    updateCloudStatus(selected);
+  });
+
+  const selected = selectCloud[selectCloud.selectedIndex].value;
+
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.command === 'update-cloud-status') {
+      updateCloudStatus(selected);
     }
   });
 };
@@ -37,20 +76,14 @@ const initializeCloudOptions = () => {
     }));
 
   const selectCloud = $('select-cloud-storage');
-  selectCloud.addEventListener('change', () => {
-    cloudStatus(selectCloud);
-  });
+  const cloudService = localStorage.getItem('cloudService');
 
-  cloudStatus(selectCloud);
+  if (cloudService) {
+    selectCloud.value = cloudService;
+    updateCloudStatus(cloudService);
+  }
 
-  chrome.runtime.onMessage.addListener((request) => {
-    switch (request.command) {
-      case 'update-cloud-status': {
-        cloudStatus(selectCloud);
-        break;
-      }
-    }
-  });
+  selectCloudService();
 };
 
 export default initializeCloudOptions;

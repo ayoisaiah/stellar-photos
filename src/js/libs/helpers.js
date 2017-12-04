@@ -16,15 +16,6 @@ const convertTimeStamp = (timestamp) => {
   };
 };
 
-const getMinutesUntilNextHour = () => 60 - new Date().getMinutes();
-
-const getMinutesUntilMidNight = () => {
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
-  return (midnight - now) / 6e4;
-};
-
 const togglePopover = (element) => {
   const popover = document.querySelectorAll('.popover-content--is-visible');
   if (popover) {
@@ -68,6 +59,27 @@ const removeChildElements = (element) => {
   }
 };
 
+// Make invalid responses throw an error since fetch does not reject for bad
+// responses
+const validateResponse = (response) => {
+  if (!response.ok) {
+    throw Error(response.statusText);
+  }
+  return response.json();
+};
+
+const lessThanOneHourAgo = (timestamp) => {
+  const oneHour = 1000 * 60 * 60;
+  const oneHourAgo = Date.now() - oneHour;
+  return timestamp > oneHourAgo;
+};
+
+const lessThan24HoursAgo = (timestamp) => {
+  const twentyFourHours = 1000 * 60 * 60 * 24;
+  const twentyFourHoursAgo = Date.now() - twentyFourHours;
+  return timestamp > twentyFourHoursAgo;
+};
+
 export { convertTimeStamp, togglePopover,
-  chainableClassList, $, removeChildElements, getMinutesUntilNextHour,
-  getMinutesUntilMidNight };
+  chainableClassList, $, removeChildElements,
+  validateResponse, lessThanOneHourAgo, lessThan24HoursAgo };
