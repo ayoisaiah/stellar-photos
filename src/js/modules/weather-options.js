@@ -1,5 +1,6 @@
 import purify from '../libs/purify-dom';
 import { $ } from '../libs/helpers';
+import notifySnackbar from '../libs/notify-snackbar';
 import weatherPopoverView from '../components/weather-popover-view';
 
 /*
@@ -10,24 +11,14 @@ const tempUnit = (selectTempUnit) => {
   const selected = selectTempUnit[selectTempUnit.selectedIndex].value;
   chrome.storage.sync.set({ tempUnit: selected });
 
-  chrome.notifications.create('preferences', {
-    type: 'basic',
-    iconUrl: chrome.extension.getURL('icons/48.png'),
-    title: 'Stellar Photos',
-    message: 'Preferences saved successfully',
-  });
+  notifySnackbar('Preferences saved successfully');
 
   chrome.runtime.sendMessage({ command: 'update-weather' });
 };
 
 const updateCoordinates = (coords) => {
   chrome.storage.sync.set({ coords }, () => {
-    chrome.notifications.create('update-coords', {
-      type: 'basic',
-      iconUrl: chrome.extension.getURL('icons/48.png'),
-      title: 'Stellar Photos',
-      message: 'Coordinates updated successfully',
-    });
+    notifySnackbar('Coordinates updated successfully');
 
     chrome.runtime.sendMessage({ command: 'update-weather' });
   });

@@ -1,6 +1,7 @@
 import Ladda from 'ladda';
 import purify from '../libs/purify-dom';
 import { $ } from '../libs/helpers';
+import notifySnackbar from '../libs/notify-snackbar';
 import generalPopoverView from '../components/general-popover-view';
 
 /*
@@ -9,12 +10,7 @@ import generalPopoverView from '../components/general-popover-view';
 
 const updateCollections = (collections) => {
   if (!collections) {
-    chrome.notifications.create('update-collections', {
-      type: 'basic',
-      iconUrl: chrome.extension.getURL('icons/48.png'),
-      title: 'Stellar Photos',
-      message: 'Collection IDs not valid!',
-    });
+    notifySnackbar('Collection IDs not valid!', 'error');
 
     return;
   }
@@ -29,35 +25,20 @@ const updateCollections = (collections) => {
 
       const json = JSON.parse(data);
       if (json.error) {
-        chrome.notifications.create('update-collections', {
-          type: 'basic',
-          iconUrl: chrome.extension.getURL('icons/48.png'),
-          title: 'Stellar Photos',
-          message: json.message,
-        });
+        notifySnackbar(json.error, 'error');
 
         return;
       }
 
       chrome.storage.sync.set({ collections });
 
-      chrome.notifications.create('update-collections', {
-        type: 'basic',
-        iconUrl: chrome.extension.getURL('icons/48.png'),
-        title: 'Stellar Photos',
-        message: json.message,
-      });
+      notifySnackbar(json.message);
 
       chrome.runtime.sendMessage({ command: 'load-data' });
     }).catch(() => {
       spinner.stop();
 
-      chrome.notifications.create('update-collections', {
-        type: 'basic',
-        iconUrl: chrome.extension.getURL('icons/48.png'),
-        title: 'Stellar Photos',
-        message: 'Oh Snap! An error occurred',
-      });
+      notifySnackbar('Oh Snap! An error occurred', 'error');
     });
 };
 
@@ -76,12 +57,7 @@ const updatePhotoFrequency = (selected) => {
     });
   }
 
-  chrome.notifications.create('preferences', {
-    type: 'basic',
-    iconUrl: chrome.extension.getURL('icons/48.png'),
-    title: 'Stellar Photos',
-    message: 'Preferences saved successfully',
-  });
+  notifySnackbar('Preferences saved successfully');
 };
 
 const openDefaultTab = (e) => {
