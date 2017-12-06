@@ -1,16 +1,6 @@
-@font-face {
-  font-family: 'inconsolata-webfont';
-  src: url('../fonts/inconsolata-webfont.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'lato-webfont';
-  src: url('../fonts/lato-webfont.woff2') format('woff2');
-}
-
 $black: #111;
 $white: #fff;
 
-$font-stack: 'lato-webfont', sans-serif;
-$monospace: 'inconsolata-webfont', monospace;
+$font-stack: 'Lato', 'Ubuntu', 'Open Sans', sans-serif;
+$monospace: 'Inconsolata', monospace;
 $global-border-radius: 2px;
