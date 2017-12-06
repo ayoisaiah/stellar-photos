@@ -6,17 +6,17 @@ import optionsSidebar from './options-sidebar';
 
 const optionsPopover = () => `
   <div class="popover options-popover">
-    <button 
-      class="control-button options-button" 
+    <button
+      class="control-button options-button"
       id="options-button"
-      title="Options"
+      title="Stellar Photos Options"
       aria-label="Toggle Options Popover">
 
       <svg class="icon icon-settings">
         <use href="#icon-settings"></use>
       </svg>
 
-    </button> 
+    </button>
 
     <div class="popover-content">
       ${optionsSidebar()}

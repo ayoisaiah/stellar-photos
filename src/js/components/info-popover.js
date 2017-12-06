@@ -4,7 +4,7 @@
 
 const infoPopover = (nextImage, fullDate) => `
   <div class="popover info-popover">
-    <button class="control-button info-button">
+    <button title="Photo info" class="control-button info-button">
       <svg class="icon icon-info"><use href="#icon-info"></use></svg>
     </button>
 
