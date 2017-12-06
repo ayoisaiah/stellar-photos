@@ -60,7 +60,7 @@ const onedriveAuth = (code, tabId) => {
 const refreshOnedriveToken = (imageId, downloadUrl) => {
   const onedriveData = JSON.parse(localStorage.getItem('onedrive'));
 
-  fetch(`http://localhost:8080/api/ondrive/refresh?refresh_token=${onedriveData.refresh_token}`)
+  fetch(`http://localhost:8080/api/onedrive/refresh?refresh_token=${onedriveData.refresh_token}`)
     .then(validateResponse)
     .then((data) => {
       const onedrive = Object.assign({
