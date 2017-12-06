@@ -19,14 +19,19 @@ const updateCollections = (collections) => {
   spinner.start();
 
   fetch(`https://stellar-photos.herokuapp.com/api/validate/${collections}`)
-    .then(response => response.text())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      return response.text();
+    })
     .then((data) => {
       spinner.stop();
 
       const json = JSON.parse(data);
-      if (json.error) {
-        notifySnackbar(json.error, 'error');
 
+      if (json.error) {
+        notifySnackbar(json.message, 'error');
         return;
       }
 

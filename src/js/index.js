@@ -48,6 +48,10 @@ const hideControls = () => {
   const historyPane = $('s-history');
   if (historyPane.classList.contains('open')) return;
 
+  // Also don't hide controls if there is an active search
+  const searchResults = $('searchResults');
+  if (searchResults.hasChildNodes()) return;
+
   uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
 };
 

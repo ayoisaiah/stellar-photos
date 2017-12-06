@@ -32,6 +32,14 @@ body {
   animation: fadeInControls 0.7s ease;
 }
 
+.s-ui.no-pointer {
+  pointer-events: none;
+
+  &.s-footer > div {
+    pointer-events: auto;
+  }
+}
+
 .s-ui.hide-ui {
   opacity: 0 !important;
   animation: fadeOutControls 0.4s ease;

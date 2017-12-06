@@ -2,7 +2,7 @@ import Ladda from 'ladda';
 import displayPhotos from './display-photos';
 import purify from '../libs/purify-dom';
 import state from '../libs/state';
-import { $ } from '../libs/helpers';
+import { $, chainableClassList } from '../libs/helpers';
 import { handleClick, handleSubmit } from '../libs/handle';
 import loadingIndicator from '../libs/loading-indicator';
 import searchButton from '../components/search-button';
@@ -47,6 +47,7 @@ const searchPhotos = (key, page) => {
         spinner.stop();
       }
 
+
       if (json.photos.total === 0) {
         chrome.notifications.create('notify-search', {
           type: 'basic',
@@ -58,12 +59,17 @@ const searchPhotos = (key, page) => {
         return;
       }
 
+      const uiElements = document.querySelectorAll('.s-ui');
+      uiElements.forEach((element) => {
+        chainableClassList(element).remove('hide-ui');
+        chainableClassList(element).add('no-pointer');
+      });
+
       state.incomingResults = json.photos.results;
       state.results = [...state.results, ...state.incomingResults];
       displayPhotos(state.incomingResults, json.photos.total);
     })
-    .catch((e) => {
-      console.log(e);
+    .catch(() => {
       state.isLoading = false;
 
       if (page === 1) {

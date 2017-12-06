@@ -2,6 +2,7 @@ import { searchPhotos } from '../modules/search';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
 import { saveToGoogleDrive } from './googledrive';
+import { $, chainableClassList } from './helpers';
 import state from './state';
 import observer from './observer';
 
@@ -28,18 +29,23 @@ const handleClick = (e) => {
 };
 
 const handleSubmit = () => {
-  const loadMore = document.querySelector('.moreResults-button');
+  const loadMore = $('moreResults-button');
   loadMore.classList.add('hidden');
   observer.observe(loadMore);
 
-  const searchResults = document.querySelector('.searchResults');
+  const searchResults = $('searchResults');
   while (searchResults.hasChildNodes()) {
     searchResults.removeChild(searchResults.lastChild);
   }
 
+  const uiElements = document.querySelectorAll('.s-ui');
+  uiElements.forEach((element) => {
+    chainableClassList(element).remove('no-pointer');
+  });
+
   // Reset state
   state.page = 1;
-  state.searchKey = document.getElementById('searchForm-input').value;
+  state.searchKey = $('searchForm-input').value;
   state.results = [];
   state.incomingResults = [];
 

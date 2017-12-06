@@ -10,7 +10,7 @@ const notifySnackbar = (message, className = '') => {
   setTimeout(() => {
     const snackbarElement = document.querySelector('.snackbar');
     snackbarElement.parentNode.removeChild(snackbarElement);
-  }, 3500);
+  }, 3400);
 };
 
 export default notifySnackbar;
