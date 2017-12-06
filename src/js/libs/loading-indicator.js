@@ -1,4 +1,4 @@
-import { $ } from '../libs/helpers';
+import { $ } from './helpers';
 
 const loadingIndicator = () => {
   const loader = $('loader');
