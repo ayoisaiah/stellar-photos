@@ -11,7 +11,7 @@ import footer from './components/footer';
 import header from './components/header';
 
 
-const body = document.getElementById('app');
+const body = $('app');
 body.insertAdjacentHTML('afterbegin', purify.sanitize(`
     ${loader()}
     ${header()}
