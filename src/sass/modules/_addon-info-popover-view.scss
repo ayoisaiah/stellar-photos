@@ -8,27 +8,22 @@
  */
 
 .addon-info {
+
+  p, .credit-libraries {
+    margin-bottom: 2rem;
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+
   .button {
     display: inline-block !important;
+    margin-right: 15px;
 
     &:hover {
       text-decoration: none;
     }
-  }
-
-
-  & > div, .github-button {
-    margin-bottom: 15px;
-  }
-
-
-  .share-addon a {
-    display: flex;
-    align-items: center;
-
-    svg {
-      margin-right: 10px;
-    }
-
   }
 }

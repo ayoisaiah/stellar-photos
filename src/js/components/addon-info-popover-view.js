@@ -4,53 +4,38 @@
 
 const addonInfoPopoverView = () => `
   <section id="addon-info" class="addon-info">
-    <span class="popover-label">Star this extension on Github</span>
+    <p>Stellar is made by <a href="https://github.com/ayoisaiah">Ayo Isaiah</a> and
+    <a href="https://github.com/ayoisaiah/stellar-photos/graphs/contributors">
+    other contributors</a>. You can submit feedback or feature requests by tweeting
+    <a href="https://twitter.com/ayisaiah">@ayisaiah</a></p>
 
-    <a class="button github-button"
-      href="https://github.com/ayoisaiah/stellar-photos">
+    <div class="links">
+      <a class="button github-button"
+        href="https://github.com/ayoisaiah/stellar-photos">
         Star on Github
       </a>
 
-    <div class="leave-a-review">
-      <span class="popover-label">Leave a (5 star &#128521;) reveiw</span>
-
-      <a href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo/reviews?hl=en">
-        Google Chrome</a>
-
-      <br>
-
-      <a href="https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/reviews/">Firefox</a>
-    </div>
-
-    <div class="report-issue">
-      <span class="popover-label">Having trouble?</span>
       <a class="button" href="https://github.com/ayoisaiah/stellar-photos/issues">
-       Report an issue!</a>
+       File a bug report</a> <br>
+
+       <a class="button" href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos">Share on Twitter</a>
+
+        <a class="button" href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo/reviews?hl=en">
+          Write a review
+        </a>
     </div>
 
-    <div class="share-addon">
-      <span class="popover-label">Spread the word about the extension</span>
-      <a href="https://facebook.com/sharer/sharer.php?u=https://stellarapp.photos"
-        aria-label="Share on Facebook">
-
-        <svg class="icon icon-facebook">
-          <use href="#icon-facebook"></use>
-        </svg>
-
-        Share on Facebook
-      </a>
-
-      <br>
-
-      <a href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos."
-        aria-label="Share on Twitter">
-        <svg class="icon icon-twitter">
-          <use href="#icon-twitter"></use>
-        </svg>
-
-        Share on Twitter
-      </a>
+    <div class="credit-libraries">
+      <h3>Awesome libraries used</h3>
+      <ul>
+        <li><a href="https://github.com/cure53/DOMPurify">DOMPurify</a></li>
+        <li><a href="http://timeago.org/">Timeago</a></li>
+        <li><a href="https://github.com/hakimel/Ladda">Ladda</a></li>
+      </ul>
     </div>
+
+    <p>Stellar is free and open source under the terms of the
+    <a href="https://opensource.org/licenses/MIT">MIT Licence</a></p>
 
   </section>
 `;

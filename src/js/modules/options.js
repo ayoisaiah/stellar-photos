@@ -59,7 +59,7 @@ const loadOptions = () => {
 
   controls.insertAdjacentHTML('afterbegin', purify.sanitize(`
     ${optionsPopover()}
-    
+
       `, { ADD_TAGS: ['use'] }));
 
   loadOptionViews();
