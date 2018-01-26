@@ -27,36 +27,8 @@ const infoPopover = (nextImage, fullDate) => `
       </li>
 
       <li class="photo-info-item">
-        <span class="popover-label">Created On</span>
+        <span class="popover-label">Published On</span>
         <span class="created-date">${fullDate}</span>
-      </li>
-
-      <li class="photo-info-item">
-        <span class="popover-label">Views</span>
-        <div class="wrapper">
-          <span class="views">${Number(nextImage.views)
-    .toLocaleString()}</span>
-          <svg class="icon eye-icon"><use href="#icon-eye"></use></svg>
-        </div>
-      </li>
-
-      <li class="photo-info-item">
-        <span class="popover-label">Likes</span>
-        <div class="wrapper">
-          <span class="likes">${nextImage.likes}</span>
-          <svg class="icon heart-icon"><use href="#icon-heart"></use></svg>
-        </div>
-      </li>
-
-      <li class="photo-info-item">
-        <span class="popover-label">Downloads</span>
-        <div class="wrapper">
-          <span class="downloads">${Number(nextImage.downloads)
-    .toLocaleString()}</span>
-          <svg class="icon download-icon">
-            <use href="#icon-download"></use>
-          </svg>
-        </div>
       </li>
 
       <li class="photo-info-item">
@@ -64,11 +36,6 @@ const infoPopover = (nextImage, fullDate) => `
         <div class="wrapper">
           <span class="camera-model">${nextImage.exif.model ?
     nextImage.exif.model : '--'}</span>
-          ${nextImage.exif.model ? `
-            <svg class="icon camera-icon">
-              <use href="#icon-camera"></use>
-            </svg>
-            ` : ''}
         </div>
       </li>
 
@@ -79,11 +46,34 @@ const infoPopover = (nextImage, fullDate) => `
       </li>
 
       <li class="photo-info-item">
-        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+        <span class="popover-label">Shutter Speed</span>
+        <span class="created-date">${nextImage.exif.exposure_time ?
+    `${nextImage.exif.exposure_time}s` : '--'}</span>
+      </li>
+
+      <li class="photo-info-item">
+        <span class="popover-label">Aperture</span>
+        <span class="created-date">${nextImage.exif.aperture ?
+    `ƒ/${nextImage.exif.aperture}` : '--'}</span>
+      </li>
+
+      <li class="photo-info-item">
+        <span class="popover-label">Focal Length</span>
+        <span class="created-date">${nextImage.exif.focal_length ?
+    `${nextImage.exif.focal_length}mm` : '--'}</span>
+      </li>
+
+      <li class="photo-info-item">
+        <span class="popover-label">ISO</span>
+        <span class="created-date">${nextImage.exif.iso ?
+    nextImage.exif.iso : '--'}</span>
+      </li>
+
+      <li class="photo-info-item">
+        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-cred"
         class="button linkToPhoto"
         >View photo on Unsplash.com</a>
       </li>
-
 
     </ul>
   </div>
