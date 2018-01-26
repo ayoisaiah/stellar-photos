@@ -25,7 +25,9 @@ gulp.task('build', (done) => {
     const tasks = files.map(entry => browserify({
       entries: [entry],
     })
-      .transform(babelify)
+      .transform(babelify.configure({
+        presets: ['env'],
+      }))
       .bundle()
       .pipe(plumber({
         errorhandler: (error) => {
