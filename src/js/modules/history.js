@@ -24,7 +24,8 @@ const displayHistory = (history) => {
 
 const initializeHistory = () => {
   const headerContent = $('header-content');
-  headerContent.insertAdjacentHTML('afterbegin', purify.sanitize(hamburgerMenu()));
+  headerContent.insertAdjacentHTML('afterbegin',
+    purify.sanitize(hamburgerMenu()));
 
   chrome.storage.local.get('history', (result) => {
     const { history } = result;

@@ -2,7 +2,7 @@ import { searchPhotos } from '../modules/search';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
 import { saveToGoogleDrive } from './googledrive';
-import { $, chainableClassList } from './helpers';
+import { $, chainableClassList, removeChildElements as empty } from './helpers';
 import state from './state';
 import observer from './observer';
 
@@ -34,9 +34,7 @@ const handleSubmit = () => {
   observer.observe(loadMore);
 
   const searchResults = $('searchResults');
-  while (searchResults.hasChildNodes()) {
-    searchResults.removeChild(searchResults.lastChild);
-  }
+  empty(searchResults);
 
   const uiElements = document.querySelectorAll('.s-ui');
   uiElements.forEach((element) => {
