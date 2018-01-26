@@ -39,15 +39,6 @@ const searchPhotos = (key, page) => {
     .then((json) => {
       state.isLoading = false;
 
-      if (page === 1) {
-        loadingIndicator().stop();
-      }
-
-      if (page > 1) {
-        spinner.stop();
-      }
-
-
       if (json.photos.total === 0) {
         chrome.notifications.create('notify-search', {
           type: 'basic',
@@ -72,14 +63,6 @@ const searchPhotos = (key, page) => {
     .catch(() => {
       state.isLoading = false;
 
-      if (page === 1) {
-        loadingIndicator().stop();
-      }
-
-      if (page > 1) {
-        spinner.stop();
-      }
-
       const message = (navigator.onLine) ? 'Oh Snap! An error occurred' : 'There is no internet connection';
 
       chrome.notifications.create('notify-search', {
@@ -88,6 +71,15 @@ const searchPhotos = (key, page) => {
         title: 'Stellar Photos',
         message,
       });
+    })
+    .finally(() => {
+      if (page === 1) {
+        loadingIndicator().stop();
+      }
+
+      if (page > 1) {
+        spinner.stop();
+      }
     });
 };
 
