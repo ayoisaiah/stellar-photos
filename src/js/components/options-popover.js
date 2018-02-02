@@ -9,7 +9,7 @@ const optionsPopover = () => `
     <button
       class="control-button options-button"
       id="options-button"
-      title="Stellar Photos Options"
+      title="Options"
       aria-label="Toggle Options Popover">
 
       <svg class="icon icon-settings">
