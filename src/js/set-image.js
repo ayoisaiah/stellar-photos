@@ -1,12 +1,15 @@
 import { $ } from './libs/helpers';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const nextImage = JSON.parse(localStorage.getItem('nextImage'));
-  const body = $('app');
-
-  if (nextImage) {
-    body.style.backgroundImage = `url(${nextImage.base64})`;
-  }
+  window.stellar = {};
+  window.stellar.nextImage = new Promise((resolve) => {
+    const nextImage = JSON.parse(localStorage.getItem('nextImage'));
+    if (nextImage) {
+      const body = $('app');
+      body.style.backgroundImage = `url(${nextImage.base64})`;
+      resolve(nextImage);
+    }
+  });
 
   chrome.runtime.sendMessage({ command: 'load-data' });
 
@@ -41,3 +44,4 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('mousemove', loadControls);
   document.addEventListener('focus', loadControls);
 });
+
