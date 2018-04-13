@@ -51,7 +51,9 @@ const googleDriveAuth = (code, tabId) => {
         if (data.refresh_token) {
           // Need to use sync storage since this refresh token is sent only once
           // and does not expire until user invalidates access
-          chrome.storage.sync.set('googledrive_refresh_token', data.refresh_token);
+          chrome.storage.sync.set({
+            googledrive_refresh_token: data.refresh_token,
+          });
         }
 
         chrome.runtime.sendMessage({

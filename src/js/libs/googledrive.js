@@ -29,6 +29,10 @@ const saveToGoogleDrive = (imageId, downloadUrl) => {
   if (!lessThanOneHourAgo(googleDriveData.timestamp)) {
     refreshGoogleDriveToken(imageId, downloadUrl);
   }
+
+  const googleDriveToken = JSON.parse(localStorage.getItem(('googledrive'))).access_token;
+  fetch(`http://localhost:8080/api/googledrive/save?accessToken=${googleDriveToken}&imageId=${imageId}&downloadUrl=${downloadUrl}`)
+    .then(validateResponse);
 };
 
 export { authorizeGoogleDrive, saveToGoogleDrive };

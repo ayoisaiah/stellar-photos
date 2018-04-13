@@ -6,7 +6,7 @@
 const googleDriveButton = photo => `
       <button
         data-imageid="${photo.id}"
-        data-downloadurl="${photo.links.download}"
+        data-downloadurl="${photo.urls.small}"
         id="googledrive-button"
         class="control-button cloud-button googledrive-button"
         title="Save photo to Google Drive">
