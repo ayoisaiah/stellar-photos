@@ -1,0 +1,51 @@
+devDependencies:
+  eslint-config-prettier: 2.9.0
+  eslint-plugin-prettier: 2.6.0
+  prettier: 1.12.0
+packages:
+  /eslint-config-prettier/2.9.0:
+    dependencies:
+      get-stdin: 5.0.1
+    dev: true
+    peerDependencies:
+      eslint: '>=3.14.1'
+    resolution:
+      integrity: sha512-ag8YEyBXsm3nmOv1Hz991VtNNDMRa+MNy8cY47Pl4bw6iuzqKbJajXdqUpiw13STdLLrznxgm1hj9NhxeOYq0A==
+  /eslint-plugin-prettier/2.6.0:
+    dependencies:
+      fast-diff: 1.1.2
+      jest-docblock: 21.2.0
+    dev: true
+    engines:
+      node: '>=4.0.0'
+    peerDependencies:
+      prettier: '>= 0.11.0'
+    resolution:
+      integrity: sha512-floiaI4F7hRkTrFe8V2ItOK97QYrX75DjmdzmVITZoAP6Cn06oEDPQRsO6MlHEP/u2SxI3xQ52Kpjw6j5WGfeQ==
+  /fast-diff/1.1.2:
+    dev: true
+    resolution:
+      integrity: sha512-KaJUt+M9t1qaIteSvjc6P3RbMdXsNhK61GRftR6SNxqmhthcd9MGIi4T+o0jD8LUSpSnSKXE20nLtJ3fOHxQig==
+  /get-stdin/5.0.1:
+    dev: true
+    engines:
+      node: '>=0.12.0'
+    resolution:
+      integrity: sha1-Ei4WFZHiH/TFJTAwVpPyDmOTo5g=
+  /jest-docblock/21.2.0:
+    dev: true
+    resolution:
+      integrity: sha512-5IZ7sY9dBAYSV+YjQ0Ovb540Ku7AO9Z5o2Cg789xj167iQuZ2cG+z0f3Uct6WeYLbU6aQiM2pCs7sZ+4dotydw==
+  /prettier/1.12.0:
+    dev: true
+    engines:
+      node: '>=4'
+    resolution:
+      integrity: sha512-Wz0SMncgaglBzDcohH3ZIAi4nVpzOIEweFzCOmgVEoRSeO72b4dcKGfgxoRGVMaFlh1r7dlVaJ+f3CIHfeH6xg==
+registry: 'https://registry.npmjs.org/'
+shrinkwrapMinorVersion: 5
+shrinkwrapVersion: 3
+specifiers:
+  eslint-config-prettier: ^2.9.0
+  eslint-plugin-prettier: ^2.6.0
+  prettier: ^1.12.0
