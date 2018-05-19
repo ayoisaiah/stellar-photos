@@ -34,9 +34,9 @@ const searchPhotos = (key, page) => {
     spinner.start();
   }
 
-  fetch(`https://stellar-photos.herokuapp.com/api/photos/search/${key},${page}`)
+  fetch(`http://localhost:8080/search-unsplash/${key},${page}`)
     .then(response => response.json())
-    .then((json) => {
+    .then(json => {
       state.isLoading = false;
 
       if (json.photos.total === 0) {
@@ -51,7 +51,7 @@ const searchPhotos = (key, page) => {
       }
 
       const uiElements = document.querySelectorAll('.s-ui');
-      uiElements.forEach((element) => {
+      uiElements.forEach(element => {
         chainableClassList(element).remove('hide-ui');
         chainableClassList(element).add('no-pointer');
       });
@@ -63,7 +63,9 @@ const searchPhotos = (key, page) => {
     .catch(() => {
       state.isLoading = false;
 
-      const message = (navigator.onLine) ? 'Oh Snap! An error occurred' : 'There is no internet connection';
+      const message = navigator.onLine
+        ? 'Oh Snap! An error occurred'
+        : 'There is no internet connection';
 
       chrome.notifications.create('notify-search', {
         type: 'basic',
@@ -85,19 +87,26 @@ const searchPhotos = (key, page) => {
 
 const initializeSearch = () => {
   const headerContent = $('header-content');
-  headerContent.insertAdjacentHTML('beforeend', purify.sanitize(searchButton(), {
-    ADD_TAGS: ['use'],
-  }));
+  headerContent.insertAdjacentHTML(
+    'beforeend',
+    purify.sanitize(searchButton(), {
+      ADD_TAGS: ['use'],
+    })
+  );
 
   const main = document.querySelector('.s-main');
-  main.insertAdjacentHTML('beforeend',
+  main.insertAdjacentHTML(
+    'beforeend',
     purify.sanitize(searchForm(), {
-      SANITIZE_DOM: false, ADD_TAGS: ['use'],
-    }));
+      SANITIZE_DOM: false,
+      ADD_TAGS: ['use'],
+    })
+  );
 
   const loadMore = document.querySelector('.moreResults-button');
-  loadMore
-    .addEventListener('click', () => searchPhotos(state.searchKey, state.page));
+  loadMore.addEventListener('click', () =>
+    searchPhotos(state.searchKey, state.page)
+  );
 
   const searchButtonOpen = document.getElementById('searchButton-open');
   searchButtonOpen.addEventListener('click', openSearch);
@@ -105,19 +114,20 @@ const initializeSearch = () => {
   const searchButtonClose = document.getElementById('searchButton-close');
   searchButtonClose.addEventListener('click', closeSearch);
 
-  document.addEventListener('keyup', (e) => {
+  document.addEventListener('keyup', e => {
     if (e.keyCode === 27) {
       closeSearch();
     }
   });
 
-  document.getElementById('searchForm').addEventListener('submit', (e) => {
+  document.getElementById('searchForm').addEventListener('submit', e => {
     e.preventDefault();
     closeSearch();
     handleSubmit();
   });
 
-  document.getElementById('searchResults')
+  document
+    .getElementById('searchResults')
     .addEventListener('click', handleClick);
 };
 

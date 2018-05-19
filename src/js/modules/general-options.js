@@ -8,7 +8,7 @@ import generalPopoverView from '../components/general-popover-view';
  * Handles General Options
  */
 
-const updateCollections = (collections) => {
+const updateCollections = collections => {
   if (!collections) {
     notifySnackbar('Collection IDs not valid!', 'error');
 
@@ -18,36 +18,30 @@ const updateCollections = (collections) => {
   const spinner = Ladda.create(document.querySelector('.update-collections'));
   spinner.start();
 
-  fetch(`https://stellar-photos.herokuapp.com/api/validate/${collections}`)
-    .then((response) => {
+  fetch(`http://localhost:8080/validate-collections/${collections}`)
+    .then(response => {
       if (!response.ok) {
         throw new Error(response.statusText);
       }
       return response.text();
     })
-    .then((data) => {
-      spinner.stop();
-
-      const json = JSON.parse(data);
-
-      if (json.error) {
-        notifySnackbar(json.message, 'error');
-        return;
-      }
-
-      chrome.storage.sync.set({ collections });
-
-      notifySnackbar(json.message);
+    .then(() => {
+      chrome.storage.sync.set({ collections }, () => {
+        notifySnackbar('Collection saved successfully');
+      });
 
       chrome.runtime.sendMessage({ command: 'load-data' });
-    }).catch(() => {
-      spinner.stop();
-
-      notifySnackbar('Oh Snap! An error occurred', 'error');
-    });
+    })
+    .catch(() => {
+      notifySnackbar(
+        'Failed to save collections. Please check that the collection exist',
+        'error'
+      );
+    })
+    .finally(() => spinner.stop());
 };
 
-const updatePhotoFrequency = (selected) => {
+const updatePhotoFrequency = selected => {
   chrome.storage.sync.set({ photoFrequency: selected });
 
   if (selected === 'everyhour') {
@@ -65,7 +59,7 @@ const updatePhotoFrequency = (selected) => {
   notifySnackbar('Preferences saved successfully');
 };
 
-const openDefaultTab = (e) => {
+const openDefaultTab = e => {
   e.preventDefault();
   chrome.tabs.update({
     url: 'chrome-search://local-ntp/local-ntp.html',
@@ -74,7 +68,7 @@ const openDefaultTab = (e) => {
   });
 };
 
-const openChromeApps = (e) => {
+const openChromeApps = e => {
   e.preventDefault();
   chrome.tabs.update({
     url: 'chrome://apps/',
@@ -84,13 +78,13 @@ const openChromeApps = (e) => {
 };
 
 const initializeCollections = () => {
-  chrome.storage.sync.get('collections', (d) => {
+  chrome.storage.sync.get('collections', d => {
     const { collections } = d;
     const collectionsInput = $('unsplash-collections__input');
     collectionsInput.value = collections;
 
     const collectionsForm = $('unsplash-collections');
-    collectionsForm.addEventListener('submit', (e) => {
+    collectionsForm.addEventListener('submit', e => {
       e.preventDefault();
       const value = collectionsInput.value.trim().replace(/ /g, '');
       updateCollections(value);
@@ -99,7 +93,7 @@ const initializeCollections = () => {
 };
 
 const initializePhotoFrequency = () => {
-  chrome.storage.sync.get('photoFrequency', (res) => {
+  chrome.storage.sync.get('photoFrequency', res => {
     const { photoFrequency } = res;
 
     if (photoFrequency) {
@@ -112,8 +106,8 @@ const initializePhotoFrequency = () => {
     const savePhotoFrequency = $('save-photo-frequency');
     savePhotoFrequency.addEventListener('click', () => {
       const selectPhotoFrequency = $('select-photo-frequency');
-      const selected = selectPhotoFrequency[selectPhotoFrequency.selectedIndex]
-        .value;
+      const selected =
+        selectPhotoFrequency[selectPhotoFrequency.selectedIndex].value;
       updatePhotoFrequency(selected);
     });
   });
@@ -121,8 +115,10 @@ const initializePhotoFrequency = () => {
 
 const intializeGeneralOptions = () => {
   const popoverView = $('popover-view');
-  popoverView.insertAdjacentHTML('afterbegin',
-    purify.sanitize(generalPopoverView()));
+  popoverView.insertAdjacentHTML(
+    'afterbegin',
+    purify.sanitize(generalPopoverView())
+  );
 
   const openDefaultTabButton = $('show-default-tab');
   openDefaultTabButton.addEventListener('click', openDefaultTab);
