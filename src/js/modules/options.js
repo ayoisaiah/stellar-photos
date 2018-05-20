@@ -1,6 +1,10 @@
 import purify from '../libs/purify-dom';
-import { togglePopover, $, chainableClassList,
-  removeChildElements as empty } from '../libs/helpers';
+import {
+  togglePopover,
+  $,
+  chainableClassList,
+  removeChildElements as empty,
+} from '../libs/helpers';
 import initializeGeneralOptions from '../modules/general-options';
 import initializeCloudOptions from '../modules/cloud-options';
 import initializeWeatherOptions from '../modules/weather-options';
@@ -9,9 +13,11 @@ import optionsPopover from '../components/options-popover';
 
 const loadOptionViews = () => {
   const viewControls = Array.from(
-    document.querySelectorAll('.options-sidebar__item'));
+    document.querySelectorAll('.options-sidebar__item')
+  );
   const activeControl = viewControls.filter(control =>
-    control.classList.contains('active-option'));
+    control.classList.contains('active-option')
+  );
 
   const activeOption = activeControl[0].dataset.option;
 
@@ -45,10 +51,11 @@ const loadOptionViews = () => {
   }
 };
 
-const changeActiveOption = (e) => {
+const changeActiveOption = e => {
   const viewControls = document.querySelectorAll('.options-sidebar li');
   viewControls.forEach(control =>
-    chainableClassList(control).remove('active-option'));
+    chainableClassList(control).remove('active-option')
+  );
 
   e.target.classList.add('active-option');
   loadOptionViews();
@@ -57,10 +64,10 @@ const changeActiveOption = (e) => {
 const loadOptions = () => {
   const controls = $('footer-controls');
 
-  controls.insertAdjacentHTML('afterbegin', purify.sanitize(`
-    ${optionsPopover()}
-
-      `, { ADD_TAGS: ['use'] }));
+  controls.insertAdjacentHTML(
+    'afterbegin',
+    purify.sanitize(`${optionsPopover()}`, { ADD_TAGS: ['use'] })
+  );
 
   loadOptionViews();
 
@@ -70,7 +77,7 @@ const loadOptions = () => {
   });
 
   const viewControls = document.querySelectorAll('.options-sidebar li');
-  viewControls.forEach((control) => {
+  viewControls.forEach(control => {
     control.addEventListener('click', changeActiveOption);
   });
 };

@@ -95,7 +95,7 @@ const initializePhotoFrequency = () => {
       const selectPhotoFrequency = $('select-photo-frequency');
       selectPhotoFrequency.value = photoFrequency;
     } else {
-      updatePhotoFrequency('newtab');
+      chrome.storage.sync.set({ photoFrequency: 'newtab' });
     }
 
     const savePhotoFrequency = $('save-photo-frequency');
