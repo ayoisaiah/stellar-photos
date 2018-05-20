@@ -1,12 +1,11 @@
 import { searchPhotos } from '../modules/search';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
-import { saveToGoogleDrive } from './googledrive';
 import { $, chainableClassList, removeChildElements as empty } from './helpers';
 import state from './state';
 import observer from './observer';
 
-const handleClick = (e) => {
+const handleClick = e => {
   if (!e.target.matches('.cloud-button')) return;
 
   const { target } = e;
@@ -20,11 +19,6 @@ const handleClick = (e) => {
 
   if (target.classList.contains('onedrive-button')) {
     saveToOneDrive(imageid, downloadurl);
-    return;
-  }
-
-  if (target.classList.contains('googledrive-button')) {
-    saveToGoogleDrive(imageid, downloadurl);
   }
 };
 
@@ -37,7 +31,7 @@ const handleSubmit = () => {
   empty(searchResults);
 
   const uiElements = document.querySelectorAll('.s-ui');
-  uiElements.forEach((element) => {
+  uiElements.forEach(element => {
     chainableClassList(element).remove('no-pointer');
   });
 

@@ -2,7 +2,6 @@ import { $, removeChildElements as empty } from '../libs/helpers';
 import purify from '../libs/purify-dom';
 import { authorizeDropbox } from '../libs/dropbox';
 import { authorizeOneDrive } from '../libs/onedrive';
-import { authorizeGoogleDrive } from '../libs/googledrive';
 import cloudPopoverView from '../components/cloud-popover-view';
 
 /**
@@ -10,8 +9,7 @@ import cloudPopoverView from '../components/cloud-popover-view';
  * Handles options related to syncing photos to supported cloud services
  */
 
-
-const updateCloudStatus = (selected) => {
+const updateCloudStatus = selected => {
   const action = $('action');
   empty(action);
 
@@ -22,9 +20,11 @@ const updateCloudStatus = (selected) => {
   const token = localStorage.getItem(selected);
 
   if (!token) {
-    action.insertAdjacentHTML('beforeend',
+    action.insertAdjacentHTML(
+      'beforeend',
       purify.sanitize(`<button class="authorize"
-        id="authorize">Authorize</button>`));
+        id="authorize">Authorize</button>`)
+    );
 
     const authorize = $('authorize');
 
@@ -39,15 +39,11 @@ const updateCloudStatus = (selected) => {
         authorizeOneDrive();
       });
     }
-
-    if (selected === 'googledrive') {
-      authorize.addEventListener('click', () => {
-        authorizeGoogleDrive();
-      });
-    }
   } else {
-    action.insertAdjacentHTML('beforeend',
-      purify.sanitize('<span class="success-message">Authenticated</span>'));
+    action.insertAdjacentHTML(
+      'beforeend',
+      purify.sanitize('<span class="success-message">Authenticated</span>')
+    );
   }
 };
 
@@ -61,7 +57,7 @@ const selectCloudService = () => {
 
   const selected = selectCloud[selectCloud.selectedIndex].value;
 
-  chrome.runtime.onMessage.addListener((request) => {
+  chrome.runtime.onMessage.addListener(request => {
     if (request.command === 'update-cloud-status') {
       updateCloudStatus(selected);
     }
@@ -70,10 +66,12 @@ const selectCloudService = () => {
 
 const initializeCloudOptions = () => {
   const popoverView = $('popover-view');
-  popoverView.insertAdjacentHTML('afterbegin',
+  popoverView.insertAdjacentHTML(
+    'afterbegin',
     purify.sanitize(cloudPopoverView(), {
       SANITIZE_DOM: false,
-    }));
+    })
+  );
 
   const selectCloud = $('select-cloud-storage');
   const cloudService = localStorage.getItem('cloudService');

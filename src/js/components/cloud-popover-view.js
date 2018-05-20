@@ -15,7 +15,6 @@ const cloudPopoverView = () => `
         <option disabled selected value="noneselected"> -- Select an option -- </option>
         <option value="dropbox">Dropbox</option>
         <option value="onedrive">OneDrive</option>
-        <option value="googledrive">Google Drive</option>
       </select>
 
       <span class="action" id="action"></span>

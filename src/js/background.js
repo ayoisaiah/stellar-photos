@@ -3,10 +3,6 @@ import fetchRandomPhoto from './libs/fetch-random-photo';
 import loadNewData from './libs/load-new-data';
 import { notifyCloudAuthenticationSuccessful } from './libs/notifications';
 import { onedriveAuth, refreshOnedriveToken } from './libs/onedrive-auth';
-import {
-  googleDriveAuth,
-  refreshGoogleDriveToken,
-} from './libs/google-drive-auth';
 
 chrome.runtime.onInstalled.addListener(fetchRandomPhoto);
 chrome.runtime.onMessage.addListener((request, sender) => {
@@ -30,10 +26,6 @@ chrome.runtime.onMessage.addListener((request, sender) => {
       if (cloudService === 'onedrive') {
         chrome.tabs.remove(sender.tab.id);
         onedriveAuth(request.code);
-      }
-
-      if (cloudService === 'googledrive') {
-        googleDriveAuth(request.code, sender.tab.id);
       }
       break;
     }
@@ -76,10 +68,5 @@ chrome.alarms.onAlarm.addListener(alarm => {
 
   if (alarm.name === 'refresh-onedrive-token') {
     refreshOnedriveToken();
-    return;
-  }
-
-  if (alarm.name === 'refresh-googledrive-token') {
-    refreshGoogleDriveToken();
   }
 });
