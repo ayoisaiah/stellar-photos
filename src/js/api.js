@@ -38,6 +38,9 @@ const refreshOnedriveTokenApi = token =>
 const triggerPhotoDownload = id =>
   fetch(`${baseUrl}/download-photo?id=${id}`).then(validateResponse);
 
+const getOnedriveId = () =>
+  fetch(`${baseUrl}/onedrive/id`).then(validateResponse);
+
 export {
   getRandomPhoto,
   searchPhotos,
@@ -47,4 +50,5 @@ export {
   refreshOnedriveTokenApi,
   validateCollections,
   triggerPhotoDownload,
+  getOnedriveId,
 };

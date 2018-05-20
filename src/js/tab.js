@@ -7,7 +7,6 @@ if (accessToken) {
     token: accessToken,
   });
 
-
   chrome.runtime.sendMessage({ command: 'close-tab' });
 }
 

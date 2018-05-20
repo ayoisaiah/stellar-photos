@@ -7,7 +7,7 @@ import {
 } from './notifications';
 import loadingIndicator from './loading-indicator';
 
-const createAppFolder = (onedriveData, tabId) => {
+const createAppFolder = onedriveData => {
   const headers = new Headers({
     Authorization: `bearer ${onedriveData.access_token}`,
   });
@@ -35,8 +35,6 @@ const createAppFolder = (onedriveData, tabId) => {
       });
 
       chrome.runtime.sendMessage({ command: 'update-cloud-status' });
-
-      chrome.tabs.remove(tabId);
     })
     .catch(error => {
       console.log(error);
@@ -44,7 +42,7 @@ const createAppFolder = (onedriveData, tabId) => {
     });
 };
 
-const onedriveAuth = (code, tabId) => {
+const onedriveAuth = code => {
   if (code) {
     authorizeOnedrive(code)
       .then(data => {
@@ -55,7 +53,7 @@ const onedriveAuth = (code, tabId) => {
           data
         );
 
-        createAppFolder(onedriveData, tabId);
+        createAppFolder(onedriveData);
       })
       .catch(error => {
         console.log(error);
@@ -64,7 +62,7 @@ const onedriveAuth = (code, tabId) => {
   }
 };
 
-const refreshOnedriveToken = (imageId, downloadUrl) => {
+const refreshOnedriveToken = imageId => {
   const onedriveData = JSON.parse(localStorage.getItem('onedrive'));
   refreshOnedriveTokenApi(onedriveData.refresh_token)
     .then(data => {
@@ -83,7 +81,7 @@ const refreshOnedriveToken = (imageId, downloadUrl) => {
       });
 
       if (imageId) {
-        saveToOneDrive(imageId, downloadUrl);
+        saveToOneDrive(imageId);
       }
     })
     .catch(error => {

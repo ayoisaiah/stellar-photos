@@ -6,9 +6,8 @@ import googleDriveButton from '../components/google-drive-button';
  * Load the buttons for the selected cloud service
  */
 
-const cloudButton = (photo) => {
+const cloudButton = photo => {
   const cloudService = localStorage.getItem('cloudService');
-  if (!cloudService) return '';
 
   if (cloudService === 'dropbox') {
     return dropboxButton(photo);
