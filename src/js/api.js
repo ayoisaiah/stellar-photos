@@ -2,9 +2,7 @@ import { validateResponse } from './libs/helpers';
 
 const baseUrl = 'http://localhost:8080';
 const getRandomPhoto = collections =>
-  fetch(
-    `https://stellar-photos.herokuapp.com/api/photos/random/${collections}`
-  ).then(validateResponse);
+  fetch(`${baseUrl}/random-photo/${collections}`).then(validateResponse);
 
 const searchPhotos = (key, page) =>
   fetch(`${baseUrl}/search-unsplash/${key},${page}`).then(validateResponse);
