@@ -22,10 +22,10 @@ const getForecast = (latitude, longitude, metricSystem) =>
     validateResponse
   );
 
-const saveToDropboxApi = (imageId, downloadUrl, dropboxToken) =>
-  fetch(
-    `${baseUrl}/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${dropboxToken}`
-  ).then(validateResponse);
+const saveToDropboxApi = (imageId, dropboxToken) =>
+  fetch(`${baseUrl}/dropbox/save?id=${imageId}&token=${dropboxToken}`).then(
+    validateResponse
+  );
 
 const authorizeOnedrive = code =>
   fetch(`${baseUrl}/onedrive/auth?code=${code}`).then(validateResponse);

@@ -12,7 +12,7 @@ const authorizeDropbox = () => {
   });
 };
 
-const saveToDropbox = (imageId, downloadUrl) => {
+const saveToDropbox = imageId => {
   const dropboxToken = localStorage.getItem('dropbox');
 
   if (!dropboxToken) {
@@ -22,7 +22,7 @@ const saveToDropbox = (imageId, downloadUrl) => {
 
   loadingIndicator().start();
 
-  saveToDropboxApi(imageId, downloadUrl, dropboxToken)
+  saveToDropboxApi(imageId, dropboxToken)
     .then(() => {
       loadingIndicator().stop();
 

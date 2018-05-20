@@ -6,7 +6,6 @@
 const dropboxButton = photo => `
       <button
         data-imageid="${photo.id}"
-        data-downloadurl="${photo.links.download}"
         id="dropbox-button"
         class="control-button cloud-button dropbox-button"
         title="Save photo to Dropbox">
