@@ -4,14 +4,17 @@ const eventListeners = () => {
   const uiElements = document.querySelectorAll('.s-ui');
 
   const showControls = () => {
-    uiElements.forEach(element => chainableClassList(element).remove('hide-ui'));
+    uiElements.forEach(element =>
+      chainableClassList(element).remove('hide-ui')
+    );
   };
 
   const hideControls = () => {
-  // Check if one popover is active
+    // Check if one popover is active
     const popovers = Array.from(document.querySelectorAll('.popover-content'));
-    const arePopoversOpen = popovers.some(e => e.classList
-      .contains('popover-content--is-visible'));
+    const arePopoversOpen = popovers.some(e =>
+      e.classList.contains('popover-content--is-visible')
+    );
 
     // Don't hide controls if any popover is open
     if (arePopoversOpen) return;
@@ -33,7 +36,7 @@ const eventListeners = () => {
 
   let timeout = setTimeout(() => hideControls(), 2000);
 
-  uiElements.forEach((element) => {
+  uiElements.forEach(element => {
     element.addEventListener('mouseenter', () => {
       showControls();
       if (timeout) clearTimeout(timeout);
@@ -45,7 +48,7 @@ const eventListeners = () => {
   });
 
   // Close all popovers when click is detected outside
-  document.addEventListener('click', (node) => {
+  document.addEventListener('click', node => {
     if (node.target.matches('.popover *')) return;
     const popover = document.querySelectorAll('.popover .popover-content');
     popover.forEach(e => e.classList.remove('popover-content--is-visible'));

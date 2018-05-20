@@ -2,7 +2,9 @@ import { validateResponse } from './libs/helpers';
 
 const baseUrl = 'http://localhost:8080';
 const getRandomPhoto = collections =>
-  fetch(`${baseUrl}/random-photo/${collections}`).then(validateResponse);
+  fetch(
+    `https://stellar-photos.herokuapp.com/api/photos/random/${collections}`
+  ).then(validateResponse);
 
 const searchPhotos = (key, page) =>
   fetch(`${baseUrl}/search-unsplash/${key},${page}`).then(validateResponse);
@@ -33,6 +35,9 @@ const refreshOnedriveTokenApi = token =>
     validateResponse
   );
 
+const triggerPhotoDownload = id =>
+  fetch(`${baseUrl}/download-photo?id=${id}`).then(validateResponse);
+
 export {
   getRandomPhoto,
   searchPhotos,
@@ -41,4 +46,5 @@ export {
   authorizeOnedrive,
   refreshOnedriveTokenApi,
   validateCollections,
+  triggerPhotoDownload,
 };

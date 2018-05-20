@@ -4,7 +4,9 @@
  */
 
 const downloadButton = nextImage => `
-      <a href="${nextImage.links.download}?force=true" class="control-button download-button" download title="Download photo">
+      <a data-imageid=${
+        nextImage.id
+      } class="control-button download-button" title="Download photo">
         <svg class="icon icon-download"><use href="#icon-download"></use></svg>
       </a>
 `;
