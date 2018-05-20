@@ -1,11 +1,9 @@
 import { convertTimeStamp, togglePopover, $ } from '../libs/helpers';
 import purify from '../libs/purify-dom';
-import { handleClick } from '../libs/handle';
+import { handleClick, handleDownload } from '../libs/handle';
 import cloudButton from '../libs/cloud-button';
 import downloadButton from '../components/download-button';
 import infoPopover from '../components/info-popover';
-import { triggerPhotoDownload } from '../api';
-import loadingIndicator from '../libs/loading-indicator';
 
 const loadNextImageDetails = () => {
   window.stellar.nextImage.then(nextImage => {
@@ -35,23 +33,7 @@ const loadNextImageDetails = () => {
 
     const downloadBtn = document.querySelector('.download-button');
     downloadBtn.addEventListener('click', () => {
-      loadingIndicator().start();
-      const { imageid } = downloadBtn.dataset;
-      triggerPhotoDownload(imageid)
-        .then(data => {
-          loadingIndicator().stop();
-          const { url } = data;
-          const a = document.createElement('a');
-          a.href = url;
-          a.setAttribute('download', 'download');
-          a.setAttribute('style', 'opacity: 0;');
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        })
-        .catch(() => {
-          loadingIndicator().stop();
-        });
+      handleDownload(downloadBtn);
     });
   });
 };
