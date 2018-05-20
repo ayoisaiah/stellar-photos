@@ -1,11 +1,12 @@
 import Ladda from 'ladda';
+import { validateCollections } from '../api';
 import purify from '../libs/purify-dom';
 import { $ } from '../libs/helpers';
 import notifySnackbar from '../libs/notify-snackbar';
 import generalPopoverView from '../components/general-popover-view';
 
 /*
- * Handles General Options
+ * Handle General Options
  */
 
 const updateCollections = collections => {
@@ -18,13 +19,7 @@ const updateCollections = collections => {
   const spinner = Ladda.create(document.querySelector('.update-collections'));
   spinner.start();
 
-  fetch(`http://localhost:8080/validate-collections/${collections}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      return response.text();
-    })
+  validateCollections(collections)
     .then(() => {
       chrome.storage.sync.set({ collections }, () => {
         notifySnackbar('Collection saved successfully');

@@ -1,9 +1,11 @@
 import { saveToOneDrive } from './onedrive';
 import { validateResponse } from './helpers';
-import { notifyCloudAuthenticationSuccessful,
-  notifyCloudConnectionFailed } from './notifications';
+import { authorizeOnedrive, refreshOnedriveTokenApi } from '../api';
+import {
+  notifyCloudAuthenticationSuccessful,
+  notifyCloudConnectionFailed,
+} from './notifications';
 import loadingIndicator from './loading-indicator';
-
 
 const createAppFolder = (onedriveData, tabId) => {
   const headers = new Headers({
@@ -15,7 +17,10 @@ const createAppFolder = (onedriveData, tabId) => {
     headers,
   };
 
-  const request = new Request('https://graph.microsoft.com/v1.0/drive/special/approot', init);
+  const request = new Request(
+    'https://graph.microsoft.com/v1.0/drive/special/approot',
+    init
+  );
 
   fetch(request)
     .then(validateResponse)
@@ -33,7 +38,7 @@ const createAppFolder = (onedriveData, tabId) => {
 
       chrome.tabs.remove(tabId);
     })
-    .catch((error) => {
+    .catch(error => {
       console.log(error);
       notifyCloudConnectionFailed('Onedrive');
     });
@@ -41,16 +46,18 @@ const createAppFolder = (onedriveData, tabId) => {
 
 const onedriveAuth = (code, tabId) => {
   if (code) {
-    fetch(`http://localhost:8080/api/onedrive/auth?code=${code}`)
-      .then(validateResponse)
-      .then((data) => {
-        const onedriveData = Object.assign({
-          timestamp: Date.now(),
-        }, data);
+    authorizeOnedrive(code)
+      .then(data => {
+        const onedriveData = Object.assign(
+          {
+            timestamp: Date.now(),
+          },
+          data
+        );
 
         createAppFolder(onedriveData, tabId);
       })
-      .catch((error) => {
+      .catch(error => {
         console.log(error);
         notifyCloudConnectionFailed('Onedrive');
       });
@@ -59,13 +66,14 @@ const onedriveAuth = (code, tabId) => {
 
 const refreshOnedriveToken = (imageId, downloadUrl) => {
   const onedriveData = JSON.parse(localStorage.getItem('onedrive'));
-
-  fetch(`http://localhost:8080/api/onedrive/refresh?refresh_token=${onedriveData.refresh_token}`)
-    .then(validateResponse)
-    .then((data) => {
-      const onedrive = Object.assign({
-        timestamp: Date.now(),
-      }, data);
+  refreshOnedriveTokenApi(onedriveData.refresh_token)
+    .then(data => {
+      const onedrive = Object.assign(
+        {
+          timestamp: Date.now(),
+        },
+        data
+      );
 
       localStorage.setItem('onedrive', JSON.stringify(onedrive));
 
@@ -78,7 +86,7 @@ const refreshOnedriveToken = (imageId, downloadUrl) => {
         saveToOneDrive(imageId, downloadUrl);
       }
     })
-    .catch((error) => {
+    .catch(error => {
       console.log(error);
 
       if (imageId) {

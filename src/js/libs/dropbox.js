@@ -1,5 +1,5 @@
 import loadingIndicator from './loading-indicator';
-import { validateResponse } from './helpers';
+import { saveToDropboxApi } from '../api';
 import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
@@ -7,7 +7,9 @@ import {
 
 const authorizeDropbox = () => {
   const key = 'gscbxcjhou1jx21';
-  chrome.tabs.create({ url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/` });
+  chrome.tabs.create({
+    url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/`,
+  });
 };
 
 const saveToDropbox = (imageId, downloadUrl) => {
@@ -20,8 +22,7 @@ const saveToDropbox = (imageId, downloadUrl) => {
 
   loadingIndicator().start();
 
-  fetch(`https://stellar-photos.herokuapp.com/api/dropbox/save?id=${imageId}&url=${downloadUrl}&token=${dropboxToken}`)
-    .then(validateResponse)
+  saveToDropboxApi(imageId, downloadUrl, dropboxToken)
     .then(() => {
       loadingIndicator().stop();
 

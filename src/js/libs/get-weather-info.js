@@ -1,4 +1,4 @@
-import { validateResponse } from '../libs/helpers';
+import { getForecast } from '../api';
 
 /*
  * Fetch current weather information
@@ -6,12 +6,14 @@ import { validateResponse } from '../libs/helpers';
 
 const getWeatherInfo = () => {
   const sendRequest = (latitude, longitude, metricSystem) => {
-    fetch(`https://stellar-photos.herokuapp.com/api/weather/${latitude},${longitude},${metricSystem}`)
-      .then(validateResponse)
-      .then((forecast) => {
-        const f = Object.assign({
-          timestamp: Date.now(),
-        }, forecast);
+    getForecast(latitude, longitude, metricSystem)
+      .then(forecast => {
+        const f = Object.assign(
+          {
+            timestamp: Date.now(),
+          },
+          forecast
+        );
 
         localStorage.setItem('weather-forecast', JSON.stringify(f));
 
@@ -24,15 +26,15 @@ const getWeatherInfo = () => {
       .catch(error => console.log(error));
   };
 
-  chrome.storage.sync.get('coords', (result) => {
+  chrome.storage.sync.get('coords', result => {
     const { coords } = result;
     if (!coords) return;
 
     const { longitude, latitude } = coords;
 
-    chrome.storage.sync.get('tempUnit', (data) => {
+    chrome.storage.sync.get('tempUnit', data => {
       const tempUnit = data.tempUnit || 'celsius';
-      const metricSystem = (tempUnit === 'fahrenheit') ? 'imperial' : 'metric';
+      const metricSystem = tempUnit === 'fahrenheit' ? 'imperial' : 'metric';
       sendRequest(latitude, longitude, metricSystem);
     });
   });

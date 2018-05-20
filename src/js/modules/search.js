@@ -7,6 +7,7 @@ import { handleClick, handleSubmit } from '../libs/handle';
 import loadingIndicator from '../libs/loading-indicator';
 import searchButton from '../components/search-button';
 import searchForm from '../components/search-form';
+import { searchPhotos as searchPhotosApi } from '../api';
 
 const openSearch = () => {
   document.getElementById('searchButton-open').classList.add('hidden');
@@ -34,8 +35,7 @@ const searchPhotos = (key, page) => {
     spinner.start();
   }
 
-  fetch(`http://localhost:8080/search-unsplash/${key},${page}`)
-    .then(response => response.json())
+  searchPhotosApi(key, page)
     .then(json => {
       state.isLoading = false;
 
