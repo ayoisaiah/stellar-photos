@@ -2,7 +2,7 @@ import { $ } from './libs/helpers';
 
 document.addEventListener('DOMContentLoaded', () => {
   window.stellar = {};
-  window.stellar.nextImage = new Promise((resolve) => {
+  window.stellar.nextImage = new Promise(resolve => {
     const nextImage = JSON.parse(localStorage.getItem('nextImage'));
     if (nextImage) {
       const body = $('app');
@@ -13,23 +13,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   chrome.runtime.sendMessage({ command: 'load-data' });
 
-  const loadCss = url => new Promise((resolve, reject) => {
-    const link = document.createElement('link');
-    link.type = 'text/css';
-    link.rel = 'stylesheet';
-    link.href = url;
-    link.onload = resolve;
-    link.onerror = reject;
-    document.getElementsByTagName('head')[0].appendChild(link);
-  });
+  const loadCss = url =>
+    new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.type = 'text/css';
+      link.rel = 'stylesheet';
+      link.href = url;
+      link.onload = resolve;
+      link.onerror = reject;
+      document.getElementsByTagName('head')[0].appendChild(link);
+    });
 
-  const loadJs = url => new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = url;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.getElementsByTagName('head')[0].appendChild(script);
-  });
+  const loadJs = url =>
+    new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.getElementsByTagName('head')[0].appendChild(script);
+    });
 
   const loadControls = () => {
     document.removeEventListener('mousemove', loadControls);
@@ -37,11 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // CSS first to avoid flash of unstyled content
     loadCss('css/main.css')
-      .then(() => loadJs('js/index.js'))
+      .then(() => loadJs('js/index.bundle.js'))
       .catch(error => console.log(error));
   };
 
   document.addEventListener('mousemove', loadControls);
   document.addEventListener('focus', loadControls);
 });
-

@@ -11,13 +11,18 @@ import loader from './components/loader';
 import footer from './components/footer';
 import header from './components/header';
 
+import '../sass/main.scss';
+
 const body = $('app');
-body.insertAdjacentHTML('afterbegin', purify.sanitize(`
+body.insertAdjacentHTML(
+  'afterbegin',
+  purify.sanitize(`
     ${loader()}
     ${header()}
     ${main()}
     ${footer()}
-  `));
+  `)
+);
 
 loadNextImageDetails();
 
