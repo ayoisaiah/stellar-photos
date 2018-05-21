@@ -39,7 +39,7 @@ const searchPhotos = (key, page) => {
     .then(json => {
       state.isLoading = false;
 
-      if (json.photos.total === 0) {
+      if (json.total === 0) {
         chrome.notifications.create('notify-search', {
           type: 'basic',
           iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -56,9 +56,9 @@ const searchPhotos = (key, page) => {
         chainableClassList(element).add('no-pointer');
       });
 
-      state.incomingResults = json.photos.results;
+      state.incomingResults = json.results;
       state.results = [...state.results, ...state.incomingResults];
-      displayPhotos(state.incomingResults, json.photos.total);
+      displayPhotos(state.incomingResults, json.total);
     })
     .catch(() => {
       state.isLoading = false;

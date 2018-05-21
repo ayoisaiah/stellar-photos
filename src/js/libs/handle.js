@@ -7,23 +7,6 @@ import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload } from '../api';
 
-const handleClick = e => {
-  if (!e.target.matches('.cloud-button')) return;
-
-  const { target } = e;
-  const { imageid } = target.dataset;
-  const { downloadurl } = target.dataset;
-
-  if (target.classList.contains('dropbox-button')) {
-    saveToDropbox(imageid, downloadurl);
-    return;
-  }
-
-  if (target.classList.contains('onedrive-button')) {
-    saveToOneDrive(imageid, downloadurl);
-  }
-};
-
 const handleDownload = downloadBtn => {
   loadingIndicator().start();
   const { imageid } = downloadBtn.dataset;
@@ -42,6 +25,27 @@ const handleDownload = downloadBtn => {
     .catch(() => {
       loadingIndicator().stop();
     });
+};
+
+const handleClick = e => {
+  if (!e.target.matches('button')) return;
+
+  const { target } = e;
+  const { imageid } = target.dataset;
+
+  if (target.classList.contains('dropbox-button')) {
+    saveToDropbox(imageid);
+    return;
+  }
+
+  if (target.classList.contains('onedrive-button')) {
+    saveToOneDrive(imageid);
+    return;
+  }
+
+  if (target.classList.contains('card-download-button')) {
+    handleDownload(target);
+  }
 };
 
 const handleSubmit = () => {

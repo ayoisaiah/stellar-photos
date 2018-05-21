@@ -8,8 +8,11 @@ import photoCard from '../components/photo-card';
 const displayPhotos = (photos, total) => {
   const searchResults = $('searchResults');
 
-  photos.map(photo => searchResults.insertAdjacentHTML('beforeend',
-    purify.sanitize(photoCard(photo, cloudButton), { ADD_TAGS: ['use'] })),
+  photos.map(photo =>
+    searchResults.insertAdjacentHTML(
+      'beforeend',
+      purify.sanitize(photoCard(photo, cloudButton), { ADD_TAGS: ['use'] })
+    )
   );
 
   const loadMore = $('moreResults-button');

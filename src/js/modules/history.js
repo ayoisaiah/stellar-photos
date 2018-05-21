@@ -1,5 +1,5 @@
 import purify from '../libs/purify-dom';
-import { handleClick, handleDownload } from '../libs/handle';
+import { handleClick } from '../libs/handle';
 import { $ } from '../libs/helpers';
 import cloudButton from '../libs/cloud-button';
 import historyPane from '../components/history-pane';
@@ -22,10 +22,6 @@ const displayHistory = history => {
       purify.sanitize(photoCard(photo, cloudButton), { ADD_TAGS: ['use'] })
     )
   );
-  const cardDownloadBtn = historyMenu.querySelectorAll('.card-download-button');
-  cardDownloadBtn.forEach(btn => {
-    btn.addEventListener('click', () => handleDownload(btn));
-  });
 };
 
 const initializeHistory = () => {
