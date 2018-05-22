@@ -2,9 +2,9 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build:chrome:dev":
-      "pnpx webpack -w --display-max-modules 0 --env=dev:chrome --progress --colors",
+      "concurrently -w \"npm run clean\" \"pnpx webpack -w --display-max-modules 0 --env=dev:chrome --progress --colors\"",
     "build:firefox:dev":
-      "pnpx webpack -w --display-max-modules 0 --env=dev:firefox --progress --colors",
+      "concurrently -w \"npm run clean\" \"pnpx webpack -w --display-max-modules 0 --env=dev:firefox --progress --colors\"",
     "build:chrome:prod":
       "concurrently \"npm run clean\" \"pnpx webpack --display-max-modules 0 --env=prod:chrome --progress --colors\"",
     "build:firefox:prod":
