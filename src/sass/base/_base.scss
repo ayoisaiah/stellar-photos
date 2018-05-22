@@ -11,7 +11,9 @@ html {
   font-size: 10px;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: inherit;
   margin: 0;
   padding: 0;
@@ -28,8 +30,7 @@ body {
 }
 
 .s-ui {
-  opacity: 1 !important;
-  animation: fadeInControls 0.7s ease;
+  animation: fadeInControls 0.7s ease forwards;
 }
 
 .s-ui.no-pointer {
@@ -41,10 +42,10 @@ body {
 }
 
 .s-ui.hide-ui {
-  opacity: 0 !important;
-  animation: fadeOutControls 0.4s ease;
+  animation: fadeOutControls 0.4s ease forwards;
 
-  .searchButton, .historyButton {
+  .searchButton,
+  .historyButton {
     pointer-events: none;
   }
 }
