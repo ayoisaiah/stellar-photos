@@ -42,7 +42,7 @@ const photoCard = (photo, cloudButton) => {
             <span class="s-photo-dimension">${width} x ${height}</span>
 
             <div>
-              <button title="Download Photo" class="control-button card-download-button" data-imageid=${photoId}>
+              <button title="Download Photo" class="control-button download-button" data-imageid=${photoId}>
                 <svg style="fill: #fafafa;" class="icon icon--download">
                   <use xlink:href="#icon-download"></use>
                 </svg>

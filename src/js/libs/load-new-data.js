@@ -7,7 +7,7 @@ import { lessThanOneHourAgo, lessThan24HoursAgo } from './helpers';
  */
 
 const loadNewData = () => {
-  chrome.storage.sync.get('photoFrequency', (result) => {
+  chrome.storage.sync.get('photoFrequency', result => {
     const { photoFrequency } = result;
 
     if (photoFrequency === 'newtab') {
@@ -17,21 +17,25 @@ const loadNewData = () => {
 
     const nextImage = JSON.parse(localStorage.getItem('nextImage'));
 
-    if (photoFrequency === 'everyhour'
-      && !(lessThanOneHourAgo(nextImage.timestamp))) {
+    if (
+      photoFrequency === 'everyhour' &&
+      !lessThanOneHourAgo(nextImage.timestamp)
+    ) {
       fetchRandomPhoto();
       return;
     }
 
-    if (photoFrequency === 'everyday'
-      && !(lessThan24HoursAgo(nextImage.timestamp))) {
+    if (
+      photoFrequency === 'everyday' &&
+      !lessThan24HoursAgo(nextImage.timestamp)
+    ) {
       fetchRandomPhoto();
     }
   });
 
   const forecast = JSON.parse(localStorage.getItem('weather-forecast'));
 
-  chrome.storage.sync.get('coords', (d) => {
+  chrome.storage.sync.get('coords', d => {
     const { coords } = d;
 
     if (!forecast && coords) {

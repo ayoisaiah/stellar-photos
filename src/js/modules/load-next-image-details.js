@@ -1,6 +1,6 @@
 import { convertTimeStamp, togglePopover, $ } from '../libs/helpers';
 import purify from '../libs/purify-dom';
-import { handleClick, handleDownload } from '../libs/handle';
+import { handleClick } from '../libs/handle';
 import cloudButton from '../libs/cloud-button';
 import downloadButton from '../components/download-button';
 import infoPopover from '../components/info-popover';
@@ -29,11 +29,6 @@ const loadNextImageDetails = () => {
     const infoButton = document.querySelector('.info-button');
     infoButton.addEventListener('click', () => {
       togglePopover('.info-popover');
-    });
-
-    const downloadBtn = document.querySelector('.download-button');
-    downloadBtn.addEventListener('click', () => {
-      handleDownload(downloadBtn);
     });
   });
 };

@@ -4,11 +4,11 @@
  */
 
 const downloadButton = nextImage => `
-      <a data-imageid=${
+      <button data-imageid=${
         nextImage.id
       } class="control-button download-button" title="Download photo">
         <svg class="icon icon-download"><use href="#icon-download"></use></svg>
-      </a>
+      </button>
 `;
 
 export default downloadButton;

@@ -7,13 +7,14 @@ import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload } from '../api';
 
-const handleDownload = downloadBtn => {
+const handleDownload = imageid => {
   loadingIndicator().start();
-  const { imageid } = downloadBtn.dataset;
+
   triggerPhotoDownload(imageid)
     .then(data => {
       loadingIndicator().stop();
       const { url, id } = data;
+
       const a = document.createElement('a');
       a.href = url;
       a.setAttribute('download', `photo-${id}`);
@@ -43,8 +44,8 @@ const handleClick = e => {
     return;
   }
 
-  if (target.classList.contains('card-download-button')) {
-    handleDownload(target);
+  if (target.classList.contains('download-button')) {
+    handleDownload(imageid);
   }
 };
 
