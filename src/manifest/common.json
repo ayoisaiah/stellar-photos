@@ -27,5 +27,8 @@
       "matches": ["https://stellarapp.photos/*", "http://localhost:3000/*"],
       "js": ["js/tab.bundle.js"]
     }
-  ]
+  ],
+
+  "content_security_policy":
+    "script-src 'self' https://www.google-analytics.com; object-src 'self'"
 }

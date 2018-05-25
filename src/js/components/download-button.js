@@ -6,7 +6,9 @@
 const downloadButton = nextImage => `
       <button data-imageid=${
         nextImage.id
-      } class="control-button download-button" title="Download photo">
+      } class="js-track-click control-button download-button"
+      data-track="click-download"
+      title="Download photo">
         <svg class="icon icon-download"><use href="#icon-download"></use></svg>
       </button>
 `;

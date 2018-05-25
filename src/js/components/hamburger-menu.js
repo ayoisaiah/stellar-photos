@@ -3,8 +3,10 @@
  */
 
 const hamburgerMenu = () => `
-    <button id="historyButton" class="historyButton historyButton-open
-    " title="toggle history menu" aria-label="Toggle History Menu">
+    <button id="historyButton" class="historyButton historyButton-open js-track-click"
+    data-label="Toggle history menu"
+    data-track="click-history-menu"
+    title="toggle history menu" aria-label="Toggle History Menu">
       <div>
         <i class="bar1"></i>
         <i class="bar2"></i>

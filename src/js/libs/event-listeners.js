@@ -47,11 +47,33 @@ const eventListeners = () => {
     });
   });
 
+  function trackButton(e) {
+    let label = e.target.dataset.imageid
+      ? e.target.dataset.imageid
+      : e.target.dataset.label;
+
+    const track = e.target.dataset.track;
+
+    if (e.target.classList.contains('js-photo-frequency')) {
+      const selectPhotoFrequency = document.getElementById(
+        'select-photo-frequency'
+      );
+      label = selectPhotoFrequency.value;
+    }
+
+    ga('send', 'event', 'button', track, label);
+  }
+
   // Close all popovers when click is detected outside
-  document.addEventListener('click', node => {
-    if (node.target.matches('.popover *')) return;
-    const popover = document.querySelectorAll('.popover .popover-content');
-    popover.forEach(e => e.classList.remove('popover-content--is-visible'));
+  document.addEventListener('click', event => {
+    if (!event.target.matches('.popover *')) {
+      const popover = document.querySelectorAll('.popover .popover-content');
+      popover.forEach(e => e.classList.remove('popover-content--is-visible'));
+    }
+
+    if (event.target.classList.contains('js-track-click')) {
+      trackButton(event);
+    }
   });
 };
 

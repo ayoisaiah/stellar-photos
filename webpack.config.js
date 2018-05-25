@@ -70,6 +70,10 @@ module.exports = env => {
           from: './src/icons',
           to: 'icons',
         },
+        {
+          from: './src/js/ga.js',
+          to: 'js',
+        },
       ]),
       new OptimizeCSSAssetsPlugin({
         cssProcessorOptions: { discardComments: { removeAll: true } },

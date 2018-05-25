@@ -4,27 +4,29 @@
 
 const weatherPopoverView = () => `
   <section id="weather-settings" class="weather-settings">
-    
+
     <form class="weather-coordinates" id="weather-coordinates">
-      <span class="popover-label">Paste 
-        <a href="https://www.latlong.net/">your coordinates</a> 
+      <span class="popover-label">Paste
+        <a href="https://www.latlong.net/">your coordinates</a>
         here to get current weather information.</span>
 
       <label class="popover-label longitude-popover-label" for="longitude">Longitude:</label>
-      
-      <input type="text" name="longitude" 
-        class="longitude" 
+
+      <input type="text" name="longitude"
+        class="longitude"
         id="longitude-input"
         placeholder="longitude" value="">
-      
+
       <label class="popover-label latitude-popover-label" for="latitude">Latitude:</label>
-      
-      <input type="text" name="latitude" 
-        class="latitude" 
+
+      <input type="text" name="latitude"
+        class="latitude"
         id="latitude-input"
         placeholder="latitude" value="">
 
-      <button type="submit" class="update-coords">Save Coordinates</button>
+      <button type="submit" data-track="update-coordinates"
+      data-label="Update coordinates"
+      class="update-coords js-track-click">Save Coordinates</button>
     </form>
 
     <section class="temperature-unit">

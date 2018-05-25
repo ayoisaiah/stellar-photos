@@ -11,16 +11,27 @@ const addonInfoPopoverView = () => `
 
     <div class="links">
       <a class="button github-button"
+        target="_blank"
+        rel="noopener"
         href="https://github.com/ayoisaiah/stellar-photos">
         Star on Github
       </a>
 
-      <a class="button" href="https://github.com/ayoisaiah/stellar-photos/issues">
+      <a class="button"
+        target="_blank"
+        rel="noopener"
+        href="https://github.com/ayoisaiah/stellar-photos/issues">
        File a bug report</a> <br>
 
-       <a class="button" href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos">Share on Twitter</a>
+       <a class="button"
+        target="_blank"
+        rel="noopener"
+       href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos">Share on Twitter</a>
 
-        <a class="button" href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo/reviews?hl=en">
+        <a class="button"
+        target="_blank"
+        rel="noopener"
+        href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo/reviews?hl=en">
           Write a review
         </a>
     </div>
