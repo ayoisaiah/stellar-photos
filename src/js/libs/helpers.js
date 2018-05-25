@@ -25,6 +25,11 @@ const convertTimeStamp = timestamp => {
 };
 
 function togglePopover() {
+  const p = document.getElementsByClassName('popover-content--is-visible')[0];
+  if (p && this.nextElementSibling !== p) {
+    p.classList.remove('popover-content--is-visible');
+  }
+
   const popoverContent = this.nextElementSibling;
   popoverContent.classList.toggle('popover-content--is-visible');
 }
