@@ -33,24 +33,25 @@ const loadNewData = () => {
     }
   });
 
-  const forecast = JSON.parse(localStorage.getItem('weather-forecast'));
+  chrome.storage.local.get('forecast', result => {
+    const { forecast } = result;
+    chrome.storage.sync.get('coords', d => {
+      const { coords } = d;
 
-  chrome.storage.sync.get('coords', d => {
-    const { coords } = d;
+      if (!forecast && coords) {
+        getWeatherInfo();
+        return;
+      }
 
-    if (!forecast && coords) {
-      getWeatherInfo();
-      return;
-    }
-
-    if (forecast) {
-      const { timestamp } = forecast;
-      if (timestamp) {
-        if (!lessThanOneHourAgo(timestamp)) {
-          getWeatherInfo();
+      if (forecast) {
+        const { timestamp } = forecast;
+        if (timestamp) {
+          if (!lessThanOneHourAgo(timestamp)) {
+            getWeatherInfo();
+          }
         }
       }
-    }
+    });
   });
 };
 

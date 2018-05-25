@@ -15,7 +15,7 @@ const fetchRandomPhoto = () => {
           data
         );
 
-        localStorage.setItem('nextImage', JSON.stringify(nextImage));
+        chrome.storage.local.set({ nextImage });
 
         chrome.storage.local.get('history', result => {
           const history = result.history || [];
@@ -24,7 +24,7 @@ const fetchRandomPhoto = () => {
             history.pop();
           }
 
-          history.unshift(data);
+          history.unshift(nextImage);
           chrome.storage.local.set({ history });
         });
 

@@ -43,6 +43,10 @@ const updateCollections = collections => {
 const updatePhotoFrequency = selected => {
   chrome.storage.sync.set({ photoFrequency: selected });
 
+  if (selected === 'newtab') {
+    chrome.runtime.sendMessage({ command: 'load-data' });
+  }
+
   if (selected === 'everyhour') {
     chrome.alarms.create('loadphoto', {
       periodInMinutes: 60,

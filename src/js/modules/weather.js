@@ -7,13 +7,17 @@ import weatherInfo from '../components/weather-info';
  */
 
 const initializeWeather = () => {
-  const forecast = JSON.parse(localStorage.getItem('weather-forecast'));
-  const weatherArea = $('footer-weather');
+  chrome.storage.local.get('forecast', result => {
+    const { forecast } = result;
 
-  if (forecast) {
-    weatherArea.insertAdjacentHTML('afterbegin',
-      purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] }));
-  }
+    if (forecast) {
+      const weatherArea = $('footer-weather');
+      weatherArea.insertAdjacentHTML(
+        'afterbegin',
+        purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] })
+      );
+    }
+  });
 };
 
 export default initializeWeather;

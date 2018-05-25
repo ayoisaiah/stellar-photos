@@ -3,12 +3,14 @@ import { $ } from './libs/helpers';
 document.addEventListener('DOMContentLoaded', () => {
   window.stellar = {};
   window.stellar.nextImage = new Promise(resolve => {
-    const nextImage = JSON.parse(localStorage.getItem('nextImage'));
-    if (nextImage) {
-      const body = $('app');
-      body.style.backgroundImage = `url(${nextImage.base64})`;
-      resolve(nextImage);
-    }
+    chrome.storage.local.get('nextImage', result => {
+      const { nextImage } = result;
+      if (nextImage) {
+        const body = $('app');
+        body.style.backgroundImage = `url(${nextImage.base64})`;
+        resolve(nextImage);
+      }
+    });
   });
 
   chrome.runtime.sendMessage({ command: 'load-data' });
