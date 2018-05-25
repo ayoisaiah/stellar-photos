@@ -38,6 +38,32 @@ const sass = {
 module.exports = env => {
   const [mode, platform] = env.split(':');
 
+  if (platform === 'firefox') {
+    javascript.use.push({
+      loader: 'webpack-strip-block',
+      options: {
+        start: 'CHROME_START',
+        end: 'CHROME_END',
+      },
+    });
+  }
+
+  javascript.use.push({
+    loader: 'placeholder-loader',
+    options: {
+      placeholder: 'BUILD_PLATFORM',
+      handler: () => platform,
+    },
+  });
+
+  javascript.use.push({
+    loader: 'placeholder-loader',
+    options: {
+      placeholder: 'DEV_OR_PROD',
+      handler: () => mode,
+    },
+  });
+
   const config = {
     entry: {
       'js/index': './src/js/index.js',
@@ -46,15 +72,15 @@ module.exports = env => {
       'js/tab': './src/js/tab.js',
     },
 
-    devtool: 'source-map',
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: '[name].bundle.js',
     },
+
     module: {
       rules: [javascript, sass],
     },
-    mode: 'development',
+
     plugins: [
       new MiniCssExtractPlugin({
         filename: 'css/main.css',
@@ -89,5 +115,6 @@ module.exports = env => {
       ),
     ],
   };
+
   return config;
 };

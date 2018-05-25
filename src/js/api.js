@@ -1,6 +1,9 @@
 import { validateResponse } from './libs/helpers';
 
-const baseUrl = 'http://localhost:8080';
+const baseUrl =
+  'DEV_OR_PROD' === 'dev'
+    ? 'http://localhost:8080'
+    : 'https://stellar-photos.herokuapp.com';
 const getRandomPhoto = collections =>
   fetch(`${baseUrl}/random-photo/${collections}`).then(validateResponse);
 

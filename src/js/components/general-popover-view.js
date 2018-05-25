@@ -5,6 +5,7 @@
 const generalPopoverView = () => `
   <section id="general-settings" class="general-settings">
 
+    <!-- /* CHROME_START */ -->
     <button id="show-default-tab" class="show-default-tab js-track-click"
       data-track="click-default-tab"
       data-label="Show Default Tab"
@@ -18,6 +19,7 @@ const generalPopoverView = () => `
       aria-label="Show Chrome Apps">
       Show Apps
     </button>
+    <!-- /* CHROME_END */ -->
 
     <form id="unsplash-collections" class="unsplash-collections">
       <span class="popover-label">Load photos from multiple

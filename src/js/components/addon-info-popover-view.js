@@ -1,3 +1,5 @@
+import { store } from '../modules/BUILD_PLATFORM'; // eslint-disable-line
+
 /*
  * General information about the addon
  */
@@ -31,7 +33,7 @@ const addonInfoPopoverView = () => `
         <a class="button"
         target="_blank"
         rel="noopener"
-        href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo/reviews?hl=en">
+        href="${store}">
           Write a review
         </a>
     </div>

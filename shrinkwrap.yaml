@@ -19,6 +19,7 @@ devDependencies:
   generate-json-webpack-plugin: 0.3.1
   mini-css-extract-plugin: 0.4.0
   optimize-css-assets-webpack-plugin: 4.0.1
+  placeholder-loader: 1.0.4
   postcss-loader: 2.1.5
   prettier: 1.12.1
   sass-loader: 7.0.1
@@ -26,9 +27,11 @@ devDependencies:
   stylelint: 9.2.1
   stylelint-config-standard: 18.2.0
   stylelint-scss: 3.1.0
+  uglifyjs-webpack-plugin: 1.2.5
   webpack: 4.8.3
   webpack-cli: 2.1.3
   webpack-merge: 4.1.2
+  webpack-strip-block: 0.2.0
 packages:
   /@mrmlnc/readdir-enhanced/2.2.1:
     dependencies:
@@ -5058,6 +5061,12 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-9tXREJ4Z1j7fQo4L1X4Sd3YVM0s=
+  /placeholder-loader/1.0.4:
+    dependencies:
+      loader-utils: 1.1.0
+    dev: true
+    resolution:
+      integrity: sha512-43yDVElIa/jmUe3KO4AZlKE01iT3JkseEBSdM1xO24zQyW6ud8cuBPy3xoQOVuXBSMtBW1E0rodKOAazmyc5/g==
   /pluralize/7.0.0:
     dev: true
     engines:
@@ -7192,6 +7201,14 @@ packages:
     dev: true
     resolution:
       integrity: sha512-aqYp18kPphgoO5c/+NaUvEeACtZjMESmDChuD3NBciVpah3XpMEU9VAAtIaB1BsfJWWTSdv8Vv1m3T0aRk2dUw==
+  /webpack-strip-block/0.2.0:
+    dependencies:
+      loader-utils: 1.1.0
+    dev: true
+    peerDependencies:
+      webpack: '>=2.2.0'
+    resolution:
+      integrity: sha1-xg1KcD4O7uiJXn8avptf6RRoFHA=
   /webpack/4.8.3:
     dependencies:
       '@webassemblyjs/ast': 1.4.3
@@ -7407,6 +7424,7 @@ specifiers:
   ladda: ^1.0.5
   mini-css-extract-plugin: ^0.4.0
   optimize-css-assets-webpack-plugin: ^4.0.1
+  placeholder-loader: ^1.0.4
   postcss-loader: ^2.1.5
   prettier: ^1.12.0
   sass-loader: ^7.0.1
@@ -7415,6 +7433,8 @@ specifiers:
   stylelint-config-standard: ^18.2.0
   stylelint-scss: ^3.1.0
   timeago.js: ^3.0.2
+  uglifyjs-webpack-plugin: ^1.2.5
   webpack: ^4.8.3
   webpack-cli: ^2.1.3
   webpack-merge: ^4.1.2
+  webpack-strip-block: ^0.2.0

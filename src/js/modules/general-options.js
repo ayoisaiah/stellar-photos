@@ -5,6 +5,10 @@ import { $ } from '../libs/helpers';
 import notifySnackbar from '../libs/notify-snackbar';
 import generalPopoverView from '../components/general-popover-view';
 
+/* CHROME_START */
+import { defaultTab } from '../modules/chrome';
+/* CHROME_END */
+
 /*
  * Handle General Options
  */
@@ -54,12 +58,13 @@ const updatePhotoFrequency = selected => {
   notifySnackbar('Preferences saved successfully');
 };
 
+/* CHROME_START */
 const openDefaultTab = e => {
   e.preventDefault();
   chrome.tabs.update({
-    url: 'chrome-search://local-ntp/local-ntp.html',
+    url: defaultTab,
     active: true,
-    selected: true,
+    highlighted: true,
   });
 };
 
@@ -68,9 +73,10 @@ const openChromeApps = e => {
   chrome.tabs.update({
     url: 'chrome://apps/',
     active: true,
-    selected: true,
+    highlighted: true,
   });
 };
+/* CHROME_END */
 
 const initializeCollections = () => {
   chrome.storage.sync.get('collections', d => {
@@ -115,11 +121,13 @@ const intializeGeneralOptions = () => {
     purify.sanitize(generalPopoverView())
   );
 
+  /* CHROME_START */
   const openDefaultTabButton = $('show-default-tab');
   openDefaultTabButton.addEventListener('click', openDefaultTab);
 
   const openChromeAppsButton = $('show-chrome-apps');
   openChromeAppsButton.addEventListener('click', openChromeApps);
+  /* CHROME_END */
 
   initializeCollections();
 
