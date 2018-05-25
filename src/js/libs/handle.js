@@ -6,6 +6,7 @@ import state from './state';
 import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload } from '../api';
+import notifySnackbar from '../libs/notify-snackbar';
 
 const handleDownload = imageid => {
   loadingIndicator().start();
@@ -24,6 +25,7 @@ const handleDownload = imageid => {
       document.body.removeChild(a);
     })
     .catch(() => {
+      notifySnackbar('Download failed', 'error');
       loadingIndicator().stop();
     });
 };
