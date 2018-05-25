@@ -11,15 +11,8 @@ import initializeWeatherOptions from '../modules/weather-options';
 import initializeAddonInfo from '../modules/addon-options';
 import optionsPopover from '../components/options-popover';
 
-const loadOptionViews = () => {
-  const viewControls = Array.from(
-    document.querySelectorAll('.options-sidebar__item')
-  );
-  const activeControl = viewControls.filter(control =>
-    control.classList.contains('active-option')
-  );
-
-  const activeOption = activeControl[0].dataset.option;
+function loadOptionViews() {
+  const activeOption = this.dataset.option;
 
   const popoverView = $('popover-view');
   empty(popoverView);
@@ -49,19 +42,21 @@ const loadOptionViews = () => {
       initializeGeneralOptions();
     }
   }
-};
+}
 
-const changeActiveOption = e => {
-  const viewControls = document.querySelectorAll('.options-sidebar li');
-  viewControls.forEach(control =>
-    chainableClassList(control).remove('active-option')
+function changeActiveOption() {
+  const sidebarItems = document.getElementsByClassName(
+    'js-options-sidebar__item'
+  );
+  Array.from(sidebarItems).forEach(item =>
+    chainableClassList(item).remove('active-option')
   );
 
-  e.target.classList.add('active-option');
-  loadOptionViews();
-};
+  this.classList.add('active-option');
+  loadOptionViews.call(this);
+}
 
-const loadOptions = () => {
+function loadOptions() {
   const controls = $('footer-controls');
 
   controls.insertAdjacentHTML(
@@ -69,17 +64,17 @@ const loadOptions = () => {
     purify.sanitize(`${optionsPopover()}`, { ADD_TAGS: ['use'] })
   );
 
-  loadOptionViews();
+  initializeGeneralOptions();
 
-  const optionsButton = $('options-button');
-  optionsButton.addEventListener('click', () => {
-    togglePopover('.options-popover');
-  });
+  const optionsButton = document.getElementsByClassName('js-options-button')[0];
+  optionsButton.addEventListener('click', togglePopover);
 
-  const viewControls = document.querySelectorAll('.options-sidebar li');
-  viewControls.forEach(control => {
-    control.addEventListener('click', changeActiveOption);
+  const sidebarItems = document.getElementsByClassName(
+    'js-options-sidebar__item'
+  );
+  Array.from(sidebarItems).forEach(item => {
+    item.addEventListener('click', changeActiveOption);
   });
-};
+}
 
 export default loadOptions;

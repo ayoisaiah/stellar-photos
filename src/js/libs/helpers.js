@@ -24,17 +24,10 @@ const convertTimeStamp = timestamp => {
   };
 };
 
-const togglePopover = element => {
-  const popover = document.querySelectorAll('.popover-content--is-visible');
-  if (popover) {
-    popover.forEach(e => {
-      if (e.matches(`${element} .popover-content--is-visible`)) return;
-      e.classList.remove('popover-content--is-visible');
-    });
-  }
-  const popoverContent = document.querySelector(`${element} .popover-content`);
+function togglePopover() {
+  const popoverContent = this.nextElementSibling;
   popoverContent.classList.toggle('popover-content--is-visible');
-};
+}
 
 /* Because the native implementation of the classList API is not chainable */
 const chainableClassList = element => {

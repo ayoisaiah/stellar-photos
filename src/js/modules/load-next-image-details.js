@@ -26,10 +26,8 @@ const loadNextImageDetails = () => {
     );
     controls.addEventListener('click', handleClick);
 
-    const infoButton = document.querySelector('.info-button');
-    infoButton.addEventListener('click', () => {
-      togglePopover('.info-popover');
-    });
+    const infoButton = document.getElementsByClassName('js-info-button')[0];
+    infoButton.addEventListener('click', togglePopover);
   });
 };
 

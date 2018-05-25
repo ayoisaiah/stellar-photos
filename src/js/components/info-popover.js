@@ -4,14 +4,16 @@
 
 const infoPopover = (nextImage, fullDate) => `
   <div class="popover info-popover">
-    <button title="Photo info" class="control-button info-button">
+    <button title="Photo info" class="control-button info-button js-info-button">
       <svg class="icon icon-info"><use href="#icon-info"></use></svg>
     </button>
 
     <ul class="popover-content">
 
       <li class="photo-info-item">
-        <a href="${nextImage.user.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+        <a href="${
+          nextImage.user.links.html
+        }?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
         class="photographer-info">
           <img src="${nextImage.user.profile_image.small}"
             class="photographer-dp" />
@@ -34,43 +36,55 @@ const infoPopover = (nextImage, fullDate) => `
       <li class="photo-info-item">
         <span class="popover-label">Camera Model</span>
         <div class="wrapper">
-          <span class="camera-model">${nextImage.exif.model ?
-    nextImage.exif.model : '--'}</span>
+          <span class="camera-model">${
+            nextImage.exif.model ? nextImage.exif.model : '--'
+          }</span>
         </div>
       </li>
 
       <li class="photo-info-item">
         <span class="popover-label">Camera Make</span>
-        <span class="camera-make">${nextImage.exif.make ?
-    nextImage.exif.make : '--'}</span>
+        <span class="camera-make">${
+          nextImage.exif.make ? nextImage.exif.make : '--'
+        }</span>
       </li>
 
       <li class="photo-info-item">
         <span class="popover-label">Shutter Speed</span>
-        <span class="created-date">${nextImage.exif.exposure_time ?
-    `${nextImage.exif.exposure_time}s` : '--'}</span>
+        <span class="created-date">${
+          nextImage.exif.exposure_time
+            ? `${nextImage.exif.exposure_time}s`
+            : '--'
+        }</span>
       </li>
 
       <li class="photo-info-item">
         <span class="popover-label">Aperture</span>
-        <span class="created-date">${nextImage.exif.aperture ?
-    `ƒ/${nextImage.exif.aperture}` : '--'}</span>
+        <span class="created-date">${
+          nextImage.exif.aperture ? `ƒ/${nextImage.exif.aperture}` : '--'
+        }</span>
       </li>
 
       <li class="photo-info-item">
         <span class="popover-label">Focal Length</span>
-        <span class="created-date">${nextImage.exif.focal_length ?
-    `${nextImage.exif.focal_length}mm` : '--'}</span>
+        <span class="created-date">${
+          nextImage.exif.focal_length
+            ? `${nextImage.exif.focal_length}mm`
+            : '--'
+        }</span>
       </li>
 
       <li class="photo-info-item">
         <span class="popover-label">ISO</span>
-        <span class="created-date">${nextImage.exif.iso ?
-    nextImage.exif.iso : '--'}</span>
+        <span class="created-date">${
+          nextImage.exif.iso ? nextImage.exif.iso : '--'
+        }</span>
       </li>
 
       <li class="photo-info-item">
-        <a href="${nextImage.links.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-cred"
+        <a href="${
+          nextImage.links.html
+        }?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-cred"
         class="button linkToPhoto"
         >View photo on Unsplash.com</a>
       </li>
