@@ -14,9 +14,9 @@
     bottom: 0;
     width: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 0 20px;
   }
 
   &.history-open {
@@ -32,10 +32,8 @@
   .weather {
     display: flex;
     height: 100%;
-    justify-content: space-around;
     font-size: 1.5rem;
     align-items: center;
-    padding-left: 20px;
 
     .last-updated {
       color: #999;
@@ -59,8 +57,7 @@
 
   .controls {
     display: flex;
-    padding-right: 20px;
-    justify-content: space-around;
+    justify-content: flex-end;
     align-items: center;
 
     .control-button {
@@ -80,7 +77,8 @@
         background-color: rgba(0, 0, 0, 0.4);
       }
 
-      &:focus, &:active {
+      &:focus,
+      &:active {
         outline: none;
       }
     }

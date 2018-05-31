@@ -47,4 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('mousemove', loadControls);
   document.addEventListener('focus', loadControls);
+
+  chrome.storage.local.get('forecast', r => {
+    const { forecast } = r;
+    window.forecast = forecast;
+  });
 });

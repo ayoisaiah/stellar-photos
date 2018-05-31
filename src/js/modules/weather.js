@@ -7,17 +7,22 @@ import weatherInfo from '../components/weather-info';
  */
 
 const initializeWeather = () => {
-  chrome.storage.local.get('forecast', result => {
-    const { forecast } = result;
+  const { forecast } = window;
 
-    if (forecast) {
-      const weatherArea = $('footer-weather');
-      weatherArea.insertAdjacentHTML(
-        'afterbegin',
-        purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] })
-      );
-    }
-  });
+  if (forecast) {
+    const weatherArea = $('footer-weather');
+    weatherArea.insertAdjacentHTML(
+      'afterbegin',
+      purify.sanitize(weatherInfo(forecast), { ADD_TAGS: ['use'] })
+    );
+  } else {
+    const controls = document.getElementsByClassName('js-footer-content')[0];
+    const weatherArea = $('footer-weather');
+    const creditSection = $('unsplash-credit');
+
+    controls.insertBefore(creditSection, weatherArea);
+    creditSection.style.justifyContent = 'flex-start';
+  }
 };
 
 export default initializeWeather;

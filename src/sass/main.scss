@@ -1,12 +1,9 @@
 @charset "UTF-8";
 
 @import '../css/ladda.min';
-
 @import 'abstracts/variables';
 @import 'abstracts/mixins';
-
 @import 'base/base';
-
 @import 'modules/info-popover';
 @import 'modules/options-popover';
 @import 'modules/options-sidebar';
@@ -19,7 +16,7 @@
 @import 'modules/buttons';
 @import 'modules/header';
 @import 'modules/snackbar';
-
+@import 'modules/unsplash-credit';
 @import 'partials/footer';
 @import 'partials/search';
 @import 'partials/search-results';

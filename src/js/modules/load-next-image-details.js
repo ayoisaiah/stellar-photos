@@ -4,6 +4,7 @@ import { handleClick } from '../libs/handle';
 import cloudButton from '../libs/cloud-button';
 import downloadButton from '../components/download-button';
 import infoPopover from '../components/info-popover';
+import unsplashCredit from '../components/unsplash-credit';
 
 const loadNextImageDetails = () => {
   window.stellar.nextImage.then(nextImage => {
@@ -28,6 +29,12 @@ const loadNextImageDetails = () => {
 
     const infoButton = document.getElementsByClassName('js-info-button')[0];
     infoButton.addEventListener('click', togglePopover);
+
+    const creditSection = $('unsplash-credit');
+    creditSection.insertAdjacentHTML(
+      'beforeend',
+      purify.sanitize(`${unsplashCredit(nextImage)}`)
+    );
   });
 };
 
