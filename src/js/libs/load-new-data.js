@@ -15,22 +15,24 @@ const loadNewData = () => {
       return;
     }
 
-    const nextImage = JSON.parse(localStorage.getItem('nextImage'));
+    chrome.storage.local.get('nextImage', r => {
+      const { nextImage } = r;
 
-    if (
-      photoFrequency === 'everyhour' &&
-      !lessThanOneHourAgo(nextImage.timestamp)
-    ) {
-      fetchRandomPhoto();
-      return;
-    }
+      if (
+        photoFrequency === 'everyhour' &&
+        !lessThanOneHourAgo(nextImage.timestamp)
+      ) {
+        fetchRandomPhoto();
+        return;
+      }
 
-    if (
-      photoFrequency === 'everyday' &&
-      !lessThan24HoursAgo(nextImage.timestamp)
-    ) {
-      fetchRandomPhoto();
-    }
+      if (
+        photoFrequency === 'everyday' &&
+        !lessThan24HoursAgo(nextImage.timestamp)
+      ) {
+        fetchRandomPhoto();
+      }
+    });
   });
 
   chrome.storage.local.get('forecast', result => {
