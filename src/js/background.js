@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((request, sender) => {
     }
 
     case 'set-dropbox-token': {
-      localStorage.setItem('dropbox', request.token);
+      chrome.storage.local.set({ dropbox: request.token });
 
       notifyCloudAuthenticationSuccessful('Dropbox');
 
@@ -22,11 +22,13 @@ chrome.runtime.onMessage.addListener((request, sender) => {
     }
 
     case 'code-flow': {
-      const cloudService = localStorage.getItem('cloudService');
-      if (cloudService === 'onedrive') {
-        chrome.tabs.remove(sender.tab.id);
-        onedriveAuth(request.code);
-      }
+      chrome.storage.local.get('cloudService', result => {
+        const { cloudService } = result;
+        if (cloudService === 'onedrive') {
+          chrome.tabs.remove(sender.tab.id);
+          onedriveAuth(request.code);
+        }
+      });
       break;
     }
 

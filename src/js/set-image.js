@@ -52,4 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const { forecast } = r;
     window.forecast = forecast;
   });
+
+  chrome.storage.local.get('cloudService', r => {
+    window.cloudService = r.cloudService;
+  });
 });

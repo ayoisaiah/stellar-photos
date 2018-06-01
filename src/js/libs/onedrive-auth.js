@@ -25,7 +25,7 @@ const createAppFolder = onedriveData => {
   fetch(request)
     .then(validateResponse)
     .then(() => {
-      localStorage.setItem('onedrive', JSON.stringify(onedriveData));
+      chrome.storage.local.set({ onedrive: onedriveData });
 
       notifyCloudAuthenticationSuccessful('Onedrive');
 
@@ -36,8 +36,7 @@ const createAppFolder = onedriveData => {
 
       chrome.runtime.sendMessage({ command: 'update-cloud-status' });
     })
-    .catch(error => {
-      console.log(error);
+    .catch(() => {
       notifyCloudConnectionFailed('Onedrive');
     });
 };
@@ -55,43 +54,43 @@ const onedriveAuth = code => {
 
         createAppFolder(onedriveData);
       })
-      .catch(error => {
-        console.log(error);
+      .catch(() => {
         notifyCloudConnectionFailed('Onedrive');
       });
   }
 };
 
 const refreshOnedriveToken = imageId => {
-  const onedriveData = JSON.parse(localStorage.getItem('onedrive'));
-  refreshOnedriveTokenApi(onedriveData.refresh_token)
-    .then(data => {
-      const onedrive = Object.assign(
-        {
-          timestamp: Date.now(),
-        },
-        data
-      );
+  chrome.storage.local.get('onedrive', result => {
+    const onedriveData = result.onedrive;
 
-      localStorage.setItem('onedrive', JSON.stringify(onedrive));
+    refreshOnedriveTokenApi(onedriveData.refresh_token)
+      .then(data => {
+        const onedrive = Object.assign(
+          {
+            timestamp: Date.now(),
+          },
+          data
+        );
 
-      chrome.runtime.sendMessage({
-        command: 'set-onedrive-alarm',
-        expires_in: onedriveData.expires_in,
+        chrome.storage.local.set({ onedrive });
+
+        chrome.runtime.sendMessage({
+          command: 'set-onedrive-alarm',
+          expires_in: onedriveData.expires_in,
+        });
+
+        if (imageId) {
+          saveToOneDrive(imageId);
+        }
+      })
+      .catch(() => {
+        if (imageId) {
+          loadingIndicator().stop();
+          notifyCloudConnectionFailed('Onedrive');
+        }
       });
-
-      if (imageId) {
-        saveToOneDrive(imageId);
-      }
-    })
-    .catch(error => {
-      console.log(error);
-
-      if (imageId) {
-        loadingIndicator().stop();
-        notifyCloudConnectionFailed('Onedrive');
-      }
-    });
+  });
 };
 
 export { onedriveAuth, refreshOnedriveToken };

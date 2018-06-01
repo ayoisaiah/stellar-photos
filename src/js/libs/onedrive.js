@@ -44,62 +44,64 @@ const monitorUploadProgress = (location, imageId) => {
 };
 
 const saveToOneDrive = imageId => {
-  const onedriveData = JSON.parse(localStorage.getItem('onedrive'));
+  chrome.storage.local.get('onedrive', result => {
+    const onedriveData = result.onedrive;
 
-  if (!onedriveData) {
-    authorizeOneDrive();
-    return;
-  }
-
-  loadingIndicator().start();
-
-  triggerPhotoDownload(imageId).then(data => {
-    const { url } = data;
-    const downloadUrl = url.replace('https://', 'http://');
-
-    if (!lessThanOneHourAgo(onedriveData.timestamp)) {
-      refreshOnedriveToken(imageId);
+    if (!onedriveData) {
+      authorizeOneDrive();
       return;
     }
 
-    const headers = new Headers({
-      'Content-Type': 'application/json',
-      Prefer: 'respond-async',
-      Authorization: `bearer ${onedriveData.access_token}`,
+    loadingIndicator().start();
+
+    triggerPhotoDownload(imageId).then(data => {
+      const { url } = data;
+      const downloadUrl = url.replace('https://', 'http://');
+
+      if (!lessThanOneHourAgo(onedriveData.timestamp)) {
+        refreshOnedriveToken(imageId);
+        return;
+      }
+
+      const headers = new Headers({
+        'Content-Type': 'application/json',
+        Prefer: 'respond-async',
+        Authorization: `bearer ${onedriveData.access_token}`,
+      });
+
+      const body = {
+        name: `photo-${imageId}.jpg`,
+        '@microsoft.graph.sourceUrl': downloadUrl,
+        file: {},
+      };
+
+      const init = {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      };
+
+      const request = new Request(
+        'https://graph.microsoft.com/v1.0/drive/special/approot/children',
+        init
+      );
+
+      fetch(request)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(response.statusText);
+          }
+
+          return response.headers.get('location');
+        })
+        .then(location => {
+          interval = setInterval(
+            () => monitorUploadProgress(location, imageId),
+            1000
+          );
+        })
+        .catch(() => notifyUnableToUpload('Onedrive', imageId));
     });
-
-    const body = {
-      name: `photo-${imageId}.jpg`,
-      '@microsoft.graph.sourceUrl': downloadUrl,
-      file: {},
-    };
-
-    const init = {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    };
-
-    const request = new Request(
-      'https://graph.microsoft.com/v1.0/drive/special/approot/children',
-      init
-    );
-
-    fetch(request)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-
-        return response.headers.get('location');
-      })
-      .then(location => {
-        interval = setInterval(
-          () => monitorUploadProgress(location, imageId),
-          1000
-        );
-      })
-      .catch(() => notifyUnableToUpload('Onedrive', imageId));
   });
 };
 

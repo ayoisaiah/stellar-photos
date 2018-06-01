@@ -6,7 +6,7 @@ import onedriveButton from '../components/onedrive-button';
  */
 
 const cloudButton = photo => {
-  const cloudService = localStorage.getItem('cloudService');
+  const { cloudService } = window;
 
   if (cloudService === 'dropbox') {
     return dropboxButton(photo);

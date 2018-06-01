@@ -15,8 +15,6 @@ const getWeatherInfo = () => {
           forecast
         );
 
-        localStorage.setItem('weather-forecast', JSON.stringify(f));
-
         chrome.storage.local.set({ forecast: f });
 
         chrome.alarms.create('loadweather', {

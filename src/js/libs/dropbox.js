@@ -1,34 +1,44 @@
 import loadingIndicator from './loading-indicator';
-import { saveToDropboxApi } from '../api';
+import { saveToDropboxApi, getDropboxKey } from '../api';
 import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
 } from './notifications';
+import notifySnackbar from './notify-snackbar';
 
 const authorizeDropbox = () => {
-  const key = 'gscbxcjhou1jx21';
-  chrome.tabs.create({
-    url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/`,
-  });
+  loadingIndicator().start();
+
+  getDropboxKey()
+    .then(data => {
+      const key = data.dropbox_key;
+      chrome.tabs.create({
+        url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/`,
+      });
+    })
+    .catch(() => notifySnackbar('Unable to authorize Dropbox', 'error'))
+    .finally(() => loadingIndicator().stop());
 };
 
 const saveToDropbox = imageId => {
-  const dropboxToken = localStorage.getItem('dropbox');
+  chrome.storage.local.get('dropbox', result => {
+    const dropboxToken = result.dropbox;
 
-  if (!dropboxToken) {
-    authorizeDropbox();
-    return;
-  }
+    if (!dropboxToken) {
+      authorizeDropbox();
+      return;
+    }
 
-  loadingIndicator().start();
+    loadingIndicator().start();
 
-  saveToDropboxApi(imageId, dropboxToken)
-    .then(() => {
-      loadingIndicator().stop();
+    saveToDropboxApi(imageId, dropboxToken)
+      .then(() => {
+        loadingIndicator().stop();
 
-      notifySaveToCloudSuccessful('Dropbox', imageId);
-    })
-    .catch(() => notifyUnableToUpload('Dropbox', imageId));
+        notifySaveToCloudSuccessful('Dropbox', imageId);
+      })
+      .catch(() => notifyUnableToUpload('Dropbox', imageId));
+  });
 };
 
 export { authorizeDropbox, saveToDropbox };

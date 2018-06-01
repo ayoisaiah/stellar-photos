@@ -15,36 +15,37 @@ const updateCloudStatus = selected => {
 
   if (selected === 'noneselected') return;
 
-  localStorage.setItem('cloudService', selected);
+  chrome.storage.local.set({ cloudService: selected });
 
-  const token = localStorage.getItem(selected);
-
-  if (!token) {
-    action.insertAdjacentHTML(
-      'beforeend',
-      purify.sanitize(`<button class="authorize"
+  chrome.storage.local.get(selected, result => {
+    const token = result[selected];
+    if (!token) {
+      action.insertAdjacentHTML(
+        'beforeend',
+        purify.sanitize(`<button class="authorize"
         id="authorize">Authorize</button>`)
-    );
+      );
 
-    const authorize = $('authorize');
+      const authorize = $('authorize');
 
-    if (selected === 'dropbox') {
-      authorize.addEventListener('click', () => {
-        authorizeDropbox();
-      });
+      if (selected === 'dropbox') {
+        authorize.addEventListener('click', () => {
+          authorizeDropbox();
+        });
+      }
+
+      if (selected === 'onedrive') {
+        authorize.addEventListener('click', () => {
+          authorizeOneDrive();
+        });
+      }
+    } else {
+      action.insertAdjacentHTML(
+        'beforeend',
+        purify.sanitize('<span class="success-message">Authenticated</span>')
+      );
     }
-
-    if (selected === 'onedrive') {
-      authorize.addEventListener('click', () => {
-        authorizeOneDrive();
-      });
-    }
-  } else {
-    action.insertAdjacentHTML(
-      'beforeend',
-      purify.sanitize('<span class="success-message">Authenticated</span>')
-    );
-  }
+  });
 };
 
 const selectCloudService = () => {
@@ -74,12 +75,13 @@ const initializeCloudOptions = () => {
   );
 
   const selectCloud = $('select-cloud-storage');
-  const cloudService = localStorage.getItem('cloudService');
-
-  if (cloudService) {
-    selectCloud.value = cloudService;
-    updateCloudStatus(cloudService);
-  }
+  chrome.storage.local.get('cloudService', result => {
+    const { cloudService } = result;
+    if (cloudService) {
+      selectCloud.value = cloudService;
+      updateCloudStatus(cloudService);
+    }
+  });
 
   selectCloudService();
 };
