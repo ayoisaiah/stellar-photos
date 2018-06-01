@@ -7398,7 +7398,7 @@ packages:
     resolution:
       integrity: sha512-rV6tJ8oYzm4mmdF2T3wjY+Q42jKF2YiiD0VKfJ8/0ZYwmhCKC9Xs2346HVLPj/xE13i68psnFJv7iS6gWRkeAg==
 registry: 'https://registry.npmjs.org/'
-shrinkwrapMinorVersion: 6
+shrinkwrapMinorVersion: 7
 shrinkwrapVersion: 3
 specifiers:
   autoprefixer: ^8.5.0
