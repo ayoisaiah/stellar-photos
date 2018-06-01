@@ -1,0 +1,59 @@
+/**
+ *
+ * Inheriting box sizing slightly better best-practice
+ * https://css-tricks.com/inheriting-box-sizing-probably-slightly-better-best-practice/
+ *
+ */
+
+html {
+  box-sizing: border-box;
+  height: 100%;
+  font-size: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: $font-stack;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.s-main {
+  padding: 60px 20px 50px 20px;
+}
+
+.s-ui {
+  animation: fadeInControls 0.7s ease forwards;
+}
+
+.s-ui.no-pointer {
+  pointer-events: none;
+
+  &.s-footer > div {
+    pointer-events: auto;
+  }
+}
+
+.s-ui.hide-ui {
+  animation: fadeOutControls 0.4s ease forwards;
+}
+
+svg,
+use {
+  pointer-events: none;
+}
+
+.cloud-button * {
+  pointer-events: none;
+}
+
+[data-track] * {
+  pointer-events: none;
+}

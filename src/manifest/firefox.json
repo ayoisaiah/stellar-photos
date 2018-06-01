@@ -1,0 +1,8 @@
+{
+  "applications": {
+    "gecko": {
+      "id": "stellar@stellarapp.photos",
+      "strict_min_version": "54.0"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+.searchResults {
+  list-style: none;
+  display: grid;
+  grid-gap: 20px 20px;
+  grid-template-columns: repeat(4, 1fr);
+
+  @media screen and (max-width: 1440px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.moreResults {
+  margin-top: 50px;
+  text-align: center;
+
+  &-button {
+    font-size: 2rem;
+    padding: 10px 15px;
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: $white;
+    border: none;
+    border-radius: $global-border-radius;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+}

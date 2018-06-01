@@ -1,0 +1,79 @@
+.searchButton,
+.historyButton {
+  transition: opacity 0.5s;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+
+  svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  &-open {
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 200;
+    border-radius: $global-border-radius;
+    padding: 5px;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    svg {
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  &-close {
+    font-size: 2em;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    display: none;
+    width: 40px;
+    height: 40px;
+    font-size: 32px !important;
+    background: transparent;
+
+    @include search-transition;
+  }
+}
+
+.historyButton {
+  div {
+    pointer-events: none;
+  }
+
+  i {
+    display: block;
+    width: 30px;
+    height: 5px;
+    background-color: $white;
+    margin: 5px 0;
+    transition: 0.4s;
+  }
+
+  &.transform .bar1 {
+    transform: rotate(-45deg) translate(-9px, 6px);
+  }
+
+  &.transform .bar2 {
+    opacity: 0;
+  }
+
+  &.transform .bar3 {
+    transform: rotate(45deg) translate(-8px, -8px);
+  }
+}
+
+.historyButton-open {
+  padding: 0;
+}

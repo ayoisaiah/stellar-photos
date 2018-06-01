@@ -1,0 +1,37 @@
+.s-history {
+  @media screen and (max-width: 1440px) {
+    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  &.open {
+    transform: translateY(0);
+  }
+
+  .s-photo {
+    height: 140px;
+
+    .username, &-dimension {
+      display: none;
+    }
+
+  }
+
+  .s-photo-actions {
+    padding: 8px;
+
+    .bottom div {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .bottom svg {
+      margin-left: 0;
+    }
+
+    .user-dp {
+      border-radius: 50%;
+    }
+  }
+}

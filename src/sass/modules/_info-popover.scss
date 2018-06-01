@@ -1,0 +1,50 @@
+/* ==========================================================================
+   #INFO POPOVER
+   ========================================================================== */
+
+
+.info-popover {
+  @include popover;
+
+  .linkToPhoto {
+    text-decoration: underline;
+  }
+
+  .popover-content {
+    width: 300px;
+    padding: 10px 20px 10px 10px;
+  }
+
+  .photo-info-item {
+    padding: 8px 0;
+  }
+
+  .photographer-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-decoration: none !important;
+  }
+
+  .photographer-dp {
+    border-radius: 50%;
+  }
+
+  .photographer-name {
+    margin-left: 10px;
+  }
+
+  .wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .wrapper .icon {
+    margin-left: 10px;
+  }
+
+  .button {
+    display: inline-block !important;
+  }
+}

@@ -1,0 +1,99 @@
+.s-photo {
+  display: inline-block;
+  padding: 10px;
+  height: 300px;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  position: relative;
+  color: #fafafa;
+  background-position: 50% !important;
+  animation: show 0.5s forwards ease-in-out;
+
+  &:hover &-actions {
+    opacity: 1;
+  }
+
+  &-actions {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    color: rgb(255, 255, 255);
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 1.8rem !important;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    -moz-user-select: none;
+    user-select: none;
+
+    .control-button {
+      border: none;
+      background-color: transparent;
+      outline: none;
+      cursor: pointer;
+    }
+
+    svg {
+      width: 24px !important;
+      height: 24px !important;
+      cursor: pointer;
+      fill: #fff;
+      pointer-events: none;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .top {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .user-dp {
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+
+      .user {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+      }
+    }
+
+    .bottom {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .bottom svg {
+      margin-left: 10px;
+      overflow: visible;
+      transition: color 0.7s;
+    }
+  }
+}
+
+@keyframes show {
+  0% {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,29 @@
+/* ==========================================================================
+   #ADDON INFO POPOVER VIEw
+   ========================================================================== */
+
+/**
+ * Styles for the Addon Info View
+ *
+ */
+
+.addon-info {
+
+  p, .credit-libraries {
+    margin-bottom: 2rem;
+  }
+
+  ul {
+    padding-left: 20px;
+  }
+
+
+  .button {
+    display: inline-block !important;
+    margin-right: 15px;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}

@@ -1,0 +1,70 @@
+/* ==========================================================================
+   #OPTIONS POPOVER
+   ========================================================================== */
+
+
+.options-popover {
+  @include popover;
+
+  .popover-content {
+    display: flex;
+    text-align: left;
+    width: 500px;
+    height: 435px;
+
+    .popover-label {
+      margin-bottom: 8px !important;
+    }
+
+  }
+
+    .popover-view {
+      width: 75%;
+      padding: 30px;
+    }
+
+    select {
+      background-color: #f3f3f3;
+      border: 1px solid #a5a5a5;
+      border-radius: $global-border-radius;
+      padding: 6px 3px;
+      margin-right: 10px;
+      margin-bottom: 15px;
+    }
+
+    .authorize {
+      margin-top: 0;
+    }
+
+  .success-message {
+    color: green;
+  }
+
+  .failure-message {
+    color: red;
+  }
+
+  section, form {
+    margin-bottom: 20px;
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  .latitude-label {
+    margin-top: 10px;
+  }
+
+  input {
+    padding: 5px 10px;
+    display: block;
+    margin-bottom: 15px;
+  }
+}
+
