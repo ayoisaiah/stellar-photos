@@ -28,6 +28,9 @@ const saveToDropboxApi = (imageId, dropboxToken) =>
     validateResponse
   );
 
+const getDropboxKey = () =>
+  fetch(`${baseUrl}/dropbox/key`).then(validateResponse);
+
 const authorizeOnedrive = code =>
   fetch(`${baseUrl}/onedrive/auth?code=${code}`).then(validateResponse);
 
@@ -47,6 +50,7 @@ export {
   searchPhotos,
   getForecast,
   saveToDropboxApi,
+  getDropboxKey,
   authorizeOnedrive,
   refreshOnedriveTokenApi,
   validateCollections,
