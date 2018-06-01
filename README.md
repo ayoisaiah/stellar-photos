@@ -13,7 +13,7 @@ Chrome | Firefox
 ## Features
 
 - Enjoy a new hi-res photo everytime you open a new tab - [totally free](https://unsplash.com/license) for personal or commercial use with no attribution required.
-- Search for free hi-res photos from Unsplash and download them or sync to your Dropbox.
+- Search for free hi-res photos from Unsplash and download them or sync to Dropbox or Onedrive.
 - View basic photo information.
 - Load photos from multiple custom collections
 - View current weather information for your locale.
@@ -27,7 +27,7 @@ Chrome and Firefox (54+) are supported at the moment.
 
 Bug reports, feature requests or pull requests are much appreciated!
 
-## Credits and License
+## Credits and Licence
 
 - Powered by the [Unsplash API](https://unsplash.com/developers).
-- Created by Ayo Isaiah and released under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+- Created by Ayo Isaiah and released under the terms of the [MIT Licence](http://opensource.org/licenses/MIT).
