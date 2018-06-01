@@ -1,5 +1,4 @@
 dependencies:
-  alertifyjs: 1.11.1
   dompurify: 1.0.4
   ladda: 1.0.6
   timeago.js: 3.0.2
@@ -234,10 +233,6 @@ packages:
     dev: true
     resolution:
       integrity: sha512-VDUX1oSajablmiyFyED9L1DFndg0P9h7p1F+NO8FkIzei6EPrR6Zu1n18rd5P8PqaSRd/FrWv3G1TVBqpM83gA==
-  /alertifyjs/1.11.1:
-    dev: false
-    resolution:
-      integrity: sha512-8rw5zvMlg0Idltq15OOU9tGabYVA/I8JTNIM5ICUXqvrdPb7cfl+sSkTv9pDc6bbB8p9L85GtmOG7SUSv+bugQ==
   /alphanum-sort/1.0.2:
     dev: true
     resolution:
@@ -7406,7 +7401,6 @@ registry: 'https://registry.npmjs.org/'
 shrinkwrapMinorVersion: 6
 shrinkwrapVersion: 3
 specifiers:
-  alertifyjs: ^1.11.0
   autoprefixer: ^8.5.0
   babel-core: ^6.26.3
   babel-loader: ^7.1.4

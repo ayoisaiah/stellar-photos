@@ -37,7 +37,6 @@
     "webpack-strip-block": "^0.2.0"
   },
   "dependencies": {
-    "alertifyjs": "^1.11.0",
     "dompurify": "^1.0.3",
     "ladda": "^1.0.5",
     "timeago.js": "^3.0.2"
