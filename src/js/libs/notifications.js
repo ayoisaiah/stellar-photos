@@ -1,6 +1,6 @@
 import loadingIndicator from './loading-indicator';
 
-const notifyCloudAuthenticationSuccessful = (cloudService) => {
+const notifyCloudAuthenticationSuccessful = cloudService => {
   chrome.notifications.create(`${cloudService}-notification`, {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -9,7 +9,7 @@ const notifyCloudAuthenticationSuccessful = (cloudService) => {
   });
 };
 
-const notifyCloudConnectionFailed = (cloudService) => {
+const notifyCloudConnectionFailed = cloudService => {
   chrome.notifications.create(`${cloudService}-notification`, {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -28,7 +28,9 @@ const notifySaveToCloudSuccessful = (cloudService, imageId) => {
 };
 
 const notifyUnableToUpload = (cloudService, imageId) => {
-  const message = (navigator.onLine) ? 'Unable to upload photo due to a server error' : 'There is no internet connection';
+  const message = navigator.onLine
+    ? 'Unable to upload photo due to a server error'
+    : 'There is no internet connection';
 
   loadingIndicator().stop();
 
