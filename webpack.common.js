@@ -48,6 +48,16 @@ module.exports = env => {
     });
   }
 
+  if (platform === 'chrome') {
+    javascript.use.push({
+      loader: 'webpack-strip-block',
+      options: {
+        start: 'FIREFOX_START',
+        end: 'FIREFOX_END',
+      },
+    });
+  }
+
   javascript.use.push({
     loader: 'placeholder-loader',
     options: {
