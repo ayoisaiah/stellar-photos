@@ -6,16 +6,12 @@ const generalPopoverView = () => `
   <section id="general-settings" class="general-settings">
 
     <!-- /* CHROME_START */ -->
-    <button id="show-default-tab" class="show-default-tab js-track-click"
-      data-track="click-default-tab"
-      data-label="Show Default Tab"
+    <button id="show-default-tab" class="show-default-tab"
       aria-popover-label="Open Default Tab">
       Open Default Tab
     </button>
 
-    <button id="show-chrome-apps" class="show-chrome-apps js-track-click"
-      data-track="click-chrome-apps"
-      data-label="Show Chrome Apps"
+    <button id="show-chrome-apps" class="show-chrome-apps"
       aria-label="Show Chrome Apps">
       Show Apps
     </button>
@@ -30,11 +26,9 @@ const generalPopoverView = () => `
           class="unsplash-collections__input" id="unsplash-collections__input"
           value="" placeholder="Collection IDs"/>
 
-        <button type="submit" class="update-collections js-track-click ladda-button"
+        <button type="submit" class="update-collections ladda-button"
           data-spinner-color="#ffffff"
           data-style="expand-right"
-          data-track="update-collections"
-          data-label="Update Collections">
           <span class="ladda-popover-label">Save Collections</span>
         </button>
     </form>
@@ -51,10 +45,7 @@ const generalPopoverView = () => `
         <option value="everyday">Every day</option>
       </select>
 
-      <button id="save-photo-frequency" class="js-photo-frequency js-track-click"
-      data-track="update-photo-frequency"
-      data-label=""
-      >Save</button>
+      <button id="save-photo-frequency" class="js-photo-frequency">Save</button>
     </section>
 
 

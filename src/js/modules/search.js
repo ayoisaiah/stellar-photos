@@ -1,4 +1,4 @@
-import Ladda from 'ladda';
+import * as Ladda from 'ladda';
 import displayPhotos from './display-photos';
 import purify from '../libs/purify-dom';
 import state from '../libs/state';

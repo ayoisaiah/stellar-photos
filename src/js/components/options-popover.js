@@ -7,9 +7,7 @@ import optionsSidebar from './options-sidebar';
 const optionsPopover = () => `
   <div class="popover options-popover">
     <button
-      class="control-button js-options-button options-button js-track-click"
-      data-track="click-options"
-      data-label="Toggle Options Popover"
+      class="control-button js-options-button options-button"
       title="Options"
       aria-label="Toggle Options Popover">
 

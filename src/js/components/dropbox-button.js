@@ -7,8 +7,7 @@ const dropboxButton = photo => `
       <button
         id="dropbox-button"
         data-imageid="${photo.id}"
-        data-track="click-dropbox"
-        class="js-track-click control-button cloud-button dropbox-button"
+        class="control-button cloud-button dropbox-button"
         title="Save photo to Dropbox">
 
         <svg class="icon icon-cloud"><use href="#icon-dropbox"></use></svg>

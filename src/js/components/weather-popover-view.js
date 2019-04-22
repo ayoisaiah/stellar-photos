@@ -24,9 +24,7 @@ const weatherPopoverView = () => `
         id="latitude-input"
         placeholder="latitude" value="">
 
-      <button type="submit" data-track="update-coordinates"
-      data-label="Update coordinates"
-      class="update-coords js-track-click">Save Coordinates</button>
+      <button type="submit" class="update-coords">Save Coordinates</button>
     </form>
 
     <section class="temperature-unit">

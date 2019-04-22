@@ -22,9 +22,7 @@ const photoCard = (photo, cloudButton) => {
       top center no-repeat; background-size: cover;">
        <div class="s-photo-actions">
           <div class="top">
-            <a class="user js-track-click"
-            data-track="view-user"
-            data-label="View photographer profile"
+            <a class="user"
             aria-label="View photographer profile"
             target="_blank"
             rel="noopener"
@@ -36,8 +34,6 @@ const photoCard = (photo, cloudButton) => {
 
             <a
             href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
-            class="js-track-click"
-            data-track="view-unsplash-card"
             data-imageid=${photoId}
             target="_blank"
             rel="noopener"
@@ -54,8 +50,7 @@ const photoCard = (photo, cloudButton) => {
 
             <div>
               <button title="Download Photo"
-              class="control-button js-track-click download-button"
-              data-track="click-download-card"
+              class="control-button download-button"
               data-imageid=${photoId}>
                 <svg style="fill: #fafafa;" class="icon icon--download">
                   <use xlink:href="#icon-download"></use>
