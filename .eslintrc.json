@@ -1,11 +1,19 @@
 {
-    "extends": ["airbnb-base", "plugin:prettier/recommended"],
-    "env": {
-      "browser": true,
-      "webextensions": true
-    },
-    "plugins": ["prettier"],
-    "rules": {
-      "prettier/prettier": "error"
-    }
+  "extends": ["airbnb-base", "plugin:prettier/recommended"],
+  "env": {
+    "browser": true,
+    "webextensions": true
+  },
+  "rules": {
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": [
+          "webpack.common.js",
+          "webpack.dev.js",
+          "webpack.prod.js"
+        ]
+      }
+    ]
+  }
 }
