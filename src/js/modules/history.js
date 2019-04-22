@@ -31,21 +31,22 @@ const initializeHistory = () => {
     purify.sanitize(hamburgerMenu())
   );
 
+  const main = document.querySelector('.s-main');
+  main.insertAdjacentHTML(
+    'beforeend',
+    purify.sanitize(historyPane(), {
+      SANITIZE_DOM: false,
+    })
+  );
+
+  $('s-history').addEventListener('click', handleClick);
+
+  const historyButton = $('historyButton');
+  historyButton.addEventListener('click', toggleHistoryPane);
+
   chrome.storage.local.get('history', result => {
     const { history } = result;
     if (history) {
-      const main = document.querySelector('.s-main');
-      main.insertAdjacentHTML(
-        'beforeend',
-        purify.sanitize(historyPane(), {
-          SANITIZE_DOM: false,
-        })
-      );
-
-      $('s-history').addEventListener('click', handleClick);
-
-      const historyButton = $('historyButton');
-      historyButton.addEventListener('click', toggleHistoryPane);
       displayHistory(history);
     }
   });
