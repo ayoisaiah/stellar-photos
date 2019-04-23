@@ -1,6 +1,6 @@
 import loadingIndicator from './loading-indicator';
 import { refreshOnedriveToken } from './onedrive-auth';
-import { validateResponse, lessThanOneHourAgo } from './helpers';
+import { validateResponse, lessThanTimeAgo } from './helpers';
 import { notifyUnableToUpload } from './notifications';
 import { triggerPhotoDownload, getOnedriveId } from '../api';
 
@@ -58,7 +58,7 @@ const saveToOneDrive = imageId => {
       const { url } = data;
       const downloadUrl = url.replace('https://', 'http://');
 
-      if (!lessThanOneHourAgo(onedriveData.timestamp)) {
+      if (!lessThanTimeAgo(onedriveData.timestamp, 3600)) {
         refreshOnedriveToken(imageId);
         return;
       }

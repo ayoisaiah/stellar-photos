@@ -31,6 +31,12 @@ const fetchRandomPhoto = () => {
         chrome.storage.sync.get('photoFrequency', result => {
           const { photoFrequency } = result;
 
+          if (photoFrequency === 'every15minutes') {
+            chrome.alarms.create('loadphoto', {
+              periodInMinutes: 15,
+            });
+          }
+
           if (photoFrequency === 'everyhour') {
             chrome.alarms.create('loadphoto', {
               periodInMinutes: 60,

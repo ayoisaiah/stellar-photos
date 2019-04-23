@@ -1,6 +1,6 @@
 import getWeatherInfo from './get-weather-info';
 import fetchRandomPhoto from './fetch-random-photo';
-import { lessThanOneHourAgo, lessThan24HoursAgo } from './helpers';
+import { lessThanTimeAgo } from './helpers';
 
 /*
  * Load the next image and update the weather
@@ -19,19 +19,22 @@ const loadNewData = () => {
       const { nextImage } = r;
 
       if (
+        photoFrequency === 'every15minutes' &&
+        !lessThanTimeAgo(nextImage.timestamp, 900)
+      )
+        return fetchRandomPhoto();
+
+      if (
         photoFrequency === 'everyhour' &&
-        !lessThanOneHourAgo(nextImage.timestamp)
-      ) {
-        fetchRandomPhoto();
-        return;
-      }
+        !lessThanTimeAgo(nextImage.timestamp, 3600)
+      )
+        return fetchRandomPhoto();
 
       if (
         photoFrequency === 'everyday' &&
-        !lessThan24HoursAgo(nextImage.timestamp)
-      ) {
-        fetchRandomPhoto();
-      }
+        !lessThanTimeAgo(nextImage.timestamp, 86400)
+      )
+        return fetchRandomPhoto();
     });
   });
 
@@ -48,7 +51,7 @@ const loadNewData = () => {
       if (forecast) {
         const { timestamp } = forecast;
         if (timestamp) {
-          if (!lessThanOneHourAgo(timestamp)) {
+          if (!lessThanTimeAgo(timestamp, 3600)) {
             getWeatherInfo();
           }
         }

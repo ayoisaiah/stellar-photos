@@ -73,16 +73,10 @@ const validateResponse = response => {
   return response.json();
 };
 
-const lessThanOneHourAgo = timestamp => {
-  const oneHour = 1000 * 60 * 60;
-  const oneHourAgo = Date.now() - oneHour;
-  return timestamp > oneHourAgo;
-};
-
-const lessThan24HoursAgo = timestamp => {
-  const twentyFourHours = 1000 * 60 * 60 * 24;
-  const twentyFourHoursAgo = Date.now() - twentyFourHours;
-  return timestamp > twentyFourHoursAgo;
+const lessThanTimeAgo = (timestamp, timeInSeconds) => {
+  const timeInMilliseconds = 1000 * timeInSeconds;
+  const timeAgo = Date.now() - timeInMilliseconds;
+  return timestamp > timeAgo;
 };
 
 export {
@@ -92,6 +86,5 @@ export {
   $,
   removeChildElements,
   validateResponse,
-  lessThanOneHourAgo,
-  lessThan24HoursAgo,
+  lessThanTimeAgo,
 };
