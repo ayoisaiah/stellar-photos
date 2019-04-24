@@ -40,6 +40,7 @@
   "dependencies": {
     "dompurify": "^1.0.3",
     "ladda": "^2.0.1",
+    "lit-html": "^1.0.0",
     "timeago.js": "^3.0.2"
   }
 }

@@ -24,14 +24,9 @@ const convertTimeStamp = timestamp => {
   };
 };
 
-function togglePopover() {
-  const p = document.getElementsByClassName('popover-content--is-visible')[0];
-  if (p && this.nextElementSibling !== p) {
-    p.classList.remove('popover-content--is-visible');
-  }
-
-  const popoverContent = this.nextElementSibling;
-  popoverContent.classList.toggle('popover-content--is-visible');
+function togglePopover(event) {
+  const popover = event.target.nextElementSibling.firstElementChild;
+  popover.classList.toggle('popover-content--is-visible');
 }
 
 /* Because the native implementation of the classList API is not chainable */

@@ -1,37 +1,35 @@
-import { $ } from './libs/helpers';
-import purify from './libs/purify-dom';
+import { html, render } from 'lit-html';
+import { $, convertTimeStamp } from './libs/helpers';
 import eventListeners from './libs/event-listeners';
 import { initializeSearch } from './modules/search';
 import initializeHistory from './modules/history';
-import initializeWeather from './modules/weather';
-import loadOptions from './modules/options';
-import loadNextImageDetails from './modules/load-next-image-details';
+import initializeOptions from './modules/options';
 import main from './components/main';
 import loader from './components/loader';
 import footer from './components/footer';
 import header from './components/header';
+import settingsDialog from './components/settings-dialog';
+import svgDefs from './components/svg';
 
 import '../sass/main.scss';
 
-const body = $('app');
-body.insertAdjacentHTML(
-  'afterbegin',
-  purify.sanitize(`
-    ${loader()}
-    ${header()}
-    ${main()}
-    ${footer()}
-  `)
-);
+const app = $('app');
+window.stellar.nextImage.then(nextImage => {
+  const fullDate = convertTimeStamp(
+    Math.floor(new Date(`${nextImage.created_at}`).getTime() / 1000)
+  ).fullDate;
 
-loadNextImageDetails();
+  const body = html`
+    ${loader()} ${settingsDialog()} ${header()} ${main()}
+    ${footer(nextImage, fullDate)} ${svgDefs()}
+  `;
+  render(body, app);
 
-loadOptions();
+  initializeOptions();
 
-initializeHistory();
+  initializeHistory();
 
-initializeSearch();
+  initializeSearch();
 
-initializeWeather();
-
-eventListeners();
+  eventListeners();
+});

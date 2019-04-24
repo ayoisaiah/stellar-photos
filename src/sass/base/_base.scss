@@ -1,9 +1,6 @@
-/**
- *
- * Inheriting box sizing slightly better best-practice
- * https://css-tricks.com/inheriting-box-sizing-probably-slightly-better-best-practice/
- *
- */
+/* ==========================================================================
+   #BASE STYLES
+   ========================================================================== */
 
 html {
   box-sizing: border-box;
@@ -48,8 +45,18 @@ body {
 svg,
 use {
   pointer-events: none;
+  stroke: #fff;
 }
 
 .cloud-button * {
   pointer-events: none;
+}
+
+hr {
+  margin: 12px 0;
+  border-style: solid;
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+  border-top-color: #e6e6e6;
 }

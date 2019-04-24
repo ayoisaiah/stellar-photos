@@ -14,9 +14,13 @@
     bottom: 0;
     width: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    justify-content: space-between;
     padding: 0 20px;
+  }
+
+  .footer-content > section {
+    width: 33.33%;
   }
 
   &.history-open {
@@ -52,6 +56,10 @@
       justify-content: center;
       align-items: center;
       margin-right: 20px;
+    }
+
+    + .unsplash-credit {
+      justify-content: center;
     }
   }
 

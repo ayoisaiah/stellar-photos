@@ -27,6 +27,9 @@ const eventListeners = () => {
     const searchResults = $('searchResults');
     if (searchResults.hasChildNodes()) return;
 
+    const settingsDialog = $('settings-dialog');
+    if (settingsDialog.classList.contains('is-open')) return;
+
     uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
   };
 
@@ -47,12 +50,16 @@ const eventListeners = () => {
     });
   });
 
-  // Close all popovers when click is detected outside
+  // Close info popover when click is detected outside
   document.addEventListener('click', event => {
-    if (!event.target.matches('.popover *')) {
-      const popover = document.querySelectorAll('.popover .popover-content');
-      popover.forEach(e => e.classList.remove('popover-content--is-visible'));
-    }
+    if (
+      event.target.matches('.popover *') ||
+      event.target.matches('.info-button')
+    )
+      return;
+
+    const popover = document.querySelector('.popover .popover-content');
+    popover.classList.remove('popover-content--is-visible');
   });
 };
 

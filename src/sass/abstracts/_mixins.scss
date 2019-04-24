@@ -4,6 +4,62 @@
   transition: opacity 0.3s, transform 0.3s;
 }
 
+@mixin tooltip {
+  [data-tooltip] {
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+  }
+
+  /* Hide the tooltip content by default */
+  [data-tooltip]::before,
+  [data-tooltip]::after {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Position tooltip above the element */
+  [data-tooltip]::before {
+    position: absolute;
+    bottom: 150%;
+    left: 50%;
+    margin-bottom: 5px;
+    margin-left: -80px;
+    padding: 7px;
+    width: 260px;
+    border-radius: 3px;
+    background-color: rgb(68, 68, 69);
+    color: #fff;
+    content: attr(data-tooltip);
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  /* Triangle hack to make tooltip look like a speech bubble */
+  [data-tooltip]::after {
+    position: absolute;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -5px;
+    width: 0;
+    border-top: 5px solid #000;
+    border-top: 5px solid hsla(0, 0%, 20%, 0.9);
+    border-right: 5px solid transparent;
+    border-left: 5px solid transparent;
+    content: ' ';
+    font-size: 0;
+    line-height: 0;
+  }
+
+  /* Show tooltip content on hover */
+  [data-tooltip]:hover::before,
+  [data-tooltip]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
 @mixin popover {
   position: relative;
 
@@ -11,7 +67,7 @@
     list-style: none;
     opacity: 0;
     position: absolute;
-    bottom: 60px;
+    bottom: 40px;
     z-index: -10;
     right: 0;
     text-align: right;
@@ -22,7 +78,8 @@
     border-radius: 4px;
     pointer-events: none;
     transform: scale(0.85) translateY(10%);
-    transition: all 0.25s cubic-bezier(0.24, 0.22, 0.015, 1.56), opacity 0.1s ease-in-out;
+    transition: all 0.25s cubic-bezier(0.24, 0.22, 0.015, 1.56),
+      opacity 0.1s ease-in-out;
 
     &--is-visible {
       pointer-events: auto;
@@ -36,7 +93,7 @@
       border-right: 7px solid transparent;
       border-left: 7px solid transparent;
       bottom: -7px;
-      content: "";
+      content: '';
       display: block;
       right: 10px;
       margin-left: -7px;
@@ -51,17 +108,18 @@
     .popover-label {
       font-size: 1.5rem;
       font-weight: 500;
-      color: rgb(179,179,179);
+      color: rgb(179, 179, 179);
       display: block;
       margin-bottom: 4px;
       line-height: 1.4;
     }
 
-    button, .button {
+    button,
+    .button {
       display: block;
       padding: 6px 20px;
-      background-color: rgb(68,68,69);
-      border: 1px solid rgb(68,68,69);
+      background-color: rgb(68, 68, 69);
+      border: 1px solid rgb(68, 68, 69);
       font-size: 1.4rem;
       color: $white;
       font-family: $font-stack;

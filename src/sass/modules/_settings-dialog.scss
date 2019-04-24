@@ -1,0 +1,175 @@
+/* ==========================================================================
+   #SETTINGS DIALOG
+   ========================================================================== */
+
+.settings-dialog {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  top: 0;
+  left: 0;
+  font-size: 1.6rem;
+  z-index: -10;
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+
+  &.is-open {
+    opacity: 1;
+    z-index: 10;
+  }
+}
+
+.dialog-content {
+  position: absolute;
+  width: 550px;
+  height: 400px;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.8), white 150px),
+    url('https://images.unsplash.com/photo-1496047311392-22bec9423e0a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60&blur=20');
+  border-radius: 4px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.settings-heading {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+/* General settings
+   ========================================================================== */
+
+.chrome-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.show-default-tab {
+  margin-right: 20px;
+}
+
+.radio-container {
+  display: flex;
+  align-items: center;
+}
+
+.radio-container input[type='radio'] {
+  margin-right: 10px;
+  margin-bottom: 0;
+}
+
+.custom-collection {
+  margin-top: 10px;
+  display: none;
+
+  &.is-visible {
+    display: block;
+  }
+}
+
+.custom-collection-input {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+
+  input {
+    margin-right: 10px;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  svg,
+  use {
+    stroke: #111 !important;
+  }
+
+  span {
+    height: 20px;
+  }
+
+  @include tooltip;
+}
+
+.dialog-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.longitude-input,
+.latitude-input {
+  margin-bottom: 10px;
+}
+
+.settings-dialog {
+  button,
+  .button {
+    display: block;
+    padding: 6px 20px;
+    background-color: rgb(68, 68, 69);
+    border: 1px solid rgb(68, 68, 69);
+    font-size: 1.4rem;
+    color: $white;
+    font-family: $font-stack;
+    cursor: pointer;
+    margin-bottom: 15px;
+    border-radius: 2px;
+    text-decoration: none;
+
+    &:hover {
+      border-color: #888;
+      background-color: #888;
+    }
+  }
+
+  select {
+    background-color: #f3f3f3;
+    border: 1px solid #a5a5a5;
+    border-radius: $global-border-radius;
+    padding: 6px 3px;
+    margin-right: 10px;
+    margin-bottom: 15px;
+  }
+
+  .authorize {
+    margin-top: 0;
+  }
+
+  .success-message {
+    color: green;
+  }
+
+  .failure-message {
+    color: red;
+  }
+
+  section,
+  form {
+    margin-bottom: 20px;
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  .latitude-label {
+    margin-top: 10px;
+  }
+
+  input[type='text'] {
+    padding: 5px 10px;
+    display: block;
+  }
+}
