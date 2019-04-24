@@ -117,10 +117,8 @@ const handleDownload = imageid => {
       a.setAttribute('download', `photo-${id}`);
       a.setAttribute('style', 'opacity: 0;');
 
-      /* FIREFOX_START */
       a.setAttribute('target', '_blank');
       a.setAttribute('rel', 'noopener');
-      /* FIREFOX_END */
 
       document.body.appendChild(a);
       a.click();

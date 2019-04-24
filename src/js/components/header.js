@@ -1,5 +1,6 @@
 import { html } from 'lit-html';
 import hamburgerMenu from './hamburger-menu';
+import searchButton from './search-button';
 
 /*
  * This is where the search and hambuger buttons live
@@ -8,7 +9,7 @@ import hamburgerMenu from './hamburger-menu';
 const header = () => html`
   <header class="header s-ui hide-ui" id="header">
     <div class="header-content" id="header-content">
-      ${hamburgerMenu()}
+      ${hamburgerMenu()} ${searchButton()}
     </div>
   </header>
 `;

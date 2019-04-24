@@ -1,19 +1,16 @@
+import { html, render } from 'lit-html';
 import state from '../libs/state';
 import observer from '../libs/observer';
-import purify from '../libs/purify-dom';
 import cloudButton from '../libs/cloud-button';
 import { $ } from '../libs/helpers';
 import photoCard from '../components/photo-card';
 
 const displayPhotos = (photos, total) => {
   const searchResults = $('searchResults');
-
-  photos.map(photo =>
-    searchResults.insertAdjacentHTML(
-      'beforeend',
-      purify.sanitize(photoCard(photo, cloudButton), { ADD_TAGS: ['use'] })
-    )
-  );
+  const h = html`
+    ${photos.map(photo => photoCard(photo, cloudButton))}
+  `;
+  render(h, searchResults);
 
   const loadMore = $('moreResults-button');
 
