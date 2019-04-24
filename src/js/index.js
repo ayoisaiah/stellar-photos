@@ -2,7 +2,7 @@ import { html, render } from 'lit-html';
 import { $, convertTimeStamp } from './libs/helpers';
 import eventListeners from './libs/event-listeners';
 import { initializeSearch } from './modules/search';
-import initializeHistory from './modules/history';
+import { initializeHistory } from './modules/history';
 import initializeOptions from './modules/options';
 import main from './components/main';
 import loader from './components/loader';

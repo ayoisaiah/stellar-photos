@@ -1,4 +1,5 @@
 import { html } from 'lit-html';
+import historyPane from './history-pane';
 
 /*
  * The Main Component
@@ -18,6 +19,7 @@ const main = () => html`
         <span class="ladda-label">More Photos</span>
       </button>
     </section>
+    ${historyPane()}
   </main>
 `;
 

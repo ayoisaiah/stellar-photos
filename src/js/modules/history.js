@@ -1,9 +1,6 @@
-import purify from '../libs/purify-dom';
-import { handleClick } from '../libs/handle';
+import { html, render } from 'lit-html';
 import { $ } from '../libs/helpers';
 import cloudButton from '../libs/cloud-button';
-import historyPane from '../components/history-pane';
-import hamburgerMenu from '../components/hamburger-menu';
 import photoCard from '../components/photo-card';
 
 const toggleHistoryPane = () => {
@@ -13,37 +10,14 @@ const toggleHistoryPane = () => {
 };
 
 const displayHistory = history => {
-  const historyMenu = $('s-history');
-  historyMenu.classList.remove('hidden');
-
-  history.map(photo =>
-    historyMenu.insertAdjacentHTML(
-      'beforeend',
-      purify.sanitize(photoCard(photo, cloudButton), { ADD_TAGS: ['use'] })
-    )
-  );
+  const historyPane = $('s-history');
+  const h = html`
+    ${history.map(photo => photoCard(photo, cloudButton))}
+  `;
+  render(h, historyPane);
 };
 
 const initializeHistory = () => {
-  const headerContent = $('header-content');
-  headerContent.insertAdjacentHTML(
-    'afterbegin',
-    purify.sanitize(hamburgerMenu())
-  );
-
-  const main = document.querySelector('.s-main');
-  main.insertAdjacentHTML(
-    'beforeend',
-    purify.sanitize(historyPane(), {
-      SANITIZE_DOM: false,
-    })
-  );
-
-  $('s-history').addEventListener('click', handleClick);
-
-  const historyButton = $('historyButton');
-  historyButton.addEventListener('click', toggleHistoryPane);
-
   chrome.storage.local.get('history', result => {
     const { history } = result;
     if (history) {
@@ -52,4 +26,4 @@ const initializeHistory = () => {
   });
 };
 
-export default initializeHistory;
+export { initializeHistory, toggleHistoryPane };

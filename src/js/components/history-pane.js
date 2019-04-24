@@ -1,7 +1,13 @@
+import { html } from 'lit-html';
+import { handleClick } from '../libs/handle';
+
 /*
  * This component represents the history menu
  */
 
-const historyMenu = () => '<ul class="hidden s-history" id="s-history"></ul>';
+const historyPane = () =>
+  html`
+    <ul @click=${handleClick} class="s-history" id="s-history"></ul>
+  `;
 
-export default historyMenu;
+export default historyPane;
