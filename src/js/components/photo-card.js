@@ -7,7 +7,7 @@ import { html } from 'lit-html';
 
 const photoCard = (photo, cloudButton) => {
   // Base64 for history pane
-  const backgroundPhoto = photo.base64 || photo.urls.small;
+  const backgroundPhoto = photo.Base64 || photo.urls.small;
   const width = photo.width;
   const height = photo.height;
   const photoId = photo.id;

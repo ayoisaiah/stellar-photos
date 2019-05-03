@@ -33,6 +33,7 @@ const searchPhotos = (key, page) => {
 
   searchPhotosApi(key, page)
     .then(json => {
+      console.log(json);
       state.isLoading = false;
 
       if (json.total === 0) {

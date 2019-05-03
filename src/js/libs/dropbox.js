@@ -11,9 +11,9 @@ const authorizeDropbox = () => {
 
   getDropboxKey()
     .then(data => {
-      const key = data.dropbox_key;
+      const key = data.Dropbox_key;
       chrome.tabs.create({
-        url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellarapp.photos/`,
+        url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
       });
     })
     .catch(() => notifySnackbar('Unable to authorize Dropbox', 'error'))

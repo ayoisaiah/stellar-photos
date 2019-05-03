@@ -4,28 +4,40 @@ const baseUrl =
   'DEV_OR_PROD' === 'dev'
     ? 'http://localhost:8080'
     : 'https://stellar-photos.herokuapp.com';
+
 const getRandomPhoto = collections =>
-  fetch(`${baseUrl}/random-photo/${collections}`).then(validateResponse);
-
-const searchPhotos = (key, page) =>
-  fetch(`${baseUrl}/search-unsplash/${key},${page}`).then(validateResponse);
-
-const validateCollections = collections =>
-  fetch(`${baseUrl}/validate-collections/${collections}`).then(response => {
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.text();
-  });
-
-const getForecast = (latitude, longitude, metricSystem) =>
-  fetch(`${baseUrl}/get-weather/${latitude},${longitude},${metricSystem}`).then(
+  fetch(`${baseUrl}/random-photo?collections=${collections}`).then(
     validateResponse
   );
 
+const searchPhotos = (key, page) =>
+  fetch(`${baseUrl}/search-unsplash?key=${key}&page=${page}`).then(
+    validateResponse
+  );
+
+const validateCollections = collections =>
+  fetch(`${baseUrl}/validate-collections?collections=${collections}`).then(
+    response => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      return response.text();
+    }
+  );
+
+const getForecast = (latitude, longitude, metricSystem) =>
+  fetch(
+    `${baseUrl}/get-weather?lat=${latitude}&lon=${longitude}&metric=${metricSystem}`
+  ).then(validateResponse);
+
 const saveToDropboxApi = (imageId, dropboxToken) =>
   fetch(`${baseUrl}/dropbox/save?id=${imageId}&token=${dropboxToken}`).then(
-    validateResponse
+    response => {
+      if (!response.ok) {
+        throw Error(response.statusText);
+      }
+      return response;
+    }
   );
 
 const getDropboxKey = () =>

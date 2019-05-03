@@ -22,7 +22,7 @@ const updateCloudStatus = selected => {
       action.insertAdjacentHTML(
         'beforeend',
         purify.sanitize(`<button class="authorize"
-        id="authorize">Authorize</button>`)
+        id="authorize">Connect</button>`)
       );
 
       const authorize = $('authorize');
@@ -41,7 +41,7 @@ const updateCloudStatus = selected => {
     } else {
       action.insertAdjacentHTML(
         'beforeend',
-        purify.sanitize('<span class="success-message">Authenticated</span>')
+        purify.sanitize('<span class="success-message">Connected</span>')
       );
     }
   });

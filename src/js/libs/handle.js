@@ -1,8 +1,9 @@
 import * as Ladda from 'ladda';
 import { searchPhotos } from '../modules/search';
+import displayPhotos from '../modules/display-photos';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
-import { $, chainableClassList, removeChildElements as empty } from './helpers';
+import { $, chainableClassList } from './helpers';
 import state from './state';
 import observer from './observer';
 import loadingIndicator from './loading-indicator';
@@ -152,12 +153,12 @@ const handleClick = e => {
 };
 
 const handleSubmit = () => {
+  // Empty search results
+  displayPhotos([], 0);
+
   const loadMore = $('moreResults-button');
   loadMore.classList.add('hidden');
   observer.observe(loadMore);
-
-  const searchResults = $('searchResults');
-  empty(searchResults);
 
   const uiElements = document.querySelectorAll('.s-ui');
   uiElements.forEach(element => {

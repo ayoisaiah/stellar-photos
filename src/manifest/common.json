@@ -2,8 +2,7 @@
   "manifest_version": 2,
   "name": "Stellar Photos",
   "version": "2.0.0",
-  "description":
-    "Experience a beautiful photo from Unsplash every time you open a new tab alongside current weather information for your city",
+  "description": "Experience a beautiful photo from Unsplash every time you open a new tab alongside current weather information for your city",
 
   "icons": {
     "48": "icons/48.png",
@@ -24,11 +23,13 @@
 
   "content_scripts": [
     {
-      "matches": ["https://stellarapp.photos/*", "http://localhost:3000/*"],
+      "matches": [
+        "https://ayoisaiah.github.io/stellar-photos/*",
+        "http://localhost:3000/*"
+      ],
       "js": ["js/tab.bundle.js"]
     }
   ],
 
-  "content_security_policy":
-    "script-src 'self' https://www.google-analytics.com; object-src 'self'"
+  "content_security_policy": "script-src 'self' https://www.google-analytics.com; object-src 'self'"
 }

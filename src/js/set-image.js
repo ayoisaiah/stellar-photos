@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const { nextImage } = result;
       if (nextImage) {
         const body = $('app');
-        body.style.backgroundImage = `url(${nextImage.base64})`;
+        body.style.backgroundImage = `url(${nextImage.Base64})`;
         resolve(nextImage);
       }
     });
