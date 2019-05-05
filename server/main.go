@@ -1,23 +1,24 @@
 package main
 
 import (
-  "net/http"
-  "github.com/joho/godotenv"
-  "log"
-  "os"
-  "fmt"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-  err := godotenv.Load()
+	err := godotenv.Load()
 
-  if err != nil {
-    log.Fatal("Error loading .env file")
-  }
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-  port := fmt.Sprintf(":%v", os.Getenv("PORT"))
+	port := fmt.Sprintf(":%v", os.Getenv("PORT"))
 
-  mux := newRouter()
+	mux := newRouter()
 
-  log.Fatal(http.ListenAndServe(port, mux))
+	log.Fatal(http.ListenAndServe(port, mux))
 }
