@@ -7,8 +7,8 @@ const options = {
   threshold: 1.0,
 };
 
-const loadMoreResults = (entries) => {
-  entries.forEach((entry) => {
+const loadMoreResults = entries => {
+  entries.forEach(entry => {
     // If new search or if ongoing search
     if (state.page === 1 || state.isLoading) return;
 
