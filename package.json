@@ -1,4 +1,11 @@
 {
+  "name": "stellar-photos",
+  "version": "3.0.0",
+  "description": "Beautiful high-res photos in your browser tabs. Available for Chrome and Firefox",
+  "main": "src/js/index.js",
+  "repository": "git@github.com:ayoisaiah/stellar-photos.git",
+  "author": "Ayo Isaiah <ayisaiah@gmail.com>",
+  "license": "MIT",
   "scripts": {
     "clean": "rm -rf dist",
     "build:chrome:dev": "concurrently -w \"yarn run clean\" \"npx webpack -w --display-max-modules 0 --env=dev:chrome --progress --colors --config webpack.dev.js\"",
