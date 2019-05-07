@@ -6,15 +6,6 @@ import (
 	"os"
 )
 
-type WeatherInfo struct {
-	Name string `json:"name"`
-	Main struct {
-		Temp float64 `json:"temp"`
-	}
-	Weather   []interface{} `json:"weather"`
-	Timestamp int           `json:"dt"`
-}
-
 func getWeatherInfo(w http.ResponseWriter, r *http.Request) {
 	values, err := getURLQueryParams(r.URL.String())
 

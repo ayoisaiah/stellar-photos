@@ -8,10 +8,12 @@ import addonInfoPopoverView from '../components/addon-info-popover-view';
 
 const initializeAddonInfo = () => {
   const popoverView = $('popover-view');
-  popoverView.insertAdjacentHTML('afterbegin',
+  popoverView.insertAdjacentHTML(
+    'afterbegin',
     purify.sanitize(addonInfoPopoverView(), {
       ADD_TAGS: ['use'],
-    }));
+    })
+  );
 };
 
 export default initializeAddonInfo;

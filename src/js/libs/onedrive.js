@@ -8,13 +8,13 @@ const authorizeOneDrive = () => {
   loadingIndicator().start();
   getOnedriveId()
     .then(json => {
-      const { Id } = json;
+      const { id } = json;
 
       chrome.tabs.create({
-        url: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${Id}&scope=Files.ReadWrite.AppFolder offline_access&response_type=code&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
+        url: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${id}&scope=Files.ReadWrite.AppFolder offline_access&response_type=code&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
       });
     })
-    .catch(error => console.log(error))
+    .catch(console.error)
     .finally(() => loadingIndicator().stop());
 };
 

@@ -8,10 +8,6 @@ import (
 	"os"
 )
 
-type Key struct {
-	Dropbox_key string
-}
-
 func sendDropboxKey(w http.ResponseWriter, r *http.Request) {
 	DROPBOX_KEY := fmt.Sprintf("%v", os.Getenv("DROPBOX_KEY"))
 
@@ -42,14 +38,25 @@ func saveToDropbox(w http.ResponseWriter, r *http.Request) {
 
 	v := fmt.Sprintf("Bearer %v", token)
 
-	requestBody, _ := json.Marshal(map[string]string{
+	requestBody, err := json.Marshal(map[string]string{
 		"path": fmt.Sprintf("/photo-%v.jpg", id),
 		"url":  data.URL,
 	})
 
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	endpoint := "https://api.dropboxapi.com/2/files/save_url"
 
-	request, _ := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", v)
 

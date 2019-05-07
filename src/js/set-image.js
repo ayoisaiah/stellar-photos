@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const { nextImage } = result;
       if (nextImage) {
         const body = $('app');
-        body.style.backgroundImage = `url(${nextImage.Base64})`;
+        body.style.backgroundImage = `url(${nextImage.base64})`;
         resolve(nextImage);
       }
     });
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // CSS first to avoid flash of unstyled content
     loadCss('css/main.css')
       .then(() => loadJs('js/index.bundle.js'))
-      .catch(error => console.log(error));
+      .catch(console.error);
   };
 
   document.addEventListener('mousemove', loadControls);

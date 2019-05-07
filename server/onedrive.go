@@ -9,10 +9,6 @@ import (
 	"strings"
 )
 
-type OnedriveId struct {
-	Id string
-}
-
 func sendOnedriveId(w http.ResponseWriter, r *http.Request) {
 	id := fmt.Sprintf("%v", os.Getenv("ONEDRIVE_APPID"))
 
@@ -21,14 +17,6 @@ func sendOnedriveId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJson(w, d)
-}
-
-type OnedriveAuth struct {
-	Token_type    string `json:"token_type"`
-	Expires_in    string `json:"expires_in"`
-	Scope         string `json:"scope"`
-	Access_token  string `json:"access_token"`
-	Refresh_token string `json:"refresh_token"`
 }
 
 func authorizeOnedrive(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +75,13 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 
-	request, _ := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+	request, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	client := &http.Client{}

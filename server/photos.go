@@ -37,16 +37,6 @@ func getPhotoDownloadLocation(id string) (*Download, error) {
 	return s, err
 }
 
-type Download struct {
-	URL string `json:"url"`
-}
-
-type Search struct {
-	Total       int           `json:"total"`
-	Total_pages int           `json:"total_pages"`
-	Results     []interface{} `json:"results"`
-}
-
 func searchUnsplash(w http.ResponseWriter, r *http.Request) {
 	values, err := getURLQueryParams(r.URL.String())
 
@@ -70,27 +60,6 @@ func searchUnsplash(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJson(w, s)
-}
-
-type RandomPhoto struct {
-	Id          string                 `json:"id"`
-	Created_at  string                 `json:"created_at"`
-	Updated_at  string                 `json:"updated_at"`
-	Width       int                    `json:"width"`
-	Height      int                    `json:"height"`
-	Color       string                 `json:"color"`
-	Downloads   int                    `json:"downloads"`
-	Likes       int                    `json:"likes"`
-	Description string                 `json:"description"`
-	Exif        map[string]interface{} `json:"exif"`
-	Urls        map[string]interface{} `json:"urls"`
-	Links       map[string]interface{} `json:"links"`
-	User        map[string]interface{} `json:"user"`
-}
-
-type RandomPhotoWithBase64 struct {
-	RandomPhoto
-	Base64 string
 }
 
 func getRandomPhoto(w http.ResponseWriter, r *http.Request) {
@@ -130,10 +99,6 @@ func getRandomPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJson(w, data)
-}
-
-type Collection struct {
-	Id int `json:"id"`
 }
 
 func validateCollections(w http.ResponseWriter, r *http.Request) {
