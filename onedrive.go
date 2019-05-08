@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -47,6 +48,7 @@ func refreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 	values, err := getURLQueryParams(r.URL.String())
 
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -78,6 +80,7 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 	request, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
 
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -88,19 +91,23 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 	response, err := client.Do(request)
 
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	defer response.Body.Close()
 
+	auth := &OnedriveAuth{}
+	json.NewDecoder(response.Body).Decode(auth)
+
 	if response.StatusCode != 200 {
+		body, _ := ioutil.ReadAll(response.Body)
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write(body)
+		fmt.Println(body)
 		return
 	}
-
-	auth := new(OnedriveAuth)
-	json.NewDecoder(response.Body).Decode(auth)
 
 	sendJson(w, auth)
 }

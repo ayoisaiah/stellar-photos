@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -21,11 +22,21 @@ func getWeatherInfo(w http.ResponseWriter, r *http.Request) {
 	OPENWEATHER_APPID := fmt.Sprintf("%v", os.Getenv("OPENWEATHER_APPID"))
 	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?lat=%v&lon=%v&units=%v&appid=%v", latitide, longitude, metric, OPENWEATHER_APPID)
 
-	forecast := new(WeatherInfo)
-	err = getJson(url, forecast)
+	forecast := &WeatherInfo{}
+	resp, err := http.Get(url)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	json.NewDecoder(resp.Body).Decode(forecast)
+
+	if resp.StatusCode != 200 {
+		w.WriteHeader(resp.StatusCode)
+		sendJson(w, forecast)
 		return
 	}
 

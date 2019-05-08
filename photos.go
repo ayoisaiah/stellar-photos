@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const UnsplashApiUrl = "https://api.unsplash.com"
+
 func downloadPhoto(w http.ResponseWriter, r *http.Request) {
 	values, err := getURLQueryParams(r.URL.String())
 
@@ -24,14 +26,14 @@ func downloadPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendJson(w, data)
+	jsonResponse(w, data)
 }
 
-func getPhotoDownloadLocation(id string) (*Download, error) {
-	UNSPLASH_ACCESS_KEY := fmt.Sprintf("%v", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("https://api.unsplash.com/photos/%v/download?client_id=%v", id, UNSPLASH_ACCESS_KEY)
+func getPhotoDownloadLocation(id string) (*UnsplashResponse, error) {
+	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	url := fmt.Sprintf("%s/photos/%s/download?client_id=%s", UnsplashApiUrl, id, UnsplashBaseUrl)
 
-	s := &Download{}
+	s := &UnsplashResponse{}
 	err := getJson(url, s)
 
 	return s, err
@@ -48,10 +50,10 @@ func searchUnsplash(w http.ResponseWriter, r *http.Request) {
 	key := values.Get("key")
 	page := values.Get("page")
 
-	UNSPLASH_ACCESS_KEY := fmt.Sprintf("%v", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("https://api.unsplash.com/search/photos?page=%v&query=%v&per_page=%v&client_id=%v", page, key, 28, UNSPLASH_ACCESS_KEY)
+	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	url := fmt.Sprintf("%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s", UnsplashApiUrl, page, key, "28", UnsplashBaseUrl)
 
-	s := &Search{}
+	s := &UnsplashResponse{}
 	err = getJson(url, s)
 
 	if err != nil {
@@ -59,7 +61,7 @@ func searchUnsplash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendJson(w, s)
+	jsonResponse(w, s)
 }
 
 func getRandomPhoto(w http.ResponseWriter, r *http.Request) {
@@ -73,10 +75,10 @@ func getRandomPhoto(w http.ResponseWriter, r *http.Request) {
 	collections := values.Get("collections")
 	width := 2000
 
-	UNSPLASH_ACCESS_KEY := fmt.Sprintf("%v", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("https://api.unsplash.com/photos/random?collections=%v&w=%v&client_id=%v", collections, width, UNSPLASH_ACCESS_KEY)
+	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	url := fmt.Sprintf("%s/photos/random?collections=%v&w=%v&client_id=%v", UnsplashApiUrl, collections, width, UnsplashBaseUrl)
 
-	s := &RandomPhoto{}
+	s := &UnsplashResponse{}
 	err = getJson(url, s)
 
 	if err != nil {
@@ -93,12 +95,16 @@ func getRandomPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := RandomPhotoWithBase64{
-		RandomPhoto: *s,
-		Base64:      base64,
+	x := RandomPhotoWithBase64{
+		Base64: base64,
 	}
 
-	sendJson(w, data)
+	data := &UnsplashResponse{
+		RandomPhoto:           s.RandomPhoto,
+		RandomPhotoWithBase64: x,
+	}
+
+	jsonResponse(w, data)
 }
 
 func validateCollections(w http.ResponseWriter, r *http.Request) {
@@ -111,10 +117,10 @@ func validateCollections(w http.ResponseWriter, r *http.Request) {
 
 	collections := strings.Split(values.Get("collections"), ",")
 
-	UNSPLASH_ACCESS_KEY := fmt.Sprintf("%v", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
 
 	for _, value := range collections {
-		url := fmt.Sprintf("https://api.unsplash.com/collections/%v/?client_id=%v", value, UNSPLASH_ACCESS_KEY)
+		url := fmt.Sprintf("%s/collections/%s/?client_id=%s", UnsplashApiUrl, value, UnsplashBaseUrl)
 		c := &Collection{}
 		err := getJson(url, c)
 
