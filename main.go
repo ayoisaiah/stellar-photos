@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/ayoisaiah/stellar-photos-server/routes"
 	"github.com/joho/godotenv"
 )
 
@@ -18,7 +19,7 @@ func main() {
 
 	port := fmt.Sprintf(":%v", os.Getenv("PORT"))
 
-	mux := newRouter()
+	mux := routes.NewRouter()
 
 	log.Fatal(http.ListenAndServe(port, mux))
 }
