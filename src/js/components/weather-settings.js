@@ -1,7 +1,7 @@
 import { html } from 'lit-html';
 import {
   updateCoordinates,
-  updateTemperatureUnit,
+  updateTemperatureFormat,
 } from '../modules/weather-options';
 
 /*
@@ -22,19 +22,6 @@ const weatherSettings = () => html`
         here to get current weather information for your city.</span
       >
 
-      <label class="dialog-label longitude-dialog-label" for="longitude"
-        >Longitude:</label
-      >
-
-      <input
-        type="text"
-        name="longitude"
-        class="longitude-input"
-        id="longitude-input"
-        placeholder="longitude"
-        value=""
-      />
-
       <label class="dialog-label latitude-dialog-label" for="latitude"
         >Latitude:</label
       >
@@ -48,6 +35,19 @@ const weatherSettings = () => html`
         value=""
       />
 
+      <label class="dialog-label longitude-dialog-label" for="longitude"
+        >Longitude:</label
+      >
+
+      <input
+        type="text"
+        name="longitude"
+        class="longitude-input"
+        id="longitude-input"
+        placeholder="longitude"
+        value=""
+      />
+
       <button type="submit" class="update-coords">Save Coordinates</button>
     </form>
 
@@ -55,12 +55,12 @@ const weatherSettings = () => html`
       <span class="dialog-label">Show the temperature in</span>
 
       <select
-        @input=${updateTemperatureUnit}
-        id="select-temperature-unit"
+        @input=${updateTemperatureFormat}
+        id="select-temperature-format"
         class="select-temperature-unit"
       >
-        <option value="celsius">Celsius</option>
-        <option value="fahrenheit">Fahrenheit</option>
+        <option value="metric">Celsius</option>
+        <option value="imperial">Fahrenheit</option>
       </select>
     </section>
   </section>

@@ -7,7 +7,7 @@ import timeago from 'timeago.js';
 
 const weatherInfo = forecast => {
   const location = forecast.name;
-  const temperature = Math.round(forecast.Main.temp);
+  const temperature = Math.round(forecast.main.temp);
   const { description } = forecast.weather[0];
   const lastUpdatedTime = timeago().format(new Date(forecast.timestamp));
 

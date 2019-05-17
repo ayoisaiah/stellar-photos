@@ -21,7 +21,7 @@ const getWeatherInfo = () => {
           periodInMinutes: 60,
         });
       })
-      .catch(error => console.log(error));
+      .catch(console.error);
   };
 
   chrome.storage.sync.get('coords', result => {
@@ -30,10 +30,9 @@ const getWeatherInfo = () => {
 
     const { longitude, latitude } = coords;
 
-    chrome.storage.sync.get('tempUnit', data => {
-      const tempUnit = data.tempUnit || 'celsius';
-      const metricSystem = tempUnit === 'fahrenheit' ? 'imperial' : 'metric';
-      sendRequest(latitude, longitude, metricSystem);
+    chrome.storage.sync.get('temperatureFormat', data => {
+      const temperatureFormat = data.temperatureFormat || 'metric';
+      sendRequest(latitude, longitude, temperatureFormat);
     });
   });
 };

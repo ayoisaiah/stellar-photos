@@ -5,11 +5,9 @@ import notifySnackbar from '../libs/notify-snackbar';
  * This component handles the weather options
  */
 
-const updateTemperatureUnit = event => {
+const updateTemperatureFormat = event => {
   const selected = event.target[event.target.selectedIndex].value;
-  chrome.storage.sync.set({ tempUnit: selected });
-
-  notifySnackbar('Preferences saved successfully');
+  chrome.storage.sync.set({ temperatureFormat: selected });
 
   chrome.runtime.sendMessage({ command: 'update-weather' });
 };
@@ -42,14 +40,14 @@ const updateCoordinates = event => {
 };
 
 const initializeWeatherOptions = () => {
-  const selectTempUnit = $('select-temperature-unit');
+  const selectTempFormat = $('select-temperature-format');
 
-  chrome.storage.sync.get('tempUnit', d => {
-    if (!d.tempUnit) {
-      chrome.storage.sync.set({ tempUnit: 'celsius' });
+  chrome.storage.sync.get('temperatureFormat', d => {
+    if (!d.temperatureFormat) {
+      chrome.storage.sync.set({ temperatureFormat: 'metric' });
     } else {
-      const unit = d.tempUnit;
-      selectTempUnit.value = unit;
+      const { temperatureFormat } = d;
+      selectTempFormat.value = temperatureFormat;
     }
   });
 
@@ -65,4 +63,4 @@ const initializeWeatherOptions = () => {
   });
 };
 
-export { updateCoordinates, initializeWeatherOptions, updateTemperatureUnit };
+export { updateCoordinates, initializeWeatherOptions, updateTemperatureFormat };
