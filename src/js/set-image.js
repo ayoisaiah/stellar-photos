@@ -2,14 +2,18 @@ import { $ } from './libs/helpers';
 
 document.addEventListener('DOMContentLoaded', () => {
   window.stellar = {};
-  window.stellar.nextImage = new Promise(resolve => {
-    chrome.storage.local.get('nextImage', result => {
-      const { nextImage } = result;
+  window.stellar.boot = new Promise(resolve => {
+    chrome.storage.local.get(data => {
+      const { nextImage } = data;
       if (nextImage) {
         const body = $('app');
         body.style.backgroundImage = `url(${nextImage.base64})`;
-        resolve(nextImage);
       }
+
+      chrome.storage.sync.get(res => {
+        const result = Object.assign(res, data);
+        resolve(result);
+      });
     });
   });
 

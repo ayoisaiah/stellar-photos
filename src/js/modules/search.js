@@ -82,12 +82,4 @@ const searchPhotos = (key, page) => {
     });
 };
 
-const initializeSearch = () => {
-  document.addEventListener('keyup', e => {
-    if (e.keyCode === 27) {
-      closeSearch();
-    }
-  });
-};
-
-export { openSearch, closeSearch, searchPhotos, initializeSearch };
+export { openSearch, closeSearch, searchPhotos };

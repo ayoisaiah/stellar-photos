@@ -50,17 +50,20 @@ const fetchRandomPhoto = () => {
           }
         });
       })
-      .catch(error => console.log(error));
+      .catch(console.error);
   };
 
-  chrome.storage.sync.get('collections', result => {
-    let { collections } = result;
+  chrome.storage.sync.get('imageSource', result => {
+    let collections = '998309';
 
-    if (!collections) collections = '998309';
+    if (result.imageSource === 'custom') {
+      return chrome.storage.sync.get('collections', r => {
+        collections = r.collections;
+        sendRequest(collections);
+      });
+    }
 
-    chrome.storage.sync.set({ collections });
-
-    sendRequest(collections);
+    return sendRequest(collections);
   });
 };
 

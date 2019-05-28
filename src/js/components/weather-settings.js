@@ -8,7 +8,7 @@ import {
  * Settings for weather
  */
 
-const weatherSettings = () => html`
+const weatherSettings = settings => html`
   <section id="weather-settings" class="weather-settings">
     <h3 class="settings-heading">Weather</h3>
     <form
@@ -32,7 +32,7 @@ const weatherSettings = () => html`
         class="latitude-input"
         id="latitude-input"
         placeholder="latitude"
-        value=""
+        value=${settings.coords.latitude}
       />
 
       <label class="dialog-label longitude-dialog-label" for="longitude"
@@ -45,7 +45,7 @@ const weatherSettings = () => html`
         class="longitude-input"
         id="longitude-input"
         placeholder="longitude"
-        value=""
+        value=${settings.coords.longitude}
       />
 
       <button type="submit" class="update-coords">Save Coordinates</button>
@@ -59,8 +59,16 @@ const weatherSettings = () => html`
         id="select-temperature-format"
         class="select-temperature-unit"
       >
-        <option value="metric">Celsius</option>
-        <option value="imperial">Fahrenheit</option>
+        <option
+          value="metric"
+          ?selected=${settings.temperatureFormat === 'metric'}
+          >Celsius</option
+        >
+        <option
+          value="imperial"
+          ?selected=${settings.temperatureFormat === 'imperial'}
+          >Fahrenheit</option
+        >
       </select>
     </section>
   </section>

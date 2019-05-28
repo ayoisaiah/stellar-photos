@@ -1,9 +1,15 @@
 import { html } from 'lit-html';
-import { toggleHistoryPane } from '../modules/history';
+import { $ } from '../libs/helpers';
 
 /*
  * This component is for the hamburger menu that toggles the history pane
  */
+
+const toggleHistoryPane = () => {
+  $('s-history').classList.toggle('open');
+  $('s-footer').classList.toggle('history-open');
+  $('historyButton').classList.toggle('transform');
+};
 
 const hamburgerMenu = () => html`
   <button

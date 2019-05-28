@@ -8,18 +8,18 @@ import { closeSettingsDialog } from '../libs/handle';
  * The options popover
  */
 
-const settingsDialog = () => html`
+const settingsDialog = settings => html`
   <div
     class="dialog settings-dialog"
     @click=${closeSettingsDialog}
     id="settings-dialog"
   >
     <div class="dialog-content">
-      ${generalSettings()}
+      ${generalSettings(settings)}
       <hr />
-      ${weatherSettings()}
+      ${weatherSettings(settings)}
       <hr />
-      ${cloudSettings()}
+      ${cloudSettings(settings)}
     </div>
   </div>
 `;

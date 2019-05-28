@@ -54,6 +54,11 @@ const updateImageSource = event => {
   }
 };
 
+const updateCloudService = event => {
+  const selected = event.target[event.target.selectedIndex].value;
+  chrome.storage.local.set({ cloudService: selected });
+};
+
 const updatePhotoFrequency = event => {
   const selected = event.target[event.target.selectedIndex].value;
   chrome.storage.sync.set({ photoFrequency: selected });
@@ -184,4 +189,5 @@ export {
   updateImageSource,
   updateCollections,
   closeSettingsDialog,
+  updateCloudService,
 };

@@ -1,3 +1,4 @@
+import { closeSearch } from '../modules/search';
 import { chainableClassList, $ } from './helpers';
 
 const eventListeners = () => {
@@ -60,6 +61,12 @@ const eventListeners = () => {
 
     const popover = document.querySelector('.popover .popover-content');
     popover.classList.remove('popover-content--is-visible');
+  });
+
+  document.addEventListener('keyup', e => {
+    if (e.keyCode === 27) {
+      closeSearch();
+    }
   });
 };
 

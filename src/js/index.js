@@ -1,9 +1,6 @@
 import { html, render } from 'lit-html';
 import { $, convertTimeStamp } from './libs/helpers';
 import eventListeners from './libs/event-listeners';
-import { initializeSearch } from './modules/search';
-import { initializeHistory } from './modules/history';
-import initializeOptions from './modules/options';
 import main from './components/main';
 import loader from './components/loader';
 import footer from './components/footer';
@@ -14,22 +11,18 @@ import svgDefs from './components/svg';
 import '../sass/main.scss';
 
 const app = $('app');
-window.stellar.nextImage.then(nextImage => {
+window.stellar.boot.then(data => {
+  const { nextImage, history } = data;
+
   const fullDate = convertTimeStamp(
     Math.floor(new Date(`${nextImage.created_at}`).getTime() / 1000)
   ).fullDate;
 
   const body = html`
-    ${loader()} ${settingsDialog()} ${header()} ${main()}
-    ${footer(nextImage, fullDate)} ${svgDefs()}
+    ${loader()} ${settingsDialog(data)} ${header()} ${main(history)}
+    ${footer(data, fullDate)} ${svgDefs()}
   `;
   render(body, app);
-
-  initializeOptions();
-
-  initializeHistory();
-
-  initializeSearch();
 
   eventListeners();
 });
