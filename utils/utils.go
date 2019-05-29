@@ -52,6 +52,10 @@ func ImageUrlToBase64(url string) (string, error) {
 	buffer := &bytes.Buffer{}
 	m, _, err := image.Decode(resp.Body)
 
+	if err != nil {
+		return "", err
+	}
+
 	if err := jpeg.Encode(buffer, m, nil); err != nil {
 		return "", err
 	}
