@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.get(data => {
       const { nextImage } = data;
       if (nextImage) {
-        const body = $('app');
+        const body = $('body');
         body.style.backgroundImage = `url(${nextImage.base64})`;
       }
 
