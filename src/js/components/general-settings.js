@@ -57,12 +57,12 @@ const generalSettings = settings => {
         <div class="radio-container">
           <input type="radio" @change=${updateImageSource} id="official-collection" name="image-source" value="official" ?checked=${settings.imageSource ===
     'official'}>
-          <label for="official-collection">The official Stellar Photos collection</label>
+          <label for="official-collection">The official <a target="_blank" rel="noopener noreferrer" href="https://unsplash.com/collections/998309/stellar-photos">Stellar Photos collection</a></label>
         </div>
         <div class="radio-container">
           <input @change=${updateImageSource} ?checked=${settings.imageSource ===
     'custom'} type="radio" id="custom-collection" name="image-source" value="custom">
-          <label for="custom-collection">Custom collection</label>
+          <label for="custom-collection">Custom <a target="_blank" rel="noopener noreferrer" href="https://unsplash.com/collections">Unsplash collections</a></label>
         </div>
 
         <div class="custom-collection ${customInput}">
@@ -71,7 +71,7 @@ const generalSettings = settings => {
             class="unsplash-collections__input" id="unsplash-collections__input"
             value=${settings.collections} placeholder="Collection IDs"/>
 
-            <span data-tooltip="Enter Unsplash collection IDs here.\n Multiple collections can be separated by commas.">
+            <span data-tooltip="Enter one or more Unsplash collection IDs here.\n For example, 998309 is the collection ID for https://unsplash.com/collections/998309/stellar-photos.\n Separate multiple collection IDs with commas.">
               <svg class="icon icon-info"><use href="#icon-info"></use></svg>
             </span>
           </div>

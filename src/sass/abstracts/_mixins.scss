@@ -27,7 +27,7 @@
     margin-bottom: 5px;
     margin-left: -80px;
     padding: 7px;
-    width: 260px;
+    width: 330px;
     border-radius: 3px;
     background-color: rgb(68, 68, 69);
     color: #fff;
@@ -78,7 +78,8 @@
     border-radius: 4px;
     pointer-events: none;
     transform: scale(0.85) translateY(10%);
-    transition: all 0.25s cubic-bezier(0.24, 0.22, 0.015, 1.56),
+    transition:
+      all 0.25s cubic-bezier(0.24, 0.22, 0.015, 1.56),
       opacity 0.1s ease-in-out;
 
     &--is-visible {
