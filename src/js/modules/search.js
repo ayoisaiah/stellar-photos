@@ -4,6 +4,11 @@ import { $, chainableClassList } from '../libs/helpers';
 import loadingIndicator from '../libs/loading-indicator';
 import state from '../libs/state';
 import { searchPhotos as searchPhotosApi } from '../api';
+import {
+  notifyNoSearchResults,
+  notifySearchError,
+} from '../libs/notifications';
+import notifySnackbar from '../libs/notify-snackbar';
 
 const openSearch = () => {
   $('searchButton-open').classList.add('hidden');
@@ -18,8 +23,6 @@ const closeSearch = () => {
 };
 
 const searchPhotos = (key, page) => {
-  state.isLoading = true;
-
   // Activate circular loader on first search
   if (page === 1) {
     loadingIndicator().start();
@@ -33,17 +36,8 @@ const searchPhotos = (key, page) => {
 
   searchPhotosApi(key, page)
     .then(json => {
-      console.log(json);
-      state.isLoading = false;
-
       if (json.total === 0) {
-        chrome.notifications.create('notify-search', {
-          type: 'basic',
-          iconUrl: chrome.extension.getURL('icons/48.png'),
-          title: 'No images match your search',
-          message: 'Try different or more general keywords',
-        });
-
+        notifyNoSearchResults();
         return;
       }
 
@@ -58,18 +52,17 @@ const searchPhotos = (key, page) => {
       displayPhotos(state.results, json.total);
     })
     .catch(() => {
-      state.isLoading = false;
-
       const message = navigator.onLine
-        ? 'Oh Snap! An error occurred'
-        : 'There is no internet connection';
+        ? 'An unexpected error occured while searching Unsplash'
+        : 'There was a network error. Please check your internet connection';
 
-      chrome.notifications.create('notify-search', {
-        type: 'basic',
-        iconUrl: chrome.extension.getURL('icons/48.png'),
-        title: 'Stellar Photos',
-        message,
-      });
+      if (page === 1) {
+        notifySearchError(message);
+      }
+
+      if (page > 1) {
+        notifySnackbar(message);
+      }
     })
     .finally(() => {
       if (page === 1) {

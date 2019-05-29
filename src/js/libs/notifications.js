@@ -42,9 +42,27 @@ const notifyUnableToUpload = (cloudService, imageId) => {
   });
 };
 
+const notifyNoSearchResults = () =>
+  chrome.notifications.create('notify-search', {
+    type: 'basic',
+    iconUrl: chrome.extension.getURL('icons/48.png'),
+    title: 'No images match your search',
+    message: 'Try different or more general keywords',
+  });
+
+const notifySearchError = message =>
+  chrome.notifications.create('notify-search', {
+    type: 'basic',
+    iconUrl: chrome.extension.getURL('icons/48.png'),
+    title: 'Stellar Photos',
+    message,
+  });
+
 export {
   notifyCloudAuthenticationSuccessful,
   notifyCloudConnectionFailed,
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
+  notifyNoSearchResults,
+  notifySearchError,
 };
