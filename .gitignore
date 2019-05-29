@@ -1,0 +1,5 @@
+# Build
+bin
+
+# Environmental variables
+.env
