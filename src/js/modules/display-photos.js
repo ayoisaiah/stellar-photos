@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import state from '../libs/state';
+import { searchState } from '../modules/search';
 import observer from '../libs/observer';
 import cloudButton from '../libs/cloud-button';
 import { $ } from '../libs/helpers';
@@ -14,13 +14,13 @@ const displayPhotos = (photos, total) => {
 
   const loadMore = $('moreResults-button');
 
-  if (state.results.length >= total) {
+  if (searchState.results.length >= total) {
     loadMore.classList.add('hidden');
     observer.disconnect();
     return;
   }
 
-  state.page += 1;
+  searchState.page += 1;
   loadMore.classList.remove('hidden');
 };
 

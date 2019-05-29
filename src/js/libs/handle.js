@@ -1,10 +1,9 @@
 import * as Ladda from 'ladda';
-import { searchPhotos } from '../modules/search';
+import { searchPhotos, searchState } from '../modules/search';
 import displayPhotos from '../modules/display-photos';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
 import { $, chainableClassList } from './helpers';
-import state from './state';
 import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload, validateCollections } from '../api';
@@ -170,13 +169,13 @@ const handleSubmit = () => {
     chainableClassList(element).remove('no-pointer');
   });
 
-  // Reset state
-  state.page = 1;
-  state.searchKey = $('searchForm-input').value;
-  state.results = [];
-  state.incomingResults = [];
+  // Reset search state
+  searchState.page = 1;
+  searchState.query = $('searchForm-input').value;
+  searchState.results = [];
+  searchState.incomingResults = [];
 
-  searchPhotos(state.searchKey, state.page);
+  searchPhotos(searchState.query, searchState.page);
 };
 
 export {

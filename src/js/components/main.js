@@ -1,7 +1,6 @@
 import { html } from 'lit-html';
-import { searchPhotos } from '../modules/search';
+import { searchPhotos, searchState } from '../modules/search';
 import { handleClick } from '../libs/handle';
-import state from '../libs/state';
 import historyPane from './history-pane';
 import searchForm from './search-form';
 
@@ -15,7 +14,7 @@ const main = history => html`
 
     <section class="moreResults">
       <button
-        @click=${() => searchPhotos(state.searchKey, state.page)}
+        @click=${() => searchPhotos(searchState.query, searchState.page)}
         class="moreResults-button ladda-button hidden"
         id="moreResults-button"
         data-spinner-color="#ffffff"

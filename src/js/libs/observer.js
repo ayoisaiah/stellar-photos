@@ -1,5 +1,4 @@
-import state from './state';
-import { searchPhotos } from '../modules/search';
+import { searchPhotos, searchState } from '../modules/search';
 
 const options = {
   // If user scrolls within 1200px of the `More Photos` button, request next page
@@ -10,11 +9,11 @@ const options = {
 const loadMoreResults = entries => {
   entries.forEach(entry => {
     // If new search or if ongoing search
-    if (state.page === 1 || state.isLoading) return;
+    if (searchState.page === 1 || searchState.isLoading) return;
 
     // If transitioning to a state of intersection
     if (entry.isIntersecting) {
-      searchPhotos(state.searchKey, state.page);
+      searchPhotos(searchState.query, searchState.page);
     }
   });
 };

@@ -2,7 +2,6 @@ import * as Ladda from 'ladda';
 import displayPhotos from './display-photos';
 import { $, chainableClassList } from '../libs/helpers';
 import loadingIndicator from '../libs/loading-indicator';
-import state from '../libs/state';
 import { searchPhotos as searchPhotosApi } from '../api';
 import {
   notifyNoSearchResults,
@@ -20,6 +19,14 @@ const closeSearch = () => {
   $('s-search').classList.remove('search--open');
   $('searchButton-open').classList.remove('hidden');
   $('searchForm-input').blur();
+};
+
+const searchState = {
+  query: '',
+  results: [],
+  incomingResults: [],
+  page: 1,
+  isLoading: false,
 };
 
 const searchPhotos = (key, page) => {
@@ -47,9 +54,12 @@ const searchPhotos = (key, page) => {
         chainableClassList(element).add('no-pointer');
       });
 
-      state.incomingResults = json.results;
-      state.results = [...state.results, ...state.incomingResults];
-      displayPhotos(state.results, json.total);
+      searchState.incomingResults = json.results;
+      searchState.results = [
+        ...searchState.results,
+        ...searchState.incomingResults,
+      ];
+      displayPhotos(searchState.results, json.total);
     })
     .catch(() => {
       const message = navigator.onLine
@@ -75,4 +85,4 @@ const searchPhotos = (key, page) => {
     });
 };
 
-export { openSearch, closeSearch, searchPhotos };
+export { openSearch, closeSearch, searchPhotos, searchState };
