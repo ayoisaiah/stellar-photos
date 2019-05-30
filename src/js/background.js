@@ -53,6 +53,11 @@ chrome.runtime.onMessage.addListener((request, sender) => {
 
     case 'load-data': {
       loadNewData();
+      break;
+    }
+
+    default: {
+      loadNewData();
     }
   }
 });
