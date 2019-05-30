@@ -32,22 +32,16 @@ chrome.runtime.onInstalled.addListener(details => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender) => {
-  switch (request.command) {
-    case 'close-tab': {
-      chrome.tabs.remove(sender.tab.id);
-      break;
-    }
+  const listeners = {
+    'close-tab': () => chrome.tabs.remove(sender.tab.id),
 
-    case 'set-dropbox-token': {
+    'set-dropbox-token': () => {
       chrome.storage.local.set({ dropbox: request.token });
-
       notifyCloudAuthenticationSuccessful('Dropbox');
-
       chrome.runtime.sendMessage({ command: 'update-cloud-status' });
-      break;
-    }
+    },
 
-    case 'code-flow': {
+    'code-flow': () => {
       chrome.storage.local.get('cloudService', result => {
         const { cloudService } = result;
         if (cloudService === 'onedrive') {
@@ -55,51 +49,29 @@ chrome.runtime.onMessage.addListener((request, sender) => {
           onedriveAuth(request.code);
         }
       });
-      break;
-    }
+    },
 
-    case 'update-weather': {
-      getWeatherInfo();
-      break;
-    }
+    'update-weather': () => getWeatherInfo(),
 
-    case 'set-onedrive-alarm': {
+    'set-onedrive-alarm': () => {
       chrome.alarms.create('refresh-onedrive-token', {
         periodInMinutes: request.expires_in / 60,
       });
-      break;
-    }
+    },
 
-    case 'set-googledrive-alarm': {
-      chrome.alarms.create('refresh-googledrive-token', {
-        periodInMinutes: request.expires_in / 60,
-      });
-      break;
-    }
+    'load-data': () => loadNewData(),
+  };
 
-    case 'load-data': {
-      loadNewData();
-      break;
-    }
-
-    default: {
-      loadNewData();
-    }
-  }
+  listeners[request.command]();
 });
 
 chrome.alarms.onAlarm.addListener(alarm => {
-  if (alarm.name === 'loadphoto') {
-    fetchRandomPhoto();
-    return;
-  }
+  const alarms = {
+    loadphoto: () => fetchRandomPhoto(),
+    loadweather: () =>
+      chrome.runtime.sendMessage({ command: 'update-weather' }),
+    'refresh-onedrive-token': () => refreshOnedriveToken(),
+  };
 
-  if (alarm.name === 'loadweather') {
-    chrome.runtime.sendMessage({ command: 'update-weather' });
-    return;
-  }
-
-  if (alarm.name === 'refresh-onedrive-token') {
-    refreshOnedriveToken();
-  }
+  alarms[alarm.name]();
 });
