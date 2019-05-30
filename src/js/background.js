@@ -4,7 +4,29 @@ import loadNewData from './libs/load-new-data';
 import { notifyCloudAuthenticationSuccessful } from './libs/notifications';
 import { onedriveAuth, refreshOnedriveToken } from './libs/onedrive-auth';
 
-chrome.runtime.onInstalled.addListener(fetchRandomPhoto);
+chrome.runtime.onInstalled.addListener(details => {
+  if (details.reason === 'install') {
+    chrome.storage.local.set({
+      cloudService: null,
+      forecast: null,
+      nextImage: null,
+      history: null,
+      coords: {
+        latitude: '',
+        longitude: '',
+      },
+    });
+
+    chrome.storage.sync.set({
+      imageSource: 'official',
+      photoFrequency: 'newtab',
+      temperatureFormat: 'metric',
+    });
+  }
+
+  fetchRandomPhoto();
+});
+
 chrome.runtime.onMessage.addListener((request, sender) => {
   switch (request.command) {
     case 'close-tab': {
