@@ -68,8 +68,7 @@ chrome.runtime.onMessage.addListener((request, sender) => {
 chrome.alarms.onAlarm.addListener(alarm => {
   const alarms = {
     loadphoto: () => fetchRandomPhoto(),
-    loadweather: () =>
-      chrome.runtime.sendMessage({ command: 'update-weather' }),
+    loadweather: () => getWeatherInfo(),
     'refresh-onedrive-token': () => refreshOnedriveToken(),
   };
 
