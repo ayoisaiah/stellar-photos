@@ -3,7 +3,6 @@ package onedrive
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -98,13 +97,16 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 	defer response.Body.Close()
 
 	auth := &OnedriveAuth{}
-	json.NewDecoder(response.Body).Decode(auth)
+
+	err = json.NewDecoder(response.Body).Decode(auth)
+
+	if err != nil {
+		utils.InternalServerError(w)
+		return
+	}
 
 	if response.StatusCode != 200 {
-		body, _ := ioutil.ReadAll(response.Body)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(body)
-		fmt.Println(body)
 		return
 	}
 
