@@ -1,8 +1,9 @@
 import * as Ladda from 'ladda';
+import { html, render } from 'lit-html';
 import { searchPhotos, searchState } from '../modules/search';
 import displayPhotos from '../modules/display-photos';
-import { saveToOneDrive } from './onedrive';
-import { saveToDropbox } from './dropbox';
+import { saveToOneDrive, authorizeOneDrive } from './onedrive';
+import { saveToDropbox, authorizeDropbox } from './dropbox';
 import { $, chainableClassList } from './helpers';
 import observer from './observer';
 import loadingIndicator from './loading-indicator';
@@ -53,9 +54,45 @@ const updateImageSource = event => {
   }
 };
 
+const authorizeCloud = () => {
+  const selectCloud = $('select-cloud-storage');
+  const selected = selectCloud[selectCloud.selectedIndex].value;
+
+  if (selected === 'dropbox') {
+    authorizeDropbox();
+  }
+
+  if (selected === 'onedrive') {
+    authorizeOneDrive();
+  }
+};
+
+const updateCloudStatus = flag => {
+  const action = $('action');
+
+  if (flag) {
+    const successMessage = html`
+      <span class="success-message">Connected</span>
+    `;
+    return render(successMessage, action);
+  }
+
+  const authorizeButton = html`
+    <button @click=${authorizeCloud} class="authorize" id="authorize">
+      Connect
+    </button>
+  `;
+  return render(authorizeButton, action);
+};
+
 const updateCloudService = event => {
   const selected = event.target[event.target.selectedIndex].value;
   chrome.storage.local.set({ cloudService: selected });
+
+  chrome.storage.local.get(selected, result => {
+    const flag = Boolean(result[selected]);
+    updateCloudStatus(flag);
+  });
 };
 
 const updatePhotoFrequency = event => {
@@ -189,4 +226,6 @@ export {
   updateCollections,
   closeSettingsDialog,
   updateCloudService,
+  authorizeCloud,
+  updateCloudStatus,
 };

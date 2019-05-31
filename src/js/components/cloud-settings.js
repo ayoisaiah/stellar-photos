@@ -1,29 +1,23 @@
 import { html } from 'lit-html';
-import { $ } from '../libs/helpers';
-import { authorizeDropbox } from '../libs/dropbox';
-import { authorizeOneDrive } from '../libs/onedrive';
-import { updateCloudService } from '../libs/handle';
+import {
+  updateCloudService,
+  authorizeCloud,
+  updateCloudStatus,
+} from '../libs/handle';
 
 /*
  * Settings for cloud synchronization
  */
 
-const authorizeCloud = () => {
-  const selectCloud = $('select-cloud-storage');
-  const selected = selectCloud[selectCloud.selectedIndex].value;
-
-  if (selected === 'dropbox') {
-    authorizeDropbox();
-  }
-
-  if (selected === 'onedrive') {
-    authorizeOneDrive();
-  }
-};
-
 const cloudSettings = settings => {
   const { cloudService } = settings;
   const token = settings[cloudService];
+
+  chrome.runtime.onMessage.addListener(request => {
+    if (request.command === 'update-cloud-status') {
+      updateCloudStatus(true);
+    }
+  });
 
   return html`
     <section id="cloud-settings" class="cloud-settings">
