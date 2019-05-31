@@ -22,7 +22,7 @@ const createAppFolder = onedriveData => {
     init
   );
 
-  fetch(request)
+  return fetch(request)
     .then(validateResponse)
     .then(() => {
       chrome.storage.local.set({ onedrive: onedriveData });
@@ -35,9 +35,6 @@ const createAppFolder = onedriveData => {
       });
 
       chrome.runtime.sendMessage({ command: 'update-cloud-status' });
-    })
-    .catch(() => {
-      notifyCloudConnectionFailed('Onedrive');
     });
 };
 
@@ -52,7 +49,7 @@ const onedriveAuth = code => {
           data
         );
 
-        createAppFolder(onedriveData);
+        return createAppFolder(onedriveData);
       })
       .catch(() => {
         notifyCloudConnectionFailed('Onedrive');
