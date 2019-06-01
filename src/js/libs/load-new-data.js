@@ -7,8 +7,8 @@ import { lessThanTimeAgo } from './helpers';
  */
 
 const loadNewData = () => {
-  chrome.storage.sync.get('photoFrequency', result => {
-    const { photoFrequency } = result;
+  chrome.storage.local.get(['photoFrequency', 'nextImage'], result => {
+    const { photoFrequency, nextImage } = result;
 
     if (photoFrequency === 'paused') return;
 
@@ -17,27 +17,28 @@ const loadNewData = () => {
       return;
     }
 
-    chrome.storage.local.get('nextImage', r => {
-      const { nextImage } = r;
+    if (
+      photoFrequency === 'every15minutes' &&
+      !lessThanTimeAgo(nextImage.timestamp, 900)
+    ) {
+      fetchRandomPhoto();
+      return;
+    }
 
-      if (
-        photoFrequency === 'every15minutes' &&
-        !lessThanTimeAgo(nextImage.timestamp, 900)
-      )
-        return fetchRandomPhoto();
+    if (
+      photoFrequency === 'everyhour' &&
+      !lessThanTimeAgo(nextImage.timestamp, 3600)
+    ) {
+      fetchRandomPhoto();
+      return;
+    }
 
-      if (
-        photoFrequency === 'everyhour' &&
-        !lessThanTimeAgo(nextImage.timestamp, 3600)
-      )
-        return fetchRandomPhoto();
-
-      if (
-        photoFrequency === 'everyday' &&
-        !lessThanTimeAgo(nextImage.timestamp, 86400)
-      )
-        return fetchRandomPhoto();
-    });
+    if (
+      photoFrequency === 'everyday' &&
+      !lessThanTimeAgo(nextImage.timestamp, 86400)
+    ) {
+      fetchRandomPhoto();
+    }
   });
 
   chrome.storage.local.get('forecast', result => {

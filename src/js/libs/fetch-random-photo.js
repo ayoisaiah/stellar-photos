@@ -17,7 +17,7 @@ const fetchRandomPhoto = () => {
 
         chrome.storage.local.set({ nextImage });
 
-        chrome.storage.local.get('history', result => {
+        chrome.storage.local.get(['history', 'photoFrequency'], result => {
           const history = result.history || [];
 
           if (history.length >= 10) {
@@ -26,9 +26,7 @@ const fetchRandomPhoto = () => {
 
           history.unshift(nextImage);
           chrome.storage.local.set({ history });
-        });
 
-        chrome.storage.sync.get('photoFrequency', result => {
           const { photoFrequency } = result;
 
           if (photoFrequency === 'every15minutes') {

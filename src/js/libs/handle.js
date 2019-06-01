@@ -97,7 +97,7 @@ const updateCloudService = event => {
 
 const updatePhotoFrequency = event => {
   const selected = event.target[event.target.selectedIndex].value;
-  chrome.storage.sync.set({ photoFrequency: selected });
+  chrome.storage.local.set({ photoFrequency: selected });
 
   if (selected === 'newtab') {
     chrome.runtime.sendMessage({ command: 'load-data' });

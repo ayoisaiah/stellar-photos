@@ -11,27 +11,27 @@ document.addEventListener('DOMContentLoaded', () => {
         'dropbox',
         'onedrive',
         'forecast',
+        'photoFrequency',
       ],
       d => {
         const data = { ...d };
 
         window.stellar.nextImage = data.nextImage;
 
+        const { pausedImage, photoFrequency } = data;
+
+        if (photoFrequency === 'paused') {
+          data.nextImage = pausedImage;
+        }
+
+        const { nextImage } = data;
+
+        if (nextImage) {
+          const body = $('body');
+          body.style.backgroundImage = `url(${nextImage.base64})`;
+        }
+
         chrome.storage.sync.get(res => {
-          const { photoFrequency } = res;
-          const { pausedImage } = data;
-
-          if (photoFrequency === 'paused') {
-            data.nextImage = pausedImage;
-          }
-
-          const { nextImage } = data;
-
-          if (nextImage) {
-            const body = $('body');
-            body.style.backgroundImage = `url(${nextImage.base64})`;
-          }
-
           const result = Object.assign(res, data);
           resolve(result);
         });

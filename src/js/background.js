@@ -10,16 +10,17 @@ const setDefaultExtensionSettings = () => {
     forecast: null,
     nextImage: null,
     history: null,
-    coords: {
-      latitude: '',
-      longitude: '',
-    },
+    pausedImage: null,
+    photoFrequency: 'newtab',
   });
 
   chrome.storage.sync.set({
     imageSource: 'official',
-    photoFrequency: 'newtab',
     temperatureFormat: 'metric',
+    coords: {
+      latitude: '',
+      longitude: '',
+    },
   });
 };
 
