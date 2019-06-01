@@ -3,30 +3,40 @@ import { $ } from './libs/helpers';
 document.addEventListener('DOMContentLoaded', () => {
   window.stellar = {};
   window.stellar.boot = new Promise(resolve => {
-    chrome.storage.local.get(d => {
-      const data = { ...d };
+    chrome.storage.local.get(
+      [
+        'nextImage',
+        'pausedImage',
+        'cloudService',
+        'dropbox',
+        'onedrive',
+        'forecast',
+      ],
+      d => {
+        const data = { ...d };
 
-      window.stellar.nextImage = data.nextImage;
+        window.stellar.nextImage = data.nextImage;
 
-      chrome.storage.sync.get(res => {
-        const { photoFrequency } = res;
-        const { pausedImage } = data;
+        chrome.storage.sync.get(res => {
+          const { photoFrequency } = res;
+          const { pausedImage } = data;
 
-        if (photoFrequency === 'paused') {
-          data.nextImage = pausedImage;
-        }
+          if (photoFrequency === 'paused') {
+            data.nextImage = pausedImage;
+          }
 
-        const { nextImage } = data;
+          const { nextImage } = data;
 
-        if (nextImage) {
-          const body = $('body');
-          body.style.backgroundImage = `url(${nextImage.base64})`;
-        }
+          if (nextImage) {
+            const body = $('body');
+            body.style.backgroundImage = `url(${nextImage.base64})`;
+          }
 
-        const result = Object.assign(res, data);
-        resolve(result);
-      });
-    });
+          const result = Object.assign(res, data);
+          resolve(result);
+        });
+      }
+    );
   });
 
   chrome.runtime.sendMessage({ command: 'load-data' });

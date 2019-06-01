@@ -8,7 +8,7 @@ import searchForm from './search-form';
  * The Main Component
  */
 
-const main = history => html`
+const main = () => html`
   <main class="s-main" id="s-main">
     <ul @click=${handleClick} class="searchResults" id="searchResults"></ul>
 
@@ -23,7 +23,7 @@ const main = history => html`
         <span class="ladda-label">More Photos</span>
       </button>
     </section>
-    ${historyPane(history)} ${searchForm()}
+    ${historyPane()} ${searchForm()}
   </main>
 `;
 
