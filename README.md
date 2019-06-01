@@ -2,7 +2,7 @@
 
 Experience a beautiful photo from [Unsplash](https://unsplash.com/developers) every time you open a new tab alongside current weather information for your city.
 
-![Stellar Photos](https://cdn.rawgit.com/ayoisaiah/stellar-photos/gh-pages/images/screenshot.jpg)
+![Stellar Photos](https://github.com/ayoisaiah/stellar-photos/blob/master/src/images/preview.png)
 
 ## Install Stellar
 
@@ -13,21 +13,38 @@ Chrome | Firefox
 ## Features
 
 - Enjoy a new hi-res photo everytime you open a new tab - [totally free](https://unsplash.com/license) for personal or commercial use with no attribution required.
-- Search for free hi-res photos from Unsplash and download them or sync to Dropbox or Onedrive.
-- View basic photo information.
-- Load photos from multiple custom collections
+- Download your favourite photos to your computer or sync them to Dropbox or Onedrive.
+- Search Unsplash's library of around 1 million hi-res photos.
+- View basic photo information such as ISO, Camera Model, Shutter Speed e.t.c.
+- Load photos from multiple custom [Unsplash collections](https://unsplash.com/collections/).
 - View current weather information for your locale.
 - See the images from the last 10 tabs you've opened.
 
 ## Supported Browsers
 
-Chrome and Firefox (54+) are supported at the moment.
+Chrome (60+) and Firefox (54+) are supported at the moment.
 
 ## Contribute
+
+Make sure you have `yarn` installed.
+
+```
+git clone https://github.com/ayoisaiah/stellar-photos
+cd stellar-photos
+yarn install
+# Option 1. Chrome development build
+yarn run build:chrome:dev
+# Option 2. Chrome production build
+yarn run build:chrome:prod
+# Option 3. Firefox development build
+yarn run build:firefox:dev
+# Option 4. Firefox production build
+yarn run build:firefox:prod
+```
 
 Bug reports, feature requests or pull requests are much appreciated!
 
 ## Credits and Licence
 
 - Powered by the [Unsplash API](https://unsplash.com/developers).
-- Created by Ayo Isaiah and released under the terms of the [MIT Licence](http://opensource.org/licenses/MIT).
+- Created by Ayooluwa Isaiah and released under the terms of the [MIT Licence](http://opensource.org/licenses/MIT).
