@@ -10,6 +10,8 @@ const loadNewData = () => {
   chrome.storage.sync.get('photoFrequency', result => {
     const { photoFrequency } = result;
 
+    if (photoFrequency === 'paused') return;
+
     if (photoFrequency === 'newtab') {
       fetchRandomPhoto();
       return;

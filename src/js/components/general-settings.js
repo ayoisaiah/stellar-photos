@@ -72,6 +72,12 @@ const generalSettings = settings => {
               ?selected=${settings.photoFrequency === 'everyday'}
               >Every day</option
             >
+
+            <option
+              value="paused"
+              ?selected=${settings.photoFrequency === 'paused'}
+              >Pause</option
+            >
           </select>
         </div>
 

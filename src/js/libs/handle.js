@@ -114,6 +114,12 @@ const updatePhotoFrequency = event => {
       periodInMinutes: 1440,
     });
   }
+
+  if (selected === 'paused') {
+    chrome.storage.local.set({
+      pausedImage: window.stellar.nextImage,
+    });
+  }
 };
 
 const updateCollections = () => {

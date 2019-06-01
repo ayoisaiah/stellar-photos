@@ -3,14 +3,26 @@ import { $ } from './libs/helpers';
 document.addEventListener('DOMContentLoaded', () => {
   window.stellar = {};
   window.stellar.boot = new Promise(resolve => {
-    chrome.storage.local.get(data => {
-      const { nextImage } = data;
-      if (nextImage) {
-        const body = $('body');
-        body.style.backgroundImage = `url(${nextImage.base64})`;
-      }
+    chrome.storage.local.get(d => {
+      const data = { ...d };
+
+      window.stellar.nextImage = data.nextImage;
 
       chrome.storage.sync.get(res => {
+        const { photoFrequency } = res;
+        const { pausedImage } = data;
+
+        if (photoFrequency === 'paused') {
+          data.nextImage = pausedImage;
+        }
+
+        const { nextImage } = data;
+
+        if (nextImage) {
+          const body = $('body');
+          body.style.backgroundImage = `url(${nextImage.base64})`;
+        }
+
         const result = Object.assign(res, data);
         resolve(result);
       });
