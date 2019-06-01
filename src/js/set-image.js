@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
             body.style.backgroundImage = `url(${nextImage.base64})`;
           }
 
+          delete data.nextImage.base64;
+          delete data.pausedImage;
+
           const result = Object.assign(res, data);
           resolve(result);
         });
