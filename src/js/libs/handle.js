@@ -4,7 +4,7 @@ import { searchPhotos, searchState } from '../modules/search';
 import displayPhotos from '../modules/display-photos';
 import { saveToOneDrive, authorizeOneDrive } from './onedrive';
 import { saveToDropbox, authorizeDropbox } from './dropbox';
-import { $, chainableClassList } from './helpers';
+import { $, chainableClassList, convertTimeStamp } from './helpers';
 import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload, validateCollections } from '../api';
@@ -193,11 +193,14 @@ const setBackgroundFromHistory = event => {
       chrome.storage.local.set({ pausedImage: image });
     }
   });
+  const fullDate = convertTimeStamp(
+    Math.floor(new Date(`${image.created_at}`).getTime() / 1000)
+  ).fullDate;
 
   $('body').style.backgroundImage = `url(${image.base64})`;
   const f = $('s-footer');
   const h = html`
-    ${footerContent(image)}
+    ${footerContent(image, fullDate)}
   `;
 
   render(h, f);
