@@ -8,6 +8,12 @@ const svgDefs = () => html`
         <circle cx="12" cy="10" r="3"></circle>
       </symbol>
 
+      <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-image">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </symbol>
+
       <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <title>Search</title>
         <circle cx="10.5" cy="10.5" r="7.5"></circle>
