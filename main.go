@@ -8,6 +8,7 @@ import (
 
 	"github.com/ayoisaiah/stellar-photos-server/routes"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -21,5 +22,7 @@ func main() {
 
 	mux := routes.NewRouter()
 
-	log.Fatal(http.ListenAndServe(port, mux))
+	handler := cors.Default().Handler(mux)
+
+	log.Fatal(http.ListenAndServe(port, handler))
 }
