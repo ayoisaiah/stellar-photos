@@ -15,7 +15,7 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("File .env not found, reading configuration from ENV")
 	}
 
 	port := fmt.Sprintf(":%v", os.Getenv("PORT"))
