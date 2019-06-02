@@ -8,8 +8,8 @@
  */
 
 .addon-info {
-
-  p, .credit-libraries {
+  p,
+  .credit-libraries {
     margin-bottom: 2rem;
   }
 
@@ -17,6 +17,10 @@
     padding-left: 20px;
   }
 
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+  }
 
   .button {
     display: inline-block !important;
