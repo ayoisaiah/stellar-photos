@@ -179,11 +179,9 @@ const handleDownload = imageid => {
     });
 };
 
-const setBackgroundFromHistory = event => {
-  const { target } = event;
-  const imageId = target.querySelector('.download-button').dataset.imageid;
+const setBackgroundFromHistory = imageid => {
   const { history } = window.stellar;
-  const arr = history.filter(e => e.id === imageId);
+  const arr = history.filter(e => e.id === imageid);
   const image = arr[0];
   window.stellar.nextImage = image;
 
@@ -207,13 +205,15 @@ const setBackgroundFromHistory = event => {
 };
 
 const handleClick = e => {
-  if (e.target.matches('.s-history .s-photo-actions')) {
-    setBackgroundFromHistory(e);
-    return;
-  }
+  if (!e.target.matches('button')) return;
 
   const { target } = e;
   const { imageid } = target.dataset;
+
+  if (target.classList.contains('bg-button')) {
+    setBackgroundFromHistory(imageid);
+    return;
+  }
 
   if (target.classList.contains('dropbox-button')) {
     saveToDropbox(imageid);

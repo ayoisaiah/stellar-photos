@@ -52,6 +52,18 @@ const photoCard = (photo, cloudButton) => {
           </a>
         </div>
 
+        <div class="middle">
+          <button
+            title="Set as background image"
+            class="control-button bg-button"
+            data-imageid=${photoId}
+          >
+            <svg style="fill: #fafafa;" class="icon icon--image">
+              <use xlink:href="#icon-image"></use>
+            </svg>
+          </button>
+        </div>
+
         <div class="bottom">
           <span class="s-photo-dimension">${width} x ${height}</span>
 
