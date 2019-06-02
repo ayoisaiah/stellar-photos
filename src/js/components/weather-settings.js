@@ -18,7 +18,12 @@ const weatherSettings = settings => html`
     >
       <span class="dialog-label"
         >Paste
-        <a href="https://www.latlong.net/">your coordinates</a>
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://www.latlong.net/"
+          >your coordinates</a
+        >
         here to get current weather information for your city.</span
       >
 

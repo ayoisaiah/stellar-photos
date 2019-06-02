@@ -10,18 +10,29 @@ const addonInfo = () => html`
     <h3 class="settings-heading">Info & Credits</h3>
     <p>
       Stellar is made by
-      <a href="https://github.com/ayoisaiah">Ayooluwa Isaiah</a> and
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        href="https://github.com/ayoisaiah"
+        >Ayooluwa Isaiah</a
+      >
+      and
       <a href="https://github.com/ayoisaiah/stellar-photos/graphs/contributors">
         other contributors</a
       >. You can submit feedback or feature requests by tweeting
-      <a href="https://twitter.com/ayisaiah">@ayisaiah</a>
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        href="https://twitter.com/ayisaiah"
+        >@ayisaiah</a
+      >
     </p>
 
     <div class="links">
       <a
         class="button github-button"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         href="https://github.com/ayoisaiah/stellar-photos"
       >
         Star on Github
@@ -30,7 +41,7 @@ const addonInfo = () => html`
       <a
         class="button"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         href="https://github.com/ayoisaiah/stellar-photos/issues"
       >
         File a bug report</a
@@ -38,7 +49,7 @@ const addonInfo = () => html`
       <a
         class="button"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos"
         >Share on Twitter</a
       >
