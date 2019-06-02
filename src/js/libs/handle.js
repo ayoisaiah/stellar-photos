@@ -256,8 +256,10 @@ export {
   handleClick,
   handleSubmit,
   handleDownload,
+  /* CHROME_START */
   openChromeApps,
   openDefaultTab,
+  /* CHROME_END */
   updatePhotoFrequency,
   updateImageSource,
   updateCollections,
