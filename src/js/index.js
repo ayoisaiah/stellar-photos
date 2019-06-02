@@ -4,7 +4,7 @@ import eventListeners from './libs/event-listeners';
 import cloudButton from './libs/cloud-button';
 import main from './components/main';
 import loader from './components/loader';
-import footer from './components/footer';
+import { footer } from './components/footer';
 import header from './components/header';
 import settingsDialog from './components/settings-dialog';
 import svgDefs from './components/svg';
