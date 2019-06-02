@@ -15,6 +15,7 @@ const setDefaultExtensionSettings = () => {
   });
 
   chrome.storage.sync.set({
+    collections: '',
     imageSource: 'official',
     temperatureFormat: 'metric',
     coords: {
