@@ -2,6 +2,7 @@ import { html } from 'lit-html';
 import generalSettings from './general-settings';
 import weatherSettings from './weather-settings';
 import cloudSettings from './cloud-settings';
+import addonInfo from './addon-info';
 import { closeSettingsDialog } from '../libs/handle';
 
 /*
@@ -20,6 +21,8 @@ const settingsDialog = settings => html`
       ${weatherSettings(settings)}
       <hr />
       ${cloudSettings(settings)}
+      <hr />
+      ${addonInfo()}
     </div>
   </div>
 `;
