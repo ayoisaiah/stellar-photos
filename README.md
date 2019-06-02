@@ -22,7 +22,7 @@ Chrome | Firefox
 
 ## Supported Browsers
 
-Chrome (60+) and Firefox (54+) are supported at the moment.
+Chrome (60+) and Firefox (57+) are supported at the moment.
 
 ## Contribute
 
