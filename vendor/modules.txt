@@ -1,0 +1,4 @@
+# github.com/joho/godotenv v1.3.0
+github.com/joho/godotenv
+# github.com/rs/cors v1.6.0
+github.com/rs/cors
