@@ -11,14 +11,15 @@
   .s-photo {
     height: 140px;
 
-    .username, &-dimension {
+    .username,
+    &-dimension {
       display: none;
     }
-
   }
 
   .s-photo-actions {
     padding: 8px;
+    cursor: pointer;
 
     .bottom div {
       display: flex;
