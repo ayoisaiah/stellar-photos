@@ -6,7 +6,7 @@ import { onedriveAuth, refreshOnedriveToken } from './libs/onedrive-auth';
 
 const setDefaultExtensionSettings = () => {
   chrome.storage.local.set({
-    cloudService: null,
+    cloudService: 'dropbox',
     forecast: null,
     nextImage: null,
     history: null,
@@ -36,6 +36,7 @@ chrome.runtime.onInstalled.addListener(details => {
       chrome.storage.local.set({
         photoFrequency: photoFrequency || 'newtab',
         pausedImage: null,
+        cloudService: 'dropbox',
       });
 
       chrome.storage.sync.set({
