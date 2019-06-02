@@ -29,6 +29,7 @@ window.stellar.boot.then(data => {
 
     chrome.storage.local.get('history', result => {
       const { history } = result;
+      window.stellar.history = history;
       const h = html`
         ${history.map(photo => photoCard(photo, cloudButton))}
       `;

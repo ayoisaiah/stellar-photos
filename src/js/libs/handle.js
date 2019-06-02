@@ -9,6 +9,7 @@ import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload, validateCollections } from '../api';
 import notifySnackbar from '../libs/notify-snackbar';
+import { footerContent } from '../components/footer';
 
 /* CHROME_START */
 import { defaultTab } from '../modules/chrome';
@@ -178,8 +179,35 @@ const handleDownload = imageid => {
     });
 };
 
+const setBackgroundFromHistory = event => {
+  const { target } = event;
+  const imageId = target.querySelector('.download-button').dataset.imageid;
+  const { history } = window.stellar;
+  const arr = history.filter(e => e.id === imageId);
+  const image = arr[0];
+  window.stellar.nextImage = image;
+
+  chrome.storage.local.get('photoFrequency', r => {
+    const { photoFrequency } = r;
+    if (photoFrequency === 'paused') {
+      chrome.storage.local.set({ pausedImage: image });
+    }
+  });
+
+  $('body').style.backgroundImage = `url(${image.base64})`;
+  const f = $('s-footer');
+  const h = html`
+    ${footerContent(image)}
+  `;
+
+  render(h, f);
+};
+
 const handleClick = e => {
-  if (!e.target.matches('button')) return;
+  if (e.target.matches('.s-history .s-photo-actions')) {
+    setBackgroundFromHistory(e);
+    return;
+  }
 
   const { target } = e;
   const { imageid } = target.dataset;
