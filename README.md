@@ -26,27 +26,7 @@ Chrome (60+) and Firefox (57+) are supported at the moment.
 
 ## Contribute
 
-Bug reports, feature requests or pull requests are much appreciated!
-
-### Build instructions
-
-Make sure you have `yarn` installed.
-
-```
-git clone https://github.com/ayoisaiah/stellar-photos
-cd stellar-photos
-yarn install
-# Option 1. Chrome development build
-yarn run build:chrome:dev
-# Option 2. Chrome production build
-yarn run build:chrome:prod
-# Option 3. Firefox development build
-yarn run build:firefox:dev
-# Option 4. Firefox production build
-yarn run build:firefox:prod
-```
-
-Grab the [server code here](https://github.com/ayoisaiah/stellar-photos-server) and follow the instructions in the README to build and run it.
+Bug reports, feature requests or pull requests are much appreciated! See [CONTRIBUTING.md](https://github.com/ayoisaiah/stellar-photos/blob/master/CONTRIBUTING.md) for more details.
 
 ## Credits and Licence
 
