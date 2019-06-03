@@ -26,6 +26,10 @@ Chrome (60+) and Firefox (57+) are supported at the moment.
 
 ## Contribute
 
+Bug reports, feature requests or pull requests are much appreciated!
+
+### Build instructions
+
 Make sure you have `yarn` installed.
 
 ```
@@ -42,7 +46,7 @@ yarn run build:firefox:dev
 yarn run build:firefox:prod
 ```
 
-Bug reports, feature requests or pull requests are much appreciated!
+Grab the [server code here](https://github.com/ayoisaiah/stellar-photos-server) and follow the instructions in the README to build and run it.
 
 ## Credits and Licence
 
