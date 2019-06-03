@@ -12,7 +12,7 @@ import (
 )
 
 func SendOnedriveId(w http.ResponseWriter, r *http.Request) {
-	id := fmt.Sprintf("%v", os.Getenv("ONEDRIVE_APPID"))
+	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
 
 	d := OnedriveId{
 		Id: id,
@@ -31,8 +31,8 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
 
 	code := values.Get("code")
 
-	id := fmt.Sprintf("%v", os.Getenv("ONEDRIVE_APPID"))
-	secret := fmt.Sprintf("%v", os.Getenv("ONEDRIVE_SECRET"))
+	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
+	secret := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_SECRET"))
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",
@@ -55,8 +55,8 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 
 	refresh_token := values.Get("refresh_token")
 
-	id := fmt.Sprintf("%v", os.Getenv("ONEDRIVE_APPID"))
-	secret := fmt.Sprintf("%v", os.Getenv("ONEDRIVE_SECRET"))
+	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
+	secret := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_SECRET"))
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",

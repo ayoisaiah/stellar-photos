@@ -12,7 +12,7 @@ import (
 )
 
 func SendDropboxKey(w http.ResponseWriter, r *http.Request) {
-	DROPBOX_KEY := fmt.Sprintf("%v", os.Getenv("DROPBOX_KEY"))
+	DROPBOX_KEY := fmt.Sprintf("%s", os.Getenv("DROPBOX_KEY"))
 
 	d := Key{
 		Dropbox_key: DROPBOX_KEY,
@@ -39,10 +39,10 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v := fmt.Sprintf("Bearer %v", token)
+	v := fmt.Sprintf("Bearer %s", token)
 
 	requestBody, err := json.Marshal(map[string]string{
-		"path": fmt.Sprintf("/photo-%v.jpg", id),
+		"path": fmt.Sprintf("/photo-%s.jpg", id),
 		"url":  data.URL,
 	})
 
