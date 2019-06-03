@@ -69,17 +69,21 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 
 func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	collections := values.Get("collections")
+
+	if collections == "" {
+		collections = "998309"
+	}
+
 	width := 2000
 
 	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("%s/photos/random?collections=%v&w=%v&client_id=%v", UnsplashApiUrl, collections, width, UnsplashBaseUrl)
+	url := fmt.Sprintf("%s/photos/random?collections=%s&w=%d&client_id=%s", UnsplashApiUrl, collections, width, UnsplashBaseUrl)
 
 	s := &UnsplashResponse{}
 	err = utils.GetJson(url, s)
