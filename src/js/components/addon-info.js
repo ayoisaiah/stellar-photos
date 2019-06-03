@@ -50,7 +50,7 @@ const addonInfo = () => html`
         class="button"
         target="_blank"
         rel="noopener noreferrer"
-        href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://stellarapp.photos"
+        href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://ayoisaiah.github.io/stellar-photos"
         >Share on Twitter</a
       >
 
