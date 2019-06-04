@@ -65,7 +65,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 	secret := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_SECRET"))
 
 	formValues := map[string]string{
-		"grant_type":    "authorization_code",
+		"grant_type":    "refresh_token",
 		"client_id":     id,
 		"client_secret": secret,
 		"refresh_token": refreshToken,
