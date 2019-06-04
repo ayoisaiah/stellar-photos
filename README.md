@@ -1,8 +1,8 @@
 # Stellar Photos Server
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/ayoisaiah/stellar-photos-server)](https://goreportcard.com/report/github.com/ayoisaiah/stellar-photos-server)
-
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c4b6c69678d24b949aff772f124056f5)](https://www.codacy.com/app/ayoisaiah/stellar-photos-server?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ayoisaiah/stellar-photos-server&amp;utm_campaign=Badge_Grade)
+
 The server code for [Stellar Photos](https://github.com/ayoisaiah/stellar-photos).
 
 ## Build instructions
