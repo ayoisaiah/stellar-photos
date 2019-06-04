@@ -30,10 +30,12 @@ const getWeatherInfo = () => {
 
     const { longitude, latitude } = coords;
 
-    chrome.storage.sync.get('temperatureFormat', data => {
-      const temperatureFormat = data.temperatureFormat || 'metric';
-      sendRequest(latitude, longitude, temperatureFormat);
-    });
+    if (longitude && latitude) {
+      chrome.storage.sync.get('temperatureFormat', data => {
+        const temperatureFormat = data.temperatureFormat || 'metric';
+        sendRequest(latitude, longitude, temperatureFormat);
+      });
+    }
   });
 };
 
