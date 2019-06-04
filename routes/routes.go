@@ -22,7 +22,7 @@ func NewRouter() *http.ServeMux {
 	mux.HandleFunc("/dropbox/save/", dropbox.SaveToDropbox)
 	mux.HandleFunc("/onedrive/id/", onedrive.SendOnedriveID)
 	mux.HandleFunc("/onedrive/auth/", onedrive.AuthorizeOnedrive)
-	mux.HandleFunc("/onedrive/refresh", onedrive.RefreshOnedriveToken)
+	mux.HandleFunc("/onedrive/refresh/", onedrive.RefreshOnedriveToken)
 
 	return mux
 }
