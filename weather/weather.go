@@ -9,6 +9,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
+// GetForecast retrieves the current weather forcast for a locale
 func GetForecast(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
@@ -21,10 +22,10 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 	longitude := values.Get("lon")
 	metric := values.Get("metric")
 
-	OPENWEATHER_APPID := fmt.Sprintf("%s", os.Getenv("OPENWEATHER_APPID"))
-	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&units=%s&appid=%s", latitide, longitude, metric, OPENWEATHER_APPID)
+	id := fmt.Sprintf("%s", os.Getenv("OPENWEATHER_APPID"))
+	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&units=%s&appid=%s", latitide, longitude, metric, id)
 
-	forecast := &WeatherInfo{}
+	forecast := &weatherInfo{}
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -41,5 +42,5 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendJson(w, forecast)
+	utils.SendJSON(w, forecast)
 }

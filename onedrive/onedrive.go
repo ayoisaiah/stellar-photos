@@ -11,16 +11,20 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-func SendOnedriveId(w http.ResponseWriter, r *http.Request) {
+// SendOnedriveID sends the application id to the client on request to avoid
+// exposing it in the extension code
+func SendOnedriveID(w http.ResponseWriter, r *http.Request) {
 	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
 
-	d := OnedriveId{
-		Id: id,
+	d := onedriveID{
+		ID: id,
 	}
 
-	utils.SendJson(w, d)
+	utils.SendJSON(w, d)
 }
 
+// AuthorizeOnedrive redeems the authorization code received from the client for
+// an access token
 func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
@@ -45,6 +49,8 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
 	onedriveToken(w, r, formValues)
 }
 
+// RefreshOnedriveToken generates additional access tokens after the initial
+// token has expired
 func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
@@ -53,7 +59,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refresh_token := values.Get("refresh_token")
+	refreshToken := values.Get("refresh_token")
 
 	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
 	secret := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_SECRET"))
@@ -62,7 +68,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 		"grant_type":    "authorization_code",
 		"client_id":     id,
 		"client_secret": secret,
-		"refresh_token": refresh_token,
+		"refresh_token": refreshToken,
 		"redirect_uri":  "https://ayoisaiah.github.io/stellar-photos",
 	}
 
@@ -96,7 +102,7 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 
 	defer response.Body.Close()
 
-	auth := &OnedriveAuth{}
+	auth := &onedriveAuth{}
 
 	err = json.NewDecoder(response.Body).Decode(auth)
 
@@ -110,5 +116,5 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 		return
 	}
 
-	utils.SendJson(w, auth)
+	utils.SendJSON(w, auth)
 }

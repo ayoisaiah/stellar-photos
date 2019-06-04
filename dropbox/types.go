@@ -1,5 +1,6 @@
 package dropbox
 
-type Key struct {
-	Dropbox_key string `json:"dropbox_key"`
+// Dropbox application key
+type key struct {
+	DropboxKey string `json:"dropbox_key"`
 }

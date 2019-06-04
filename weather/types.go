@@ -1,6 +1,8 @@
 package weather
 
-type WeatherInfo struct {
+// weatherInfo represents the result of requesting the current weather forcast
+// for a locale
+type weatherInfo struct {
 	Name string `json:"name"`
 	Main struct {
 		Temp float64 `json:"temp"`

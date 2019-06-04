@@ -12,9 +12,9 @@ var imageUrls = []struct {
 	{"https://freshman.tech/assets/dist/images/articles/freshman-1600.png", false},
 }
 
-func TestImageUrlToBase64(t *testing.T) {
+func TestImageURLToBase64(t *testing.T) {
 	for _, value := range imageUrls {
-		str, err := ImageUrlToBase64(value.url)
+		str, err := ImageURLToBase64(value.url)
 		if value.result == true {
 			if str == "" {
 				t.Errorf("Expected result, got empty string")

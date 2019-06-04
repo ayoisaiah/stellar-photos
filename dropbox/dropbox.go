@@ -11,16 +11,19 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
+// SendDropboxKey sends the application key to the client on request to avoid
+// exposing it in the extension code
 func SendDropboxKey(w http.ResponseWriter, r *http.Request) {
-	DROPBOX_KEY := fmt.Sprintf("%s", os.Getenv("DROPBOX_KEY"))
+	dropboxKey := fmt.Sprintf("%s", os.Getenv("DROPBOX_KEY"))
 
-	d := Key{
-		Dropbox_key: DROPBOX_KEY,
+	d := key{
+		DropboxKey: dropboxKey,
 	}
 
-	utils.SendJson(w, d)
+	utils.SendJSON(w, d)
 }
 
+// SaveToDropbox saves the requested photo to the current user's Dropbox account
 func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 

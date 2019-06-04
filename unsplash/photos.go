@@ -10,8 +10,11 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-const UnsplashApiUrl = "https://api.unsplash.com"
+// UnsplashAPILocation represents the base URL for requests to Unsplash's API
+const UnsplashAPILocation = "https://api.unsplash.com"
 
+// DownloadPhoto gets the request photo's download link and sends it to the
+// client
 func DownloadPhoto(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
@@ -32,16 +35,20 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, data)
 }
 
-func GetPhotoDownloadLocation(id string) (*UnsplashResponse, error) {
-	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("%s/photos/%s/download?client_id=%s", UnsplashApiUrl, id, UnsplashBaseUrl)
+// GetPhotoDownloadLocation retrives the download link of the photo whose ID is
+// provided
+func GetPhotoDownloadLocation(id string) (*unsplashResponse, error) {
+	unsplashAccessKey := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	url := fmt.Sprintf("%s/photos/%s/download?client_id=%s", UnsplashAPILocation, id, unsplashAccessKey)
 
-	s := &UnsplashResponse{}
-	err := utils.GetJson(url, s)
+	s := &unsplashResponse{}
+	err := utils.SendRequestToUnsplash(url, s)
 
 	return s, err
 }
 
+// SearchUnsplash triggers a photo search and sends a single page of photo
+// results for a query.
 func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
@@ -53,11 +60,11 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 	key := values.Get("key")
 	page := values.Get("page")
 
-	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s", UnsplashApiUrl, page, key, "28", UnsplashBaseUrl)
+	unsplashAccessKey := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	url := fmt.Sprintf("%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s", UnsplashAPILocation, page, key, "28", unsplashAccessKey)
 
-	s := &UnsplashResponse{}
-	err = utils.GetJson(url, s)
+	s := &unsplashResponse{}
+	err = utils.SendRequestToUnsplash(url, s)
 
 	if err != nil {
 		utils.InternalServerError(w)
@@ -67,6 +74,10 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, s)
 }
 
+// GetRandomPhoto retrives a single random photo using the provided collection
+// IDs to narrow the pool of photos from which a random one will be chosen.
+// If no collection IDs are present, it defaults to 998309 which is the ID of
+// the official Stellar Photos collection
 func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -82,38 +93,40 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
 
 	width := 2000
 
-	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
-	url := fmt.Sprintf("%s/photos/random?collections=%s&w=%d&client_id=%s", UnsplashApiUrl, collections, width, UnsplashBaseUrl)
+	unsplashAccessKey := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	url := fmt.Sprintf("%s/photos/random?collections=%s&w=%d&client_id=%s", UnsplashAPILocation, collections, width, unsplashAccessKey)
 
-	s := &UnsplashResponse{}
-	err = utils.GetJson(url, s)
-
-	if err != nil {
-		utils.InternalServerError(w)
-		return
-	}
-
-	imageUrl := s.Urls["custom"].(string)
-
-	base64, err := utils.ImageUrlToBase64(imageUrl)
+	s := &unsplashResponse{}
+	err = utils.SendRequestToUnsplash(url, s)
 
 	if err != nil {
 		utils.InternalServerError(w)
 		return
 	}
 
-	x := RandomPhotoWithBase64{
+	imageURL := s.Urls["custom"].(string)
+
+	base64, err := utils.ImageURLToBase64(imageURL)
+
+	if err != nil {
+		utils.InternalServerError(w)
+		return
+	}
+
+	x := randomPhotoBase64{
 		Base64: base64,
 	}
 
-	data := &UnsplashResponse{
-		RandomPhoto:           s.RandomPhoto,
-		RandomPhotoWithBase64: x,
+	data := &unsplashResponse{
+		randomPhoto:       s.randomPhoto,
+		randomPhotoBase64: x,
 	}
 
 	jsonResponse(w, data)
 }
 
+// ValidateCollections ensures that all the custom collection IDs that are added
+// to the extension are valid
 func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
@@ -124,19 +137,19 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 
 	collections := strings.Split(values.Get("collections"), ",")
 
-	UnsplashBaseUrl := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
+	unsplashAccessKey := fmt.Sprintf("%s", os.Getenv("UNSPLASH_ACCESS_KEY"))
 
 	for _, value := range collections {
-		url := fmt.Sprintf("%s/collections/%s/?client_id=%s", UnsplashApiUrl, value, UnsplashBaseUrl)
-		c := &Collection{}
-		err := utils.GetJson(url, c)
+		url := fmt.Sprintf("%s/collections/%s/?client_id=%s", UnsplashAPILocation, value, unsplashAccessKey)
+		c := &collection{}
+		err := utils.SendRequestToUnsplash(url, c)
 
 		if err != nil {
 			utils.InternalServerError(w)
 			return
 		}
 
-		if c.Id == 0 {
+		if c.ID == 0 {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -146,7 +159,7 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("200 - Collections are valid"))
 }
 
-func jsonResponse(w http.ResponseWriter, target *UnsplashResponse) error {
+func jsonResponse(w http.ResponseWriter, target *unsplashResponse) error {
 	w.Header().Set("Content-Type", "application/json")
 
 	if target.Errors != nil {

@@ -12,7 +12,9 @@ import (
 	"strings"
 )
 
-func GetJson(url string, target interface{}) error {
+// SendRequestToUnsplash sends a constructed request while decoding the JSON
+// response into the provided interface
+func SendRequestToUnsplash(url string, target interface{}) error {
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -28,6 +30,8 @@ func GetJson(url string, target interface{}) error {
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
+// GetURLQueryParams extracts the query parameters from a url string and returns
+// a map of strings
 func GetURLQueryParams(s string) (url.Values, error) {
 	u, err := url.Parse(s)
 
@@ -39,13 +43,16 @@ func GetURLQueryParams(s string) (url.Values, error) {
 	return query, nil
 }
 
-func SendJson(w http.ResponseWriter, target interface{}) error {
+// SendJSON sends a JSON response to the client
+func SendJSON(w http.ResponseWriter, target interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	return json.NewEncoder(w).Encode(target)
 }
 
-func ImageUrlToBase64(url string) (string, error) {
+// ImageURLToBase64 gets the Base64 representation of a JPEG image URL and
+// returns it
+func ImageURLToBase64(url string) (string, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {

@@ -1,13 +1,15 @@
 package onedrive
 
-type OnedriveId struct {
-	Id string `json:"id"`
+// Onedrive Application ID
+type onedriveID struct {
+	ID string `json:"id"`
 }
 
-type OnedriveAuth struct {
-	Token_type    string `json:"token_type"`
-	Expires_in    int    `json:"expires_in"`
-	Scope         string `json:"scope"`
-	Access_token  string `json:"access_token"`
-	Refresh_token string `json:"refresh_token"`
+// onedriveAuth represents the request body after a successful authentication
+type onedriveAuth struct {
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	Scope        string `json:"scope"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }

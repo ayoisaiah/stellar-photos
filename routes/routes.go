@@ -9,6 +9,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/weather"
 )
 
+// NewRouter creates and returns a new HTTP request multiplexer
 func NewRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 
@@ -19,7 +20,7 @@ func NewRouter() *http.ServeMux {
 	mux.HandleFunc("/get-weather/", weather.GetForecast)
 	mux.HandleFunc("/dropbox/key/", dropbox.SendDropboxKey)
 	mux.HandleFunc("/dropbox/save/", dropbox.SaveToDropbox)
-	mux.HandleFunc("/onedrive/id/", onedrive.SendOnedriveId)
+	mux.HandleFunc("/onedrive/id/", onedrive.SendOnedriveID)
 	mux.HandleFunc("/onedrive/auth/", onedrive.AuthorizeOnedrive)
 	mux.HandleFunc("/onedrive/refresh", onedrive.RefreshOnedriveToken)
 
