@@ -104,6 +104,12 @@ const updatePhotoFrequency = event => {
     chrome.runtime.sendMessage({ command: 'load-data' });
   }
 
+  if (selected === 'every15minutes') {
+    chrome.alarms.create('loadphoto', {
+      periodInMinutes: 15,
+    });
+  }
+
   if (selected === 'everyhour') {
     chrome.alarms.create('loadphoto', {
       periodInMinutes: 60,
@@ -117,6 +123,7 @@ const updatePhotoFrequency = event => {
   }
 
   if (selected === 'paused') {
+    chrome.alarms.clear('loadphoto');
     chrome.storage.local.set({
       pausedImage: window.stellar.nextImage,
     });
