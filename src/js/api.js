@@ -6,17 +6,17 @@ const baseUrl =
     : 'https://stellar-photos.herokuapp.com';
 
 const getRandomPhoto = collections =>
-  fetch(`${baseUrl}/random-photo?collections=${collections}`).then(
+  fetch(`${baseUrl}/random-photo/?collections=${collections}`).then(
     validateResponse
   );
 
 const searchPhotos = (key, page) =>
-  fetch(`${baseUrl}/search-unsplash?key=${key}&page=${page}`).then(
+  fetch(`${baseUrl}/search-unsplash/?key=${key}&page=${page}`).then(
     validateResponse
   );
 
 const validateCollections = collections =>
-  fetch(`${baseUrl}/validate-collections?collections=${collections}`).then(
+  fetch(`${baseUrl}/validate-collections/?collections=${collections}`).then(
     response => {
       if (!response.ok) {
         throw new Error(response.statusText);
@@ -27,11 +27,11 @@ const validateCollections = collections =>
 
 const getForecast = (latitude, longitude, metricSystem) =>
   fetch(
-    `${baseUrl}/get-weather?lat=${latitude}&lon=${longitude}&metric=${metricSystem}`
+    `${baseUrl}/get-weather/?lat=${latitude}&lon=${longitude}&metric=${metricSystem}`
   ).then(validateResponse);
 
 const saveToDropboxApi = (imageId, dropboxToken) =>
-  fetch(`${baseUrl}/dropbox/save?id=${imageId}&token=${dropboxToken}`).then(
+  fetch(`${baseUrl}/dropbox/save/?id=${imageId}&token=${dropboxToken}`).then(
     response => {
       if (!response.ok) {
         throw Error(response.statusText);
@@ -41,21 +41,21 @@ const saveToDropboxApi = (imageId, dropboxToken) =>
   );
 
 const getDropboxKey = () =>
-  fetch(`${baseUrl}/dropbox/key`).then(validateResponse);
+  fetch(`${baseUrl}/dropbox/key/`).then(validateResponse);
 
 const authorizeOnedrive = code =>
-  fetch(`${baseUrl}/onedrive/auth?code=${code}`).then(validateResponse);
+  fetch(`${baseUrl}/onedrive/auth/?code=${code}`).then(validateResponse);
 
 const refreshOnedriveTokenApi = token =>
-  fetch(`${baseUrl}/onedrive/refresh?refresh_token=${token}`).then(
+  fetch(`${baseUrl}/onedrive/refresh/?refresh_token=${token}`).then(
     validateResponse
   );
 
 const triggerPhotoDownload = id =>
-  fetch(`${baseUrl}/download-photo?id=${id}`).then(validateResponse);
+  fetch(`${baseUrl}/download-photo/?id=${id}`).then(validateResponse);
 
 const getOnedriveId = () =>
-  fetch(`${baseUrl}/onedrive/id`).then(validateResponse);
+  fetch(`${baseUrl}/onedrive/id/`).then(validateResponse);
 
 export {
   getRandomPhoto,
