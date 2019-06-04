@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"image"
 	"image/jpeg"
 	"net/http"
@@ -19,6 +20,10 @@ func GetJson(url string, target interface{}) error {
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("Unsplash returned a non 200 response")
+	}
 
 	return json.NewDecoder(resp.Body).Decode(target)
 }
