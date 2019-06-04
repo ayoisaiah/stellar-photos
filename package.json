@@ -1,6 +1,6 @@
 {
   "name": "stellar-photos",
-  "version": "3.0.2",
+  "version": "3.1.0",
   "description": "Beautiful high-res photos in your browser tabs. Available for Chrome and Firefox",
   "main": "src/js/index.js",
   "repository": "git@github.com:ayoisaiah/stellar-photos.git",
