@@ -12,7 +12,7 @@ As this project utilises [Go modules](https://blog.golang.org/using-go-modules),
 - Clone the repo and `cd` into it.
 - Sign up for the [Unsplash API](https://unsplash.com/documentation), [Dropbox API](https://www.dropbox.com/developers/documentation/http/overview), [OpenWeatherMap](https://openweathermap.org/api) and the [Onedrive API](https://docs.microsoft.com/en-us/onedrive/developer/rest-api/).
 - Get your credentials from the respective services and enter them into a .env file in the root of the project. You can copy the provided `.env.example` file.
-- Start the server on http://localhost:8080 by running `go build -o bin/server && ./bin/server`
+- Start the server on [http://localhost:8080](http://localhost:8080) by running `go build -o bin/server && ./bin/server`
 
 ## Contribute
 
