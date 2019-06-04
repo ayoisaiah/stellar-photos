@@ -17,7 +17,7 @@ const fetchRandomPhoto = () => {
 
         chrome.storage.local.set({ nextImage });
 
-        chrome.storage.local.get(['history', 'photoFrequency'], result => {
+        chrome.storage.local.get(['history'], result => {
           const history = result.history || [];
 
           if (history.length >= 10) {
@@ -26,26 +26,6 @@ const fetchRandomPhoto = () => {
 
           history.unshift(nextImage);
           chrome.storage.local.set({ history });
-
-          const { photoFrequency } = result;
-
-          if (photoFrequency === 'every15minutes') {
-            chrome.alarms.create('loadphoto', {
-              periodInMinutes: 15,
-            });
-          }
-
-          if (photoFrequency === 'everyhour') {
-            chrome.alarms.create('loadphoto', {
-              periodInMinutes: 60,
-            });
-          }
-
-          if (photoFrequency === 'everyday') {
-            chrome.alarms.create('loadphoto', {
-              periodInMinutes: 1440,
-            });
-          }
         });
       })
       .catch(console.error);
