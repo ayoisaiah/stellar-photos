@@ -25,9 +25,9 @@ var imageIds = []struct {
 	{"bWI4Vd4vI3w", 200},
 	{"xjQhTrxyVBw", 200},
 	{"7NcGuPF5NU0", 200},
-	{"oeks929jesj", 422},
-	{"9jdwnduwwen", 422},
-	{"aaaaa1aaaaa", 422},
+	{"oeks929jesj", 500},
+	{"9jdwnduwwen", 500},
+	{"aaaaa1aaaaa", 500},
 }
 
 func TestDownloadPhoto(t *testing.T) {
@@ -59,16 +59,16 @@ func TestGetPhotoDownloadLocation(t *testing.T) {
 	for _, value := range imageIds {
 		s, err := GetPhotoDownloadLocation(value.id)
 
-		if err != nil {
-			t.Fatal(err)
+		if err != nil && value.statusCode == 200 {
+			t.Errorf("Expect no errors from GetPhotoDownloadLocation for a valid photo id")
+		}
+
+		if err == nil && value.statusCode == 500 {
+			t.Errorf("Expected GetPhotoDownloadLocation to throw an error for an invalid photo id")
 		}
 
 		if value.statusCode == 200 && s.URL == "" {
 			t.Errorf("Expected UnsplashResponse URL field to be non-empty, got %s", s.URL)
-		}
-
-		if value.statusCode == 422 && s.Errors == nil {
-			t.Errorf("Expected UnsplashResponse to contains Errors, got %v", s.Errors)
 		}
 	}
 }
@@ -116,8 +116,8 @@ var collectionsTable = []struct {
 	statusCode int
 }{
 	{"998309,317099", 200},
-	{"39843782,4993402", 400},
-	{"151521,9829382", 400},
+	{"39843782,4993402", 500},
+	{"151521,9829382", 500},
 	{"175083,762960", 200},
 }
 
