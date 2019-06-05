@@ -14,7 +14,7 @@ import (
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code
 func SendDropboxKey(w http.ResponseWriter, r *http.Request) {
-	dropboxKey := fmt.Sprintf("%s", os.Getenv("DROPBOX_KEY"))
+	dropboxKey := os.Getenv("DROPBOX_KEY")
 
 	d := key{
 		DropboxKey: dropboxKey,

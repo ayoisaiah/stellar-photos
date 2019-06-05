@@ -22,7 +22,7 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 	longitude := values.Get("lon")
 	metric := values.Get("metric")
 
-	id := fmt.Sprintf("%s", os.Getenv("OPENWEATHER_APPID"))
+	id := os.Getenv("OPENWEATHER_APPID")
 	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&units=%s&appid=%s", latitide, longitude, metric, id)
 
 	forecast := &weatherInfo{}

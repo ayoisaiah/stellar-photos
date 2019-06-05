@@ -2,7 +2,6 @@ package onedrive
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,7 +13,7 @@ import (
 // SendOnedriveID sends the application id to the client on request to avoid
 // exposing it in the extension code
 func SendOnedriveID(w http.ResponseWriter, r *http.Request) {
-	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
+	id := os.Getenv("ONEDRIVE_APPID")
 
 	d := onedriveID{
 		ID: id,
@@ -35,8 +34,8 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
 
 	code := values.Get("code")
 
-	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
-	secret := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_SECRET"))
+	id := os.Getenv("ONEDRIVE_APPID")
+	secret := os.Getenv("ONEDRIVE_SECRET")
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",
@@ -61,8 +60,8 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 
 	refreshToken := values.Get("refresh_token")
 
-	id := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_APPID"))
-	secret := fmt.Sprintf("%s", os.Getenv("ONEDRIVE_SECRET"))
+	id := os.Getenv("ONEDRIVE_APPID")
+	secret := os.Getenv("ONEDRIVE_SECRET")
 
 	formValues := map[string]string{
 		"grant_type":    "refresh_token",
