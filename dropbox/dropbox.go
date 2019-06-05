@@ -28,7 +28,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to parse URL")
 		return
 	}
 
@@ -38,7 +38,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 	data, err := unsplash.GetPhotoDownloadLocation(id)
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.SendError(w, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to encode request body as JSON")
 		return
 	}
 
@@ -59,7 +59,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 	request, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to construct request")
 		return
 	}
 
@@ -70,15 +70,17 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 	response, err := client.Do(request)
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Network connectivity error")
 		return
 	}
 
 	defer response.Body.Close()
 
-	if response.StatusCode == 200 {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
+	err = utils.CheckForErrors(response)
+	if err != nil {
+		utils.SendError(w, err)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }

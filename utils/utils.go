@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"image"
 	"image/jpeg"
 	"net/http"
@@ -16,15 +15,15 @@ import (
 // response into the provided interface
 func SendRequestToUnsplash(url string, target interface{}) error {
 	resp, err := http.Get(url)
-
 	if err != nil {
 		return err
 	}
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.New("Unsplash returned a non 200 response")
+	err = CheckForErrors(resp)
+	if err != nil {
+		return err
 	}
 
 	return json.NewDecoder(resp.Body).Decode(target)

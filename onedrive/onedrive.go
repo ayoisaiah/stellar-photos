@@ -28,7 +28,7 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to parse URL")
 		return
 	}
 
@@ -54,7 +54,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to parse URL")
 		return
 	}
 
@@ -85,7 +85,7 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 	request, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to construct request")
 		return
 	}
 
@@ -95,7 +95,7 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 	response, err := client.Do(request)
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Network connectivity error")
 		return
 	}
 
@@ -106,12 +106,13 @@ func onedriveToken(w http.ResponseWriter, r *http.Request, formValues map[string
 	err = json.NewDecoder(response.Body).Decode(auth)
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Failed to decode response body as JSON")
 		return
 	}
 
-	if response.StatusCode != 200 {
-		w.WriteHeader(http.StatusBadRequest)
+	err = utils.CheckForErrors(response)
+	if err != nil {
+		utils.SendError(w, err)
 		return
 	}
 

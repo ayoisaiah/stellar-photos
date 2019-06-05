@@ -14,7 +14,7 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		utils.InternalServerError(w, "Failed to parse URL")
 		return
 	}
 
@@ -29,7 +29,7 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, "Network connectivity error")
 		return
 	}
 
@@ -37,8 +37,9 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(resp.Body).Decode(forecast)
 
-	if resp.StatusCode != 200 {
-		w.WriteHeader(resp.StatusCode)
+	err = utils.CheckForErrors(resp)
+	if err != nil {
+		utils.SendError(w, err)
 		return
 	}
 

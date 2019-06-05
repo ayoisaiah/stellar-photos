@@ -25,9 +25,9 @@ var imageIds = []struct {
 	{"bWI4Vd4vI3w", 200},
 	{"xjQhTrxyVBw", 200},
 	{"7NcGuPF5NU0", 200},
-	{"oeks929jesj", 500},
-	{"9jdwnduwwen", 500},
-	{"aaaaa1aaaaa", 500},
+	{"oeks929jesj", 404},
+	{"9jdwnduwwen", 404},
+	{"aaaaa1aaaaa", 404},
 }
 
 func TestDownloadPhoto(t *testing.T) {
@@ -48,7 +48,7 @@ func TestDownloadPhoto(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 
 		if rr.Code != value.statusCode {
-			t.Errorf("Status should be %d, got %d", http.StatusOK, rr.Code)
+			t.Errorf("Status should be %d, got %d", value.statusCode, rr.Code)
 		}
 	}
 }

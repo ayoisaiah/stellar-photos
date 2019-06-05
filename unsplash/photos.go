@@ -28,7 +28,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) {
 	data, err := GetPhotoDownloadLocation(id)
 
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.SendError(w, err)
 		return
 	}
 
