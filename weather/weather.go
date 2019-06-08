@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
+	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
@@ -22,7 +22,7 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 	longitude := values.Get("lon")
 	metric := values.Get("metric")
 
-	id := os.Getenv("OPENWEATHER_APPID")
+	id := config.Conf.OpenWeatherMap.AppID
 	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&units=%s&appid=%s", latitide, longitude, metric, id)
 
 	forecast := &weatherInfo{}

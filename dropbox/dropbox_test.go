@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/joho/godotenv"
 )
 
@@ -18,6 +19,8 @@ func readEnv() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	_ = config.New()
 }
 
 func TestGetDropboxKey(t *testing.T) {

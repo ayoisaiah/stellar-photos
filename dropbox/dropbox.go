@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
+	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
@@ -14,7 +14,7 @@ import (
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code
 func SendDropboxKey(w http.ResponseWriter, r *http.Request) {
-	dropboxKey := os.Getenv("DROPBOX_KEY")
+	dropboxKey := config.Conf.Dropbox.Key
 
 	d := key{
 		DropboxKey: dropboxKey,

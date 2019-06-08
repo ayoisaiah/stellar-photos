@@ -5,40 +5,12 @@ import (
 	"os"
 )
 
-// Config represents the all the environmental variables that should be present
-// on start up
-type Config struct {
-	Port           string
-	Unsplash       UnsplashConfig
-	Onedrive       OnedriveConfig
-	OpenWeatherMap OpenWeatherMapConfig
-	Dropbox        DropboxConfig
-}
-
-// UnsplashConfig represents Unsplash's API configuration variables
-type UnsplashConfig struct {
-	AccessKey string
-}
-
-// OnedriveConfig represents Onedrive's API configuration variables
-type OnedriveConfig struct {
-	AppID  string
-	Secret string
-}
-
-// OpenWeatherMapConfig represents OpenWeatherMap's configuration variables
-type OpenWeatherMapConfig struct {
-	AppID string
-}
-
-// DropboxConfig represents Dropbox's API configuration variables
-type DropboxConfig struct {
-	Key string
-}
+// Conf represents the application configuration
+var Conf *Config
 
 // New returns a new Config struct
 func New() *Config {
-	return &Config{
+	Conf = &Config{
 		Port: getEnv("PORT", "8080"),
 		Unsplash: UnsplashConfig{
 			AccessKey: getEnv("UNSPLASH_ACCESS_KEY", ""),
@@ -54,6 +26,8 @@ func New() *Config {
 			Key: getEnv("DROPBOX_KEY", ""),
 		},
 	}
+
+	return Conf
 }
 
 // getEnv reads an environment variable and returns it or returns a default

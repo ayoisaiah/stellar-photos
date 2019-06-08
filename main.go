@@ -20,9 +20,9 @@ func init() {
 
 func main() {
 	// This will crash the program if one of the required Env values is not set
-	conf := config.New()
+	config.New()
 
-	port := ":" + conf.Port
+	port := ":" + config.Conf.Port
 
 	mux := routes.NewRouter()
 
