@@ -1,15 +1,15 @@
 import { html } from 'lit-html';
-import timeago from 'timeago.js';
+import { format } from 'timeago.js';
 
 /*
  * This compoment displays the weather information in the footer
  * */
 
-const weatherInfo = forecast => {
+const weatherInfo = (forecast) => {
   const location = forecast.name;
   const temperature = Math.round(forecast.main.temp);
   const { description } = forecast.weather[0];
-  const lastUpdatedTime = timeago().format(new Date(forecast.timestamp));
+  const lastUpdatedTime = format(new Date(forecast.timestamp));
 
   return html`
     <span class="location">

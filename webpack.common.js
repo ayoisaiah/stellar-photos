@@ -2,7 +2,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const GenerateJsonPlugin = require('generate-json-webpack-plugin');
-const merge = require('webpack-merge');
+const { merge } = require('webpack-merge');
 const path = require('path');
 const autoprefixer = require('autoprefixer');
 
@@ -19,7 +19,7 @@ const postcss = {
   loader: 'postcss-loader',
   options: {
     plugins() {
-      return [autoprefixer({ browsers: 'last 3 versions' })];
+      return [autoprefixer({ overrideBrowsersList: 'last 3 versions' })];
     },
     sourceMap: true,
   },
@@ -35,7 +35,7 @@ const sass = {
   ],
 };
 
-module.exports = env => {
+module.exports = (env) => {
   const [mode, platform] = env.split(':');
 
   if (platform === 'firefox') {
@@ -95,18 +95,18 @@ module.exports = env => {
       new MiniCssExtractPlugin({
         filename: 'css/main.css',
       }),
-      new CopyWebpackPlugin([
-        {
-          from: './src/**/*',
-          to: '',
-          ignore: ['*.js', '*.css', '*.scss', '*.png', '*.json', '*.md'],
-          flatten: true,
-        },
-        {
-          from: './src/icons',
-          to: 'icons',
-        },
-      ]),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: './src/index.html',
+            to: '',
+          },
+          {
+            from: './src/icons',
+            to: 'icons',
+          },
+        ],
+      }),
       new OptimizeCSSAssetsPlugin({
         cssProcessorOptions: { discardComments: { removeAll: true } },
       }),

@@ -14,43 +14,44 @@
     "build:firefox:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:firefox --progress --colors --config webpack.prod.js\""
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
-    "autoprefixer": "^8.5.0",
-    "babel-loader": "^8.0.0",
-    "concurrently": "^3.5.1",
-    "copy-webpack-plugin": "^4.5.1",
-    "css-loader": "^0.28.11",
-    "eslint": "^4.16.0",
-    "eslint-config-airbnb-base": "^11.3.2",
-    "eslint-config-prettier": "^2.9.0",
-    "eslint-plugin-import": "^2.8.0",
-    "eslint-plugin-prettier": "^2.6.0",
-    "generate-json-webpack-plugin": "^0.3.1",
-    "husky": ">=1",
-    "lint-staged": ">=8",
-    "mini-css-extract-plugin": "^0.4.0",
-    "node-sass": "^4.12.0",
-    "optimize-css-assets-webpack-plugin": "^4.0.1",
-    "placeholder-loader": "^1.0.4",
-    "postcss-loader": "^2.1.5",
-    "prettier": "^1.12.0",
-    "sass-loader": "^7.0.1",
-    "style-loader": "^0.21.0",
-    "stylelint": "^9.2.1",
-    "stylelint-config-standard": "^18.2.0",
-    "stylelint-scss": "^3.1.0",
-    "uglifyjs-webpack-plugin": "^1.2.5",
-    "webpack": "^4.30.0",
-    "webpack-cli": "^3.3.1",
-    "webpack-merge": "^4.2.1",
+    "@babel/core": "^7.11.1",
+    "@babel/preset-env": "^7.11.0",
+    "autoprefixer": "^9.8.6",
+    "babel-loader": "^8.1.0",
+    "concurrently": "^5.3.0",
+    "copy-webpack-plugin": "^6.0.3",
+    "css-loader": "^4.2.1",
+    "eslint": "^7.7.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "generate-json-webpack-plugin": "^1.0.0",
+    "husky": ">=4.2.5",
+    "lint-staged": ">=10.2.11",
+    "mini-css-extract-plugin": "^0.10.0",
+    "node-sass": "^4.14.1",
+    "optimize-css-assets-webpack-plugin": "^5.0.3",
+    "placeholder-loader": "^2.0.1",
+    "postcss-loader": "^3.0.0",
+    "prettier": "^2.0.5",
+    "sass-loader": "^9.0.3",
+    "style-loader": "^1.2.1",
+    "stylelint": "^13.6.1",
+    "stylelint-config-standard": "^20.0.0",
+    "stylelint-scss": "^3.18.0",
+    "terser-webpack-plugin": "^4.1.0",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12",
+    "webpack-merge": "^5.1.2",
     "webpack-strip-block": "^0.2.0"
   },
   "dependencies": {
-    "dompurify": "^1.0.3",
+    "dompurify": "^2.0.12",
     "ladda": "^2.0.1",
-    "lit-html": "^1.0.0",
-    "timeago.js": "^3.0.2"
+    "lit-html": "^1.2.1",
+    "timeago.js": "^4.0.2"
   },
   "husky": {
     "hooks": {
@@ -59,12 +60,10 @@
   },
   "lint-staged": {
     "*.js": [
-      "eslint --fix",
-      "git add"
+      "eslint --fix"
     ],
     "*.css": [
-      "stylelint --fix",
-      "git add"
+      "stylelint --fix"
     ]
   }
 }
