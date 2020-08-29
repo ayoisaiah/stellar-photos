@@ -4,25 +4,37 @@ const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const GenerateJsonPlugin = require('generate-json-webpack-plugin');
 const { merge } = require('webpack-merge');
 const path = require('path');
-const autoprefixer = require('autoprefixer');
-
-const javascript = {
-  test: /\.js$/,
-  use: [
-    {
-      loader: 'babel-loader',
-    },
-  ],
-};
+const cssnano = require('cssnano');
+const cssnext = require('postcss-preset-env');
+const reporter = require('postcss-reporter');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const FixStyleOnlyEntriesPlugin = require('webpack-fix-style-only-entries');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const postcss = {
   loader: 'postcss-loader',
   options: {
     plugins() {
-      return [autoprefixer({ overrideBrowsersList: 'last 3 versions' })];
+      return [cssnext(), cssnano(), reporter({ clearReportedMessages: true })];
     },
     sourceMap: true,
   },
+};
+
+const typescript = {
+  test: /\.(ts|js)$/,
+  use: [
+    {
+      loader: 'babel-loader',
+      options: {
+        presets: ['@babel/preset-env', '@babel/preset-typescript'],
+        plugins: [
+          '@babel/plugin-proposal-class-properties',
+          '@babel/plugin-proposal-object-rest-spread',
+        ],
+      },
+    },
+  ],
 };
 
 const sass = {
@@ -39,7 +51,7 @@ module.exports = (env) => {
   const [mode, platform] = env.split(':');
 
   if (platform === 'firefox') {
-    javascript.use.push({
+    typescript.use.push({
       loader: 'webpack-strip-block',
       options: {
         start: 'CHROME_START',
@@ -49,7 +61,7 @@ module.exports = (env) => {
   }
 
   if (platform === 'chrome') {
-    javascript.use.push({
+    typescript.use.push({
       loader: 'webpack-strip-block',
       options: {
         start: 'FIREFOX_START',
@@ -58,7 +70,7 @@ module.exports = (env) => {
     });
   }
 
-  javascript.use.push({
+  typescript.use.push({
     loader: 'placeholder-loader',
     options: {
       placeholder: 'BUILD_PLATFORM',
@@ -66,7 +78,7 @@ module.exports = (env) => {
     },
   });
 
-  javascript.use.push({
+  typescript.use.push({
     loader: 'placeholder-loader',
     options: {
       placeholder: 'DEV_OR_PROD',
@@ -88,13 +100,21 @@ module.exports = (env) => {
     },
 
     module: {
-      rules: [javascript, sass],
+      rules: [typescript, sass],
     },
 
     plugins: [
+      // Clean up the dist folder before each build
+      new CleanWebpackPlugin(),
+      // Prevent CSS / SCSS imports from generating additional JS file
+      new FixStyleOnlyEntriesPlugin(),
+
       new MiniCssExtractPlugin({
         filename: 'css/main.css',
       }),
+
+      new ForkTsCheckerWebpackPlugin(),
+
       new CopyWebpackPlugin({
         patterns: [
           {
@@ -107,9 +127,11 @@ module.exports = (env) => {
           },
         ],
       }),
+
       new OptimizeCSSAssetsPlugin({
         cssProcessorOptions: { discardComments: { removeAll: true } },
       }),
+
       new GenerateJsonPlugin(
         'manifest.json',
         merge(
