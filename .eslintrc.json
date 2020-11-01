@@ -17,6 +17,7 @@
     "webextensions": true
   },
   "rules": {
+    "default-case": "off",
     "import/no-extraneous-dependencies": [
       "error",
       {

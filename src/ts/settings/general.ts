@@ -1,17 +1,108 @@
-import { html } from 'lit-html';
-import {
-  openDefaultTab,
-  openChromeApps,
-  updatePhotoFrequency,
-  updateImageSource,
-  updateCollections,
-} from '../libs/handle';
+import * as Ladda from 'ladda';
+import { html, TemplateResult } from 'lit-html';
+import { validateCollections } from '../../js/api';
+import type { Settings } from './types';
+import { CustomWindow } from '../global.d';
+import notifySnackbar from '../../js/libs/notify-snackbar';
 
-/*
- * General settings
- */
+declare let window: CustomWindow;
 
-const generalSettings = settings => {
+/* CHROME_START */
+function openDefaultTab(e: MouseEvent): void {
+  e.preventDefault();
+  chrome.tabs.update({
+    url: 'chrome-search://local-ntp/local-ntp.html',
+    active: true,
+    highlighted: true,
+  });
+}
+
+function openChromeApps(e: MouseEvent): void {
+  e.preventDefault();
+  chrome.tabs.update({
+    url: 'chrome://apps/',
+    active: true,
+    highlighted: true,
+  });
+}
+/* CHROME_END */
+
+function updatePhotoFrequency(event: { target: HTMLSelectElement }): void {
+  const selected = event.target[
+    event.target.selectedIndex
+  ] as HTMLOptionElement;
+  const { value } = selected;
+  chrome.storage.local.set({ photoFrequency: selected });
+
+  switch (value) {
+    case 'newtab':
+      chrome.runtime.sendMessage({ command: 'load-data' });
+      break;
+    case 'every15minutes':
+      chrome.alarms.create('loadphoto', {
+        periodInMinutes: 15,
+      });
+      break;
+    case 'everyhour':
+      chrome.alarms.create('loadphoto', {
+        periodInMinutes: 60,
+      });
+      break;
+    case 'everyday':
+      chrome.alarms.create('loadphoto', {
+        periodInMinutes: 1440,
+      });
+      break;
+    case 'paused':
+      chrome.alarms.clear('loadphoto');
+      chrome.storage.local.set({
+        pausedImage: window.stellar.nextImage,
+      });
+      break;
+  }
+}
+
+function updateImageSource(event: { target: HTMLInputElement }): void {
+  const { value } = event.target;
+  chrome.storage.sync.set({ imageSource: value });
+  const customCollection = document.querySelector('.custom-collection');
+
+  if (value === 'custom') {
+    customCollection.classList.add('is-visible');
+  } else {
+    customCollection.classList.remove('is-visible');
+  }
+}
+
+async function updateCollections(): Promise<void> {
+  const collectionsInput = document.getElementById(
+    'js-collections-input'
+  ) as HTMLInputElement;
+  const collections = collectionsInput.value.trim().replace(/ /g, '');
+  const spinner = Ladda.create(document.querySelector('.update-collections'));
+
+  try {
+    if (!collections) throw Error('Collection IDs not valid!');
+
+    spinner.start();
+
+    await validateCollections(collections);
+
+    await chrome.storage.sync.set({ collections });
+
+    notifySnackbar('Collections saved successfully');
+    chrome.runtime.sendMessage({ command: 'load-data' });
+  } catch (err) {
+    notifySnackbar(
+      'An error occurred while validating the collections',
+      'error'
+    );
+  } finally {
+    spinner.stop();
+  }
+}
+
+function generalSettings(settings: Settings): TemplateResult {
   const customInput = settings.imageSource === 'custom' ? 'is-visible' : '';
 
   return html`
@@ -55,29 +146,34 @@ const generalSettings = settings => {
             <option
               value="newtab"
               ?selected=${settings.photoFrequency === 'newtab'}
-              >On every new tab (default)</option
             >
+              On every new tab (default)
+            </option>
             <option
               value="every15minutes"
               ?selected=${settings.photoFrequency === 'every15minutes'}
-              >Every 15 minutes</option
             >
+              Every 15 minutes
+            </option>
             <option
               value="everyhour"
               ?selected=${settings.photoFrequency === 'everyhour'}
-              >Every hour</option
             >
+              Every hour
+            </option>
             <option
               value="everyday"
               ?selected=${settings.photoFrequency === 'everyday'}
-              >Every day</option
             >
+              Every day
+            </option>
 
             <option
               value="paused"
               ?selected=${settings.photoFrequency === 'paused'}
-              >Pause</option
             >
+              Pause
+            </option>
           </select>
         </div>
 
@@ -130,13 +226,15 @@ const generalSettings = settings => {
                 type="text"
                 name="unsplash-collections__input"
                 class="unsplash-collections__input"
-                id="unsplash-collections__input"
+                id="js-collections-input"
                 value=${settings.collections}
                 placeholder="Collection IDs"
               />
 
               <span
-                data-tooltip="Enter one or more Unsplash collection IDs here.\n For example, 998309 is the collection ID for https://unsplash.com/collections/998309/stellar-photos.\n Separate multiple collection IDs with commas."
+                data-tooltip="Enter one or more Unsplash collection IDs here.
+ For example, 998309 is the collection ID for https://unsplash.com/collections/998309/stellar-photos.
+ Separate multiple collection IDs with commas."
               >
                 <svg class="icon icon-info"><use href="#icon-info"></use></svg>
               </span>
@@ -155,6 +253,6 @@ const generalSettings = settings => {
       </div>
     </section>
   `;
-};
+}
 
 export default generalSettings;

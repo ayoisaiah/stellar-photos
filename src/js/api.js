@@ -1,11 +1,11 @@
 import { validateResponse } from './libs/helpers';
 
 const baseUrl =
-  'DEV_OR_PROD' === 'dev'
+  'STELLAR_ENV' === 'dev'
     ? 'http://localhost:8080'
     : 'https://stellar-photos.herokuapp.com';
 
-const getRandomPhoto = collections =>
+const getRandomPhoto = (collections) =>
   fetch(`${baseUrl}/random-photo/?collections=${collections}`).then(
     validateResponse
   );
@@ -15,9 +15,9 @@ const searchPhotos = (key, page) =>
     validateResponse
   );
 
-const validateCollections = collections =>
+const validateCollections = (collections) =>
   fetch(`${baseUrl}/validate-collections/?collections=${collections}`).then(
-    response => {
+    (response) => {
       if (!response.ok) {
         throw new Error(response.statusText);
       }
@@ -32,7 +32,7 @@ const getForecast = (latitude, longitude, metricSystem) =>
 
 const saveToDropboxApi = (imageId, dropboxToken) =>
   fetch(`${baseUrl}/dropbox/save/?id=${imageId}&token=${dropboxToken}`).then(
-    response => {
+    (response) => {
       if (!response.ok) {
         throw Error(response.statusText);
       }
@@ -43,15 +43,15 @@ const saveToDropboxApi = (imageId, dropboxToken) =>
 const getDropboxKey = () =>
   fetch(`${baseUrl}/dropbox/key/`).then(validateResponse);
 
-const authorizeOnedrive = code =>
+const authorizeOnedrive = (code) =>
   fetch(`${baseUrl}/onedrive/auth/?code=${code}`).then(validateResponse);
 
-const refreshOnedriveTokenApi = token =>
+const refreshOnedriveTokenApi = (token) =>
   fetch(`${baseUrl}/onedrive/refresh/?refresh_token=${token}`).then(
     validateResponse
   );
 
-const triggerPhotoDownload = id =>
+const triggerPhotoDownload = (id) =>
   fetch(`${baseUrl}/download-photo/?id=${id}`).then(validateResponse);
 
 const getOnedriveId = () =>

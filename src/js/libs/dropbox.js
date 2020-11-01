@@ -4,41 +4,37 @@ import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
 } from './notifications';
-import notifySnackbar from './notify-snackbar';
 
-const authorizeDropbox = () => {
-  loadingIndicator().start();
+async function authorizeDropbox() {
+  try {
+    const data = await getDropboxKey();
+    const key = data.dropbox_key;
+    chrome.tabs.create({
+      url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
+    });
+  } catch (err) {
+    throw Error('Unable to authorize Dropbox');
+  }
+}
 
-  getDropboxKey()
-    .then(data => {
-      const key = data.dropbox_key;
-      chrome.tabs.create({
-        url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
-      });
-    })
-    .catch(() => notifySnackbar('Unable to authorize Dropbox', 'error'))
-    .finally(() => loadingIndicator().stop());
-};
-
-const saveToDropbox = imageId => {
-  chrome.storage.local.get('dropbox', result => {
+async function saveToDropbox(imageId) {
+  try {
+    const result = await chrome.storage.local.get('dropbox');
     const dropboxToken = result.dropbox;
 
     if (!dropboxToken) {
-      authorizeDropbox();
+      await authorizeDropbox();
       return;
     }
 
     loadingIndicator().start();
-
-    saveToDropboxApi(imageId, dropboxToken)
-      .then(() => {
-        loadingIndicator().stop();
-
-        notifySaveToCloudSuccessful('Dropbox', imageId);
-      })
-      .catch(() => notifyUnableToUpload('Dropbox', imageId));
-  });
-};
+    await saveToDropboxApi(imageId, dropboxToken);
+    notifySaveToCloudSuccessful('Dropbox', imageId);
+  } catch (err) {
+    notifyUnableToUpload('Dropbox', imageId);
+  } finally {
+    loadingIndicator().stop();
+  }
+}
 
 export { authorizeDropbox, saveToDropbox };

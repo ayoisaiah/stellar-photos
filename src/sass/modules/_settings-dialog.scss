@@ -3,21 +3,14 @@
    ========================================================================== */
 
 .settings-dialog {
-  position: fixed;
-  width: 100vw;
-  height: 100vh;
+  width: 550px;
+  height: 400px;
   background-color: rgba(0, 0, 0, 0.6);
   top: 0;
   left: 0;
   font-size: 1.6rem;
-  z-index: -10;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.1s ease-in-out;
-
-  &.is-open {
-    opacity: 1;
-    z-index: 10;
-  }
 }
 
 .dialog-content {
@@ -139,6 +132,10 @@
     padding: 6px 3px;
     margin-right: 10px;
     margin-bottom: 15px;
+  }
+
+  .inline-notification {
+    display: block;
   }
 
   .authorize {

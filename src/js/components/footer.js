@@ -2,7 +2,6 @@ import { html } from 'lit-html';
 import { handleClick } from '../libs/handle';
 import infoButton from './info-button';
 import cloudButton from '../libs/cloud-button';
-import settingsButton from './settings-button';
 import downloadButton from './download-button';
 import unsplashCredit from './unsplash-credit';
 import weatherInfo from './weather-info';
@@ -25,7 +24,7 @@ const footerContent = (nextImage, date) => html`
       ${unsplashCredit(nextImage)}
     </section>
     <section class="controls" id="footer-controls" @click=${handleClick}>
-      ${settingsButton()} ${downloadButton(nextImage)} ${cloudButton(nextImage)}
+      ${downloadButton(nextImage)} ${cloudButton(nextImage)}
       ${infoButton()} ${infoPopover(nextImage, date)}
     </section>
   </div>

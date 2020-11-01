@@ -73,15 +73,7 @@ module.exports = (env) => {
   typescript.use.push({
     loader: 'placeholder-loader',
     options: {
-      placeholder: 'BUILD_PLATFORM',
-      handler: () => platform,
-    },
-  });
-
-  typescript.use.push({
-    loader: 'placeholder-loader',
-    options: {
-      placeholder: 'DEV_OR_PROD',
+      placeholder: 'STELLAR_ENV',
       handler: () => mode,
     },
   });
@@ -89,9 +81,12 @@ module.exports = (env) => {
   const config = {
     entry: {
       'js/index': './src/js/index.js',
+      'js/popup': './src/ts/popup.ts',
       'js/background': './src/js/background.js',
       'js/set-image': './src/js/set-image.js',
       'js/tab': './src/js/tab.js',
+      'css/popup': './src/sass/popup.scss',
+      'css/main': './src/sass/main.scss',
     },
 
     output: {
@@ -103,6 +98,10 @@ module.exports = (env) => {
       rules: [typescript, sass],
     },
 
+    resolve: {
+      extensions: ['.js', '.ts'],
+    },
+
     plugins: [
       // Clean up the dist folder before each build
       new CleanWebpackPlugin(),
@@ -110,13 +109,17 @@ module.exports = (env) => {
       new FixStyleOnlyEntriesPlugin(),
 
       new MiniCssExtractPlugin({
-        filename: 'css/main.css',
+        filename: '[name].css',
       }),
 
       new ForkTsCheckerWebpackPlugin(),
 
       new CopyWebpackPlugin({
         patterns: [
+          {
+            from: './src/popup.html',
+            to: '',
+          },
           {
             from: './src/index.html',
             to: '',

@@ -6,11 +6,8 @@ import main from './components/main';
 import loader from './components/loader';
 import { footer } from './components/footer';
 import header from './components/header';
-import settingsDialog from './components/settings-dialog';
 import svgDefs from './components/svg';
 import photoCard from './components/photo-card';
-
-import '../sass/main.scss';
 
 const app = $('app');
 window.stellar.boot.then(data => {
@@ -22,7 +19,7 @@ window.stellar.boot.then(data => {
     ).fullDate;
 
     const body = html`
-      ${loader()} ${settingsDialog(data)} ${header()} ${main()}
+      ${loader()} ${header()} ${main()}
       ${footer(data, fullDate)} ${svgDefs()}
     `;
     render(body, app);

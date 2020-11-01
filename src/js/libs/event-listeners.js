@@ -28,9 +28,6 @@ const eventListeners = () => {
     const searchResults = $('searchResults');
     if (searchResults.hasChildNodes()) return;
 
-    const settingsDialog = $('settings-dialog');
-    if (settingsDialog.classList.contains('is-open')) return;
-
     uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
   };
 
