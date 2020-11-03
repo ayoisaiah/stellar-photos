@@ -14,7 +14,7 @@ type searchResult struct {
 
 // collection respresents a single Unsplash collection ID
 type collection struct {
-	ID int `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 }
 
 // randomPhoto represents the result from fetching a random photo from Unsplash

@@ -149,7 +149,7 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if c.ID == 0 {
+		if c.ID == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
