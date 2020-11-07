@@ -1,20 +1,21 @@
-import getWeatherInfo from './libs/get-weather-info';
-import fetchRandomPhoto from './libs/fetch-random-photo';
-import loadNewData from './libs/load-new-data';
-import { notifyCloudAuthenticationSuccessful } from './libs/notifications';
-import { onedriveAuth, refreshOnedriveToken } from './libs/onedrive-auth';
+import 'chrome-extension-async';
+import getWeatherInfo from '../js/libs/get-weather-info';
+import fetchRandomPhoto from '../js/libs/fetch-random-photo';
+import loadNewData from '../js/libs/load-new-data';
+import { notifyCloudAuthenticationSuccessful } from '../js/libs/notifications';
+import { onedriveAuth, refreshOnedriveToken } from '../js/libs/onedrive-auth';
 
-const setDefaultExtensionSettings = () => {
-  chrome.storage.local.set({
-    cloudService: 'dropbox',
+async function setDefaultExtensionSettings(): Promise<void> {
+  const localSettings = {
+    cloudService: null,
     forecast: null,
     nextImage: null,
     history: null,
     pausedImage: null,
     photoFrequency: 'newtab',
-  });
+  };
 
-  chrome.storage.sync.set({
+  const syncSettings = {
     collections: '',
     imageSource: 'official',
     temperatureFormat: 'metric',
@@ -22,19 +23,22 @@ const setDefaultExtensionSettings = () => {
       latitude: '',
       longitude: '',
     },
-  });
-};
+  };
 
-chrome.runtime.onInstalled.addListener(details => {
+  chrome.storage.local.set(localSettings);
+  chrome.storage.sync.set(syncSettings);
+}
+
+chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     setDefaultExtensionSettings();
   }
 
   if (details.reason === 'update') {
-    chrome.storage.sync.get(r => {
+    chrome.storage.sync.get((r) => {
       const { photoFrequency, tempUnit } = r;
       const unit = tempUnit === 'fahrenheit' ? 'imperial' : 'metric';
-      chrome.storage.local.get(d => {
+      chrome.storage.local.get((d) => {
         const { cloudService } = d;
 
         chrome.storage.local.set({
@@ -54,9 +58,27 @@ chrome.runtime.onInstalled.addListener(details => {
   fetchRandomPhoto();
 });
 
-chrome.runtime.onMessage.addListener((request, sender) => {
+type Commands =
+  | 'close-tab'
+  | 'set-dropbox-token'
+  | 'code-flow'
+  | 'update-weather'
+  | 'set-onedrive-alarm';
+
+type Request = {
+  command: Commands;
+  token: string;
+  code: string;
+  expires_in: number;
+};
+
+chrome.runtime.onMessage.addListener((request: Request, sender) => {
   const listeners = {
-    'close-tab': () => chrome.tabs.remove(sender.tab.id),
+    'close-tab': () => {
+      if (sender.tab && sender.tab.id) {
+        chrome.tabs.remove([sender.tab.id]);
+      }
+    },
 
     'set-dropbox-token': () => {
       chrome.storage.local.set({ dropbox: request.token });
@@ -65,10 +87,12 @@ chrome.runtime.onMessage.addListener((request, sender) => {
     },
 
     'code-flow': () => {
-      chrome.storage.local.get('cloudService', result => {
+      chrome.storage.local.get('cloudService', (result) => {
         const { cloudService } = result;
         if (cloudService === 'onedrive') {
-          chrome.tabs.remove(sender.tab.id);
+          if (sender.tab && sender.tab.id) {
+            chrome.tabs.remove([sender.tab.id]);
+          }
           onedriveAuth(request.code);
         }
       });
@@ -88,12 +112,16 @@ chrome.runtime.onMessage.addListener((request, sender) => {
   listeners[request.command]();
 });
 
-chrome.alarms.onAlarm.addListener(alarm => {
-  const alarms = {
-    loadphoto: () => fetchRandomPhoto(),
-    loadweather: () => getWeatherInfo(),
-    'refresh-onedrive-token': () => refreshOnedriveToken(),
-  };
-
-  alarms[alarm.name]();
+chrome.alarms.onAlarm.addListener((alarm) => {
+  switch (alarm.name) {
+    case 'loadphoto':
+      fetchRandomPhoto();
+      break;
+    case 'loadweather':
+      getWeatherInfo();
+      break;
+    case 'refresh-onedrive-token':
+      refreshOnedriveToken();
+      break;
+  }
 });
