@@ -3,7 +3,7 @@
     "noEmit": true,
     "sourceMap": true,
     "module": "es6",
-    "strict": false,
+    "strict": true,
     "target": "esnext",
     "allowJs": true,
     "moduleResolution": "node",
@@ -14,8 +14,5 @@
     "noImplicitReturns": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "src/js",
-    "src/ts"
-  ]
+  "include": ["src/js", "src/ts"]
 }

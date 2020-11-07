@@ -82,7 +82,7 @@ module.exports = (env) => {
     entry: {
       'js/index': './src/js/index.js',
       'js/popup': './src/ts/popup.ts',
-      'js/background': './src/js/background.js',
+      'js/background': './src/ts/background.ts',
       'js/set-image': './src/js/set-image.js',
       'js/tab': './src/js/tab.js',
       'css/popup': './src/sass/popup.scss',
@@ -138,7 +138,9 @@ module.exports = (env) => {
       new GenerateJsonPlugin(
         'manifest.json',
         merge(
+          // eslint-disable-next-line
           require('./src/manifest/common.json'),
+          // eslint-disable-next-line
           require(`./src/manifest/${platform}.json`)
         ),
         null,

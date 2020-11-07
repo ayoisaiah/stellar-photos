@@ -3,7 +3,7 @@
   "parserOptions": {
     "ecmaVersion": 2019,
     "sourceType": "module",
-    "project": "tsconfig.json"
+    "project": "./tsconfig.eslint.json"
   },
   "extends": [
     "airbnb-typescript/base",
@@ -17,6 +17,7 @@
     "webextensions": true
   },
   "rules": {
+    "import/prefer-default-export": "off",
     "default-case": "off",
     "import/no-extraneous-dependencies": [
       "error",

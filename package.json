@@ -75,11 +75,16 @@
     }
   },
   "lint-staged": {
-    "*.js": [
-      "eslint --fix"
+    "*.(js|ts)": [
+      "eslint --fix",
+      "prettier --write"
     ],
-    "*.css": [
-      "stylelint --fix"
+    "*.(css|scss)": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.html": [
+      "prettier --write"
     ]
   }
 }
