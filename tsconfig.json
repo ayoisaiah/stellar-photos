@@ -14,5 +14,5 @@
     "noImplicitReturns": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/js", "src/ts"]
+  "include": ["src/js", "src/ts/**/*.ts"]
 }
