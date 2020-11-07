@@ -1,7 +1,7 @@
 import { render } from 'lit-html';
+import 'chrome-extension-async';
 import settingsDialog from './settings/index';
 import type { Settings } from './settings/types';
-import '../../node_modules/chrome-extension-async/chrome-extension-async';
 
 async function retriveSettings() {
   try {
@@ -28,8 +28,11 @@ async function retriveSettings() {
     };
 
     const body = document.querySelector('.js-body');
-    render(settingsDialog(r), body);
+    if (body) {
+      render(settingsDialog(r), body);
+    }
   } catch (err) {
+    // eslint-disable-next-line
     console.log(err);
   }
 }

@@ -7,17 +7,21 @@ import type { Settings } from './types';
 import notifySnackbar from '../../js/libs/notify-snackbar';
 
 async function authorizeCloud(): Promise<void> {
-  const selectCloud = $('select-cloud-storage');
-  const selected = selectCloud[selectCloud.selectedIndex].value;
+  const selectCloud = $('select-cloud-storage') as HTMLSelectElement;
+  const selectedOption = selectCloud[
+    selectCloud.selectedIndex
+  ] as HTMLOptionElement;
+  const selected = selectedOption.value;
   const spinner = Ladda.create(
     document.getElementById('js-connect-cloud') as HTMLButtonElement
   );
+  spinner.start();
 
   try {
-    spinner.start();
     if (selected === 'dropbox') {
       await authorizeDropbox();
     }
+
     if (selected === 'onedrive') {
       authorizeOneDrive();
     }
@@ -29,7 +33,7 @@ async function authorizeCloud(): Promise<void> {
 }
 
 function updateCloudStatus(flag: boolean): void {
-  const action = $('action');
+  const action = $('js-action') as HTMLSpanElement;
 
   if (flag) {
     const successMessage = html`
@@ -68,8 +72,11 @@ async function updateCloudService(event: { target: HTMLSelectElement }) {
 }
 
 function cloudSettings(settings: Settings): TemplateResult {
-  const { cloudService } = settings;
-  const token = settings[cloudService];
+  const cloudService = settings.cloudService as Settings['cloudService'];
+  let token: Settings['dropbox'] | Settings['onedrive'];
+  if (cloudService) {
+    token = settings[cloudService];
+  }
 
   chrome.runtime.onMessage.addListener((request) => {
     if (request.command === 'update-cloud-status') {
@@ -111,7 +118,7 @@ function cloudSettings(settings: Settings): TemplateResult {
           </option>
         </select>
 
-        <span class="action" id="action">
+        <span class="action" id="js-action">
           ${!token
             ? html`
                 <button

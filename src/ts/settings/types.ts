@@ -12,13 +12,17 @@ type Coords = {
   latitude: number;
 };
 
+type Onedrive = unknown;
+
 type Settings = {
   imageSource: string;
   photoFrequency: PhotoFrequency;
   collections: string;
   coords: Coords;
   temperatureFormat: TemparatureUnit;
-  cloudService: string;
+  cloudService: 'dropbox' | 'onedrive' | null;
+  dropbox?: string;
+  onedrive?: Onedrive;
 };
 
 export type { Settings };

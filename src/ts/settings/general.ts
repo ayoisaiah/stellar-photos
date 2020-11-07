@@ -27,12 +27,15 @@ function openChromeApps(e: MouseEvent): void {
 }
 /* CHROME_END */
 
-function updatePhotoFrequency(event: { target: HTMLSelectElement }): void {
+async function updatePhotoFrequency(event: {
+  target: HTMLSelectElement;
+}): Promise<void> {
   const selected = event.target[
     event.target.selectedIndex
   ] as HTMLOptionElement;
   const { value } = selected;
-  chrome.storage.local.set({ photoFrequency: selected });
+
+  await chrome.storage.local.set({ photoFrequency: selected.value });
 
   switch (value) {
     case 'newtab':
@@ -62,15 +65,19 @@ function updatePhotoFrequency(event: { target: HTMLSelectElement }): void {
   }
 }
 
-function updateImageSource(event: { target: HTMLInputElement }): void {
+async function updateImageSource(event: {
+  target: HTMLInputElement;
+}): Promise<void> {
   const { value } = event.target;
-  chrome.storage.sync.set({ imageSource: value });
+  await chrome.storage.sync.set({ imageSource: value });
   const customCollection = document.querySelector('.custom-collection');
 
-  if (value === 'custom') {
-    customCollection.classList.add('is-visible');
-  } else {
-    customCollection.classList.remove('is-visible');
+  if (customCollection) {
+    if (value === 'custom') {
+      customCollection.classList.add('is-visible');
+    } else {
+      customCollection.classList.remove('is-visible');
+    }
   }
 }
 
@@ -79,7 +86,9 @@ async function updateCollections(): Promise<void> {
     'js-collections-input'
   ) as HTMLInputElement;
   const collections = collectionsInput.value.trim().replace(/ /g, '');
-  const spinner = Ladda.create(document.querySelector('.update-collections'));
+  const spinner = Ladda.create(
+    document.querySelector('.update-collections') as HTMLButtonElement
+  );
 
   try {
     if (!collections) throw Error('Collection IDs not valid!');
