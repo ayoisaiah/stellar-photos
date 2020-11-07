@@ -2,7 +2,7 @@ import { $ } from './libs/helpers';
 
 document.addEventListener('DOMContentLoaded', () => {
   window.stellar = {};
-  window.stellar.boot = new Promise(resolve => {
+  window.stellar.boot = new Promise((resolve) => {
     chrome.storage.local.get(
       [
         'nextImage',
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'forecast',
         'photoFrequency',
       ],
-      d => {
+      (d) => {
         const data = { ...d };
 
         window.stellar.nextImage = data.nextImage;
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
           body.style.backgroundImage = `url(${nextImage.base64})`;
         }
 
-        chrome.storage.sync.get(res => {
+        chrome.storage.sync.get((res) => {
           const result = Object.assign(res, data);
           resolve(result);
         });
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   chrome.runtime.sendMessage({ command: 'load-data' });
 
-  const loadCss = url =>
+  const loadCss = (url) =>
     new Promise((resolve, reject) => {
       const link = document.createElement('link');
       link.type = 'text/css';
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementsByTagName('head')[0].appendChild(link);
     });
 
-  const loadJs = url =>
+  const loadJs = (url) =>
     new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = url;
@@ -74,12 +74,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('mousemove', loadControls);
   document.addEventListener('focus', loadControls);
 
-  chrome.storage.local.get('forecast', r => {
+  chrome.storage.local.get('forecast', (r) => {
     const { forecast } = r;
     window.forecast = forecast;
   });
 
-  chrome.storage.local.get('cloudService', r => {
+  chrome.storage.local.get('cloudService', (r) => {
     window.cloudService = r.cloudService;
   });
 });
