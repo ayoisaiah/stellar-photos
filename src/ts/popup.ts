@@ -1,35 +1,29 @@
 import { render } from 'lit-html';
 import 'chrome-extension-async';
 import settingsDialog from './settings/index';
-import type { Settings } from './settings/types';
+import { ChromeStorage, ChromeLocalStorage, ChromeSyncStorage } from './types';
 
-async function retriveSettings() {
+async function getStorageData(): Promise<ChromeStorage> {
+  const localData: ChromeLocalStorage = await chrome.storage.local.get([
+    'cloudService',
+    'dropbox',
+    'onedrive',
+    'forecast',
+    'photoFrequency',
+  ]);
+
+  const syncData: ChromeSyncStorage = await chrome.storage.sync.get();
+
+  return Object.assign(syncData, localData);
+}
+
+async function renderSettings(): Promise<void> {
   try {
-    const localData = await chrome.storage.local.get([
-      'nextImage',
-      'pausedImage',
-      'cloudService',
-      'dropbox',
-      'onedrive',
-      'forecast',
-      'photoFrequency',
-    ]);
-
-    const syncData = await chrome.storage.sync.get();
-
-    const data = Object.assign(syncData, localData);
-    const r: Settings = {
-      cloudService: data.cloudService,
-      imageSource: data.imageSource,
-      coords: data.coords,
-      temperatureFormat: data.temperatureFormat,
-      photoFrequency: data.photoFrequency,
-      collections: data.collections,
-    };
+    const data = await getStorageData();
 
     const body = document.querySelector('.js-body');
     if (body) {
-      render(settingsDialog(r), body);
+      render(settingsDialog(data), body);
     }
   } catch (err) {
     // eslint-disable-next-line
@@ -37,4 +31,4 @@ async function retriveSettings() {
   }
 }
 
-retriveSettings();
+renderSettings();

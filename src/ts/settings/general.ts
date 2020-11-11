@@ -1,11 +1,8 @@
 import * as Ladda from 'ladda';
 import { html, TemplateResult } from 'lit-html';
 import { validateCollections } from '../../js/api';
-import type { Settings } from './types';
-import { CustomWindow } from '../global.d';
+import { ChromeStorage } from '../types/index';
 import notifySnackbar from '../../js/libs/notify-snackbar';
-
-declare let window: CustomWindow;
 
 /* CHROME_START */
 function openDefaultTab(e: MouseEvent): void {
@@ -58,9 +55,7 @@ async function updatePhotoFrequency(event: {
       break;
     case 'paused':
       chrome.alarms.clear('loadphoto');
-      chrome.storage.local.set({
-        pausedImage: window.stellar.nextImage,
-      });
+      // TODO: Update the paused image
       break;
   }
 }
@@ -111,7 +106,7 @@ async function updateCollections(): Promise<void> {
   }
 }
 
-function generalSettings(settings: Settings): TemplateResult {
+function generalSettings(settings: ChromeStorage): TemplateResult {
   const customInput = settings.imageSource === 'custom' ? 'is-visible' : '';
 
   return html`

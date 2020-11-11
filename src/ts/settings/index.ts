@@ -3,13 +3,13 @@ import generalSettings from './general';
 import weatherSettings from './weather';
 import cloudSettings from './cloud';
 import addonInfo from './info';
-import type { Settings } from './types';
+import { ChromeStorage } from '../types';
 
 /*
  * The options popover
  */
 
-const settingsDialog = (settings: Settings): TemplateResult => html`
+const settingsDialog = (settings: ChromeStorage): TemplateResult => html`
   <div class="dialog settings-dialog" id="settings-dialog">
     <div class="dialog-content">
       ${generalSettings(settings)}

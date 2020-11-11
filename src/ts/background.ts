@@ -4,28 +4,15 @@ import fetchRandomPhoto from '../js/libs/fetch-random-photo';
 import loadNewData from '../js/libs/load-new-data';
 import { notifyCloudAuthenticationSuccessful } from '../js/libs/notifications';
 import { onedriveAuth, refreshOnedriveToken } from '../js/libs/onedrive-auth';
+import { ChromeSyncStorage } from './types';
 
 async function setDefaultExtensionSettings(): Promise<void> {
-  const localSettings = {
-    cloudService: null,
-    forecast: null,
-    nextImage: null,
-    history: null,
-    pausedImage: null,
+  const syncSettings: ChromeSyncStorage = {
     photoFrequency: 'newtab',
-  };
-
-  const syncSettings = {
-    collections: '',
     imageSource: 'official',
     temperatureFormat: 'metric',
-    coords: {
-      latitude: '',
-      longitude: '',
-    },
   };
 
-  chrome.storage.local.set(localSettings);
   chrome.storage.sync.set(syncSettings);
 }
 
@@ -65,12 +52,12 @@ type Commands =
   | 'update-weather'
   | 'set-onedrive-alarm';
 
-type Request = {
+interface Request {
   command: Commands;
   token: string;
   code: string;
   expires_in: number;
-};
+}
 
 chrome.runtime.onMessage.addListener((request: Request, sender) => {
   const listeners = {

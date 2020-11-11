@@ -3,7 +3,7 @@ import { html, render, TemplateResult } from 'lit-html';
 import { authorizeOneDrive } from '../../js/libs/onedrive';
 import { authorizeDropbox } from '../../js/libs/dropbox';
 import { $ } from '../../js/libs/helpers';
-import type { Settings } from './types';
+import { ChromeStorage } from '../types';
 import notifySnackbar from '../../js/libs/notify-snackbar';
 
 async function authorizeCloud(): Promise<void> {
@@ -71,9 +71,9 @@ async function updateCloudService(event: { target: HTMLSelectElement }) {
   }
 }
 
-function cloudSettings(settings: Settings): TemplateResult {
-  const cloudService = settings.cloudService as Settings['cloudService'];
-  let token: Settings['dropbox'] | Settings['onedrive'];
+function cloudSettings(settings: ChromeStorage): TemplateResult {
+  const cloudService = settings.cloudService as ChromeStorage['cloudService'];
+  let token: ChromeStorage['dropbox'] | ChromeStorage['onedrive'];
   if (cloudService) {
     token = settings[cloudService];
   }

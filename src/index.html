@@ -1,76 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>New Tab - Stellar Photos</title>
-  <style>
-    /* Inline the critical CSS needed to display the background image */
-    body {
-      height: 100%;
-      background-color: #111;
-      background-size: cover;
-      background-position: 50%;
-      background-attachment: fixed;
-    }
-
-    .hidden {
-      opacity: 0 !important;
-    }
-
-    .loader {
-      width: 300px;
-    }
-
-    @keyframes fadeOut {
-      0% {
-        opacity: 0.5;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>New Tab - Stellar Photos</title>
+    <style>
+      /* Inline the critical CSS needed to display the background image */
+      body {
+        height: 100%;
+        background-color: #111;
+        background-size: cover;
+        background-position: 50%;
+        background-attachment: fixed;
       }
 
-      100% {
+      .hidden {
+        opacity: 0 !important;
+      }
+
+      .loader {
+        width: 300px;
+      }
+
+      @keyframes fadeOut {
+        0% {
+          opacity: 0.5;
+        }
+
+        100% {
+          opacity: 0;
+        }
+      }
+
+      .s-overlay {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        animation: fadeOut 1s ease;
+        background-color: #111;
         opacity: 0;
+        z-index: -1;
       }
-    }
 
-    .s-overlay {
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      animation: fadeOut 1s ease;
-      background-color: #111;
-      opacity: 0;
-      z-index: -1;
-    }
-
-    .s-history {
-      height: 150px;
-      transform: translateY(150px);
-      width: 100%;
-      overflow: hidden;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: #111;
-      position: fixed;
-      transition: transform 0.5s;
-      z-index: 2;
-      padding-top: 4px;
-      overflow-y: auto;
-      list-style: none;
-      display: grid;
-      grid-template-rows: 1fr;
-      grid-template-columns: repeat(10, 1fr);
-      grid-gap: 4px;
-    }
-
-  </style>
-  <script src="js/set-image.bundle.js"></script>
-</head>
-<body id="body">
-  <div class="s-overlay"></div>
-  <div id="app"></div>
-</body>
+      .s-history {
+        height: 150px;
+        transform: translateY(150px);
+        width: 100%;
+        overflow: hidden;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #111;
+        position: fixed;
+        transition: transform 0.5s;
+        z-index: 2;
+        padding-top: 4px;
+        overflow-y: auto;
+        list-style: none;
+        display: grid;
+        grid-template-rows: 1fr;
+        grid-template-columns: repeat(10, 1fr);
+        grid-gap: 4px;
+      }
+    </style>
+    <script src="js/init.bundle.js"></script>
+  </head>
+  <body id="body">
+    <div class="s-overlay"></div>
+    <div id="app"></div>
+  </body>
 </html>

@@ -1,6 +1,6 @@
 import { html, TemplateResult } from 'lit-html';
 import notifySnackbar from '../../js/libs/notify-snackbar';
-import type { Settings } from './types';
+import { ChromeStorage } from '../types';
 
 function updateTemperatureFormat(event: { target: HTMLSelectElement }): void {
   const selected = event.target[
@@ -45,7 +45,7 @@ function updateCoordinates(event: InputEvent): void {
   }
 }
 
-function weatherSettings(settings: Settings): TemplateResult {
+function weatherSettings(settings: ChromeStorage): TemplateResult {
   return html`
     <section id="weather-settings" class="weather-settings">
       <h3 class="settings-heading">Weather</h3>
@@ -75,7 +75,7 @@ function weatherSettings(settings: Settings): TemplateResult {
           class="latitude-input"
           id="js-latitude-input"
           placeholder="latitude"
-          value=${settings.coords.latitude}
+          value=${settings.coords?.latitude ?? ''}
         />
 
         <label class="dialog-label longitude-dialog-label" for="longitude"
@@ -88,7 +88,7 @@ function weatherSettings(settings: Settings): TemplateResult {
           class="longitude-input"
           id="js-longitude-input"
           placeholder="longitude"
-          value=${settings.coords.longitude}
+          value=${settings.coords?.longitude ?? ''}
         />
 
         <button type="submit" class="update-coords">Save Coordinates</button>

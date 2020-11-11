@@ -80,8 +80,9 @@ module.exports = (env) => {
 
   const config = {
     entry: {
-      'js/index': './src/js/index.js',
+      'js/main': './src/ts/main.ts',
       'js/popup': './src/ts/popup.ts',
+      'js/init': './src/ts/init.ts',
       'js/background': './src/ts/background.ts',
       'js/set-image': './src/js/set-image.js',
       'js/tab': './src/js/tab.js',
