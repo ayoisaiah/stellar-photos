@@ -9,12 +9,6 @@ import {
 } from '../libs/notifications';
 import notifySnackbar from '../libs/notify-snackbar';
 
-const openSearch = () => {
-  $('searchButton-open').classList.add('hidden');
-  $('s-search').classList.add('search--open');
-  $('searchForm-input').focus();
-};
-
 const closeSearch = () => {
   $('s-search').classList.remove('search--open');
   $('searchButton-open').classList.remove('hidden');
@@ -42,14 +36,14 @@ const searchPhotos = (key, page) => {
   }
 
   searchPhotosApi(key, page)
-    .then(json => {
+    .then((json) => {
       if (json.total === 0) {
         notifyNoSearchResults();
         return;
       }
 
       const uiElements = document.querySelectorAll('.s-ui');
-      uiElements.forEach(element => {
+      uiElements.forEach((element) => {
         chainableClassList(element).remove('hide-ui');
         chainableClassList(element).add('no-pointer');
       });
@@ -85,4 +79,4 @@ const searchPhotos = (key, page) => {
     });
 };
 
-export { openSearch, closeSearch, searchPhotos, searchState };
+export { closeSearch, searchPhotos, searchState };

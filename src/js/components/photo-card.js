@@ -8,8 +8,8 @@ import { html } from 'lit-html';
 const photoCard = (photo, cloudButton) => {
   // Base64 for history pane
   const backgroundPhoto = photo.base64 || photo.urls.small;
-  const width = photo.width;
-  const height = photo.height;
+  const { width } = photo;
+  const { height } = photo;
   const photoId = photo.id;
   const linkToPhoto = photo.links.html;
   const photographer = `${photo.user.links.html}`;
@@ -52,17 +52,7 @@ const photoCard = (photo, cloudButton) => {
           </a>
         </div>
 
-        <div class="middle">
-          <button
-            title="Set as background image"
-            class="control-button bg-button"
-            data-imageid=${photoId}
-          >
-            <svg style="fill: #fafafa;" class="icon icon--image">
-              <use xlink:href="#icon-image"></use>
-            </svg>
-          </button>
-        </div>
+        <div class="middle">${cloudButton(photo)}</div>
 
         <div class="bottom">
           <span class="s-photo-dimension">${width} x ${height}</span>
@@ -78,7 +68,15 @@ const photoCard = (photo, cloudButton) => {
               </svg>
             </button>
 
-            ${cloudButton(photo)}
+            <button
+              title="Set as background image"
+              class="control-button bg-button"
+              data-imageid=${photoId}
+            >
+              <svg style="fill: #fafafa;" class="icon icon--image">
+                <use xlink:href="#icon-image"></use>
+              </svg>
+            </button>
           </div>
         </div>
       </div>

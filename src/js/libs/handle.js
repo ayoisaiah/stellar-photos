@@ -3,12 +3,12 @@ import { searchPhotos, searchState } from '../modules/search';
 import displayPhotos from '../modules/display-photos';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
-import { $, chainableClassList, convertTimeStamp } from './helpers';
+import { $, chainableClassList } from './helpers';
 import observer from './observer';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload } from '../api';
 import notifySnackbar from './notify-snackbar';
-import { footerContent } from '../components/footer';
+// import { footerContent } from '../components/footer';
 
 const handleDownload = (imageid) => {
   loadingIndicator().start();
@@ -36,28 +36,15 @@ const handleDownload = (imageid) => {
     });
 };
 
-const setBackgroundFromHistory = (imageid) => {
-  const { history } = window.stellar;
-  const arr = history.filter((e) => e.id === imageid);
+async function setBackgroundFromHistory(imageid) {
+  const localData = await chrome.storage.local.get();
+  const arr = localData.history.filter((e) => e.id === imageid);
   const image = arr[0];
-  window.stellar.nextImage = image;
-
-  chrome.storage.local.get('photoFrequency', (r) => {
-    const { photoFrequency } = r;
-    if (photoFrequency === 'paused') {
-      chrome.storage.local.set({ pausedImage: image });
-    }
-  });
-  const { fullDate } = convertTimeStamp(
-    Math.floor(new Date(`${image.created_at}`).getTime() / 1000)
-  );
 
   $('body').style.backgroundImage = `url(${image.base64})`;
-  const f = $('s-footer');
-  const h = html` ${footerContent(image, fullDate)} `;
 
-  render(h, f);
-};
+  // TODO: Update Image info
+}
 
 const handleClick = (e) => {
   if (!e.target.matches('button')) return;

@@ -1,11 +1,32 @@
-import dropboxButton from '../components/dropbox-button';
-import onedriveButton from '../components/onedrive-button';
+import { html } from 'lit-html';
 
-/*
- * Load the buttons for the selected cloud service
- */
+function onedriveButton(photo) {
+  return html`
+    <button
+      data-imageid="${photo.id}"
+      id="onedrive-button"
+      class="control-button cloud-button onedrive-button"
+      title="Save photo to OneDrive"
+    >
+      <svg class="icon icon-cloud"><use href="#icon-onedrive"></use></svg>
+    </button>
+  `;
+}
 
-const cloudButton = photo => {
+function dropboxButton(photo) {
+  return html`
+    <button
+      id="dropbox-button"
+      data-imageid="${photo.id}"
+      class="control-button cloud-button dropbox-button"
+      title="Save photo to Dropbox"
+    >
+      <svg class="icon icon-cloud"><use href="#icon-dropbox"></use></svg>
+    </button>
+  `;
+}
+
+function cloudButton(photo) {
   const { cloudService } = window;
 
   if (cloudService === 'dropbox') {
@@ -17,6 +38,6 @@ const cloudButton = photo => {
   }
 
   return '';
-};
+}
 
-export default cloudButton;
+export { cloudButton };

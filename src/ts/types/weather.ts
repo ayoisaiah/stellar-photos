@@ -12,6 +12,7 @@ export interface Forecast {
   id: number;
   name: string;
   cod: number;
+  timestamp?: number;
 }
 
 interface Clouds {

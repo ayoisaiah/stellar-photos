@@ -1,4 +1,4 @@
-const convertTimeStamp = timestamp => {
+const convertTimeStamp = (timestamp) => {
   const date = new Date(timestamp * 1000);
   const days = [
     'Sunday',
@@ -24,13 +24,8 @@ const convertTimeStamp = timestamp => {
   };
 };
 
-function togglePopover(event) {
-  const popover = event.target.nextElementSibling.firstElementChild;
-  popover.classList.toggle('popover-content--is-visible');
-}
-
 /* Because the native implementation of the classList API is not chainable */
-const chainableClassList = element => {
+const chainableClassList = (element) => {
   const { classList } = element;
 
   return {
@@ -53,7 +48,7 @@ const chainableClassList = element => {
 
 const $ = document.getElementById.bind(document);
 
-const removeChildElements = element => {
+const removeChildElements = (element) => {
   while (element.hasChildNodes()) {
     element.removeChild(element.lastChild);
   }
@@ -61,7 +56,7 @@ const removeChildElements = element => {
 
 // Make invalid responses throw an error since fetch does not reject for bad
 // responses
-const validateResponse = response => {
+const validateResponse = (response) => {
   if (!response.ok) {
     throw Error(response.statusText);
   }
@@ -76,7 +71,6 @@ const lessThanTimeAgo = (timestamp, timeInSeconds) => {
 
 export {
   convertTimeStamp,
-  togglePopover,
   chainableClassList,
   $,
   removeChildElements,
