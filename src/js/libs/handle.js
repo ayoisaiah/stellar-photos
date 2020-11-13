@@ -1,16 +1,11 @@
-import { html, render } from 'lit-html';
-import { searchPhotos, searchState } from '../modules/search';
-import displayPhotos from '../modules/display-photos';
 import { saveToOneDrive } from './onedrive';
 import { saveToDropbox } from './dropbox';
-import { $, chainableClassList } from './helpers';
-import observer from './observer';
+import { $ } from './helpers';
 import loadingIndicator from './loading-indicator';
 import { triggerPhotoDownload } from '../api';
 import notifySnackbar from './notify-snackbar';
-// import { footerContent } from '../components/footer';
 
-const handleDownload = (imageid) => {
+function handleDownload(imageid) {
   loadingIndicator().start();
 
   triggerPhotoDownload(imageid)
@@ -34,7 +29,26 @@ const handleDownload = (imageid) => {
       notifySnackbar('Download failed', 'error');
       loadingIndicator().stop();
     });
-};
+}
+
+function fadeInBackground() {
+  const overlay = $('js-overlay');
+  if (overlay) {
+    overlay.animate(
+      [
+        {
+          opacity: 1,
+        },
+        {
+          opacity: 0,
+        },
+      ],
+      {
+        duration: 500,
+      }
+    );
+  }
+}
 
 async function setBackgroundFromHistory(imageid) {
   const localData = await chrome.storage.local.get();
@@ -42,11 +56,12 @@ async function setBackgroundFromHistory(imageid) {
   const image = arr[0];
 
   $('body').style.backgroundImage = `url(${image.base64})`;
+  fadeInBackground();
 
   // TODO: Update Image info
 }
 
-const handleClick = (e) => {
+function handleClick(e) {
   if (!e.target.matches('button')) return;
 
   const { target } = e;
@@ -70,28 +85,6 @@ const handleClick = (e) => {
   if (target.classList.contains('download-button')) {
     handleDownload(imageid);
   }
-};
+}
 
-const handleSubmit = () => {
-  // Empty search results
-  displayPhotos([], 0);
-
-  const loadMore = $('moreResults-button');
-  loadMore.classList.add('hidden');
-  observer.observe(loadMore);
-
-  const uiElements = document.querySelectorAll('.s-ui');
-  uiElements.forEach((element) => {
-    chainableClassList(element).remove('no-pointer');
-  });
-
-  // Reset search state
-  searchState.page = 1;
-  searchState.query = $('searchForm-input').value;
-  searchState.results = [];
-  searchState.incomingResults = [];
-
-  searchPhotos(searchState.query, searchState.page);
-};
-
-export { handleClick, handleSubmit, handleDownload };
+export { handleClick, handleDownload };
