@@ -1,3 +1,4 @@
+import * as r from 'runtypes';
 import { UnsplashImage } from './unsplash';
 import { Forecast } from './weather';
 
@@ -15,7 +16,15 @@ type Coords = {
   latitude: number;
 };
 
-type Onedrive = unknown;
+const OnedriveAuth = r.Record({
+  token_type: r.String,
+  expires_in: r.Number,
+  scope: r.String,
+  access_token: r.String,
+  refresh_token: r.String,
+});
+
+type OnedriveAuth = r.Static<typeof OnedriveAuth>;
 
 export interface ChromeLocalStorage {
   history?: UnsplashImage[];
@@ -23,7 +32,7 @@ export interface ChromeLocalStorage {
   forecast?: Forecast;
   cloudService?: 'dropbox' | 'onedrive';
   dropbox?: string;
-  onedrive?: Onedrive;
+  onedrive?: OnedriveAuth;
 }
 
 export interface ChromeSyncStorage {
@@ -35,3 +44,5 @@ export interface ChromeSyncStorage {
 }
 
 export interface ChromeStorage extends ChromeLocalStorage, ChromeSyncStorage {}
+
+export { OnedriveAuth };

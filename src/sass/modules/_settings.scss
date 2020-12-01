@@ -1,29 +1,15 @@
 /* ==========================================================================
-   #SETTINGS DIALOG
+   #SETTINGS
    ========================================================================== */
 
-.settings-dialog {
+.settings-content {
   width: 550px;
   height: 400px;
-  background-color: rgba(0, 0, 0, 0.6);
-  top: 0;
-  left: 0;
   font-size: 1.6rem;
-  opacity: 1;
-  transition: opacity 0.1s ease-in-out;
-}
-
-.dialog-content {
-  position: absolute;
-  width: 550px;
-  height: 400px;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.8), white 150px),
     url('https://images.unsplash.com/photo-1496047311392-22bec9423e0a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60&blur=20');
   border-radius: 4px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px;
@@ -104,7 +90,7 @@
   margin-bottom: 10px;
 }
 
-.settings-dialog {
+.settings {
   button,
   .button {
     display: block;

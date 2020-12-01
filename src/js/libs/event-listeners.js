@@ -1,11 +1,10 @@
-import { closeSearch } from '../modules/search';
 import { chainableClassList, $ } from './helpers';
 
 const eventListeners = () => {
   const uiElements = document.querySelectorAll('.s-ui');
 
   const showControls = () => {
-    uiElements.forEach(element =>
+    uiElements.forEach((element) =>
       chainableClassList(element).remove('hide-ui')
     );
   };
@@ -13,7 +12,7 @@ const eventListeners = () => {
   const hideControls = () => {
     // Check if one popover is active
     const popovers = Array.from(document.querySelectorAll('.popover-content'));
-    const arePopoversOpen = popovers.some(e =>
+    const arePopoversOpen = popovers.some((e) =>
       e.classList.contains('popover-content--is-visible')
     );
 
@@ -21,14 +20,14 @@ const eventListeners = () => {
     if (arePopoversOpen) return;
 
     // Also don't hide controls if history pane is open
-    const historyPane = $('s-history');
+    const historyPane = $('js-history');
     if (historyPane.classList.contains('open')) return;
 
     // Also don't hide controls if there is an active search
-    const searchResults = $('searchResults');
+    const searchResults = $('js-search-results');
     if (searchResults.hasChildNodes()) return;
 
-    uiElements.forEach(element => chainableClassList(element).add('hide-ui'));
+    uiElements.forEach((element) => chainableClassList(element).add('hide-ui'));
   };
 
   showControls();
@@ -37,7 +36,7 @@ const eventListeners = () => {
 
   let timeout = setTimeout(() => hideControls(), 2000);
 
-  uiElements.forEach(element => {
+  uiElements.forEach((element) => {
     element.addEventListener('mouseenter', () => {
       showControls();
       if (timeout) clearTimeout(timeout);
@@ -46,24 +45,6 @@ const eventListeners = () => {
     element.addEventListener('mouseleave', () => {
       timeout = setTimeout(() => hideControls(), 2000);
     });
-  });
-
-  // Close info popover when click is detected outside
-  document.addEventListener('click', event => {
-    if (
-      event.target.matches('.popover *') ||
-      event.target.matches('.info-button')
-    )
-      return;
-
-    const popover = document.querySelector('.popover .popover-content');
-    popover.classList.remove('popover-content--is-visible');
-  });
-
-  document.addEventListener('keyup', e => {
-    if (e.keyCode === 27) {
-      closeSearch();
-    }
   });
 };
 

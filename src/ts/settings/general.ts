@@ -1,8 +1,9 @@
 import * as Ladda from 'ladda';
 import { html, TemplateResult } from 'lit-html';
-import { validateCollections } from '../../js/api';
+import { validateCollections } from '../requests';
 import { ChromeStorage } from '../types/index';
-import notifySnackbar from '../../js/libs/notify-snackbar';
+import { snackbar } from '../ui/snackbar';
+import { $ } from '../helpers';
 
 /* CHROME_START */
 function openDefaultTab(e: MouseEvent): void {
@@ -32,11 +33,11 @@ async function updatePhotoFrequency(event: {
   ] as HTMLOptionElement;
   const { value } = selected;
 
-  await chrome.storage.local.set({ photoFrequency: selected.value });
+  chrome.storage.local.set({ photoFrequency: selected.value });
 
   switch (value) {
     case 'newtab':
-      chrome.runtime.sendMessage({ command: 'load-data' });
+      chrome.runtime.sendMessage({ command: 'refresh' });
       break;
     case 'every15minutes':
       chrome.alarms.create('loadphoto', {
@@ -64,7 +65,7 @@ async function updateImageSource(event: {
   target: HTMLInputElement;
 }): Promise<void> {
   const { value } = event.target;
-  await chrome.storage.sync.set({ imageSource: value });
+  chrome.storage.sync.set({ imageSource: value });
   const customCollection = document.querySelector('.custom-collection');
 
   if (customCollection) {
@@ -77,9 +78,7 @@ async function updateImageSource(event: {
 }
 
 async function updateCollections(): Promise<void> {
-  const collectionsInput = document.getElementById(
-    'js-collections-input'
-  ) as HTMLInputElement;
+  const collectionsInput = $('js-collections-input') as HTMLInputElement;
   const collections = collectionsInput.value.trim().replace(/ /g, '');
   const spinner = Ladda.create(
     document.querySelector('.update-collections') as HTMLButtonElement
@@ -92,15 +91,12 @@ async function updateCollections(): Promise<void> {
 
     await validateCollections(collections);
 
-    await chrome.storage.sync.set({ collections });
+    chrome.storage.sync.set({ collections });
 
-    notifySnackbar('Collections saved successfully');
-    chrome.runtime.sendMessage({ command: 'load-data' });
+    snackbar('Collections saved successfully');
+    chrome.runtime.sendMessage({ command: 'refresh' });
   } catch (err) {
-    notifySnackbar(
-      'An error occurred while validating the collections',
-      'error'
-    );
+    snackbar('An error occurred while validating the collections', 'error');
   } finally {
     spinner.stop();
   }
@@ -108,6 +104,7 @@ async function updateCollections(): Promise<void> {
 
 function generalSettings(settings: ChromeStorage): TemplateResult {
   const customInput = settings.imageSource === 'custom' ? 'is-visible' : '';
+  const collections = settings.collections || '';
 
   return html`
     <section id="general-settings" class="general-settings">
@@ -231,7 +228,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
                 name="unsplash-collections__input"
                 class="unsplash-collections__input"
                 id="js-collections-input"
-                value=${settings.collections}
+                value=${collections}
                 placeholder="Collection IDs"
               />
 

@@ -1,50 +1,70 @@
 /* ==========================================================================
-   #INFO POPOVER
+   #IMAGE INFO DIALOG
    ========================================================================== */
 
+.dialog {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  top: 0;
+  left: 0;
+  font-size: 1.6rem;
+  z-index: -10;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
 
-.info-popover {
-  @include popover;
+.dialog.is-open {
+  z-index: 10;
+  opacity: 1;
+  cursor: zoom-out;
+}
 
-  .linkToPhoto {
-    text-decoration: underline;
+.dialog-content {
+  position: absolute;
+  cursor: auto;
+  width: 600px;
+  height: 400px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  border-radius: 4px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.image-info {
+  .description {
+    font-size: 14px;
   }
 
-  .popover-content {
-    width: 300px;
-    padding: 10px 20px 10px 10px;
+  .general-info {
+    padding-bottom: 25px;
   }
 
-  .photo-info-item {
-    padding: 8px 0;
+  .stats {
+    margin-top: 25px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .photographer-info {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    text-decoration: none !important;
+  .stats h3 {
+    font-size: 14px;
+    color: #888;
   }
 
-  .photographer-dp {
-    border-radius: 50%;
+  .stats p {
+    font-size: 20px;
   }
 
-  .photographer-name {
-    margin-left: 10px;
-  }
-
-  .wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .wrapper .icon {
-    margin-left: 10px;
-  }
-
-  .button {
-    display: inline-block !important;
+  .technical-info {
+    padding-top: 25px;
+    border-top: 1px solid #ddd;
   }
 }
+

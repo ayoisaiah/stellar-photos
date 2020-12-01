@@ -1,5 +1,6 @@
 import { html, TemplateResult } from 'lit-html';
-import notifySnackbar from '../../js/libs/notify-snackbar';
+import { $ } from '../helpers';
+import { snackbar } from '../ui/snackbar';
 import { ChromeStorage } from '../types';
 
 function updateTemperatureFormat(event: { target: HTMLSelectElement }): void {
@@ -15,12 +16,8 @@ function updateTemperatureFormat(event: { target: HTMLSelectElement }): void {
 function updateCoordinates(event: InputEvent): void {
   event.preventDefault();
 
-  const longitudeInput = document.getElementById(
-    'js-longitude-input'
-  ) as HTMLInputElement;
-  const latitudeInput = document.getElementById(
-    'js-latitude-input'
-  ) as HTMLInputElement;
+  const longitudeInput = $('js-longitude-input') as HTMLInputElement;
+  const latitudeInput = $('js-latitude-input') as HTMLInputElement;
   const [longitude, latitude] = [
     Number(longitudeInput.value),
     Number(latitudeInput.value),
@@ -38,7 +35,7 @@ function updateCoordinates(event: InputEvent): void {
     };
 
     chrome.storage.sync.set({ coords }, () => {
-      notifySnackbar('Coordinates updated successfully');
+      snackbar('Coordinates updated successfully');
 
       chrome.runtime.sendMessage({ command: 'update-weather' });
     });

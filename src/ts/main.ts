@@ -1,10 +1,8 @@
-import { html, render } from 'lit-html';
+import { render } from 'lit-html';
 import 'chrome-extension-async';
-import { $ } from '../js/libs/helpers';
+import { $ } from './helpers';
 import eventListeners from '../js/libs/event-listeners';
-import { cloudButton } from '../js/libs/cloud-button';
 import { ui } from './ui';
-import photoCard from '../js/components/photo-card';
 import { ChromeStorage, ChromeLocalStorage, ChromeSyncStorage } from './types';
 
 async function getStorageData(): Promise<ChromeStorage> {
@@ -23,14 +21,6 @@ async function paint() {
       const app = $('js-app');
       if (app) {
         render(ui(data), app);
-        const historyPane = $('s-history');
-
-        if (historyPane && data.history) {
-          const h = html`
-            ${data.history.map((photo) => photoCard(photo, cloudButton))}
-          `;
-          render(h, historyPane);
-        }
       }
 
       eventListeners();

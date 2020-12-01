@@ -1,109 +1,83 @@
-export interface UnsplashImage {
-  base64: string;
-  id: string;
-  created_at: Date;
-  updated_at: Date;
-  promoted_at: Date;
-  width: number;
-  height: number;
-  color: string;
-  blur_hash: string;
-  description: null;
-  alt_description: string;
-  urls: Urls;
-  links: UnsplashLinks;
-  // eslint-disable-next-line
-  categories: any[];
-  likes: number;
-  liked_by_user: boolean;
-  current_user_collections: UserCollections[];
-  sponsorship: null;
-  user: User;
-  exif: Exif;
-  location: Location;
-  views: number;
-  downloads: number;
-}
+import * as r from 'runtypes';
 
-interface Exif {
-  make: null;
-  model: null;
-  exposure_time: null;
-  aperture: null;
-  focal_length: null;
-  iso: null;
-}
+const Exif = r.Record({
+  make: r.Union(r.String, r.Null),
+  model: r.Union(r.String, r.Null),
+  exposure_time: r.Union(r.String, r.Null),
+  aperture: r.Union(r.String, r.Null),
+  focal_length: r.Union(r.String, r.Null),
+  iso: r.Union(r.Number, r.Null),
+});
 
-interface UnsplashLinks {
-  self: string;
-  html: string;
-  download: string;
-  download_location: string;
-}
+const UnsplashLinks = r.Record({
+  self: r.String,
+  html: r.String,
+  download: r.String,
+  download_location: r.String,
+});
 
-interface Location {
-  title: null;
-  name: null;
-  city: null;
-  country: null;
-  position: Position;
-}
+const ProfileImage = r.Record({
+  small: r.Union(r.String, r.Null),
+  medium: r.Union(r.String, r.Null),
+  large: r.Union(r.String, r.Null),
+});
 
-interface Position {
-  latitude: null;
-  longitude: null;
-}
+const Urls = r.Record({
+  raw: r.String,
+  full: r.String,
+  regular: r.String,
+  small: r.String,
+  thumb: r.String,
+});
 
-interface Urls {
-  raw: string;
-  full: string;
-  regular: string;
-  small: string;
-  thumb: string;
-}
+const User = r.Record({
+  first_name: r.Union(r.String, r.Null),
+  last_name: r.Union(r.String, r.Null),
+  profile_image: ProfileImage,
+  links: r.Record({
+    html: r.String,
+  }),
+});
 
-interface User {
-  id: string;
-  updated_at: Date;
-  username: string;
-  name: string;
-  first_name: string;
-  last_name: null;
-  twitter_username: null;
-  portfolio_url: string;
-  bio: string;
-  location: null;
-  links: UserLinks;
-  profile_image: ProfileImage;
-  instagram_username: string;
-  total_collections: number;
-  total_likes: number;
-  total_photos: number;
-  accepted_tos: boolean;
-}
+const Location = r.Record({
+  title: r.Union(r.String, r.Null),
+  name: r.Union(r.String, r.Null),
+  city: r.Union(r.String, r.Null),
+  country: r.Union(r.String, r.Null),
+});
 
-interface UserLinks {
-  self: string;
-  html: string;
-  photos: string;
-  likes: string;
-  portfolio: string;
-  following: string;
-  followers: string;
-}
+const UnsplashImage = r
+  .Record({
+    id: r.String,
+    updated_at: r.String,
+    created_at: r.String,
+    width: r.Number,
+    height: r.Number,
+    likes: r.Number,
+    links: UnsplashLinks,
+    urls: Urls,
+    user: User,
+  })
+  .And(
+    r.Partial({
+      location: Location,
+      downloads: r.Number,
+      exif: Exif,
+      base64: r.String,
+      views: r.Number,
+      description: r.Union(r.String, r.Null),
+      timestamp: r.Number,
+    })
+  );
 
-interface UserCollections {
-  id: number;
-  title: string;
-  published_at: Date;
-  last_collected_at: Date;
-  updated_at: Date;
-  cover_photo: null;
-  user: null;
-}
+const UnsplashSearch = r.Record({
+  total: r.Number,
+  total_pages: r.Number,
+  results: r.Array(UnsplashImage),
+});
 
-interface ProfileImage {
-  small: string;
-  medium: string;
-  large: string;
-}
+type UnsplashImage = r.Static<typeof UnsplashImage>;
+
+type UnsplashSearch = r.Static<typeof UnsplashSearch>;
+
+export { UnsplashImage, UnsplashSearch };

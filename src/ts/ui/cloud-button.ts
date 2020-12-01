@@ -1,9 +1,11 @@
-import { html } from 'lit-html';
+import { html, TemplateResult } from 'lit-html';
+import { UnsplashImage } from '../types/unsplash';
 
-function onedriveButton(photo) {
+function onedriveButton(photo: UnsplashImage): TemplateResult {
   return html`
     <button
       data-imageid="${photo.id}"
+      data-downloadUrl="${photo.urls.full}"
       id="onedrive-button"
       class="control-button cloud-button onedrive-button"
       title="Save photo to OneDrive"
@@ -13,11 +15,12 @@ function onedriveButton(photo) {
   `;
 }
 
-function dropboxButton(photo) {
+function dropboxButton(photo: UnsplashImage): TemplateResult {
   return html`
     <button
       id="dropbox-button"
       data-imageid="${photo.id}"
+      data-downloadUrl="${photo.urls.full}"
       class="control-button cloud-button dropbox-button"
       title="Save photo to Dropbox"
     >
@@ -26,9 +29,10 @@ function dropboxButton(photo) {
   `;
 }
 
-function cloudButton(photo) {
-  const { cloudService } = window;
-
+function cloudButton(
+  photo: UnsplashImage,
+  cloudService: string
+): TemplateResult | void {
   if (cloudService === 'dropbox') {
     return dropboxButton(photo);
   }
@@ -36,8 +40,6 @@ function cloudButton(photo) {
   if (cloudService === 'onedrive') {
     return onedriveButton(photo);
   }
-
-  return '';
 }
 
 export { cloudButton };

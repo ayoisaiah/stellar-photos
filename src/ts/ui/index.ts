@@ -1,28 +1,33 @@
 import { html, TemplateResult } from 'lit-html';
-import { searchPhotos, searchState } from '../../js/modules/search';
-import { handleClick } from '../../js/libs/handle';
-import searchForm from '../../js/components/search-form';
-import { $ } from '../../js/libs/helpers';
+import { search } from './search';
+import { $ } from '../helpers';
 import { footer } from './footer';
+import { photoCard } from './photo-card';
 import { ChromeLocalStorage } from '../types';
+import { UnsplashImage } from '../types/unsplash';
+import { imageInfo } from './image-info';
+
+function loadHistory(history: UnsplashImage[]): TemplateResult {
+  return html`${history.map((photo: UnsplashImage) => photoCard(photo))} `;
+}
 
 function toggleHistoryPane(): void {
-  $('s-history')?.classList.toggle('open');
-  $('s-footer')?.classList.toggle('history-open');
-  $('historyButton')?.classList.toggle('transform');
+  $('js-history')?.classList.toggle('open');
+  $('js-footer')?.classList.toggle('history-open');
+  $('js-hamburger')?.classList.toggle('transform');
 }
 
 function openSearch(): void {
-  $('searchButton-open')?.classList.add('hidden');
-  $('s-search')?.classList.add('search--open');
-  $('searchForm-input')?.focus();
+  $('js-open-search')?.classList.add('hidden');
+  $('js-search')?.classList.add('search--open');
+  $('js-search-input')?.focus();
 }
 
 function hamburgerMenu(): TemplateResult {
   return html`
     <button
       @click=${toggleHistoryPane}
-      id="historyButton"
+      id="js-hamburger"
       class="historyButton historyButton-open"
       title="toggle history menu"
       aria-label="Toggle History Menu"
@@ -41,7 +46,7 @@ function searchButton(): TemplateResult {
     <button
       @click=${openSearch}
       title="Find free hi-res photos"
-      id="searchButton-open"
+      id="js-open-search"
       class="searchButton searchButton-open"
       aria-label="Open search form"
     >
@@ -61,27 +66,15 @@ function ui(data: ChromeLocalStorage): TemplateResult {
         </div>
       </header>
 
-      <div class="loader" id="loader"></div>
+      <div class="loader" id="js-loader"></div>
 
-      <ul @click=${handleClick} class="searchResults" id="searchResults"></ul>
+      ${search()}
 
-      ${searchForm()}
+      <ul class="s-history" id="js-history">
+        ${data.history ? loadHistory(data.history) : ''}
+      </ul>
 
-      <section class="moreResults">
-        <button
-          @click=${() => searchPhotos(searchState.query, searchState.page)}
-          class="moreResults-button ladda-button hidden"
-          id="moreResults-button"
-          data-spinner-color="#ffffff"
-          data-style="expand-right"
-        >
-          <span class="ladda-label">More Photos</span>
-        </button>
-      </section>
-
-      <ul @click=${handleClick} class="s-history" id="s-history"></ul>
-
-      ${footer(data)}
+      ${data.nextImage ? imageInfo(data.nextImage) : ''} ${footer(data)}
     </main>
   `;
 }

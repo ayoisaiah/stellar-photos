@@ -84,8 +84,7 @@ module.exports = (env) => {
       'js/popup': './src/ts/popup.ts',
       'js/init': './src/ts/init.ts',
       'js/background': './src/ts/background.ts',
-      'js/set-image': './src/js/set-image.js',
-      'js/tab': './src/js/tab.js',
+      'js/tab': './src/ts/tab.ts',
       'css/popup': './src/sass/popup.scss',
       'css/main': './src/sass/main.scss',
     },
@@ -128,6 +127,10 @@ module.exports = (env) => {
           {
             from: './src/icons',
             to: 'icons',
+          },
+          {
+            from: './src/images',
+            to: 'images',
           },
         ],
       }),

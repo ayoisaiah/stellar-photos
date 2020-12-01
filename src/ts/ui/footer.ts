@@ -1,15 +1,21 @@
-import { html, TemplateResult } from 'lit-html';
+import { html, nothing, TemplateResult } from 'lit-html';
 import { format } from 'timeago.js';
-import { handleClick } from '../../js/libs/handle';
-import { cloudButton } from '../../js/libs/cloud-button';
+import { cloudButton } from './cloud-button';
 import { Forecast } from '../types/weather';
 import { ChromeLocalStorage } from '../types';
+import { $ } from '../helpers';
+import { downloadButton } from './download';
 
 /*
  * The footer component
  */
 
-function togglePopover(): void {}
+function openDialog(): void {
+  const dialog = $('js-dialog');
+  if (dialog) {
+    dialog.classList.add('is-open');
+  }
+}
 
 function weatherInfo(forecast: Forecast) {
   const location = forecast.name;
@@ -33,10 +39,10 @@ function weatherInfo(forecast: Forecast) {
 }
 
 function footer(data: ChromeLocalStorage): TemplateResult {
-  const { nextImage, forecast } = data;
+  const { nextImage, forecast, cloudService } = data;
 
   return html`
-    <footer class="s-ui s-footer hide-ui" id="s-footer">
+    <footer class="s-ui s-footer hide-ui" id="js-footer">
       <div class="footer-content js-footer-content">
         ${forecast
           ? html`
@@ -44,7 +50,7 @@ function footer(data: ChromeLocalStorage): TemplateResult {
                 ${weatherInfo(forecast)}
               </section>
             `
-          : ''}
+          : nothing}
         <section id="unsplash-credit" class="unsplash-credit">
           <span
             >Photo by
@@ -53,8 +59,8 @@ function footer(data: ChromeLocalStorage): TemplateResult {
               href="${nextImage?.user.links
                 .html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
             >
-              ${nextImage?.user.first_name || ''}
-              ${nextImage?.user.last_name || ''}
+              ${nextImage?.user.first_name || nothing}
+              ${nextImage?.user.last_name || nothing}
             </a>
             on
             <a
@@ -65,21 +71,14 @@ function footer(data: ChromeLocalStorage): TemplateResult {
             >
           </span>
         </section>
-        <section class="controls" id="footer-controls" @click=${handleClick}>
-          <button
-            data-imageid=${nextImage?.id}
-            class="control-button download-button"
-            title="Download photo"
-          >
-            <svg class="icon icon-download">
-              <use href="#icon-download"></use>
-            </svg>
-          </button>
-
-          ${cloudButton(nextImage)}
+        <section class="controls" id="footer-controls">
+          ${nextImage ? downloadButton(nextImage) : nothing}
+          ${nextImage && cloudService
+            ? cloudButton(nextImage, cloudService)
+            : nothing}
 
           <button
-            @click=${togglePopover}
+            @click=${openDialog}
             title="Photo info"
             class="control-button info-button js-info-button"
           >

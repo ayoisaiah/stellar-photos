@@ -1,10 +1,10 @@
 import * as Ladda from 'ladda';
 import { html, render, TemplateResult } from 'lit-html';
-import { authorizeOneDrive } from '../../js/libs/onedrive';
-import { authorizeDropbox } from '../../js/libs/dropbox';
-import { $ } from '../../js/libs/helpers';
+import { openOnedriveAuthPage } from '../onedrive';
+import { openDropboxAuthPage } from '../dropbox';
+import { $ } from '../helpers';
 import { ChromeStorage } from '../types';
-import notifySnackbar from '../../js/libs/notify-snackbar';
+import { snackbar } from '../ui/snackbar';
 
 async function authorizeCloud(): Promise<void> {
   const selectCloud = $('select-cloud-storage') as HTMLSelectElement;
@@ -12,21 +12,19 @@ async function authorizeCloud(): Promise<void> {
     selectCloud.selectedIndex
   ] as HTMLOptionElement;
   const selected = selectedOption.value;
-  const spinner = Ladda.create(
-    document.getElementById('js-connect-cloud') as HTMLButtonElement
-  );
+  const spinner = Ladda.create($('js-connect-cloud') as HTMLButtonElement);
   spinner.start();
 
   try {
     if (selected === 'dropbox') {
-      await authorizeDropbox();
+      await openDropboxAuthPage();
     }
 
     if (selected === 'onedrive') {
-      authorizeOneDrive();
+      await openOnedriveAuthPage();
     }
   } catch (err) {
-    notifySnackbar(err, 'error');
+    snackbar(err, 'error');
   } finally {
     spinner.stop();
   }
@@ -58,16 +56,13 @@ async function updateCloudService(event: { target: HTMLSelectElement }) {
       event.target.selectedIndex
     ] as HTMLOptionElement;
     const { value } = selected;
-    await chrome.storage.local.set({ cloudService: value });
+    chrome.storage.local.set({ cloudService: value });
     const result = await chrome.storage.local.get(value);
 
     const flag = Boolean(result[value]);
     updateCloudStatus(flag);
   } catch (err) {
-    notifySnackbar(
-      'An error occurred while updating the cloud service',
-      'error'
-    );
+    snackbar('An error occurred while updating the cloud service', 'error');
   }
 }
 

@@ -1,6 +1,7 @@
 import { render } from 'lit-html';
 import 'chrome-extension-async';
 import settingsDialog from './settings/index';
+import { $ } from './helpers';
 import { ChromeStorage, ChromeLocalStorage, ChromeSyncStorage } from './types';
 
 async function getStorageData(): Promise<ChromeStorage> {
@@ -21,7 +22,7 @@ async function renderSettings(): Promise<void> {
   try {
     const data = await getStorageData();
 
-    const body = document.querySelector('.js-body');
+    const body = $('js-body');
     if (body) {
       render(settingsDialog(data), body);
     }

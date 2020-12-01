@@ -1,6 +1,4 @@
-import loadingIndicator from './loading-indicator';
-
-const notifyCloudAuthenticationSuccessful = cloudService => {
+const notifyCloudAuthenticationSuccessful = (cloudService) => {
   chrome.notifications.create(`${cloudService}-notification`, {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -9,7 +7,7 @@ const notifyCloudAuthenticationSuccessful = cloudService => {
   });
 };
 
-const notifyCloudConnectionFailed = cloudService => {
+const notifyCloudConnectionFailed = (cloudService) => {
   chrome.notifications.create(`${cloudService}-notification`, {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -32,8 +30,6 @@ const notifyUnableToUpload = (cloudService, imageId) => {
     ? 'Unable to upload photo due to a server error'
     : 'There is no internet connection';
 
-  loadingIndicator().stop();
-
   chrome.notifications.create(`notify-${cloudService}-${imageId}`, {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),
@@ -50,7 +46,7 @@ const notifyNoSearchResults = () =>
     message: 'Try different or more general keywords',
   });
 
-const notifySearchError = message =>
+const notifySearchError = (message) =>
   chrome.notifications.create('notify-search', {
     type: 'basic',
     iconUrl: chrome.extension.getURL('icons/48.png'),

@@ -10,8 +10,8 @@ import { ChromeStorage } from '../types';
  */
 
 const settingsDialog = (settings: ChromeStorage): TemplateResult => html`
-  <div class="dialog settings-dialog" id="settings-dialog">
-    <div class="dialog-content">
+  <div class="settings" id="settings-dialog">
+    <div class="settings-content">
       ${generalSettings(settings)}
       <hr />
       ${weatherSettings(settings)}

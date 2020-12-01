@@ -1,10 +1,140 @@
 import 'chrome-extension-async';
-import getWeatherInfo from '../js/libs/get-weather-info';
-import fetchRandomPhoto from '../js/libs/fetch-random-photo';
-import loadNewData from '../js/libs/load-new-data';
-import { notifyCloudAuthenticationSuccessful } from '../js/libs/notifications';
-import { onedriveAuth, refreshOnedriveToken } from '../js/libs/onedrive-auth';
-import { ChromeSyncStorage } from './types';
+import { getForecast, getRandomPhoto, authorizeOnedrive } from './requests';
+import { Forecast } from './types/weather';
+import { UnsplashImage } from './types/unsplash';
+import { lessThanTimeAgo } from './helpers';
+import {
+  notifyCloudAuthenticationSuccessful,
+  notifyCloudConnectionFailed,
+} from '../js/libs/notifications';
+import { refreshOnedriveToken, createAppFolder } from './onedrive';
+import {
+  ChromeStorage,
+  ChromeSyncStorage,
+  ChromeLocalStorage,
+  OnedriveAuth,
+} from './types';
+
+async function getStorageData(): Promise<ChromeStorage> {
+  const localData: ChromeLocalStorage = await chrome.storage.local.get();
+
+  const syncData: ChromeSyncStorage = await chrome.storage.sync.get();
+
+  return Object.assign(syncData, localData);
+}
+
+async function fetchRandomPhoto(): Promise<void> {
+  try {
+    const storageData = await getStorageData();
+    const { imageSource } = storageData;
+    let collections = '998309';
+
+    if (imageSource === 'custom') {
+      collections = storageData.collections || collections;
+    }
+
+    const response = await getRandomPhoto(collections);
+    const data = await response.json();
+
+    UnsplashImage.check(data);
+
+    const nextImage = {
+      timestamp: Date.now(),
+      ...data,
+    };
+
+    chrome.storage.local.set({ nextImage });
+
+    const history = storageData.history || [];
+
+    if (history.length >= 10) {
+      history.pop();
+    }
+
+    history.unshift(nextImage);
+
+    chrome.storage.local.set({ history });
+  } catch (err) {
+    // eslint-disable-next-line
+    console.error(err);
+  }
+}
+
+async function getWeatherInfo(): Promise<void> {
+  try {
+    const syncData = await chrome.storage.sync.get();
+    if (syncData.coords) {
+      const { longitude, latitude } = syncData.coords;
+      const unit = syncData.temperatureFormat || 'metric';
+
+      const response = await getForecast(latitude, longitude, unit);
+      const forecast = await response.json();
+
+      // Throws error if the forecast object does not match
+      // expected structure
+      Forecast.check(forecast);
+
+      const f = {
+        timestamp: Date.now(),
+        ...forecast,
+      };
+
+      chrome.storage.local.set({ forecast: f });
+
+      chrome.alarms.create('loadweather', { periodInMinutes: 60 });
+    }
+  } catch (err) {
+    // eslint-disable-next-line
+    console.error(err);
+  }
+}
+
+async function refresh(): Promise<void> {
+  try {
+    const data = await getStorageData();
+
+    const { nextImage, forecast, photoFrequency } = data;
+
+    if (nextImage) {
+      switch (photoFrequency) {
+        case 'paused':
+          break;
+        case 'newtab':
+          fetchRandomPhoto();
+          break;
+        case 'every15minutes':
+          if (!lessThanTimeAgo(nextImage.timestamp, 900)) {
+            fetchRandomPhoto();
+          }
+          break;
+        case 'everyhour':
+          if (!lessThanTimeAgo(nextImage.timestamp, 3600)) {
+            fetchRandomPhoto();
+          }
+          break;
+        case 'everyday':
+          if (!lessThanTimeAgo(nextImage.timestamp, 86400)) {
+            fetchRandomPhoto();
+          }
+          break;
+        default:
+          fetchRandomPhoto();
+      }
+    }
+
+    if (forecast) {
+      const { timestamp } = forecast;
+      if (timestamp) {
+        if (!lessThanTimeAgo(timestamp, 3600)) {
+          getWeatherInfo();
+        }
+      }
+    }
+  } catch (err) {
+    // eslint-disable-next-line
+    console.error(err);
+  }
+}
 
 async function setDefaultExtensionSettings(): Promise<void> {
   const syncSettings: ChromeSyncStorage = {
@@ -74,13 +204,30 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
     },
 
     'code-flow': () => {
-      chrome.storage.local.get('cloudService', (result) => {
+      chrome.storage.local.get('cloudService', async (result) => {
         const { cloudService } = result;
         if (cloudService === 'onedrive') {
           if (sender.tab && sender.tab.id) {
             chrome.tabs.remove([sender.tab.id]);
           }
-          onedriveAuth(request.code);
+
+          try {
+            const response = await authorizeOnedrive(request.code);
+            const data: OnedriveAuth = await response.json();
+
+            OnedriveAuth.check(data);
+
+            if (data.access_token) {
+              const onedriveData = {
+                timestamp: Date.now(),
+                ...data,
+              };
+
+              await createAppFolder(onedriveData);
+            }
+          } catch (err) {
+            notifyCloudConnectionFailed('Onedrive');
+          }
         }
       });
     },
@@ -93,7 +240,7 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
       });
     },
 
-    'load-data': () => loadNewData(),
+    refresh: () => refresh(),
   };
 
   listeners[request.command]();

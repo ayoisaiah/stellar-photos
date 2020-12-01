@@ -60,7 +60,8 @@ const validateResponse = (response) => {
   if (!response.ok) {
     throw Error(response.statusText);
   }
-  return response.json();
+
+  return response;
 };
 
 const lessThanTimeAgo = (timestamp, timeInSeconds) => {

@@ -31,7 +31,8 @@
     transform: translate3d(15px, 15px, 0);
   }
 
-  &::before, &::after {
+  &::before,
+  &::after {
     content: "";
     position: absolute;
     width: calc(100% - 15px);
@@ -51,7 +52,8 @@
     z-index: 3;
     pointer-events: auto;
 
-    &::before, &::after {
+    &::before,
+    &::after {
       transform: translate3d(0, 0, 0);
     }
 
@@ -65,6 +67,14 @@
       opacity: 1;
       transform: scale3d(1, 1, 1);
     }
+  }
+}
+
+.search-container {
+  .load-more {
+    padding: 50px 30px 30px;
+    display: flex;
+    justify-content: center;
   }
 }
 

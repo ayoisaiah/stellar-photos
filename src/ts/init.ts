@@ -1,6 +1,6 @@
 import 'chrome-extension-async';
 import { ChromeLocalStorage } from './types';
-import { $ } from '../js/libs/helpers';
+import { $ } from './helpers';
 import { UnsplashImage } from './types/unsplash';
 
 async function getNextImage(): Promise<UnsplashImage> {
@@ -58,12 +58,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (nextImage) {
       const body = $('body');
 
-      if (body) {
+      if (body && nextImage.base64) {
         body.style.backgroundImage = `url(${nextImage.base64})`;
       }
     }
 
-    chrome.runtime.sendMessage({ command: 'load-data' });
+    chrome.runtime.sendMessage({ command: 'refresh' });
 
     document.addEventListener('mousemove', loadControls);
     document.addEventListener('focus', loadControls);

@@ -1,54 +1,29 @@
-export interface Forecast {
-  coord: Coord;
-  weather: Weather[];
-  base: string;
-  main: Main;
-  visibility: number;
-  wind: Wind;
-  clouds: Clouds;
-  dt: number;
-  sys: Sys;
-  timezone: number;
-  id: number;
-  name: string;
-  cod: number;
-  timestamp?: number;
-}
+import * as r from 'runtypes';
 
-interface Clouds {
-  all: number;
-}
+const Weather = r.Record({
+  id: r.Number,
+  main: r.String,
+  description: r.String,
+  icon: r.String,
+});
 
-interface Coord {
-  lon: number;
-  lat: number;
-}
+const Main = r.Record({
+  temp: r.Number,
+});
 
-interface Main {
-  temp: number;
-  feels_like: number;
-  temp_min: number;
-  temp_max: number;
-  pressure: number;
-  humidity: number;
-  sea_level: number;
-  grnd_level: number;
-}
+const Forecast = r
+  .Record({
+    weather: r.Array(Weather),
+    main: Main,
+    dt: r.Number,
+    name: r.String,
+  })
+  .And(
+    r.Partial({
+      timestamp: r.Number,
+    })
+  );
 
-interface Sys {
-  country: string;
-  sunrise: number;
-  sunset: number;
-}
+type Forecast = r.Static<typeof Forecast>;
 
-interface Weather {
-  id: number;
-  main: string;
-  description: string;
-  icon: string;
-}
-
-interface Wind {
-  speed: number;
-  deg: number;
-}
+export { Forecast };
