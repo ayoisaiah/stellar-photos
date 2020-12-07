@@ -183,6 +183,8 @@ async function saveToOneDrive(imageId: string, url: string): Promise<void> {
   } catch {
     clearInterval(interval);
     notifyUnableToUpload('Onedrive', imageId);
+  } finally {
+    loadingIndicator().stop();
   }
 }
 
