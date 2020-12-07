@@ -79,4 +79,4 @@ function ui(data: ChromeLocalStorage): TemplateResult {
   `;
 }
 
-export { ui };
+export { ui, loadHistory };

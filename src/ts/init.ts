@@ -45,6 +45,7 @@ async function loadControls() {
     // CSS first to avoid flash of unstyled content
     await loadCSS('css/main.css');
     await loadJS('js/main.bundle.js');
+    await loadJS('js/events.bundle.js');
   } catch (err) {
     // eslint-disable-next-line
     console.error(err);

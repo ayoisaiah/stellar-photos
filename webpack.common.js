@@ -84,6 +84,7 @@ module.exports = (env) => {
       'js/popup': './src/ts/popup.ts',
       'js/init': './src/ts/init.ts',
       'js/background': './src/ts/background.ts',
+      'js/events': './src/ts/events.ts',
       'js/tab': './src/ts/tab.ts',
       'css/popup': './src/sass/popup.scss',
       'css/main': './src/sass/main.scss',

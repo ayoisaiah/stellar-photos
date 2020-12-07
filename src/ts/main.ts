@@ -19,9 +19,7 @@ async function paint() {
 
     if (data.nextImage) {
       const app = $('js-app');
-      if (app) {
-        render(ui(data), app);
-      }
+      if (app) render(ui(data), app);
 
       eventListeners();
     }

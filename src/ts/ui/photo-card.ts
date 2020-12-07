@@ -38,8 +38,6 @@ async function setBackgroundFromHistory(
     );
     const image = arr[0];
 
-    // TODO: Image may have been overridden
-
     const body = $('body');
     if (body && image.base64) {
       body.style.backgroundImage = `url(${image.base64})`;

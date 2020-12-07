@@ -54,6 +54,8 @@ async function fetchRandomPhoto(): Promise<void> {
     history.unshift(nextImage);
 
     chrome.storage.local.set({ history });
+
+    chrome.runtime.sendMessage({ command: 'update-history' });
   } catch (err) {
     // eslint-disable-next-line
     console.error(err);
