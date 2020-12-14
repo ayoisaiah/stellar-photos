@@ -7,10 +7,11 @@
   @media screen and (max-width: 1440px) {
     grid-template-columns: repeat(3, 1fr);
   }
-}
 
-.searchResults .middle {
-  display: none;
+  .s-photo-actions .middle svg {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .moreResults {

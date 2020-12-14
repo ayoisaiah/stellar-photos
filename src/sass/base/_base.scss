@@ -5,6 +5,7 @@
 html {
   box-sizing: border-box;
   height: 100%;
+  width: 100%;
   font-size: 10px;
 }
 
@@ -20,14 +21,26 @@ body {
   font-family: $font-stack;
   line-height: 1.6;
   font-weight: 400;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body.no-bounce {
+  overflow-y: hidden;
 }
 
 .s-main {
-  padding: 60px 20px 50px 20px;
+  height: 100vh;
 }
 
 .s-ui {
-  animation: fadeInControls 0.7s ease forwards;
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+.s-ui.show {
+  opacity: 1;
 }
 
 .s-ui.no-pointer {
@@ -36,10 +49,6 @@ body {
   &.s-footer > div {
     pointer-events: auto;
   }
-}
-
-.s-ui.hide-ui {
-  animation: fadeOutControls 0.4s ease forwards;
 }
 
 svg,

@@ -1,7 +1,6 @@
 import { render } from 'lit-html';
 import 'chrome-extension-async';
 import { $ } from './helpers';
-import eventListeners from '../js/libs/event-listeners';
 import { ui } from './ui';
 import { ChromeStorage, ChromeLocalStorage, ChromeSyncStorage } from './types';
 
@@ -20,8 +19,6 @@ async function paint() {
     if (data.nextImage) {
       const app = $('js-app');
       if (app) render(ui(data), app);
-
-      eventListeners();
     }
   } catch (err) {
     // eslint-disable-next-line

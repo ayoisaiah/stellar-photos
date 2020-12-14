@@ -35,4 +35,19 @@
       border-radius: 50%;
     }
   }
+
+  .history-placeholder {
+    height: 140px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 2px;
+    background-color: hsla(0,0%,100%,.1);
+
+    svg {
+      width: 24px;
+      height: 24px;
+      color: #888;
+    }
+  }
 }

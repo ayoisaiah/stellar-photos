@@ -1,12 +1,11 @@
-import { html, TemplateResult, nothing } from 'lit-html';
+import { html, TemplateResult, nothing, render } from 'lit-html';
 import { $ } from '../helpers';
+import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
+import { cloudButton } from './cloud-button';
 import { downloadButton } from './download';
-
-/*
- * This component represents each photo displayed in the
- * search results and history menu
- */
+import { footer } from './footer';
+import { imageInfo } from './image-info';
 
 function fadeInBackground(): void {
   const overlay = $('js-overlay');
@@ -27,6 +26,20 @@ function fadeInBackground(): void {
   }
 }
 
+async function updateImageInfo(image: UnsplashImage): Promise<void> {
+  const localData: ChromeLocalStorage = await chrome.storage.local.get();
+
+  localData.nextImage = image;
+  const f = $('js-footer-container');
+  if (f) {
+    render(footer(localData), f);
+    $('js-footer')?.classList.add('history-open', 'show');
+  }
+
+  const d = $('js-dialog-container');
+  if (d) render(imageInfo(image), d);
+}
+
 async function setBackgroundFromHistory(
   event: MouseEvent & { target: HTMLButtonElement }
 ): Promise<void> {
@@ -45,6 +58,7 @@ async function setBackgroundFromHistory(
     }
 
     // TODO: Update Image info
+    updateImageInfo(image);
   } catch (err) {
     // eslint-disable-next-line
     console.error(err);
@@ -96,7 +110,7 @@ function photoCard(photo: UnsplashImage): TemplateResult {
           </a>
         </div>
 
-        <div class="middle"></div>
+        <div class="middle">${cloudButton(photo)}</div>
 
         <div class="bottom">
           <span class="s-photo-dimension">${width} x ${height}</span>

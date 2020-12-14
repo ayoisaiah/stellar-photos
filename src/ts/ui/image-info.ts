@@ -4,9 +4,7 @@ import { UnsplashImage } from '../types/unsplash';
 
 function closeDialog(event: MouseEvent & { target: HTMLDivElement }): void {
   const { target } = event;
-  if (target) {
-    if (target.matches('.dialog *')) return;
-  }
+  if (target && target.matches('.dialog *')) return;
 
   const dialog = $('js-dialog');
   if (dialog) {
@@ -15,44 +13,84 @@ function closeDialog(event: MouseEvent & { target: HTMLDivElement }): void {
 }
 
 function imageInfo(nextImage: UnsplashImage): TemplateResult {
-  const { description } = nextImage;
-  const location = nextImage.location?.name || '';
-  const { downloads, likes } = nextImage;
-  const resolution = `${nextImage.width} x ${nextImage.height}`;
-  const cameraModel = `${nextImage.exif?.make} ${nextImage.exif?.model}`;
-  const specs = `${nextImage.exif?.focal_length}mm · ƒ/${nextImage.exif?.aperture} · ISO ${nextImage.exif?.exposure_time}s · ${nextImage.exif?.iso}`;
+  const downloads = nextImage.downloads?.toLocaleString() || '--';
+  const likes = nextImage.likes?.toLocaleString() || '--';
+  const resolution = `${nextImage.width} × ${nextImage.height}`;
+  const cameraMake = `${nextImage.exif?.make || '--'}`;
+  const cameraModel = `${nextImage.exif?.model || '--'}`;
+  const focalLength = `${
+    nextImage.exif?.focal_length ? `${nextImage.exif.focal_length}mm` : '--'
+  }`;
+  const aperture = `${
+    nextImage.exif?.aperture ? `ƒ/${nextImage.exif.aperture}` : '--'
+  }`;
+  const shutterSpeed = `${nextImage.exif?.exposure_time || '--'}`;
+  const ISO = `${nextImage.exif?.iso || '--'}`;
 
   return html`
     <div class="dialog" id="js-dialog" @click=${closeDialog}>
       <div class="dialog-content">
         <div class="image-info">
           <div class="general-info">
-            <h2 class="title">Info</h2>
-            <p class="description">${description}</p>
-            <p class="location">${location}</p>
+            <h2 class="title">Photo Information</h2>
 
             <div class="stats">
               <div class="downloads">
-                <h3 class="subtitle">Downloads</h3>
-                <p class="count">${downloads}</p>
+                <dt>
+                  <svg>
+                    <use href="#icon-download"></use>
+                  </svg>
+                  <span>Downloads</span>
+                </dt>
+                <dd class="count">${downloads}</dd>
               </div>
               <div class="likes">
-                <h3 class="subtitle">Likes</h3>
-                <p class="count">${likes}</p>
+                <dt>
+                  <svg>
+                    <use href="#icon-heart"></use>
+                  </svg>
+                  <span>Likes</span>
+                </dt>
+                <dd class="count">${likes}</dd>
               </div>
               <div class="resolution">
-                <h3 class="subtitle">Resolution</h3>
-                <p class="count">${resolution}</p>
+                <dt>
+                  <svg>
+                    <use href="#icon-image"></use>
+                  </svg>
+                  <span>Resolution</span>
+                </dt>
+                <dd class="count">${resolution}</dd>
               </div>
             </div>
           </div>
 
+          <hr />
+
           <div class="technical-info">
-            <div class="camera-model">
-              <p>${cameraModel}</p>
+            <div class="camera-make">
+              <dt>Camera Make</dt>
+              <dd>${cameraMake}</dd>
             </div>
-            <div class="specs">
-              <p>${specs}</p>
+            <div class="camera-model">
+              <dt>Camera Model</dt>
+              <dd>${cameraModel}</dd>
+            </div>
+            <div class="focal-length">
+              <dt>Focal Length</dt>
+              <dd>${focalLength}</dd>
+            </div>
+            <div>
+              <dt>Aperture</dt>
+              <dd>${aperture}</dd>
+            </div>
+            <div class="shutter-speed">
+              <dt>Shutter Speed</dt>
+              <dd>${shutterSpeed}</dd>
+            </div>
+            <div class="iso">
+              <dt>ISO</dt>
+              <dd>${ISO}</dd>
             </div>
           </div>
         </div>

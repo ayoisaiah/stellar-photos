@@ -1,19 +1,5 @@
-import 'chrome-extension-async';
-import { ChromeLocalStorage } from './types';
+import { ChromeStorage } from './types';
 import { $ } from './helpers';
-import { UnsplashImage } from './types/unsplash';
-
-async function getNextImage(): Promise<UnsplashImage> {
-  const data: ChromeLocalStorage = await chrome.storage.local.get([
-    'nextImage',
-  ]);
-
-  if (data.nextImage) {
-    return data.nextImage;
-  }
-
-  throw Error('Next image is undefined');
-}
 
 function loadCSS(url: string) {
   return new Promise((resolve, reject) => {
@@ -37,24 +23,21 @@ function loadJS(url: string) {
   });
 }
 
-async function loadControls() {
-  document.removeEventListener('mousemove', loadControls);
-  document.removeEventListener('focus', loadControls);
-
-  try {
-    // CSS first to avoid flash of unstyled content
-    await loadCSS('css/main.css');
-    await loadJS('js/main.bundle.js');
-    await loadJS('js/events.bundle.js');
-  } catch (err) {
-    // eslint-disable-next-line
-    console.error(err);
-  }
+function getStorageData(): Promise<ChromeStorage> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get((localData) => {
+      chrome.storage.sync.get((syncData) => {
+        resolve(Object.assign(syncData, localData));
+      });
+    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const nextImage = await getNextImage();
+    const data = await getStorageData();
+
+    const { nextImage } = data;
 
     if (nextImage) {
       const body = $('body');
@@ -64,10 +47,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
+    await loadCSS('css/main.css');
+    await loadJS('js/main.bundle.js');
+    await loadJS('js/events.bundle.js');
     chrome.runtime.sendMessage({ command: 'refresh' });
-
-    document.addEventListener('mousemove', loadControls);
-    document.addEventListener('focus', loadControls);
   } catch (err) {
     // eslint-disable-next-line
     console.error(err);

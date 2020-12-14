@@ -24,8 +24,8 @@
 .dialog-content {
   position: absolute;
   cursor: auto;
-  width: 600px;
-  height: 400px;
+  width: 550px;
+  max-height: 400px;
   background-color: rgba(0, 0, 0, 0.9);
   color: #fff;
   border-radius: 4px;
@@ -34,37 +34,48 @@
   transform: translate(-50%, -50%);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 24px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .image-info {
-  .description {
-    font-size: 14px;
-  }
-
-  .general-info {
-    padding-bottom: 25px;
-  }
-
   .stats {
     margin-top: 25px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .stats h3 {
-    font-size: 14px;
+  dt {
+    font-size: 13px;
     color: #888;
   }
 
-  .stats p {
-    font-size: 20px;
+  .stats dt {
+    display: flex;
+    align-items: center;
+  }
+
+  .stats svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    color: #fff;
+  }
+
+  hr {
+    border-color: #888;
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+
+  .count {
+    font-size: 22px;
   }
 
   .technical-info {
-    padding-top: 25px;
-    border-top: 1px solid #ddd;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 35px;
   }
 }
 

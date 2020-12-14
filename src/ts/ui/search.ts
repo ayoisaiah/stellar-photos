@@ -79,6 +79,7 @@ async function searchUnsplash(key: string, page: number): Promise<void> {
 
     state.results = [...state.results, ...json.results];
     displayPhotos(state.results);
+    $('body')?.classList.remove('no-bounce');
 
     if (state.results.length >= json.total) {
       moreButton?.classList.add('hidden');

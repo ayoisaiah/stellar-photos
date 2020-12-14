@@ -4,7 +4,6 @@
   left: 0;
   right: 0;
   z-index: 2;
-  transition: transform 0.5s;
   height: 150px;
 
   .footer-content {
@@ -60,6 +59,14 @@
 
     + .unsplash-credit {
       justify-content: center;
+    }
+
+    @media screen and (max-width: 1100px) {
+      display: none !important;
+
+      + .unsplash-credit {
+        justify-content: flex-start !important;
+      }
     }
   }
 

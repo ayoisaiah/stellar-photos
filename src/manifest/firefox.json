@@ -2,7 +2,7 @@
   "applications": {
     "gecko": {
       "id": "stellar@stellarapp.photos",
-      "strict_min_version": "57.0"
+      "strict_min_version": "70.0"
     }
   }
 }

@@ -107,19 +107,24 @@ async function monitorUploadProgress(
   url: string,
   imageId: string
 ): Promise<void> {
-  const response = await fetch(url);
-  const json: { status: string } = await validateResponse(response).json();
-  if (json.status === 'completed') {
-    loadingIndicator().stop();
+  try {
+    const response = await fetch(url);
+    const json: { status: string } = await validateResponse(response).json();
+    if (json.status === 'completed') {
+      loadingIndicator().stop();
+      clearInterval(interval);
 
+      chrome.notifications.create(`notify-onedrive-${imageId}`, {
+        type: 'basic',
+        iconUrl: chrome.extension.getURL('icons/48.png'),
+        title: '1 file uploaded',
+        message: `photo-${imageId} was saved successfully to Onedrive`,
+      });
+    }
+  } catch (err) {
     clearInterval(interval);
-
-    chrome.notifications.create(`notify-onedrive-${imageId}`, {
-      type: 'basic',
-      iconUrl: chrome.extension.getURL('icons/48.png'),
-      title: '1 file uploaded',
-      message: `photo-${imageId} was saved successfully to Onedrive`,
-    });
+    notifyUnableToUpload('Onedrive', imageId);
+    loadingIndicator().stop();
   }
 }
 
@@ -183,7 +188,6 @@ async function saveToOneDrive(imageId: string, url: string): Promise<void> {
   } catch {
     clearInterval(interval);
     notifyUnableToUpload('Onedrive', imageId);
-  } finally {
     loadingIndicator().stop();
   }
 }

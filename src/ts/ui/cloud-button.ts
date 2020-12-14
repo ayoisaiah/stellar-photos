@@ -7,7 +7,6 @@ function onedriveButton(photo: UnsplashImage): TemplateResult {
   return html`
     <button
       @click=${() => saveToOneDrive(photo.id, photo.urls.full)}
-      id="onedrive-button"
       class="control-button cloud-button onedrive-button"
       title="Save photo to OneDrive"
     >
@@ -19,7 +18,6 @@ function onedriveButton(photo: UnsplashImage): TemplateResult {
 function dropboxButton(photo: UnsplashImage): TemplateResult {
   return html`
     <button
-      id="dropbox-button"
       @click=${() => saveToDropbox(photo.id, photo.urls.full)}
       class="control-button cloud-button dropbox-button"
       title="Save photo to Dropbox"
@@ -31,13 +29,16 @@ function dropboxButton(photo: UnsplashImage): TemplateResult {
 
 function cloudButton(
   photo: UnsplashImage,
-  cloudService: string
+  cloudService?: 'dropbox' | 'onedrive'
 ): TemplateResult | void {
-  if (cloudService === 'dropbox') {
+  if (cloudService === 'dropbox' || document.querySelector('.dropbox-button')) {
     return dropboxButton(photo);
   }
 
-  if (cloudService === 'onedrive') {
+  if (
+    cloudService === 'onedrive' ||
+    document.querySelector('.onedrive-button')
+  ) {
     return onedriveButton(photo);
   }
 }

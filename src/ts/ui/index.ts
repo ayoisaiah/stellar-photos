@@ -3,18 +3,50 @@ import { search } from './search';
 import { $ } from '../helpers';
 import { footer } from './footer';
 import { photoCard } from './photo-card';
+import { fadeInControls, hideControls } from './utils';
 import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
 import { imageInfo } from './image-info';
 
 function loadHistory(history: UnsplashImage[]): TemplateResult {
-  return html`${history.map((photo: UnsplashImage) => photoCard(photo))} `;
+  let h = html`${history.map((photo: UnsplashImage) => photoCard(photo))}`;
+  if (history.length < 10) {
+    let historyLength = history.length;
+    let placeholders = html``;
+    while (historyLength < 10) {
+      placeholders = html`${placeholders}
+        <div class="history-placeholder">
+          <svg>
+            <use href="#icon-image"></use>
+          </svg>
+        </div>`;
+      historyLength += 1;
+    }
+
+    h = html`${h} ${placeholders}`;
+  }
+
+  return h;
 }
 
-function toggleHistoryPane(): void {
-  $('js-history')?.classList.toggle('open');
-  $('js-footer')?.classList.toggle('history-open');
-  $('js-hamburger')?.classList.toggle('transform');
+type classListActions = 'toggle' | 'add' | 'remove';
+
+function toggleHistoryPane(action: classListActions): void {
+  if (action === 'add') fadeInControls();
+  $('js-history')?.classList[action]('open');
+  $('js-footer')?.classList[action]('history-open');
+  $('js-hamburger')?.classList[action]('transform');
+}
+
+function handleScrollWheel(event: WheelEvent): void {
+  const searchResults = $('js-search-results');
+  if (searchResults && searchResults.hasChildNodes()) return;
+
+  if (event.deltaY < 0) {
+    toggleHistoryPane('add');
+  } else if (event.deltaY > 0) {
+    toggleHistoryPane('remove');
+  }
 }
 
 function openSearch(): void {
@@ -26,7 +58,7 @@ function openSearch(): void {
 function hamburgerMenu(): TemplateResult {
   return html`
     <button
-      @click=${toggleHistoryPane}
+      @click=${() => toggleHistoryPane('toggle')}
       id="js-hamburger"
       class="historyButton historyButton-open"
       title="toggle history menu"
@@ -59,8 +91,13 @@ function searchButton(): TemplateResult {
 
 function ui(data: ChromeLocalStorage): TemplateResult {
   return html`
-    <main class="s-main" id="s-main">
-      <header class="header s-ui hide-ui" id="header">
+    <main @wheel=${handleScrollWheel} class="s-main" id="js-main">
+      <header
+        @mouseenter=${fadeInControls}
+        @mouseleave=${hideControls}
+        class="header s-ui"
+        id="header"
+      >
         <div class="header-content" id="header-content">
           ${hamburgerMenu()} ${searchButton()}
         </div>
@@ -71,10 +108,14 @@ function ui(data: ChromeLocalStorage): TemplateResult {
       ${search()}
 
       <ul class="s-history" id="js-history">
-        ${data.history ? loadHistory(data.history) : ''}
+        ${data.history ? loadHistory(data.history) : loadHistory([])}
       </ul>
 
-      ${data.nextImage ? imageInfo(data.nextImage) : ''} ${footer(data)}
+      <div id="js-dialog-container">
+        ${data.nextImage ? imageInfo(data.nextImage) : ''}
+      </div>
+
+      <div id="js-footer-container">${footer(data)}</div>
     </main>
   `;
 }
