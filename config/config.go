@@ -25,6 +25,10 @@ func New() *Config {
 		Dropbox: DropboxConfig{
 			Key: getEnv("DROPBOX_KEY", ""),
 		},
+		GoogleDrive: GoogleDriveConfig{
+			Key:    getEnv("GOOGLE_DRIVE_KEY", ""),
+			Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
+		},
 	}
 
 	return Conf

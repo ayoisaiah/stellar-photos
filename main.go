@@ -5,17 +5,41 @@ import (
 	"net/http"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/routes"
+	"github.com/ayoisaiah/stellar-photos-server/dropbox"
+	"github.com/ayoisaiah/stellar-photos-server/googledrive"
+	"github.com/ayoisaiah/stellar-photos-server/onedrive"
+	"github.com/ayoisaiah/stellar-photos-server/unsplash"
+	"github.com/ayoisaiah/stellar-photos-server/weather"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
-// init is invoked before main()
 func init() {
-	// loads values from .env into the system
 	if err := godotenv.Load(); err != nil {
 		log.Println("File .env not found, reading configuration from ENV")
 	}
+}
+
+// newRouter creates and returns a new HTTP request multiplexer
+func newRouter() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/download-photo/", unsplash.DownloadPhoto)
+	mux.HandleFunc("/search-unsplash/", unsplash.SearchUnsplash)
+	mux.HandleFunc("/random-photo/", unsplash.GetRandomPhoto)
+	mux.HandleFunc("/validate-collections/", unsplash.ValidateCollections)
+	mux.HandleFunc("/get-weather/", weather.GetForecast)
+	mux.HandleFunc("/dropbox/key/", dropbox.SendDropboxKey)
+	mux.HandleFunc("/dropbox/save/", dropbox.SaveToDropbox)
+	mux.HandleFunc("/onedrive/id/", onedrive.SendOnedriveID)
+	mux.HandleFunc("/onedrive/auth/", onedrive.AuthorizeOnedrive)
+	mux.HandleFunc("/onedrive/refresh/", onedrive.RefreshOnedriveToken)
+	mux.HandleFunc("/googledrive/key/", googledrive.SendGoogleDriveKey)
+	mux.HandleFunc("/googledrive/auth/", googledrive.AuthorizeGoogleDrive)
+	mux.HandleFunc("/googledrive/refresh/", googledrive.RefreshGoogleDriveToken)
+	mux.HandleFunc("/googledrive/save/", googledrive.SaveToGoogleDrive)
+
+	return mux
 }
 
 func main() {
@@ -24,9 +48,14 @@ func main() {
 
 	port := ":" + config.Conf.Port
 
-	mux := routes.NewRouter()
+	mux := newRouter()
 
 	handler := cors.Default().Handler(mux)
 
-	log.Fatal(http.ListenAndServe(port, handler))
+	srv := &http.Server{
+		Addr:    port,
+		Handler: handler,
+	}
+
+	log.Fatal(srv.ListenAndServe())
 }

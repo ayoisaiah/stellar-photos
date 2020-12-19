@@ -1,39 +1,91 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"image"
-	"image/jpeg"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+	"time"
 )
 
-// SendRequestToUnsplash sends a constructed request while decoding the JSON
-// response into the provided interface
-func SendRequestToUnsplash(url string, target interface{}) error {
-	resp, err := http.Get(url)
+// AuthorizationError occurs for an Unauthorized request
+type AuthorizationError struct {
+	ErrString string
+}
+
+func (e AuthorizationError) Error() string {
+	return e.ErrString
+}
+
+// NotFoundError occurs when the resource queried returns a 404.
+type NotFoundError struct {
+	ErrString string
+}
+
+func (e NotFoundError) Error() string {
+	return e.ErrString
+}
+
+// SendGETRequest makes an HTTP GET request and decodes the JSON
+// response into the provided target interface
+func SendGETRequest(url string, target interface{}) error {
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
+		if os.IsTimeout(err) {
+			return fmt.Errorf("Request timed out on the server")
+		}
+
 		return err
 	}
 
 	defer resp.Body.Close()
 
-	err = CheckForErrors(resp)
+	body, err := CheckForErrors(resp)
 	if err != nil {
 		return err
 	}
 
-	return json.NewDecoder(resp.Body).Decode(target)
+	return json.Unmarshal(body, target)
+}
+
+func SendPOSTRequest(endpoint string, formValues map[string]string) ([]byte, error) {
+	form := url.Values{}
+	for key, value := range formValues {
+		form.Add(key, value)
+	}
+
+	request, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	defer response.Body.Close()
+
+	body, err := CheckForErrors(response)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }
 
 // GetURLQueryParams extracts the query parameters from a url string and returns
 // a map of strings
 func GetURLQueryParams(s string) (url.Values, error) {
 	u, err := url.Parse(s)
-
 	if err != nil {
 		return nil, err
 	}
@@ -42,41 +94,42 @@ func GetURLQueryParams(s string) (url.Values, error) {
 	return query, nil
 }
 
-// SendJSON sends a JSON response to the client
-func SendJSON(w http.ResponseWriter, target interface{}) error {
+// JsonResponse sends a JSON response to the client
+func JsonResponse(w http.ResponseWriter, bytes []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(target)
+	w.Write(bytes)
 }
 
-// ImageURLToBase64 gets the Base64 representation of a JPEG image URL and
+// ImageURLToBase64 gets the Base64 representation of an image URL and
 // returns it
 func ImageURLToBase64(url string) (string, error) {
-	resp, err := http.Get(url)
-
+	client := &http.Client{Timeout: 20 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		return "", err
 	}
 
 	defer resp.Body.Close()
 
-	buffer := &bytes.Buffer{}
-	m, _, err := image.Decode(resp.Body)
-
+	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
-	if err := jpeg.Encode(buffer, m, nil); err != nil {
-		return "", err
+	var base64Encoding string
+	mimeType := http.DetectContentType(bytes)
+
+	switch mimeType {
+	case "image/jpeg":
+		base64Encoding += "data:image/jpeg;base64,"
+	case "image/png":
+		base64Encoding += "data:image/png;base64,"
+	default:
+		return "", fmt.Errorf("Only JPEG and PNG images are supported")
 	}
 
-	s := []string{
-		"data:image/jpeg;base64,",
-		base64.StdEncoding.EncodeToString(buffer.Bytes()),
-	}
+	base64Encoding += base64.StdEncoding.EncodeToString(bytes)
 
-	str := strings.Join(s, "")
-
-	return str, nil
+	return base64Encoding, nil
 }

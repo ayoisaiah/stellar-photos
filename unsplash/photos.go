@@ -13,45 +13,157 @@ import (
 // UnsplashAPILocation represents the base URL for requests to Unsplash's API
 const UnsplashAPILocation = "https://api.unsplash.com"
 
-// DownloadPhoto gets the request photo's download link and sends it to the
-// client
+// download represents the result from triggering a download on a photo
+type download struct {
+	URL string `json:"url,omitempty"`
+}
+
+// searchResult represents the result for a search for photos.
+type searchResult struct {
+	Total      int           `json:"total,omitempty"`
+	TotalPages int           `json:"total_pages,omitempty"`
+	Results    []interface{} `json:"results,omitempty"`
+}
+
+// collection respresents a single Unsplash collection ID
+type collection struct {
+	ID string `json:"id,omitempty"`
+}
+
+// randomPhoto represents the result from fetching a random photo from Unsplash
+type randomPhoto struct {
+	ID             string `json:"id"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
+	PromotedAt     string `json:"promoted_at"`
+	Width          int    `json:"width"`
+	Height         int    `json:"height"`
+	Color          string `json:"color"`
+	BlurHash       string `json:"blur_hash"`
+	Description    string `json:"description"`
+	AltDescription string `json:"alt_description"`
+	Urls           struct {
+		Raw     string `json:"raw"`
+		Full    string `json:"full"`
+		Regular string `json:"regular"`
+		Small   string `json:"small"`
+		Thumb   string `json:"thumb"`
+		Custom  string `json:"custom"`
+	} `json:"urls"`
+	Links struct {
+		Self             string `json:"self"`
+		HTML             string `json:"html"`
+		Download         string `json:"download"`
+		DownloadLocation string `json:"download_location"`
+	} `json:"links"`
+	Categories             []interface{} `json:"categories"`
+	Likes                  int           `json:"likes"`
+	LikedByUser            bool          `json:"liked_by_user"`
+	CurrentUserCollections []interface{} `json:"current_user_collections"`
+	User                   struct {
+		ID              string      `json:"id"`
+		UpdatedAt       string      `json:"updated_at"`
+		Username        string      `json:"username"`
+		Name            string      `json:"name"`
+		FirstName       string      `json:"first_name"`
+		LastName        string      `json:"last_name"`
+		TwitterUsername interface{} `json:"twitter_username"`
+		PortfolioURL    string      `json:"portfolio_url"`
+		Bio             string      `json:"bio"`
+		Location        interface{} `json:"location"`
+		Links           struct {
+			Self      string `json:"self"`
+			HTML      string `json:"html"`
+			Photos    string `json:"photos"`
+			Likes     string `json:"likes"`
+			Portfolio string `json:"portfolio"`
+			Following string `json:"following"`
+			Followers string `json:"followers"`
+		} `json:"links"`
+		ProfileImage struct {
+			Small  string `json:"small"`
+			Medium string `json:"medium"`
+			Large  string `json:"large"`
+		} `json:"profile_image"`
+		InstagramUsername string `json:"instagram_username"`
+		TotalCollections  int    `json:"total_collections"`
+		TotalLikes        int    `json:"total_likes"`
+		TotalPhotos       int    `json:"total_photos"`
+		AcceptedTos       bool   `json:"accepted_tos"`
+	} `json:"user"`
+	Exif struct {
+		Make         string `json:"make"`
+		Model        string `json:"model"`
+		ExposureTime string `json:"exposure_time"`
+		Aperture     string `json:"aperture"`
+		FocalLength  string `json:"focal_length"`
+		Iso          int    `json:"iso"`
+	} `json:"exif"`
+	Location struct {
+		Title    string `json:"title"`
+		Name     string `json:"name"`
+		City     string `json:"city"`
+		Country  string `json:"country"`
+		Position struct {
+			Latitude  float64 `json:"latitude"`
+			Longitude float64 `json:"longitude"`
+		} `json:"position"`
+	} `json:"location"`
+	Views     int `json:"views"`
+	Downloads int `json:"downloads"`
+}
+
+// randomPhotoWithBase64 respresents the base64 encoding of randomPhoto
+type randomPhotoBase64 struct {
+	*randomPhoto
+	Base64 string `json:"base64,omitempty"`
+}
+
+// unsplashResponse the entire range of responses that can be expected from
+// Unsplash
+type unsplashResponse struct {
+	Errors []interface{} `json:"errors,omitempty"`
+	download
+	randomPhoto
+	randomPhotoBase64
+	searchResult
+}
+
+// DownloadPhoto is triggered each time a download is attempted
 func DownloadPhoto(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
-
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		utils.InternalServerError(w, err.Error())
 		return
 	}
 
 	id := values.Get("id")
-
-	data, err := GetPhotoDownloadLocation(id)
-
-	if err != nil {
-		utils.SendError(w, err)
+	if id == "" {
+		http.Error(w, "Photo ID must not be empty", http.StatusBadRequest)
 		return
 	}
 
-	jsonResponse(w, data)
+	err = TrackPhotoDownload(id)
+	if err != nil {
+		utils.InternalServerError(w, err.Error())
+		return
+	}
 }
 
-// GetPhotoDownloadLocation retrives the download link of the photo whose ID is
-// provided
-func GetPhotoDownloadLocation(id string) (*unsplashResponse, error) {
+// TrackPhotoDownload is used to increment the number of downloads
+// for the specified photo
+func TrackPhotoDownload(id string) error {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf("%s/photos/%s/download?client_id=%s", UnsplashAPILocation, id, unsplashAccessKey)
 
-	s := &unsplashResponse{}
-	err := utils.SendRequestToUnsplash(url, s)
-
-	return s, err
+	data := &download{}
+	return utils.SendGETRequest(url, data)
 }
 
 // SearchUnsplash triggers a photo search and sends a single page of photo
 // results for a query.
 func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -63,15 +175,21 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf("%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s", UnsplashAPILocation, page, key, "28", unsplashAccessKey)
 
-	s := &unsplashResponse{}
-	err = utils.SendRequestToUnsplash(url, s)
+	s := &searchResult{}
 
+	err = utils.SendGETRequest(url, s)
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, err.Error())
 		return
 	}
 
-	jsonResponse(w, s)
+	bytes, err := json.Marshal(s)
+	if err != nil {
+		utils.InternalServerError(w, err.Error())
+		return
+	}
+
+	utils.JsonResponse(w, bytes)
 }
 
 // GetRandomPhoto retrives a single random photo using the provided collection
@@ -96,40 +214,40 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf("%s/photos/random?collections=%s&w=%d&client_id=%s", UnsplashAPILocation, collections, width, unsplashAccessKey)
 
-	s := &unsplashResponse{}
-	err = utils.SendRequestToUnsplash(url, s)
+	res := &randomPhoto{}
 
+	err = utils.SendGETRequest(url, res)
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, err.Error())
 		return
 	}
 
-	imageURL := s.Urls["custom"].(string)
+	imageURL := res.Urls.Custom
 
 	base64, err := utils.ImageURLToBase64(imageURL)
-
 	if err != nil {
-		utils.InternalServerError(w)
+		utils.InternalServerError(w, err.Error())
 		return
 	}
 
-	x := randomPhotoBase64{
-		Base64: base64,
+	data := randomPhotoBase64{
+		res,
+		base64,
 	}
 
-	data := &unsplashResponse{
-		randomPhoto:       s.randomPhoto,
-		randomPhotoBase64: x,
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		utils.InternalServerError(w, err.Error())
+		return
 	}
 
-	jsonResponse(w, data)
+	utils.JsonResponse(w, bytes)
 }
 
 // ValidateCollections ensures that all the custom collection IDs that are added
 // to the extension are valid
 func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -142,8 +260,7 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 	for _, value := range collections {
 		url := fmt.Sprintf("%s/collections/%s/?client_id=%s", UnsplashAPILocation, value, unsplashAccessKey)
 		c := &collection{}
-		err := utils.SendRequestToUnsplash(url, c)
-
+		err := utils.SendGETRequest(url, c)
 		if err != nil {
 			utils.InternalServerError(w)
 			return
@@ -154,19 +271,4 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("200 - Collections are valid"))
-}
-
-func jsonResponse(w http.ResponseWriter, target *unsplashResponse) error {
-	w.Header().Set("Content-Type", "application/json")
-
-	if target.Errors != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return json.NewEncoder(w).Encode(target)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	return json.NewEncoder(w).Encode(target)
 }

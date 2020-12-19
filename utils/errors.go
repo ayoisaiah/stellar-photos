@@ -38,7 +38,7 @@ func SendError(w http.ResponseWriter, err error) {
 
 // CheckForErrors checks if a non success http status code is retured by an API
 // request and returns the appropriate error
-func CheckForErrors(resp *http.Response) error {
+func CheckForErrors(resp *http.Response) ([]byte, error) {
 	buf, err := ioutil.ReadAll(resp.Body)
 
 	// Because you can't read from an io.ReadCloser type twice unless you restore
@@ -46,21 +46,21 @@ func CheckForErrors(resp *http.Response) error {
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	switch resp.StatusCode {
 	case 200, 201, 202, 204, 205:
-		return nil
+		return buf, nil
 	case 401:
-		return &AuthorizationError{ErrString: errStringHelper(resp.StatusCode, "Unauthorized request", &buf)}
+		return nil, &AuthorizationError{ErrString: errStringHelper(resp.StatusCode, "Unauthorized request", &buf)}
 	case 403:
-		return &AuthorizationError{ErrString: errStringHelper(resp.StatusCode, "Access forbidden request", &buf)}
+		return nil, &AuthorizationError{ErrString: errStringHelper(resp.StatusCode, "Access forbidden request", &buf)}
 
 	case 404:
-		return &NotFoundError{ErrString: errStringHelper(resp.StatusCode, "The requested resource was not found", &buf)}
+		return nil, &NotFoundError{ErrString: errStringHelper(resp.StatusCode, "The requested resource was not found", &buf)}
 	default:
-		return errors.New(errStringHelper(resp.StatusCode, "API request returned an error", &buf))
+		return nil, errors.New(errStringHelper(resp.StatusCode, "API request returned an error", &buf))
 
 	}
 }

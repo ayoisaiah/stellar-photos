@@ -9,10 +9,20 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-// GetForecast retrieves the current weather forcast for a locale
+// weatherInfo represents the result of requesting the current weather forecast
+// from openweathermap
+type weatherInfo struct {
+	Name string `json:"name"`
+	Main struct {
+		Temp float64 `json:"temp"`
+	} `json:"main"`
+	Weather   []interface{} `json:"weather"`
+	Timestamp int           `json:"dt"`
+}
+
+// GetForecast retrieves the current weather forecast for a locale
 func GetForecast(w http.ResponseWriter, r *http.Request) {
 	values, err := utils.GetURLQueryParams(r.URL.String())
-
 	if err != nil {
 		utils.InternalServerError(w, "Failed to parse URL")
 		return
@@ -26,22 +36,18 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&units=%s&appid=%s", latitide, longitude, metric, id)
 
 	forecast := &weatherInfo{}
-	resp, err := http.Get(url)
 
+	err = utils.SendGETRequest(url, forecast)
 	if err != nil {
-		utils.InternalServerError(w, "Network connectivity error")
+		utils.InternalServerError(w, err.Error())
 		return
 	}
 
-	defer resp.Body.Close()
-
-	json.NewDecoder(resp.Body).Decode(forecast)
-
-	err = utils.CheckForErrors(resp)
+	bytes, err := json.Marshal(forecast)
 	if err != nil {
-		utils.SendError(w, err)
+		utils.InternalServerError(w, err.Error())
 		return
 	}
 
-	utils.SendJSON(w, forecast)
+	utils.JsonResponse(w, bytes)
 }

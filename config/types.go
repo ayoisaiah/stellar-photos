@@ -8,6 +8,7 @@ type Config struct {
 	Onedrive       OnedriveConfig
 	OpenWeatherMap OpenWeatherMapConfig
 	Dropbox        DropboxConfig
+	GoogleDrive    GoogleDriveConfig
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables
@@ -29,4 +30,10 @@ type OpenWeatherMapConfig struct {
 // DropboxConfig represents Dropbox's API configuration variables
 type DropboxConfig struct {
 	Key string
+}
+
+// GoogleDriveConfig represents Google Drive's API configuration variables
+type GoogleDriveConfig struct {
+	Key    string
+	Secret string
 }
