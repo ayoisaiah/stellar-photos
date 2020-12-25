@@ -130,24 +130,24 @@ type unsplashResponse struct {
 }
 
 // DownloadPhoto is triggered each time a download is attempted
-func DownloadPhoto(w http.ResponseWriter, r *http.Request) {
+func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
 	id := values.Get("id")
 	if id == "" {
-		http.Error(w, "Photo ID must not be empty", http.StatusBadRequest)
-		return
+		return utils.NewHTTPError(nil, http.StatusBadRequest, "Photo ID must not be empty")
 	}
 
 	err = TrackPhotoDownload(id)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
+
+	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 // TrackPhotoDownload is used to increment the number of downloads
@@ -162,11 +162,10 @@ func TrackPhotoDownload(id string) error {
 
 // SearchUnsplash triggers a photo search and sends a single page of photo
 // results for a query.
-func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
+func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return err
 	}
 
 	key := values.Get("key")
@@ -179,32 +178,28 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.SendGETRequest(url, s)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
 	bytes, err := json.Marshal(s)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, bytes)
+	return utils.JsonResponse(w, bytes)
 }
 
 // GetRandomPhoto retrives a single random photo using the provided collection
 // IDs to narrow the pool of photos from which a random one will be chosen.
 // If no collection IDs are present, it defaults to 998309 which is the ID of
 // the official Stellar Photos collection
-func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
+func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return err
 	}
 
 	collections := values.Get("collections")
-
 	if collections == "" {
 		collections = "998309"
 	}
@@ -218,16 +213,14 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.SendGETRequest(url, res)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
 	imageURL := res.Urls.Custom
 
 	base64, err := utils.ImageURLToBase64(imageURL)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
 	data := randomPhotoBase64{
@@ -237,23 +230,25 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := json.Marshal(data)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, bytes)
+	return utils.JsonResponse(w, bytes)
 }
 
 // ValidateCollections ensures that all the custom collection IDs that are added
 // to the extension are valid
-func ValidateCollections(w http.ResponseWriter, r *http.Request) {
+func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		return err
 	}
 
 	collections := strings.Split(values.Get("collections"), ",")
+
+	if len(collections) == 0 {
+		return utils.NewHTTPError(nil, http.StatusBadRequest, "At least one collection ID must be present")
+	}
 
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 
@@ -262,13 +257,14 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) {
 		c := &collection{}
 		err := utils.SendGETRequest(url, c)
 		if err != nil {
-			utils.InternalServerError(w)
-			return
+			return err
 		}
 
 		if c.ID == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return err
 		}
 	}
+
+	w.WriteHeader(http.StatusOK)
+	return nil
 }

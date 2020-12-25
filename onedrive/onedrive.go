@@ -24,7 +24,7 @@ type onedriveAuth struct {
 
 // SendOnedriveID sends the application id to the client on request to avoid
 // exposing it in the extension code
-func SendOnedriveID(w http.ResponseWriter, r *http.Request) {
+func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
 	id := config.Conf.Onedrive.AppID
 
 	d := onedriveID{
@@ -33,20 +33,18 @@ func SendOnedriveID(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := json.Marshal(d)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, bytes)
+	return utils.JsonResponse(w, bytes)
 }
 
 // AuthorizeOnedrive redeems the authorization code received from the client for
 // an access token
-func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
+func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	code := values.Get("code")
@@ -65,20 +63,18 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) {
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 	body, err := utils.SendPOSTRequest(endpoint, formValues)
 	if err != nil {
-		utils.InternalServerError(w, "Failed to retrieve Onedrive credentials")
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, body)
+	return utils.JsonResponse(w, body)
 }
 
 // RefreshOnedriveToken generates additional access tokens after the initial
 // token has expired
-func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
+func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	refreshToken := values.Get("refresh_token")
@@ -97,9 +93,8 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) {
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 	body, err := utils.SendPOSTRequest(endpoint, formValues)
 	if err != nil {
-		utils.InternalServerError(w, "Failed to retrieve Onedrive credentials")
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, body)
+	return utils.JsonResponse(w, body)
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
@@ -18,7 +20,7 @@ type key struct {
 
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code
-func SendDropboxKey(w http.ResponseWriter, r *http.Request) {
+func SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
 	dropboxKey := config.Conf.Dropbox.Key
 
 	d := key{
@@ -27,18 +29,17 @@ func SendDropboxKey(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := json.Marshal(d)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
+		return err
 	}
 
-	utils.JsonResponse(w, bytes)
+	return utils.JsonResponse(w, bytes)
 }
 
 // SaveToDropbox saves the requested photo to the current user's Dropbox account
-func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
+func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	token := values.Get("token")
@@ -47,8 +48,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 
 	err = unsplash.TrackPhotoDownload(id)
 	if err != nil {
-		utils.SendError(w, err)
-		return
+		return err
 	}
 
 	v := fmt.Sprintf("Bearer %s", token)
@@ -58,35 +58,36 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) {
 		"url":  url,
 	})
 	if err != nil {
-		utils.InternalServerError(w, "Failed to encode request body as JSON")
-		return
+		return err
 	}
 
 	endpoint := "https://api.dropboxapi.com/2/files/save_url"
 
 	request, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
-		utils.InternalServerError(w, "Failed to construct request")
-		return
+		return err
 	}
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", v)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	response, err := client.Do(request)
 	if err != nil {
-		utils.InternalServerError(w, "Network connectivity error")
-		return
+		if os.IsTimeout(err) {
+			return utils.NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+		}
+
+		return err
 	}
 
 	defer response.Body.Close()
 
 	_, err = utils.CheckForErrors(response)
 	if err != nil {
-		utils.SendError(w, err)
-		return
+		return err
 	}
 
 	w.WriteHeader(http.StatusOK)
+	return nil
 }

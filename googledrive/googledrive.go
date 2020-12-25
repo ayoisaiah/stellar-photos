@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"time"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
@@ -19,26 +22,25 @@ type key struct {
 
 // SendGoogleDriveKey sends the application key to the client on request to avoid
 // exposing it in the extension code
-func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) {
+func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 	d := key{
 		GoogleDriveKey: config.Conf.GoogleDrive.Key,
 	}
 
 	bytes, err := json.Marshal(d)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
+		return err
 	}
 
-	utils.JsonResponse(w, bytes)
+	return utils.JsonResponse(w, bytes)
 }
 
 // AuthorizeGoogleDrive redeems the authorization code received from the client for
 // an access token
-func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) {
+func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	code := values.Get("code")
@@ -57,21 +59,18 @@ func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) {
 	endpoint := "https://oauth2.googleapis.com/token"
 	body, err := utils.SendPOSTRequest(endpoint, formValues)
 	if err != nil {
-		fmt.Println(err)
-		utils.InternalServerError(w, "Failed to retrieve Google Drive credentials")
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, body)
+	return utils.JsonResponse(w, body)
 }
 
 // RefreshGoogleDriveToken generates additional access tokens after the initial
 // token has expired
-func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) {
+func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	refreshToken := values.Get("refresh_token")
@@ -89,20 +88,18 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) {
 	endpoint := "https://oauth2.googleapis.com/token"
 	body, err := utils.SendPOSTRequest(endpoint, formValues)
 	if err != nil {
-		utils.InternalServerError(w, "Failed to retrieve Google Drive credentials")
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, body)
+	return utils.JsonResponse(w, body)
 }
 
 // SaveToGoogleDrive saves the requested photo to the current user's
 // Google Drive account
-func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) {
+func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	token := values.Get("token")
@@ -111,52 +108,69 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) {
 
 	err = unsplash.TrackPhotoDownload(id)
 	if err != nil {
-		utils.SendError(w, err)
-		return
+		return err
 	}
 
 	v := fmt.Sprintf("Bearer %s", token)
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 180 * time.Second}
 	resp, err := http.Get(url)
 	if err != nil {
-		utils.SendError(w, err)
-		return
+		return err
 	}
 
 	defer resp.Body.Close()
 
-	fmt.Println("1: Here")
-	imageBytes, err := ioutil.ReadAll(resp.Body)
+	respBody, err := utils.CheckForErrors(resp)
 	if err != nil {
-		utils.SendError(w, err)
-		return
+		return err
 	}
 
-	fmt.Println(len(imageBytes))
-	endpoint := "https://www.googleapis.com/upload/drive/v3/files?uploadType=media"
+	endpoint := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
 
-	request, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(imageBytes))
+	// Metadata content.
+	// New multipart writer.
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Metadata part.
+	metadata := fmt.Sprintf(`{"name": "photo-%s.jpeg"}`, id)
+	metadataHeader := textproto.MIMEHeader{}
+	metadataHeader.Set("Content-Type", "application/json; charset=UTF-8")
+	part, _ := writer.CreatePart(metadataHeader)
+	part.Write([]byte(metadata))
+
+	mediaHeader := textproto.MIMEHeader{}
+	mediaHeader.Set("Content-Type", "image/jpeg")
+
+	mediaPart, _ := writer.CreatePart(mediaHeader)
+	io.Copy(mediaPart, bytes.NewReader(respBody))
+
+	// Close multipart writer.
+	writer.Close()
+
+	request, err := http.NewRequest("POST", endpoint, bytes.NewReader(body.Bytes()))
 	if err != nil {
-		utils.InternalServerError(w, "Failed to construct request")
-		return
+		return err
 	}
 
-	request.Header.Set("Content-Length", fmt.Sprintf("%d", len(imageBytes)))
-	request.Header.Set("Content-Type", "image/jpeg")
+	request.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
+	contentType := fmt.Sprintf("multipart/related; boundary=%s", writer.Boundary())
+	request.Header.Set("Content-Type", contentType)
 	request.Header.Set("Authorization", v)
 
 	response, err := client.Do(request)
 	if err != nil {
-		utils.InternalServerError(w, "Network connectivity error")
-		return
+		return err
 	}
 
 	defer response.Body.Close()
 
 	_, err = utils.CheckForErrors(response)
 	if err != nil {
-		utils.SendError(w, err)
-		return
+		return err
 	}
+
+	w.WriteHeader(http.StatusOK)
+	return nil
 }

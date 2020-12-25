@@ -21,11 +21,10 @@ type weatherInfo struct {
 }
 
 // GetForecast retrieves the current weather forecast for a locale
-func GetForecast(w http.ResponseWriter, r *http.Request) {
+func GetForecast(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
-		utils.InternalServerError(w, "Failed to parse URL")
-		return
+		return err
 	}
 
 	latitide := values.Get("lat")
@@ -39,15 +38,13 @@ func GetForecast(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.SendGETRequest(url, forecast)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
 	bytes, err := json.Marshal(forecast)
 	if err != nil {
-		utils.InternalServerError(w, err.Error())
-		return
+		return err
 	}
 
-	utils.JsonResponse(w, bytes)
+	return utils.JsonResponse(w, bytes)
 }
