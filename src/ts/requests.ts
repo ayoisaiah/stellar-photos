@@ -65,6 +65,28 @@ function getOnedriveId(): Promise<Response> {
   return makeRequest(`${baseUrl}/onedrive/id/`);
 }
 
+function getGoogleDriveKey(): Promise<Response> {
+  return makeRequest(`${baseUrl}/googledrive/key/`);
+}
+
+function authorizeGoogleDrive(code: string): Promise<Response> {
+  return makeRequest(`${baseUrl}/googledrive/auth/?code=${code}`);
+}
+
+function refreshGoogleDriveTokenApi(token: string): Promise<Response> {
+  return makeRequest(`${baseUrl}/googledrive/refresh/?refresh_token=${token}`);
+}
+
+function saveToGoogleDriveApi(
+  imageId: string,
+  token: string,
+  url: string
+): Promise<Response> {
+  return makeRequest(
+    `${baseUrl}/googledrive/save/?id=${imageId}&token=${token}&url=${url}`
+  );
+}
+
 export {
   getRandomPhoto,
   searchPhotos,
@@ -76,4 +98,8 @@ export {
   validateCollections,
   trackDownload,
   getOnedriveId,
+  getGoogleDriveKey,
+  authorizeGoogleDrive,
+  refreshGoogleDriveTokenApi,
+  saveToGoogleDriveApi,
 };

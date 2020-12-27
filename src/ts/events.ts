@@ -9,7 +9,8 @@ async function updateHistory(): Promise<void> {
 
   if (localData.history) {
     const history = $('js-history');
-    if (history) render(loadHistory(localData.history), history);
+    if (history)
+      render(loadHistory(localData.history, localData.cloudService), history);
   }
 }
 

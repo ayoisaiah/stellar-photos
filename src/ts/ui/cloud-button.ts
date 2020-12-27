@@ -1,7 +1,14 @@
 import { html, TemplateResult } from 'lit-html';
 import { saveToDropbox } from '../dropbox';
+import { saveToGoogleDrive } from '../googledrive';
 import { saveToOneDrive } from '../onedrive';
+import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
+
+function encodeURL(url: string): string {
+  const [base, params] = url.split('?');
+  return `${base}${encodeURIComponent(`?${params!}`)}`;
+}
 
 function onedriveButton(photo: UnsplashImage): TemplateResult {
   return html`
@@ -15,10 +22,22 @@ function onedriveButton(photo: UnsplashImage): TemplateResult {
   `;
 }
 
+function googledriveButton(photo: UnsplashImage): TemplateResult {
+  return html`
+    <button
+      @click=${() => saveToGoogleDrive(photo.id, encodeURL(photo.urls.raw))}
+      class="control-button cloud-button googledrive-button"
+      title="Save photo to Google Drive"
+    >
+      <svg class="icon icon-cloud"><use href="#icon-google-drive"></use></svg>
+    </button>
+  `;
+}
+
 function dropboxButton(photo: UnsplashImage): TemplateResult {
   return html`
     <button
-      @click=${() => saveToDropbox(photo.id, photo.urls.full)}
+      @click=${() => saveToDropbox(photo.id, encodeURL(photo.urls.full))}
       class="control-button cloud-button dropbox-button"
       title="Save photo to Dropbox"
     >
@@ -29,17 +48,18 @@ function dropboxButton(photo: UnsplashImage): TemplateResult {
 
 function cloudButton(
   photo: UnsplashImage,
-  cloudService?: 'dropbox' | 'onedrive'
+  cloudService?: ChromeLocalStorage['cloudService']
 ): TemplateResult | void {
-  if (cloudService === 'dropbox' || document.querySelector('.dropbox-button')) {
+  if (cloudService === 'dropbox') {
     return dropboxButton(photo);
   }
 
-  if (
-    cloudService === 'onedrive' ||
-    document.querySelector('.onedrive-button')
-  ) {
+  if (cloudService === 'onedrive') {
     return onedriveButton(photo);
+  }
+
+  if (cloudService === 'googledrive') {
+    return googledriveButton(photo);
   }
 }
 

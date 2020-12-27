@@ -1,5 +1,10 @@
 import 'chrome-extension-async';
-import { getForecast, getRandomPhoto, authorizeOnedrive } from './requests';
+import {
+  getForecast,
+  getRandomPhoto,
+  authorizeOnedrive,
+  authorizeGoogleDrive,
+} from './requests';
 import { Forecast } from './types/weather';
 import { UnsplashImage } from './types/unsplash';
 import { lessThanTimeAgo } from './helpers';
@@ -12,8 +17,9 @@ import {
   ChromeStorage,
   ChromeSyncStorage,
   ChromeLocalStorage,
-  OnedriveAuth,
+  OAuth2,
 } from './types';
+import { refreshGoogleDriveToken } from './googledrive';
 
 async function getStorageData(): Promise<ChromeStorage> {
   const localData: ChromeLocalStorage = await chrome.storage.local.get();
@@ -207,17 +213,49 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
 
     'code-flow': () => {
       chrome.storage.local.get('cloudService', async (result) => {
-        const { cloudService } = result;
-        if (cloudService === 'onedrive') {
-          if (sender.tab && sender.tab.id) {
-            chrome.tabs.remove([sender.tab.id]);
-          }
+        if (sender.tab && sender.tab.id) {
+          chrome.tabs.remove([sender.tab.id]);
+        }
 
+        const { cloudService } = result;
+        if (cloudService === 'googledrive') {
+          try {
+            const response = await authorizeGoogleDrive(request.code);
+            const data: OAuth2 = await response.json();
+
+            OAuth2.check(data);
+
+            if (data.refresh_token) {
+              chrome.storage.sync.set({
+                googleDriveRefreshToken: data.refresh_token,
+              });
+            }
+
+            if (data.access_token) {
+              const googleDriveData = {
+                timestamp: Date.now(),
+                ...data,
+              };
+
+              chrome.storage.local.set({ googledrive: googleDriveData });
+              notifyCloudAuthenticationSuccessful('Google Drive');
+
+              chrome.runtime.sendMessage({
+                command: 'set-googledrive-alarm',
+                expires_in: data.expires_in,
+              });
+            }
+          } catch (err) {
+            notifyCloudConnectionFailed('Google Drive');
+          }
+        }
+
+        if (cloudService === 'onedrive') {
           try {
             const response = await authorizeOnedrive(request.code);
-            const data: OnedriveAuth = await response.json();
+            const data: OAuth2 = await response.json();
 
-            OnedriveAuth.check(data);
+            OAuth2.check(data);
 
             if (data.access_token) {
               const onedriveData = {
@@ -238,7 +276,13 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
 
     'set-onedrive-alarm': () => {
       chrome.alarms.create('refresh-onedrive-token', {
-        periodInMinutes: request.expires_in / 60,
+        periodInMinutes: Number(request.expires_in / 60),
+      });
+    },
+
+    'set-googledrive-alarm': () => {
+      chrome.alarms.create('refresh-googledrive-token', {
+        periodInMinutes: Number(request.expires_in / 60),
       });
     },
 
@@ -248,16 +292,24 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
   listeners[request.command]();
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
-  switch (alarm.name) {
-    case 'loadphoto':
-      fetchRandomPhoto();
-      break;
-    case 'loadweather':
-      getWeatherInfo();
-      break;
-    case 'refresh-onedrive-token':
-      refreshOnedriveToken();
-      break;
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  try {
+    switch (alarm.name) {
+      case 'loadphoto':
+        await fetchRandomPhoto();
+        break;
+      case 'loadweather':
+        await getWeatherInfo();
+        break;
+      case 'refresh-onedrive-token':
+        await refreshOnedriveToken();
+        break;
+      case 'refresh-googledrive-token':
+        await refreshGoogleDriveToken();
+        break;
+    }
+  } catch (err) {
+    // eslint-disable-next-line
+    console.error(err);
   }
 });

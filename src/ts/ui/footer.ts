@@ -22,7 +22,7 @@ function openDialog(): void {
 function weatherInfo(forecast: Forecast): TemplateResult {
   const location = forecast.name;
   const temperature = Math.round(forecast.main.temp);
-  const { description } = forecast.weather[0];
+  const { description } = forecast.weather[0]!;
   const lastUpdatedTime = format(new Date(forecast.timestamp ?? Date.now()));
 
   return html`

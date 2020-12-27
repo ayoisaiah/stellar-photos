@@ -8,8 +8,13 @@ import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
 import { imageInfo } from './image-info';
 
-function loadHistory(history: UnsplashImage[]): TemplateResult {
-  let h = html`${history.map((photo: UnsplashImage) => photoCard(photo))}`;
+function loadHistory(
+  history: UnsplashImage[],
+  cloudService?: ChromeLocalStorage['cloudService']
+): TemplateResult {
+  let h = html`${history.map((photo: UnsplashImage) =>
+    photoCard(photo, cloudService)
+  )}`;
   if (history.length < 10) {
     let historyLength = history.length;
     let placeholders = html``;
@@ -108,7 +113,9 @@ function ui(data: ChromeLocalStorage): TemplateResult {
       ${search()}
 
       <ul class="s-history" id="js-history">
-        ${data.history ? loadHistory(data.history) : loadHistory([])}
+        ${data.history
+          ? loadHistory(data.history, data.cloudService)
+          : loadHistory([])}
       </ul>
 
       <div id="js-dialog-container">

@@ -65,7 +65,10 @@ async function setBackgroundFromHistory(
   }
 }
 
-function photoCard(photo: UnsplashImage): TemplateResult {
+function photoCard(
+  photo: UnsplashImage,
+  cloudService?: ChromeLocalStorage['cloudService']
+): TemplateResult {
   const backgroundPhoto = photo.base64 || photo.urls.small;
   const { width, height, id } = photo;
   const linkToPhoto = photo.links?.html ?? 'https://unsplash.com';
@@ -110,7 +113,7 @@ function photoCard(photo: UnsplashImage): TemplateResult {
           </a>
         </div>
 
-        <div class="middle">${cloudButton(photo)}</div>
+        <div class="middle">${cloudButton(photo, cloudService)}</div>
 
         <div class="bottom">
           <span class="s-photo-dimension">${width} x ${height}</span>

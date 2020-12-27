@@ -2,7 +2,6 @@ import { loadingIndicator } from './ui/loading';
 import { validateResponse, lessThanTimeAgo } from './helpers';
 import {
   notifyUnableToUpload,
-  notifyCloudConnectionFailed,
   notifyCloudAuthenticationSuccessful,
 } from '../js/libs/notifications';
 import {
@@ -10,7 +9,7 @@ import {
   getOnedriveId,
   refreshOnedriveTokenApi,
 } from './requests';
-import { OnedriveAuth } from './types';
+import { ChromeLocalStorage, OAuth2 } from './types';
 
 let interval: number;
 
@@ -18,7 +17,7 @@ interface OnedriveID {
   id: string;
 }
 
-async function createAppFolder(onedriveAuth: OnedriveAuth): Promise<void> {
+async function createAppFolder(onedriveAuth: OAuth2): Promise<void> {
   const headers = new Headers({
     Authorization: `bearer ${onedriveAuth.access_token}`,
   });
@@ -47,41 +46,31 @@ async function createAppFolder(onedriveAuth: OnedriveAuth): Promise<void> {
   chrome.runtime.sendMessage({ command: 'update-cloud-status' });
 }
 
-async function refreshOnedriveToken(
-  imageId?: string,
-  url?: string
-): Promise<void> {
-  try {
-    const localData = await chrome.storage.local.get('onedrive');
-    const onedriveAuth = localData.onedrive;
+async function refreshOnedriveToken(): Promise<
+  ChromeLocalStorage['onedrive'] | void
+> {
+  const localData = await chrome.storage.local.get('onedrive');
+  const onedriveAuth = localData.onedrive;
 
-    if (onedriveAuth) {
-      const response = await refreshOnedriveTokenApi(
-        onedriveAuth.refresh_token
-      );
-      const data = await response.json();
+  if (onedriveAuth) {
+    const response = await refreshOnedriveTokenApi(onedriveAuth.refresh_token);
+    const data: OAuth2 = await response.json();
 
-      const onedrive = {
-        timestamp: Date.now(),
-        ...data,
-      };
+    OAuth2.check(data);
 
-      chrome.storage.local.set({ onedrive });
+    const onedrive = {
+      timestamp: Date.now(),
+      ...data,
+    };
 
-      chrome.runtime.sendMessage({
-        command: 'set-onedrive-alarm',
-        expires_in: onedriveAuth.expires_in,
-      });
+    chrome.storage.local.set({ onedrive });
 
-      if (imageId && url) {
-        saveToOneDrive(imageId, url);
-      }
-    }
-  } catch (err) {
-    if (imageId) {
-      loadingIndicator().stop();
-      notifyCloudConnectionFailed('Onedrive');
-    }
+    chrome.runtime.sendMessage({
+      command: 'set-onedrive-alarm',
+      expires_in: onedriveAuth.expires_in,
+    });
+
+    return onedrive;
   }
 }
 
@@ -108,8 +97,10 @@ async function monitorUploadProgress(
   imageId: string
 ): Promise<void> {
   try {
+    console.log(url);
     const response = await fetch(url);
     const json: { status: string } = await validateResponse(response).json();
+    console.log(json);
     if (json.status === 'completed') {
       loadingIndicator().stop();
       clearInterval(interval);
@@ -130,30 +121,36 @@ async function monitorUploadProgress(
 
 async function saveToOneDrive(imageId: string, url: string): Promise<void> {
   try {
-    const localData = await chrome.storage.local.get('onedrive');
+    console.log(url);
+    const localData: ChromeLocalStorage = await chrome.storage.local.get();
 
-    if (!localData.onedrive) return;
-
-    const onedriveData = localData.onedrive;
-
-    if (!onedriveData) {
-      openOnedriveAuthPage();
+    if (!localData.onedrive) {
+      await openOnedriveAuthPage();
       return;
     }
 
     loadingIndicator().start();
 
-    await trackDownload(imageId);
-
-    if (!lessThanTimeAgo(onedriveData.timestamp, 3600)) {
-      refreshOnedriveToken(imageId);
-      return;
+    const tokenExpired = lessThanTimeAgo(
+      localData.onedrive.timestamp,
+      localData.onedrive.expires_in
+    );
+    if (!tokenExpired) {
+      const data = await refreshOnedriveToken();
+      if (data && data.access_token) {
+        localData.onedrive = data;
+      } else {
+        openOnedriveAuthPage();
+        return;
+      }
     }
+
+    await trackDownload(imageId);
 
     const headers = new Headers({
       'Content-Type': 'application/json',
       Prefer: 'respond-async',
-      Authorization: `bearer ${onedriveData.access_token}`,
+      Authorization: `Bearer ${localData.onedrive.access_token}`,
     });
 
     const body = {

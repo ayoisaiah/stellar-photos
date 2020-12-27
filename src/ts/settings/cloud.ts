@@ -2,6 +2,7 @@ import * as Ladda from 'ladda';
 import { html, render, TemplateResult } from 'lit-html';
 import { openOnedriveAuthPage } from '../onedrive';
 import { openDropboxAuthPage } from '../dropbox';
+import { openGoogleDriveAuthPage } from '../googledrive';
 import { $ } from '../helpers';
 import { ChromeStorage } from '../types';
 import { snackbar } from '../ui/snackbar';
@@ -22,6 +23,10 @@ async function authorizeCloud(): Promise<void> {
 
     if (selected === 'onedrive') {
       await openOnedriveAuthPage();
+    }
+
+    if (selected === 'googledrive') {
+      await openGoogleDriveAuthPage();
     }
   } catch (err) {
     snackbar(err, 'error');
@@ -68,7 +73,10 @@ async function updateCloudService(event: { target: HTMLSelectElement }) {
 
 function cloudSettings(settings: ChromeStorage): TemplateResult {
   const cloudService = settings.cloudService as ChromeStorage['cloudService'];
-  let token: ChromeStorage['dropbox'] | ChromeStorage['onedrive'];
+  let token:
+    | ChromeStorage['dropbox']
+    | ChromeStorage['onedrive']
+    | ChromeStorage['googledrive'];
   if (cloudService) {
     token = settings[cloudService];
   }
@@ -110,6 +118,12 @@ function cloudSettings(settings: ChromeStorage): TemplateResult {
             ?selected=${settings.cloudService === 'onedrive'}
           >
             OneDrive
+          </option>
+          <option
+            value="googledrive"
+            ?selected=${settings.cloudService === 'googledrive'}
+          >
+            Google Drive
           </option>
         </select>
 

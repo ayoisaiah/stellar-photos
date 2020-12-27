@@ -9,7 +9,7 @@ function loadCSS(url: string) {
     link.href = url;
     link.onload = resolve;
     link.onerror = reject;
-    document.getElementsByTagName('head')[0].appendChild(link);
+    document.getElementsByTagName('head')[0]!.appendChild(link);
   });
 }
 
@@ -19,7 +19,7 @@ function loadJS(url: string) {
     script.src = url;
     script.onload = resolve;
     script.onerror = reject;
-    document.getElementsByTagName('head')[0].appendChild(script);
+    document.getElementsByTagName('head')[0]!.appendChild(script);
   });
 }
 

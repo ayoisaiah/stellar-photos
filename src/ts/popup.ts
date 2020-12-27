@@ -5,13 +5,7 @@ import { $ } from './helpers';
 import { ChromeStorage, ChromeLocalStorage, ChromeSyncStorage } from './types';
 
 async function getStorageData(): Promise<ChromeStorage> {
-  const localData: ChromeLocalStorage = await chrome.storage.local.get([
-    'cloudService',
-    'dropbox',
-    'onedrive',
-    'forecast',
-    'photoFrequency',
-  ]);
+  const localData: ChromeLocalStorage = await chrome.storage.local.get();
 
   const syncData: ChromeSyncStorage = await chrome.storage.sync.get();
 

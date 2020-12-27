@@ -85,7 +85,7 @@ async function updateCollections(): Promise<void> {
   );
 
   try {
-    if (!collections) throw Error('Collection IDs not valid!');
+    if (!collections) throw Error('At least one collection ID must be present');
 
     spinner.start();
 
@@ -96,7 +96,7 @@ async function updateCollections(): Promise<void> {
     snackbar('Collections saved successfully');
     chrome.runtime.sendMessage({ command: 'refresh' });
   } catch (err) {
-    snackbar('An error occurred while validating the collections', 'error');
+    snackbar(err, 'error');
   } finally {
     spinner.stop();
   }
