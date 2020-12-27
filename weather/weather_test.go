@@ -1,59 +1,89 @@
 package weather
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/joho/godotenv"
+	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
 )
 
-func readEnv() {
-	err := godotenv.Load("../.env")
-
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	_ = config.New()
-}
-
-var table = []struct {
-	latitide   float64
-	longitude  float64
-	metric     string
-	statusCode int
-}{
-	{8.478600, 4.536080, "metric", 200},
-	{51.5074, 0.1278, "imperial", 200},
-	{48.8566, 2.3522, "metric", 200},
-	{40.7128, -74.0060, "imperial", 200},
-	{-110.7128, 45.0060, "imperial", 400},
-	{60.51, -181, "metric", 400},
+func init() {
+	utils.Client = &mocks.MockClient{}
+	config.Conf = &config.Config{}
 }
 
 func TestGetForecast(t *testing.T) {
-	readEnv()
+	table := []struct {
+		latitide   float64
+		longitude  float64
+		metric     string
+		statusCode int
+		jsonFile   string
+	}{
+		{8.478600, 4.536080, "metric", 200, "weather_forecast_response"},
+		{60.51, -181, "metric", 400, "weather_error_response"},
+	}
 
-	for _, value := range table {
-		path := fmt.Sprintf("/get-weather?lat=%f&lon=%f&metric=%s", value.latitide, value.longitude, value.metric)
+	for i, value := range table {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+				body, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
 
-		req, err := http.NewRequest("GET", path, nil)
+				w := &weatherInfo{}
+				err = json.Unmarshal(body, w)
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
 
-		if err != nil {
-			t.Fatal(err)
-		}
+				var statusCode int
+				if w.Name != "" {
+					statusCode = 200
+				} else {
+					statusCode = 400
+				}
 
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(GetForecast)
+				r := ioutil.NopCloser(bytes.NewReader(body))
+				return &http.Response{
+					StatusCode: statusCode,
+					Body:       r,
+				}, nil
+			}
 
-		handler.ServeHTTP(rr, req)
+			path := fmt.Sprintf("/get-weather?lat=%f&lon=%f&metric=%s", value.latitide, value.longitude, value.metric)
+			req, err := http.NewRequest(http.MethodGet, path, nil)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
 
-		if rr.Code != value.statusCode {
-			t.Errorf("Status should be %d, got %d", value.statusCode, rr.Code)
-		}
+			rr := httptest.NewRecorder()
+			err = GetForecast(rr, req)
+			if err == nil {
+				if value.statusCode > 300 {
+					t.Fatalf("Expected error for '%f, %f', but got none", value.latitide, value.longitude)
+				}
+
+				return
+			}
+
+			clientError, ok := err.(utils.ClientError)
+			if !ok {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			status, _ := clientError.ResponseHeaders()
+			if status != value.statusCode {
+				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+			}
+		})
 	}
 }
