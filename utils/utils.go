@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,9 +14,13 @@ import (
 
 // SendGETRequest makes an HTTP GET request and decodes the JSON
 // response into the provided target interface
-func SendGETRequest(url string, target interface{}) error {
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(url)
+func SendGETRequest(endpoint string, target interface{}) error {
+	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
 			return NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
@@ -40,15 +45,14 @@ func SendPOSTRequest(endpoint string, formValues map[string]string) ([]byte, err
 		form.Add(key, value)
 	}
 
-	request, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	response, err := client.Do(request)
+	response, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
 			return nil, NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
@@ -89,9 +93,16 @@ func JsonResponse(w http.ResponseWriter, bytes []byte) error {
 
 // ImageURLToBase64 retrives the Base64 representation of an image URL and
 // returns it
-func ImageURLToBase64(url string) (string, error) {
-	client := &http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Get(url)
+func ImageURLToBase64(endpoint string) (string, error) {
+	ctx, cncl := context.WithTimeout(context.Background(), time.Second*20)
+	defer cncl()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
 			return "", NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
@@ -246,21 +247,17 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 
 	collections := strings.Split(values.Get("collections"), ",")
 
-	if len(collections) == 0 {
-		return utils.NewHTTPError(nil, http.StatusBadRequest, "At least one collection ID must be present")
-	}
-
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 
 	for _, value := range collections {
-		url := fmt.Sprintf("%s/collections/%s/?client_id=%s", UnsplashAPILocation, value, unsplashAccessKey)
-		c := &collection{}
-		err := utils.SendGETRequest(url, c)
+		valueToNum, err := strconv.Atoi(value)
 		if err != nil {
-			return err
+			return utils.NewHTTPError(err, http.StatusBadRequest, "Collection ID must be a number")
 		}
 
-		if c.ID == "" {
+		url := fmt.Sprintf("%s/collections/%d/?client_id=%s", UnsplashAPILocation, valueToNum, unsplashAccessKey)
+		err = utils.SendGETRequest(url, &collection{})
+		if err != nil {
 			return err
 		}
 	}
