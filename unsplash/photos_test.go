@@ -1,147 +1,296 @@
 package unsplash
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/joho/godotenv"
+	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
 )
 
-func readEnv() {
-	err := godotenv.Load("../.env")
-
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	_ = config.New()
+func init() {
+	utils.Client = &mocks.MockClient{}
+	config.Conf = &config.Config{}
 }
 
 var imageIds = []struct {
-	id         string
+	input      string
 	statusCode int
+	jsonFile   string
 }{
-	{"bWI4Vd4vI3w", 200},
-	{"xjQhTrxyVBw", 200},
-	{"7NcGuPF5NU0", 200},
-	{"oeks929jesj", 404},
-	{"9jdwnduwwen", 404},
-	{"aaaaa1aaaaa", 404},
+	{"bWI4Vd4vI3w", 200, "sample_download_response"},
+	{"oeks929jesj", 404, "photo_not_found_response"},
+	{"", 400, ""},
 }
 
 func TestDownloadPhoto(t *testing.T) {
-	readEnv()
-
 	for _, value := range imageIds {
-		path := fmt.Sprintf("/download-photo?id=%s", value.id)
+		t.Run(value.input, func(t *testing.T) {
+			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
 
-		req, err := http.NewRequest("GET", path, nil)
+				d := &download{}
+				err = json.Unmarshal(jsonObj, d)
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
 
-		if err != nil {
-			t.Fatal(err)
-		}
+				var statusCode int
+				if d.URL == "" {
+					statusCode = 404
+				} else {
+					statusCode = 200
+				}
 
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(DownloadPhoto)
+				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
+				return &http.Response{
+					StatusCode: statusCode,
+					Body:       r,
+				}, nil
+			}
 
-		handler.ServeHTTP(rr, req)
+			path := fmt.Sprintf("/download-photo?id=%s", value.input)
+			req, err := http.NewRequest(http.MethodGet, path, nil)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
 
-		if rr.Code != value.statusCode {
-			t.Errorf("Status should be %d, got %d", value.statusCode, rr.Code)
-		}
+			rr := httptest.NewRecorder()
+			err = DownloadPhoto(rr, req)
+			if err == nil {
+				if value.statusCode > 300 {
+					t.Fatalf("Expected error for '%s', but got none", value.input)
+				}
+
+				return
+			}
+
+			clientError, ok := err.(utils.ClientError)
+			if !ok {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			status, _ := clientError.ResponseHeaders()
+			if status != value.statusCode {
+				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+			}
+		})
 	}
-}
-
-func TestGetPhotoDownloadLocation(t *testing.T) {
-	readEnv()
-
-	for _, value := range imageIds {
-		s, err := GetPhotoDownloadLocation(value.id)
-
-		if err != nil && value.statusCode == 200 {
-			t.Errorf("Expect no errors from GetPhotoDownloadLocation for a valid photo id")
-		}
-
-		if err == nil && value.statusCode == 500 {
-			t.Errorf("Expected GetPhotoDownloadLocation to throw an error for an invalid photo id")
-		}
-
-		if value.statusCode == 200 && s.URL == "" {
-			t.Errorf("Expected UnsplashResponse URL field to be non-empty, got %s", s.URL)
-		}
-	}
-}
-
-func makeRequest(t *testing.T, path string, h func(http.ResponseWriter, *http.Request)) {
-	readEnv()
-
-	req, err := http.NewRequest("GET", path, nil)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(h)
-
-	handler.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("Status should be %d, got %d", http.StatusOK, rr.Code)
-	}
-}
-
-var searchTable = []struct {
-	key  string
-	page int
-}{
-	{"cars", 1},
-	{"house", 6},
-	{"animal", 10},
 }
 
 func TestSearchUnsplash(t *testing.T) {
+	searchTable := []struct {
+		input       string
+		resultCount int
+		jsonFile    string
+	}{
+		{"cars", 10000, "sample_search_response"},
+		{"ehfdjsiuhre", 0, "empty_search_response"},
+	}
+
 	for _, value := range searchTable {
-		makeRequest(t, fmt.Sprintf("/search-unsplash?key=%s&page=%d", value.key, value.page), SearchUnsplash)
+		t.Run(value.input, func(t *testing.T) {
+			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       r,
+				}, nil
+			}
+
+			path := fmt.Sprintf("/search-unsplash?key=%s&page=1", value.input)
+			req, err := http.NewRequest(http.MethodGet, path, nil)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			rr := httptest.NewRecorder()
+			err = SearchUnsplash(rr, req)
+			if err != nil {
+				clientError, ok := err.(utils.ClientError)
+				if !ok {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+
+				status, _ := clientError.ResponseHeaders()
+				if status != http.StatusOK {
+					t.Errorf("Status should be %d, got %d", http.StatusOK, status)
+				}
+			}
+
+			resp := rr.Result()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			s := &searchResult{}
+			err = json.Unmarshal(body, s)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if s.Total != value.resultCount {
+				t.Errorf("Total search results for '%s' should be %d, got %d", value.input, value.resultCount, s.Total)
+			}
+
+		})
 	}
 }
 
 func TestGetRandomPhoto(t *testing.T) {
-	makeRequest(t, "/random-photo?collections=998309", GetRandomPhoto)
-}
+	collections := []struct {
+		input      string
+		statusCode int
+		jsonFile   string
+	}{
+		{"998309,317099", 200, "random_photo_response"},
+		{"", 200, "random_photo_response"},
+	}
 
-var collectionsTable = []struct {
-	ids        string
-	statusCode int
-}{
-	{"998309,317099", 200},
-	{"39843782,4993402", 500},
-	{"151521,9829382", 500},
-	{"175083,762960", 200},
+	for _, value := range collections {
+		t.Run(value.input, func(t *testing.T) {
+			mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
+				var body []byte
+				var err error
+				if strings.Contains(req.URL.Path, "/photos/random") {
+					body, err = ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+					if err != nil {
+						t.Fatalf("Unexpected error: %v", err)
+					}
+				}
+
+				if strings.Contains(req.URL.Path, ".jpg") {
+					body, err = ioutil.ReadFile("../test/random_image.jpg")
+					if err != nil {
+						t.Fatalf("Unexpected error: %v", err)
+					}
+				}
+
+				r := ioutil.NopCloser(bytes.NewReader(body))
+
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       r,
+				}, nil
+			}
+
+			path := fmt.Sprintf("/random-photo?collections=%s", value.input)
+			req, err := http.NewRequest(http.MethodGet, path, nil)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			rr := httptest.NewRecorder()
+			err = GetRandomPhoto(rr, req)
+			if err == nil {
+				if value.statusCode > 300 {
+					t.Fatalf("Expected error for '%s', but got none", value.input)
+				}
+
+				return
+			}
+
+			clientError, ok := err.(utils.ClientError)
+			if !ok {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			status, _ := clientError.ResponseHeaders()
+			if status != value.statusCode {
+				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+			}
+		})
+	}
+
 }
 
 func TestValidateCollections(t *testing.T) {
-	readEnv()
+	collections := []struct {
+		input      string
+		statusCode int
+	}{
+		{"998309,317099", 200},
+		{"39843782,4993402", 404},
+		{"998309,39843782", 404},
+		{"", 400},
+		{"ieufhhjej", 400},
+	}
 
-	for _, value := range collectionsTable {
-		path := fmt.Sprintf("/validate-collections?collections=%s", value.ids)
-		req, err := http.NewRequest("GET", path, nil)
+	m := map[string]struct {
+		jsonFile   string
+		statusCode int
+	}{
+		"998309":   {jsonFile: "sample_collections_response", statusCode: 200},
+		"317099":   {jsonFile: "sample_collections_response", statusCode: 200},
+		"39843782": {jsonFile: "collections_not_found_response", statusCode: 404},
+		"4993402":  {jsonFile: "collections_not_found_response", statusCode: 404},
+	}
 
-		if err != nil {
-			t.Fatal(err)
-		}
+	for _, value := range collections {
+		t.Run(value.input, func(t *testing.T) {
+			mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
+				path := strings.TrimSuffix(req.URL.Path, "/")
+				var id string
+				n, _ := fmt.Sscanf(path, "/collections/%s/", &id)
+				if n != 1 {
+					t.Fatal("Failed to parse collection ID")
+				}
 
-		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(ValidateCollections)
+				file := m[id].jsonFile
+				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", file))
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
 
-		handler.ServeHTTP(rr, req)
+				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
 
-		if rr.Code != value.statusCode {
-			t.Errorf("Status should be %d, got %d", http.StatusOK, rr.Code)
-		}
+				return &http.Response{
+					StatusCode: m[id].statusCode,
+					Body:       r,
+				}, nil
+			}
+
+			path := fmt.Sprintf("/validate-collections?collections=%s", value.input)
+			req, err := http.NewRequest(http.MethodGet, path, nil)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			rr := httptest.NewRecorder()
+			err = ValidateCollections(rr, req)
+			if err == nil {
+				if value.statusCode > 300 {
+					t.Fatalf("Expected error for '%s', but got none", value.input)
+				}
+
+				return
+			}
+
+			clientError, ok := err.(utils.ClientError)
+			if !ok {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			status, _ := clientError.ResponseHeaders()
+			if status != value.statusCode {
+				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+			}
+		})
 	}
 }
