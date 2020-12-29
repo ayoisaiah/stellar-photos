@@ -34,7 +34,7 @@ func TestDownloadPhoto(t *testing.T) {
 	for _, value := range imageIds {
 		t.Run(value.input, func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
-				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -101,7 +101,7 @@ func TestSearchUnsplash(t *testing.T) {
 	for _, value := range searchTable {
 		t.Run(value.input, func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
-				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -169,14 +169,14 @@ func TestGetRandomPhoto(t *testing.T) {
 				var body []byte
 				var err error
 				if strings.Contains(req.URL.Path, "/photos/random") {
-					body, err = ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+					body, err = ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 					if err != nil {
 						t.Fatalf("Unexpected error: %v", err)
 					}
 				}
 
 				if strings.Contains(req.URL.Path, ".jpg") {
-					body, err = ioutil.ReadFile("../test/random_image.jpg")
+					body, err = ioutil.ReadFile("../testdata/random_image.jpg")
 					if err != nil {
 						t.Fatalf("Unexpected error: %v", err)
 					}
@@ -253,7 +253,7 @@ func TestValidateCollections(t *testing.T) {
 				}
 
 				file := m[id].jsonFile
-				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", file))
+				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", file))
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}

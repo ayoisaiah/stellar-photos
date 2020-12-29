@@ -34,7 +34,7 @@ func TestGetForecast(t *testing.T) {
 	for i, value := range table {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
-				body, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.json", value.jsonFile))
+				body, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
