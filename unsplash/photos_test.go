@@ -20,43 +20,21 @@ func init() {
 	config.Conf = &config.Config{}
 }
 
-var imageIds = []struct {
-	input      string
-	statusCode int
-	jsonFile   string
-}{
-	{"bWI4Vd4vI3w", 200, "sample_download_response"},
-	{"oeks929jesj", 404, "photo_not_found_response"},
-	{"", 400, ""},
-}
-
 func TestDownloadPhoto(t *testing.T) {
+	imageIds := []struct {
+		input      string
+		statusCode int
+		jsonFile   string
+	}{
+		{"bWI4Vd4vI3w", 200, "sample_download_response"},
+		{"oeks929jesj", 404, "photo_not_found_response"},
+		{"", 400, ""},
+	}
+
 	for _, value := range imageIds {
 		t.Run(value.input, func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
-				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
-				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
-				}
-
-				d := &download{}
-				err = json.Unmarshal(jsonObj, d)
-				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
-				}
-
-				var statusCode int
-				if d.URL == "" {
-					statusCode = 404
-				} else {
-					statusCode = 200
-				}
-
-				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
-				return &http.Response{
-					StatusCode: statusCode,
-					Body:       r,
-				}, nil
+				return mocks.MockTrackPhotoDownload(value.jsonFile)
 			}
 
 			path := fmt.Sprintf("/download-photo?id=%s", value.input)
@@ -103,7 +81,7 @@ func TestSearchUnsplash(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
 				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
+					return nil, err
 				}
 
 				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
@@ -171,14 +149,14 @@ func TestGetRandomPhoto(t *testing.T) {
 				if strings.Contains(req.URL.Path, "/photos/random") {
 					body, err = ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
+						return nil, err
 					}
 				}
 
 				if strings.Contains(req.URL.Path, ".jpg") {
 					body, err = ioutil.ReadFile("../testdata/random_image.jpg")
 					if err != nil {
-						t.Fatalf("Unexpected error: %v", err)
+						return nil, err
 					}
 				}
 
@@ -249,13 +227,13 @@ func TestValidateCollections(t *testing.T) {
 				var id string
 				n, _ := fmt.Sscanf(path, "/collections/%s/", &id)
 				if n != 1 {
-					t.Fatal("Failed to parse collection ID")
+					return nil, fmt.Errorf("Failed to parse collection ID")
 				}
 
 				file := m[id].jsonFile
 				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", file))
 				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
+					return nil, err
 				}
 
 				r := ioutil.NopCloser(bytes.NewReader(jsonObj))

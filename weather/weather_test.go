@@ -36,13 +36,13 @@ func TestGetForecast(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
 				body, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
 				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
+					return nil, err
 				}
 
 				w := &weatherInfo{}
 				err = json.Unmarshal(body, w)
 				if err != nil {
-					t.Fatalf("Unexpected error: %v", err)
+					return nil, err
 				}
 
 				var statusCode int
