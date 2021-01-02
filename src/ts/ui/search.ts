@@ -3,7 +3,7 @@ import { html, TemplateResult, render } from 'lit-html';
 import { $ } from '../helpers';
 import { loadingIndicator } from './loading';
 import { searchPhotos } from '../requests';
-import { notifyNoSearchResults } from '../../js/libs/notifications';
+import { notifyNoSearchResults } from '../notifications';
 import { UnsplashImage, UnsplashSearch } from '../types/unsplash';
 import { photoCard } from './photo-card';
 import { snackbar } from './snackbar';

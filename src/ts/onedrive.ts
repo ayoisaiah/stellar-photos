@@ -3,7 +3,7 @@ import { validateResponse, lessThanTimeAgo } from './helpers';
 import {
   notifyUnableToUpload,
   notifyCloudAuthenticationSuccessful,
-} from '../js/libs/notifications';
+} from './notifications';
 import {
   trackDownload,
   getOnedriveId,

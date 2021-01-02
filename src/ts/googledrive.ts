@@ -8,8 +8,8 @@ import { ChromeLocalStorage, ChromeSyncStorage, OAuth2 } from './types';
 import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
-} from '../js/libs/notifications';
-import { lessThanTimeAgo } from '../js/libs/helpers';
+} from './notifications';
+import { lessThanTimeAgo } from './helpers';
 
 async function openGoogleDriveAuthPage(): Promise<void> {
   const response = await getGoogleDriveKey();

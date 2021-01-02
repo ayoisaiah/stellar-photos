@@ -11,7 +11,7 @@ import { lessThanTimeAgo } from './helpers';
 import {
   notifyCloudAuthenticationSuccessful,
   notifyCloudConnectionFailed,
-} from '../js/libs/notifications';
+} from './notifications';
 import { refreshOnedriveToken, createAppFolder } from './onedrive';
 import {
   ChromeStorage,

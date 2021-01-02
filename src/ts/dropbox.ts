@@ -1,9 +1,9 @@
-import { loadingIndicator} from './ui/loading';
+import { loadingIndicator } from './ui/loading';
 import { saveToDropboxApi, getDropboxKey } from './requests';
 import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
-} from '../js/libs/notifications';
+} from './notifications';
 
 async function openDropboxAuthPage(): Promise<void> {
   const response = await getDropboxKey();
