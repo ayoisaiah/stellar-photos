@@ -237,7 +237,19 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
  For example, 998309 is the collection ID for https://unsplash.com/collections/998309/stellar-photos.
  Separate multiple collection IDs with commas."
               >
-                <svg class="icon icon-info"><use href="#icon-info"></use></svg>
+                <svg
+                  id="icon-info"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <title>Info</title>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="8"></line>
+                </svg>
               </span>
             </div>
 
