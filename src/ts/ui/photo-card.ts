@@ -57,7 +57,6 @@ async function setBackgroundFromHistory(
       fadeInBackground();
     }
 
-    // TODO: Update Image info
     updateImageInfo(image);
   } catch (err) {
     // eslint-disable-next-line

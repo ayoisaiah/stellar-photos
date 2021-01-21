@@ -7,6 +7,7 @@ import { notifyNoSearchResults } from '../notifications';
 import { UnsplashImage, UnsplashSearch } from '../types/unsplash';
 import { photoCard } from './photo-card';
 import { snackbar } from './snackbar';
+import { ChromeLocalStorage } from '../types';
 
 interface State {
   query: string;
@@ -42,10 +43,15 @@ function loadMoreResults(entries: IntersectionObserverEntry[]): void {
 
 const observer = new IntersectionObserver(loadMoreResults, options);
 
-function displayPhotos(photos: UnsplashImage[]) {
+async function displayPhotos(photos: UnsplashImage[]): Promise<void> {
   const searchResults = $('js-search-results');
+  const data: {
+    cloudService?: ChromeLocalStorage['cloudService'];
+  } = (await chrome.storage.local.get(['cloudService'])) as ChromeLocalStorage;
+  const { cloudService } = data;
+
   if (searchResults) {
-    const h = html`${photos.map((photo) => photoCard(photo))}`;
+    const h = html`${photos.map((photo) => photoCard(photo, cloudService))}`;
     render(h, searchResults);
   }
 }
