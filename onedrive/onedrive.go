@@ -2,6 +2,7 @@ package onedrive
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
@@ -22,8 +23,7 @@ type onedriveAuth struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// SendOnedriveID sends the application id to the client on request to avoid
-// exposing it in the extension code
+// SendOnedriveID sends the application id to the client on request
 func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
 	id := config.Conf.Onedrive.AppID
 
@@ -48,6 +48,9 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	code := values.Get("code")
+	if code == "" {
+		return errors.New("Authorization code not specified")
+	}
 
 	id := config.Conf.Onedrive.AppID
 	secret := config.Conf.Onedrive.Secret
@@ -78,6 +81,9 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	refreshToken := values.Get("refresh_token")
+	if refreshToken == "" {
+		return errors.New("Refresh token not specified")
+	}
 
 	id := config.Conf.Onedrive.AppID
 	secret := config.Conf.Onedrive.Secret
