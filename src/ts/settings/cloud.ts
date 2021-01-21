@@ -47,7 +47,13 @@ function updateCloudStatus(flag: boolean): void {
   }
 
   const authorizeButton = html`
-    <button @click=${authorizeCloud} class="authorize" id="authorize">
+    <button
+      id="js-connect-cloud"
+      data-style="expand-right"
+      @click=${authorizeCloud}
+      class="authorize"
+      id="authorize"
+    >
       Connect
     </button>
   `;
