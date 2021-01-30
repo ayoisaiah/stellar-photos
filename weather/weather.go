@@ -1,7 +1,6 @@
 package weather
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -36,12 +35,7 @@ func GetForecast(w http.ResponseWriter, r *http.Request) error {
 
 	forecast := &weatherInfo{}
 
-	err = utils.SendGETRequest(url, forecast)
-	if err != nil {
-		return err
-	}
-
-	bytes, err := json.Marshal(forecast)
+	bytes, err := utils.SendGETRequest(url, forecast)
 	if err != nil {
 		return err
 	}

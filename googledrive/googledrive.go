@@ -2,7 +2,9 @@ package googledrive
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -15,9 +17,24 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-// Dropbox application key
+// Google drive application key
 type key struct {
 	GoogleDriveKey string `json:"googledrive_key"`
+}
+
+type googleDriveAuth struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int    `json:"expires_in"`
+	TokenType    string `json:"token_type"`
+	Scope        string `json:"scope"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+}
+
+type saveToDriveResponse struct {
+	Kind     string `json:"kind"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	MimeType string `json:"mimeType"`
 }
 
 // SendGoogleDriveKey sends the application key to the client on request to avoid
@@ -53,11 +70,11 @@ func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  "https://ayoisaiah.github.io/stellar-photos",
+		"redirect_uri":  config.Conf.RedirectURL,
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
-	body, err := utils.SendPOSTRequest(endpoint, formValues)
+	body, err := utils.SendPOSTRequest(endpoint, formValues, &googleDriveAuth{})
 	if err != nil {
 		return err
 	}
@@ -74,6 +91,9 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	refreshToken := values.Get("refresh_token")
+	if refreshToken == "" {
+		return errors.New("Refresh token not specified")
+	}
 
 	id := config.Conf.GoogleDrive.Key
 	secret := config.Conf.GoogleDrive.Secret
@@ -86,7 +106,7 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
-	body, err := utils.SendPOSTRequest(endpoint, formValues)
+	body, err := utils.SendPOSTRequest(endpoint, formValues, &googleDriveAuth{})
 	if err != nil {
 		return err
 	}
@@ -106,15 +126,22 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	err = unsplash.TrackPhotoDownload(id)
+	_, err = unsplash.TrackPhotoDownload(id)
 	if err != nil {
 		return err
 	}
 
 	v := fmt.Sprintf("Bearer %s", token)
 
-	client := &http.Client{Timeout: 180 * time.Second}
-	resp, err := http.Get(url)
+	ctx, cncl := context.WithTimeout(context.Background(), time.Second*180)
+	defer cncl()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := utils.Client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -149,7 +176,7 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	// Close multipart writer.
 	writer.Close()
 
-	request, err := http.NewRequest("POST", endpoint, bytes.NewReader(body.Bytes()))
+	request, err = http.NewRequest("POST", endpoint, bytes.NewReader(body.Bytes()))
 	if err != nil {
 		return err
 	}
@@ -159,7 +186,7 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	request.Header.Set("Content-Type", contentType)
 	request.Header.Set("Authorization", v)
 
-	response, err := client.Do(request)
+	response, err := utils.Client.Do(request)
 	if err != nil {
 		return err
 	}

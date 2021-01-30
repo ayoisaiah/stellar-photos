@@ -9,6 +9,7 @@ import (
 // on start up
 type Config struct {
 	Port           string
+	RedirectURL    string
 	Unsplash       UnsplashConfig
 	Onedrive       OnedriveConfig
 	OpenWeatherMap OpenWeatherMapConfig
@@ -49,7 +50,8 @@ var Conf *Config
 // New returns a new Config struct
 func New() *Config {
 	Conf = &Config{
-		Port: getEnv("PORT", "8080"),
+		Port:        getEnv("PORT", "8080"),
+		RedirectURL: getEnv("REDIRECT_URL", ""),
 		Unsplash: UnsplashConfig{
 			AccessKey: getEnv("UNSPLASH_ACCESS_KEY", ""),
 		},

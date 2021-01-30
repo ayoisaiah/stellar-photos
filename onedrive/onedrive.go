@@ -60,11 +60,11 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  "https://ayoisaiah.github.io/stellar-photos",
+		"redirect_uri":  config.Conf.RedirectURL,
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-	body, err := utils.SendPOSTRequest(endpoint, formValues)
+	body, err := utils.SendPOSTRequest(endpoint, formValues, &onedriveAuth{})
 	if err != nil {
 		return err
 	}
@@ -93,11 +93,11 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 		"client_id":     id,
 		"client_secret": secret,
 		"refresh_token": refreshToken,
-		"redirect_uri":  "https://ayoisaiah.github.io/stellar-photos",
+		"redirect_uri":  config.Conf.RedirectURL,
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-	body, err := utils.SendPOSTRequest(endpoint, formValues)
+	body, err := utils.SendPOSTRequest(endpoint, formValues, &onedriveAuth{})
 	if err != nil {
 		return err
 	}

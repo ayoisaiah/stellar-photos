@@ -103,7 +103,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	err = unsplash.TrackPhotoDownload(id)
+	_, err = unsplash.TrackPhotoDownload(id)
 	if err != nil {
 		return err
 	}

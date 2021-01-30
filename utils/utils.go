@@ -14,32 +14,37 @@ import (
 
 // SendGETRequest makes an HTTP GET request and decodes the JSON
 // response into the provided target interface
-func SendGETRequest(endpoint string, target interface{}) error {
+func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
 	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+			return nil, NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
 		}
 
-		return err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	body, err := CheckForErrors(resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return json.Unmarshal(body, target)
+	err = json.Unmarshal(body, target)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(target)
 }
 
-func SendPOSTRequest(endpoint string, formValues map[string]string) ([]byte, error) {
+func SendPOSTRequest(endpoint string, formValues map[string]string, target interface{}) ([]byte, error) {
 	form := url.Values{}
 	for key, value := range formValues {
 		form.Add(key, value)
@@ -52,7 +57,7 @@ func SendPOSTRequest(endpoint string, formValues map[string]string) ([]byte, err
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	response, err := Client.Do(request)
+	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
 			return nil, NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
@@ -61,14 +66,19 @@ func SendPOSTRequest(endpoint string, formValues map[string]string) ([]byte, err
 		return nil, err
 	}
 
-	defer response.Body.Close()
+	defer resp.Body.Close()
 
-	body, err := CheckForErrors(response)
+	body, err := CheckForErrors(resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return body, nil
+	err = json.Unmarshal(body, target)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(target)
 }
 
 // GetURLQueryParams extracts the query parameters from a url string and returns

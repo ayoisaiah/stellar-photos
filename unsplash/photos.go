@@ -142,7 +142,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 		return utils.NewHTTPError(nil, http.StatusBadRequest, "Photo ID must not be empty")
 	}
 
-	err = TrackPhotoDownload(id)
+	_, err = TrackPhotoDownload(id)
 	if err != nil {
 		return err
 	}
@@ -153,12 +153,11 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 // TrackPhotoDownload is used to increment the number of downloads
 // for the specified photo
-func TrackPhotoDownload(id string) error {
+func TrackPhotoDownload(id string) ([]byte, error) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf("%s/photos/%s/download?client_id=%s", UnsplashAPILocation, id, unsplashAccessKey)
 
-	data := &download{}
-	return utils.SendGETRequest(url, data)
+	return utils.SendGETRequest(url, &download{})
 }
 
 // SearchUnsplash triggers a photo search and sends a single page of photo
@@ -177,12 +176,7 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 
 	s := &searchResult{}
 
-	err = utils.SendGETRequest(url, s)
-	if err != nil {
-		return err
-	}
-
-	bytes, err := json.Marshal(s)
+	bytes, err := utils.SendGETRequest(url, s)
 	if err != nil {
 		return err
 	}
@@ -212,7 +206,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	res := &randomPhoto{}
 
-	err = utils.SendGETRequest(url, res)
+	_, err = utils.SendGETRequest(url, res)
 	if err != nil {
 		return err
 	}
@@ -256,7 +250,7 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 		}
 
 		url := fmt.Sprintf("%s/collections/%d/?client_id=%s", UnsplashAPILocation, valueToNum, unsplashAccessKey)
-		err = utils.SendGETRequest(url, &collection{})
+		_, err = utils.SendGETRequest(url, &collection{})
 		if err != nil {
 			return err
 		}

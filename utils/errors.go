@@ -66,7 +66,7 @@ func CheckForErrors(resp *http.Response) ([]byte, error) {
 	}
 
 	switch resp.StatusCode {
-	case 200, 201, 202, 204, 205:
+	case http.StatusOK:
 		return buf, nil
 	default:
 		return nil, NewHTTPError(fmt.Errorf("%s", string(buf)), resp.StatusCode, fmt.Sprintf("%d — Request to external API produced an error response", resp.StatusCode))
