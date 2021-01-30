@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Stellar Photos",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "description": "Experience a beautiful photo from Unsplash every time you open a new tab alongside current weather information for your city",
   "icons": {
     "48": "icons/48.png",
@@ -14,26 +14,15 @@
   "browser_action": {
     "default_popup": "popup.html"
   },
-  "permissions": [
-    "storage",
-    "unlimitedStorage",
-    "notifications",
-    "alarms"
-  ],
+  "permissions": ["storage", "unlimitedStorage", "notifications", "alarms"],
   "background": {
-    "scripts": [
-      "js/background.bundle.js"
-    ],
+    "scripts": ["js/background.bundle.js"],
     "persistent": false
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://ayoisaiah.github.io/stellar-photos/*"
-      ],
-      "js": [
-        "js/tab.bundle.js"
-      ]
+      "matches": ["https://ayoisaiah.github.io/stellar-photos/*"],
+      "js": ["js/tab.bundle.js"]
     }
   ]
 }
