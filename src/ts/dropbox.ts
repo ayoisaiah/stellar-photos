@@ -4,6 +4,7 @@ import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
 } from './notifications';
+import { getFromChromeLocalStorage } from './helpers';
 
 async function openDropboxAuthPage(): Promise<void> {
   const response = await getDropboxKey();
@@ -16,7 +17,7 @@ async function openDropboxAuthPage(): Promise<void> {
 
 async function saveToDropbox(imageId: string, url: string): Promise<void> {
   try {
-    const localData = await chrome.storage.local.get('dropbox');
+    const localData = await getFromChromeLocalStorage('dropbox');
     const dropboxToken = localData.dropbox;
 
     if (!dropboxToken) {

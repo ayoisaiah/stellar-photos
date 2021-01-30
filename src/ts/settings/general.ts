@@ -33,7 +33,7 @@ async function updatePhotoFrequency(event: {
   ] as HTMLOptionElement;
   const { value } = selected;
 
-  chrome.storage.local.set({ photoFrequency: selected.value });
+  chrome.storage.sync.set({ photoFrequency: selected.value });
 
   switch (value) {
     case 'newtab':
@@ -56,7 +56,6 @@ async function updatePhotoFrequency(event: {
       break;
     case 'paused':
       chrome.alarms.clear('loadphoto');
-      // TODO: Update the paused image
       break;
   }
 }

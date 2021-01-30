@@ -9,7 +9,11 @@ import {
   notifySaveToCloudSuccessful,
   notifyUnableToUpload,
 } from './notifications';
-import { lessThanTimeAgo } from './helpers';
+import {
+  getFromChromeLocalStorage,
+  getFromChromeSyncStorage,
+  lessThanTimeAgo,
+} from './helpers';
 
 async function openGoogleDriveAuthPage(): Promise<void> {
   const response = await getGoogleDriveKey();
@@ -23,8 +27,8 @@ async function openGoogleDriveAuthPage(): Promise<void> {
 async function refreshGoogleDriveToken(): Promise<
   ChromeLocalStorage['googledrive'] | void
 > {
-  const localData: ChromeLocalStorage = await chrome.storage.local.get();
-  const syncData: ChromeSyncStorage = await chrome.storage.sync.get();
+  const localData: ChromeLocalStorage = await getFromChromeLocalStorage(null);
+  const syncData: ChromeSyncStorage = await getFromChromeSyncStorage(null);
   const googleDriveAuth = localData.googledrive;
   const { googleDriveRefreshToken } = syncData;
 
@@ -47,7 +51,7 @@ async function refreshGoogleDriveToken(): Promise<
 
 async function saveToGoogleDrive(imageId: string, url: string): Promise<void> {
   try {
-    const localData: ChromeLocalStorage = await chrome.storage.local.get();
+    const localData = await getFromChromeLocalStorage(null);
     if (!localData.googledrive) {
       await openGoogleDriveAuthPage();
       return;

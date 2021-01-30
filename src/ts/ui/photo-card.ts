@@ -1,6 +1,10 @@
 import { html, TemplateResult, nothing, render } from 'lit-html';
-import { $ } from '../helpers';
-import { ChromeLocalStorage } from '../types';
+import {
+  $,
+  getFromChromeLocalStorage,
+  getFromChromeSyncStorage,
+} from '../helpers';
+import { ChromeLocalStorage, ChromeSyncStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
 import { cloudButton } from './cloud-button';
 import { downloadButton } from './download';
@@ -27,7 +31,7 @@ function fadeInBackground(): void {
 }
 
 async function updateImageInfo(image: UnsplashImage): Promise<void> {
-  const localData: ChromeLocalStorage = await chrome.storage.local.get();
+  const localData = await getFromChromeLocalStorage(null);
 
   localData.nextImage = image;
   const f = $('js-footer-container');
@@ -45,11 +49,15 @@ async function setBackgroundFromHistory(
 ): Promise<void> {
   try {
     const { imageid } = event.target.dataset;
-    const localData = await chrome.storage.local.get();
-    const arr = localData.history.filter(
+    const localData = await getFromChromeLocalStorage(null);
+    const arr = localData.history?.filter(
       (e: UnsplashImage) => e.id === imageid
     );
+
+    if (!arr || arr.length <= 0) return;
+
     const image = arr[0];
+    if (!image) return;
 
     const body = $('body');
     if (body && image.base64) {
@@ -58,6 +66,15 @@ async function setBackgroundFromHistory(
     }
 
     updateImageInfo(image);
+
+    // Update paused image
+    const data: {
+      photoFrequency?: ChromeSyncStorage['photoFrequency'];
+    } = await getFromChromeSyncStorage(['photoFrequency']);
+    const { photoFrequency } = data;
+    if (photoFrequency === 'paused') {
+      chrome.storage.local.set({ nextImage: image });
+    }
   } catch (err) {
     // eslint-disable-next-line
     console.error(err);

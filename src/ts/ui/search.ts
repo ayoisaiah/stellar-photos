@@ -1,6 +1,6 @@
 import * as Ladda from 'ladda';
 import { html, TemplateResult, render } from 'lit-html';
-import { $ } from '../helpers';
+import { $, getFromChromeLocalStorage } from '../helpers';
 import { loadingIndicator } from './loading';
 import { searchPhotos } from '../requests';
 import { notifyNoSearchResults } from '../notifications';
@@ -47,7 +47,7 @@ async function displayPhotos(photos: UnsplashImage[]): Promise<void> {
   const searchResults = $('js-search-results');
   const data: {
     cloudService?: ChromeLocalStorage['cloudService'];
-  } = (await chrome.storage.local.get(['cloudService'])) as ChromeLocalStorage;
+  } = await getFromChromeLocalStorage(['cloudService']);
   const { cloudService } = data;
 
   if (searchResults) {

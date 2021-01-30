@@ -3,8 +3,8 @@ import { html, render, TemplateResult } from 'lit-html';
 import { openOnedriveAuthPage } from '../onedrive';
 import { openDropboxAuthPage } from '../dropbox';
 import { openGoogleDriveAuthPage } from '../googledrive';
-import { $ } from '../helpers';
-import { ChromeStorage } from '../types';
+import { $, getFromChromeLocalStorage } from '../helpers';
+import { ChromeLocalStorage, ChromeStorage } from '../types';
 import { snackbar } from '../ui/snackbar';
 
 async function authorizeCloud(): Promise<void> {
@@ -66,9 +66,12 @@ async function updateCloudService(event: { target: HTMLSelectElement }) {
     const selected = event.target[
       event.target.selectedIndex
     ] as HTMLOptionElement;
-    const { value } = selected;
+    const value = selected.value as ChromeLocalStorage['cloudService'];
+
+    if (!value) return;
+
     chrome.storage.local.set({ cloudService: value });
-    const result = await chrome.storage.local.get(value);
+    const result = await getFromChromeLocalStorage(value);
 
     const flag = Boolean(result[value]);
     updateCloudStatus(flag);

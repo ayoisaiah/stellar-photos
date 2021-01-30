@@ -1,5 +1,9 @@
 import { loadingIndicator } from './ui/loading';
-import { validateResponse, lessThanTimeAgo } from './helpers';
+import {
+  validateResponse,
+  lessThanTimeAgo,
+  getFromChromeLocalStorage,
+} from './helpers';
 import {
   notifyUnableToUpload,
   notifyCloudAuthenticationSuccessful,
@@ -49,10 +53,10 @@ async function createAppFolder(onedriveAuth: OAuth2): Promise<void> {
 async function refreshOnedriveToken(): Promise<
   ChromeLocalStorage['onedrive'] | void
 > {
-  const localData = await chrome.storage.local.get('onedrive');
+  const localData = await getFromChromeLocalStorage('onedrive');
   const onedriveAuth = localData.onedrive;
 
-  if (onedriveAuth) {
+  if (onedriveAuth && onedriveAuth.refresh_token) {
     const response = await refreshOnedriveTokenApi(onedriveAuth.refresh_token);
     const data: OAuth2 = await response.json();
 
@@ -121,8 +125,7 @@ async function monitorUploadProgress(
 
 async function saveToOneDrive(imageId: string, url: string): Promise<void> {
   try {
-    console.log(url);
-    const localData: ChromeLocalStorage = await chrome.storage.local.get();
+    const localData = await getFromChromeLocalStorage(null);
 
     if (!localData.onedrive) {
       await openOnedriveAuthPage();

@@ -1,3 +1,5 @@
+import { ChromeLocalStorage, ChromeStorage, ChromeSyncStorage } from './types';
+
 interface Classlist {
   toggle(this: HTMLElement, c: string): HTMLElement;
   add(this: HTMLElement, c: string): HTMLElement;
@@ -53,10 +55,51 @@ function lessThanTimeAgo(
   return timestamp > timeAgo;
 }
 
+// Retrieve data from Chrome's Local storage area
+async function getFromChromeLocalStorage(
+  keys: string | string[] | Object | null
+): Promise<ChromeLocalStorage> {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(keys, function (result) {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError.message);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+// Retrieve data from Chrome's sync storage area
+async function getFromChromeSyncStorage(
+  keys: string | string[] | Object | null
+): Promise<ChromeSyncStorage> {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get(keys, function (result) {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError.message);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+async function getChromeStorageData(): Promise<ChromeStorage> {
+  const localData = await getFromChromeLocalStorage(null);
+
+  const syncData = await getFromChromeSyncStorage(null);
+
+  return Object.assign(syncData, localData);
+}
+
 export {
   chainableClassList,
   $,
   removeChildElements,
   validateResponse,
   lessThanTimeAgo,
+  getFromChromeLocalStorage,
+  getFromChromeSyncStorage,
+  getChromeStorageData,
 };

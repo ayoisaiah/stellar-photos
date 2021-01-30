@@ -1,4 +1,3 @@
-import 'chrome-extension-async';
 import {
   getForecast,
   getRandomPhoto,
@@ -7,31 +6,22 @@ import {
 } from './requests';
 import { Forecast } from './types/weather';
 import { UnsplashImage } from './types/unsplash';
-import { lessThanTimeAgo } from './helpers';
+import {
+  getChromeStorageData,
+  getFromChromeSyncStorage,
+  lessThanTimeAgo,
+} from './helpers';
 import {
   notifyCloudAuthenticationSuccessful,
   notifyCloudConnectionFailed,
 } from './notifications';
 import { refreshOnedriveToken, createAppFolder } from './onedrive';
-import {
-  ChromeStorage,
-  ChromeSyncStorage,
-  ChromeLocalStorage,
-  OAuth2,
-} from './types';
+import { ChromeSyncStorage, OAuth2 } from './types';
 import { refreshGoogleDriveToken } from './googledrive';
-
-async function getStorageData(): Promise<ChromeStorage> {
-  const localData: ChromeLocalStorage = await chrome.storage.local.get();
-
-  const syncData: ChromeSyncStorage = await chrome.storage.sync.get();
-
-  return Object.assign(syncData, localData);
-}
 
 async function fetchRandomPhoto(): Promise<void> {
   try {
-    const storageData = await getStorageData();
+    const storageData = await getChromeStorageData();
     const { imageSource } = storageData;
     let collections = '998309';
 
@@ -70,7 +60,7 @@ async function fetchRandomPhoto(): Promise<void> {
 
 async function getWeatherInfo(): Promise<void> {
   try {
-    const syncData = await chrome.storage.sync.get();
+    const syncData = await getFromChromeSyncStorage(null);
     if (syncData.coords) {
       const { longitude, latitude } = syncData.coords;
       const unit = syncData.temperatureFormat || 'metric';
@@ -99,7 +89,7 @@ async function getWeatherInfo(): Promise<void> {
 
 async function refresh(): Promise<void> {
   try {
-    const data = await getStorageData();
+    const data = await getChromeStorageData();
 
     const { nextImage, forecast, photoFrequency } = data;
 
@@ -229,6 +219,8 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
               chrome.storage.sync.set({
                 googleDriveRefreshToken: data.refresh_token,
               });
+
+              delete data.refresh_token;
             }
 
             if (data.access_token) {

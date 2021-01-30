@@ -1,11 +1,9 @@
 import { render } from 'lit-html';
-import 'chrome-extension-async';
 import { loadHistory } from './ui';
-import { ChromeLocalStorage } from './types';
-import { $ } from './helpers';
+import { $, getFromChromeLocalStorage } from './helpers';
 
 async function updateHistory(): Promise<void> {
-  const localData: ChromeLocalStorage = await chrome.storage.local.get();
+  const localData = await getFromChromeLocalStorage(null);
 
   if (localData.history) {
     const history = $('js-history');
