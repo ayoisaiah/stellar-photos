@@ -149,27 +149,6 @@ chrome.runtime.onInstalled.addListener((details) => {
     setDefaultExtensionSettings();
   }
 
-  if (details.reason === 'update') {
-    chrome.storage.sync.get((r) => {
-      const { photoFrequency, tempUnit } = r;
-      const unit = tempUnit === 'fahrenheit' ? 'imperial' : 'metric';
-      chrome.storage.local.get((d) => {
-        const { cloudService } = d;
-
-        chrome.storage.local.set({
-          photoFrequency: photoFrequency || 'newtab',
-          pausedImage: null,
-          cloudService: cloudService || 'dropbox',
-        });
-
-        chrome.storage.sync.set({
-          imageSource: 'custom',
-          temperatureFormat: unit,
-        });
-      });
-    });
-  }
-
   fetchRandomPhoto();
 });
 
