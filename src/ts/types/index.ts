@@ -11,10 +11,10 @@ type PhotoFrequency =
 
 type TemparatureUnit = 'metric' | 'imperial';
 
-type Coords = {
+interface Coords {
   longitude: number;
   latitude: number;
-};
+}
 
 const OAuth2 = r
   .Record({
