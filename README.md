@@ -2,7 +2,7 @@
 
 Experience a beautiful photo from [Unsplash](https://unsplash.com/developers) every time you open a new tab alongside current weather information for your city.
 
-![Stellar Photos](https://github.com/ayoisaiah/stellar-photos/blob/master/src/images/preview.png)
+![Stellar Photos](https://github.com/ayoisaiah/stellar-photos/blob/master/preview.png)
 
 ## Install Stellar
 
