@@ -1,4 +1,13 @@
+# github.com/BurntSushi/toml v0.3.1
+## explicit
 # github.com/joho/godotenv v1.3.0
+## explicit
 github.com/joho/godotenv
 # github.com/rs/cors v1.6.0
+## explicit
 github.com/rs/cors
+# gopkg.in/natefinch/lumberjack.v2 v2.0.0
+## explicit
+gopkg.in/natefinch/lumberjack.v2
+# gopkg.in/yaml.v2 v2.4.0
+## explicit
