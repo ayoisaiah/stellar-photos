@@ -199,10 +199,8 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		collections = "998309"
 	}
 
-	width := 2000
-
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
-	url := fmt.Sprintf("%s/photos/random?collections=%s&w=%d&client_id=%s", UnsplashAPILocation, collections, width, unsplashAccessKey)
+	url := fmt.Sprintf("%s/photos/random?collections=%s&client_id=%s", UnsplashAPILocation, collections, unsplashAccessKey)
 
 	res := &randomPhoto{}
 
@@ -211,7 +209,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	imageURL := res.Urls.Custom
+	imageURL := res.Urls.Raw + "&w=2000"
 
 	base64, err := utils.ImageURLToBase64(imageURL)
 	if err != nil {
