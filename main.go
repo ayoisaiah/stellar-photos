@@ -14,7 +14,6 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/weather"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type rootHandler func(w http.ResponseWriter, r *http.Request) error
@@ -85,15 +84,6 @@ func run() error {
 	// Initialising the config package will crash the program if one of
 	// the required Env values is not set
 	conf := config.New()
-
-	// Set output for log statements
-	log.SetOutput(&lumberjack.Logger{
-		Filename:   "stellar.log",
-		MaxSize:    5,
-		MaxBackups: 3,
-		MaxAge:     28,
-		Compress:   false,
-	})
 
 	port := ":" + conf.Port
 
