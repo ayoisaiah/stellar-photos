@@ -118,6 +118,8 @@ async function refresh(): Promise<void> {
         default:
           fetchRandomPhoto();
       }
+    } else {
+      fetchRandomPhoto();
     }
 
     if (forecast) {
