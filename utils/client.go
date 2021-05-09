@@ -10,5 +10,5 @@ type HTTPClient interface {
 }
 
 var (
-	Client HTTPClient = &http.Client{Timeout: 10 * time.Second}
+	Client HTTPClient = &http.Client{Timeout: 60 * time.Second}
 )
