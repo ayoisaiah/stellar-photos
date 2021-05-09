@@ -11,7 +11,6 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/onedrive"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
-	"github.com/ayoisaiah/stellar-photos-server/weather"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
@@ -63,16 +62,24 @@ func newRouter() *http.ServeMux {
 	mux.Handle("/download-photo/", rootHandler(unsplash.DownloadPhoto))
 	mux.Handle("/search-unsplash/", rootHandler(unsplash.SearchUnsplash))
 	mux.Handle("/random-photo/", rootHandler(unsplash.GetRandomPhoto))
-	mux.Handle("/validate-collections/", rootHandler(unsplash.ValidateCollections))
-	mux.Handle("/get-weather/", rootHandler(weather.GetForecast))
+	mux.Handle(
+		"/validate-collections/",
+		rootHandler(unsplash.ValidateCollections),
+	)
 	mux.Handle("/dropbox/key/", rootHandler(dropbox.SendDropboxKey))
 	mux.Handle("/dropbox/save/", rootHandler(dropbox.SaveToDropbox))
 	mux.Handle("/onedrive/id/", rootHandler(onedrive.SendOnedriveID))
 	mux.Handle("/onedrive/auth/", rootHandler(onedrive.AuthorizeOnedrive))
 	mux.Handle("/onedrive/refresh/", rootHandler(onedrive.RefreshOnedriveToken))
 	mux.Handle("/googledrive/key/", rootHandler(googledrive.SendGoogleDriveKey))
-	mux.Handle("/googledrive/auth/", rootHandler(googledrive.AuthorizeGoogleDrive))
-	mux.Handle("/googledrive/refresh/", rootHandler(googledrive.RefreshGoogleDriveToken))
+	mux.Handle(
+		"/googledrive/auth/",
+		rootHandler(googledrive.AuthorizeGoogleDrive),
+	)
+	mux.Handle(
+		"/googledrive/refresh/",
+		rootHandler(googledrive.RefreshGoogleDriveToken),
+	)
 	mux.Handle("/googledrive/save/", rootHandler(googledrive.SaveToGoogleDrive))
 
 	return mux
