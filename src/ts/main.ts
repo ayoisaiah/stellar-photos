@@ -11,7 +11,6 @@ async function paint() {
       if (app) render(ui(data), app);
     }
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 }

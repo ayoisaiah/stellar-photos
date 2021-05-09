@@ -17,6 +17,7 @@
     "webextensions": true
   },
   "rules": {
+    "no-console": ["warn", { "allow": ["error"] }],
     "import/prefer-default-export": "off",
     "default-case": "off",
     "import/no-extraneous-dependencies": [

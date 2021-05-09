@@ -89,7 +89,6 @@ async function openOnedriveAuthPage(): Promise<void> {
       url: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${id}&scope=Files.ReadWrite.AppFolder offline_access&response_type=code&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
     });
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   } finally {
     loadingIndicator().stop();

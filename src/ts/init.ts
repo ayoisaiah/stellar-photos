@@ -52,7 +52,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadJS('js/events.bundle.js');
     chrome.runtime.sendMessage({ command: 'refresh' });
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 });

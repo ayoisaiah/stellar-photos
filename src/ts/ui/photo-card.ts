@@ -76,7 +76,6 @@ async function setBackgroundFromHistory(
       chrome.storage.local.set({ nextImage: image });
     }
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 }

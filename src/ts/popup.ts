@@ -11,7 +11,6 @@ async function renderSettings(): Promise<void> {
       render(settingsDialog(data), body);
     }
   } catch (err) {
-    // eslint-disable-next-line
     console.log(err);
   }
 }

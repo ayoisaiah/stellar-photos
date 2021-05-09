@@ -53,7 +53,6 @@ async function fetchRandomPhoto(): Promise<void> {
 
     chrome.runtime.sendMessage({ command: 'update-history' });
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 }
@@ -82,7 +81,6 @@ async function getWeatherInfo(): Promise<void> {
       chrome.alarms.create('loadweather', { periodInMinutes: 60 });
     }
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 }
@@ -131,7 +129,6 @@ async function refresh(): Promise<void> {
       }
     }
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 }
@@ -282,7 +279,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         break;
     }
   } catch (err) {
-    // eslint-disable-next-line
     console.error(err);
   }
 });
