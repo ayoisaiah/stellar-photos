@@ -120,16 +120,6 @@ type randomPhotoBase64 struct {
 	Base64 string `json:"base64,omitempty"`
 }
 
-// unsplashResponse the entire range of responses that can be expected from
-// Unsplash
-type unsplashResponse struct {
-	Errors []interface{} `json:"errors,omitempty"`
-	download
-	randomPhoto
-	randomPhotoBase64
-	searchResult
-}
-
 // DownloadPhoto is triggered each time a download is attempted
 func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -139,7 +129,11 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	id := values.Get("id")
 	if id == "" {
-		return utils.NewHTTPError(nil, http.StatusBadRequest, "Photo ID must not be empty")
+		return utils.NewHTTPError(
+			nil,
+			http.StatusBadRequest,
+			"Photo ID must not be empty",
+		)
 	}
 
 	_, err = TrackPhotoDownload(id)
@@ -155,7 +149,12 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 // for the specified photo
 func TrackPhotoDownload(id string) ([]byte, error) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
-	url := fmt.Sprintf("%s/photos/%s/download?client_id=%s", UnsplashAPILocation, id, unsplashAccessKey)
+	url := fmt.Sprintf(
+		"%s/photos/%s/download?client_id=%s",
+		UnsplashAPILocation,
+		id,
+		unsplashAccessKey,
+	)
 
 	return utils.SendGETRequest(url, &download{})
 }
@@ -172,16 +171,23 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	page := values.Get("page")
 
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
-	url := fmt.Sprintf("%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s", UnsplashAPILocation, page, key, "28", unsplashAccessKey)
+	url := fmt.Sprintf(
+		"%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s",
+		UnsplashAPILocation,
+		page,
+		key,
+		"28",
+		unsplashAccessKey,
+	)
 
 	s := &searchResult{}
 
-	bytes, err := utils.SendGETRequest(url, s)
+	bs, err := utils.SendGETRequest(url, s)
 	if err != nil {
 		return err
 	}
 
-	return utils.JsonResponse(w, bytes)
+	return utils.JSONResponse(w, bs)
 }
 
 // GetRandomPhoto retrives a single random photo using the provided collection
@@ -200,7 +206,12 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
-	url := fmt.Sprintf("%s/photos/random?collections=%s&client_id=%s", UnsplashAPILocation, collections, unsplashAccessKey)
+	url := fmt.Sprintf(
+		"%s/photos/random?collections=%s&client_id=%s",
+		UnsplashAPILocation,
+		collections,
+		unsplashAccessKey,
+	)
 
 	res := &randomPhoto{}
 
@@ -226,7 +237,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JsonResponse(w, bytes)
+	return utils.JSONResponse(w, bytes)
 }
 
 // ValidateCollections ensures that all the custom collection IDs that are added
@@ -244,10 +255,19 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 	for _, value := range collections {
 		valueToNum, err := strconv.Atoi(value)
 		if err != nil {
-			return utils.NewHTTPError(err, http.StatusBadRequest, "Collection ID must be a number")
+			return utils.NewHTTPError(
+				err,
+				http.StatusBadRequest,
+				"Collection ID must be a number",
+			)
 		}
 
-		url := fmt.Sprintf("%s/collections/%d/?client_id=%s", UnsplashAPILocation, valueToNum, unsplashAccessKey)
+		url := fmt.Sprintf(
+			"%s/collections/%d/?client_id=%s",
+			UnsplashAPILocation,
+			valueToNum,
+			unsplashAccessKey,
+		)
 		_, err = utils.SendGETRequest(url, &collection{})
 		if err != nil {
 			return err

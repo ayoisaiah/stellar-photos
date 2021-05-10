@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	godotenv.Load("../.env")
+	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
 	config.New()
 }
@@ -43,13 +43,17 @@ func TestSendGoogleDriveKey(t *testing.T) {
 	}
 
 	if o.GoogleDriveKey == "" {
-		t.Errorf("Expected GoogleDriveKey to have string value, got empty string")
+		t.Errorf(
+			"Expected GoogleDriveKey to have string value, got empty string",
+		)
 	}
 }
 
 func TestAuthorizeGoogleDrive(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := ioutil.ReadFile("../testdata/googledrive_auth_response.json")
+		body, err := ioutil.ReadFile(
+			"../testdata/googledrive_auth_response.json",
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -82,13 +86,18 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 	}
 
 	if o.Scope != "https://www.googleapis.com/auth/drive.metadata.readonly" {
-		t.Fatalf("Authorization object does not conform to expectations. Got %+v", o)
+		t.Fatalf(
+			"Authorization object does not conform to expectations. Got %+v",
+			o,
+		)
 	}
 }
 
 func TestRefreshGoogleDriveToken(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := ioutil.ReadFile("../testdata/googledrive_auth_response.json")
+		body, err := ioutil.ReadFile(
+			"../testdata/googledrive_auth_response.json",
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +130,10 @@ func TestRefreshGoogleDriveToken(t *testing.T) {
 	}
 
 	if o.Scope != "https://www.googleapis.com/auth/drive.metadata.readonly" {
-		t.Fatalf("Authorization object does not conform to expectations. Got %+v", o)
+		t.Fatalf(
+			"Authorization object does not conform to expectations. Got %+v",
+			o,
+		)
 	}
 }
 
@@ -155,7 +167,12 @@ func TestSaveToGoogleDrive(t *testing.T) {
 	fakeToken := "ya29.A0AfH6SMCIiJ_3yNh7yC4gcveh3JnPz4DkWM933ZR846lm6B5m5VBSul64Tmo0vqby3Juyf8l5DRvg0bCwPBf-OOCZbEDgVpy0ZhSjocylcRLg1YDXdWxJNk1Ah3U_8rBExJA-kj0akQQIfTn55WYxIK3r_hXpgf0"
 	id := "FQhYGMZ_H_4"
 	url := "https://images.unsplash.com/photo-1464151759330-a3441f3da55e%3Fixid%3DMXwyNzEzM3wwfDF8cmFuZG9tfHx8fHx8fHw%26ixlib%3Drb-1.2.1"
-	path := fmt.Sprintf("/googledrive/save?token=%s&id=%s&url=%s", fakeToken, id, url)
+	path := fmt.Sprintf(
+		"/googledrive/save?token=%s&id=%s&url=%s",
+		fakeToken,
+		id,
+		url,
+	)
 	req, err := http.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)

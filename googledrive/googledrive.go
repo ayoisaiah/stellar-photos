@@ -17,6 +17,10 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
+const (
+	saveToDriveTimeout = 180
+)
+
 // Google drive application key
 type key struct {
 	GoogleDriveKey string `json:"googledrive_key"`
@@ -30,13 +34,6 @@ type googleDriveAuth struct {
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
-type saveToDriveResponse struct {
-	Kind     string `json:"kind"`
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	MimeType string `json:"mimeType"`
-}
-
 // SendGoogleDriveKey sends the application key to the client on request to avoid
 // exposing it in the extension code
 func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
@@ -44,12 +41,12 @@ func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 		GoogleDriveKey: config.Conf.GoogleDrive.Key,
 	}
 
-	bytes, err := json.Marshal(d)
+	b, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 
-	return utils.JsonResponse(w, bytes)
+	return utils.JSONResponse(w, b)
 }
 
 // AuthorizeGoogleDrive redeems the authorization code received from the client for
@@ -79,7 +76,7 @@ func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JsonResponse(w, body)
+	return utils.JSONResponse(w, body)
 }
 
 // RefreshGoogleDriveToken generates additional access tokens after the initial
@@ -111,7 +108,7 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JsonResponse(w, body)
+	return utils.JSONResponse(w, body)
 }
 
 // SaveToGoogleDrive saves the requested photo to the current user's
@@ -133,7 +130,10 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 
 	v := fmt.Sprintf("Bearer %s", token)
 
-	ctx, cncl := context.WithTimeout(context.Background(), time.Second*180)
+	ctx, cncl := context.WithTimeout(
+		context.Background(),
+		time.Second*saveToDriveTimeout,
+	)
 	defer cncl()
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -165,24 +165,37 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	metadataHeader := textproto.MIMEHeader{}
 	metadataHeader.Set("Content-Type", "application/json; charset=UTF-8")
 	part, _ := writer.CreatePart(metadataHeader)
-	part.Write([]byte(metadata))
+	_, err = part.Write([]byte(metadata))
+	if err != nil {
+		return err
+	}
 
 	mediaHeader := textproto.MIMEHeader{}
 	mediaHeader.Set("Content-Type", "image/jpeg")
 
 	mediaPart, _ := writer.CreatePart(mediaHeader)
-	io.Copy(mediaPart, bytes.NewReader(respBody))
+	_, err = io.Copy(mediaPart, bytes.NewReader(respBody))
+	if err != nil {
+		return err
+	}
 
 	// Close multipart writer.
 	writer.Close()
 
-	request, err = http.NewRequest("POST", endpoint, bytes.NewReader(body.Bytes()))
+	request, err = http.NewRequest(
+		"POST",
+		endpoint,
+		bytes.NewReader(body.Bytes()),
+	)
 	if err != nil {
 		return err
 	}
 
 	request.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
-	contentType := fmt.Sprintf("multipart/related; boundary=%s", writer.Boundary())
+	contentType := fmt.Sprintf(
+		"multipart/related; boundary=%s",
+		writer.Boundary(),
+	)
 	request.Header.Set("Content-Type", contentType)
 	request.Header.Set("Authorization", v)
 

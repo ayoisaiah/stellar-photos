@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	godotenv.Load("../.env")
+	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
 	config.New()
 }
@@ -81,7 +81,10 @@ func TestAuthorizeOnedrive(t *testing.T) {
 	}
 
 	if o.Scope != "Files.ReadWrite.AppFolder Files.ReadWrite" {
-		t.Fatalf("Authorization object does not conform to expectations. Got %+v", o)
+		t.Fatalf(
+			"Authorization object does not conform to expectations. Got %+v",
+			o,
+		)
 	}
 }
 
@@ -120,6 +123,9 @@ func TestRefreshOnedriveToken(t *testing.T) {
 	}
 
 	if o.Scope != "Files.ReadWrite.AppFolder Files.ReadWrite" {
-		t.Fatalf("Authorization object does not conform to expectations. Got %+v", o)
+		t.Fatalf(
+			"Authorization object does not conform to expectations. Got %+v",
+			o,
+		)
 	}
 }

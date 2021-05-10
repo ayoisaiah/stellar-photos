@@ -32,18 +32,18 @@ func SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
 		DropboxKey: dropboxKey,
 	}
 
-	bytes, err := json.Marshal(d)
+	bs, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 
-	return utils.JsonResponse(w, bytes)
+	return utils.JSONResponse(w, bs)
 }
 
-func checkJobStatus(jobId string, token string) error {
+func checkJobStatus(jobID, token string) error {
 	v := fmt.Sprintf("Bearer %s", token)
 	requestBody, err := json.Marshal(map[string]string{
-		"async_job_id": jobId,
+		"async_job_id": jobID,
 	})
 	if err != nil {
 		return err
@@ -51,7 +51,11 @@ func checkJobStatus(jobId string, token string) error {
 
 	endpoint := "https://api.dropboxapi.com/2/files/save_url/check_job_status"
 
-	request, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest(
+		"POST",
+		endpoint,
+		bytes.NewBuffer(requestBody),
+	)
 	if err != nil {
 		return err
 	}
@@ -62,7 +66,11 @@ func checkJobStatus(jobId string, token string) error {
 	response, err := utils.Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return utils.NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+			return utils.NewHTTPError(
+				err,
+				http.StatusRequestTimeout,
+				"Request to external API timed out",
+			)
 		}
 
 		return err
@@ -86,7 +94,7 @@ func checkJobStatus(jobId string, token string) error {
 		return nil
 	} else if resp.Tag == "in_progress" {
 		time.Sleep(1 * time.Second)
-		return checkJobStatus(jobId, token)
+		return checkJobStatus(jobID, token)
 	}
 
 	return fmt.Errorf("Job failed. Response from Dropbox: %s", string(b))
@@ -120,7 +128,11 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 
 	endpoint := "https://api.dropboxapi.com/2/files/save_url"
 
-	request, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(requestBody))
+	request, err := http.NewRequest(
+		"POST",
+		endpoint,
+		bytes.NewBuffer(requestBody),
+	)
 	if err != nil {
 		return err
 	}
@@ -131,7 +143,11 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	response, err := utils.Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return utils.NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+			return utils.NewHTTPError(
+				err,
+				http.StatusRequestTimeout,
+				"Request to external API timed out",
+			)
 		}
 
 		return err

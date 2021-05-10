@@ -36,7 +36,7 @@ func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JsonResponse(w, bytes)
+	return utils.JSONResponse(w, bytes)
 }
 
 // AuthorizeOnedrive redeems the authorization code received from the client for
@@ -69,7 +69,7 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JsonResponse(w, body)
+	return utils.JSONResponse(w, body)
 }
 
 // RefreshOnedriveToken generates additional access tokens after the initial
@@ -102,5 +102,5 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JsonResponse(w, body)
+	return utils.JSONResponse(w, body)
 }

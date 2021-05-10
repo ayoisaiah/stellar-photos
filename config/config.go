@@ -8,13 +8,12 @@ import (
 // Config represents the all the environmental variables that should be present
 // on start up
 type Config struct {
-	Port           string
-	RedirectURL    string
-	Unsplash       UnsplashConfig
-	Onedrive       OnedriveConfig
-	OpenWeatherMap OpenWeatherMapConfig
-	Dropbox        DropboxConfig
-	GoogleDrive    GoogleDriveConfig
+	Port        string
+	RedirectURL string
+	Unsplash    UnsplashConfig
+	Onedrive    OnedriveConfig
+	Dropbox     DropboxConfig
+	GoogleDrive GoogleDriveConfig
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables
@@ -26,11 +25,6 @@ type UnsplashConfig struct {
 type OnedriveConfig struct {
 	AppID  string
 	Secret string
-}
-
-// OpenWeatherMapConfig represents OpenWeatherMap's configuration variables
-type OpenWeatherMapConfig struct {
-	AppID string
 }
 
 // DropboxConfig represents Dropbox's API configuration variables
@@ -59,9 +53,6 @@ func New() *Config {
 			AppID:  getEnv("ONEDRIVE_APPID", ""),
 			Secret: getEnv("ONEDRIVE_SECRET", ""),
 		},
-		OpenWeatherMap: OpenWeatherMapConfig{
-			AppID: getEnv("OPENWEATHER_APPID", ""),
-		},
 		Dropbox: DropboxConfig{
 			Key: getEnv("DROPBOX_KEY", ""),
 		},
@@ -77,7 +68,7 @@ func New() *Config {
 // getEnv reads an environment variable and returns it or returns a default
 // value if the variable is optional. Otherwise, if a required variable is not
 // set, the program will crash
-func getEnv(key string, defaultVal string) string {
+func getEnv(key, defaultVal string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}

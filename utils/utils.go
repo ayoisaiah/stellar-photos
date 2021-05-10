@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	timeoutInSeconds = 60
+)
+
 // SendGETRequest makes an HTTP GET request and decodes the JSON
 // response into the provided target interface
 func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
@@ -23,7 +27,11 @@ func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
 	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return nil, NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+			return nil, NewHTTPError(
+				err,
+				http.StatusRequestTimeout,
+				"Request to external API timed out",
+			)
 		}
 
 		return nil, err
@@ -44,13 +52,21 @@ func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
 	return json.Marshal(target)
 }
 
-func SendPOSTRequest(endpoint string, formValues map[string]string, target interface{}) ([]byte, error) {
+func SendPOSTRequest(
+	endpoint string,
+	formValues map[string]string,
+	target interface{},
+) ([]byte, error) {
 	form := url.Values{}
 	for key, value := range formValues {
 		form.Add(key, value)
 	}
 
-	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	request, err := http.NewRequest(
+		http.MethodPost,
+		endpoint,
+		strings.NewReader(form.Encode()),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +76,11 @@ func SendPOSTRequest(endpoint string, formValues map[string]string, target inter
 	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return nil, NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+			return nil, NewHTTPError(
+				err,
+				http.StatusRequestTimeout,
+				"Request to external API timed out",
+			)
 		}
 
 		return nil, err
@@ -93,21 +113,33 @@ func GetURLQueryParams(s string) (url.Values, error) {
 	return query, nil
 }
 
-// JsonResponse sends a JSON response to the client. Error is always nil
-func JsonResponse(w http.ResponseWriter, bytes []byte) error {
+// JSONResponse sends a JSON response to the client. Error is always nil
+func JSONResponse(w http.ResponseWriter, bs []byte) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(bytes)
+	_, err := w.Write(bs)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // ImageURLToBase64 retrives the Base64 representation of an image URL and
 // returns it
 func ImageURLToBase64(endpoint string) (string, error) {
-	ctx, cncl := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cncl := context.WithTimeout(
+		context.Background(),
+		time.Second*timeoutInSeconds,
+	)
 	defer cncl()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint,
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -115,7 +147,11 @@ func ImageURLToBase64(endpoint string) (string, error) {
 	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return "", NewHTTPError(err, http.StatusRequestTimeout, "Request to external API timed out")
+			return "", NewHTTPError(
+				err,
+				http.StatusRequestTimeout,
+				"Request to external API timed out",
+			)
 		}
 
 		return "", err

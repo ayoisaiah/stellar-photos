@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	godotenv.Load("../.env")
+	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
 	config.New()
 }
@@ -54,7 +54,12 @@ func TestSaveToDropbox(t *testing.T) {
 		statusCode       int
 		unsplashResponse string
 	}{
-		{"bWI4Vd4vI3w", "https://images.unsplash.com/photo-1471255618142-bc3ea8675f3a?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb", 200, "sample_download_response"},
+		{
+			"bWI4Vd4vI3w",
+			"https://images.unsplash.com/photo-1471255618142-bc3ea8675f3a?ixlib=rb-1.2.1&q=85&fm=jpg&crop=entropy&cs=srgb",
+			200,
+			"sample_download_response",
+		},
 		{"oeks929jesj", "", 404, "photo_not_found_response"},
 	}
 
@@ -64,6 +69,7 @@ func TestSaveToDropbox(t *testing.T) {
 				var body []byte
 				var err error
 				statusCode := http.StatusOK
+
 				if strings.Contains(req.URL.Path, "download") {
 					return mocks.MockTrackPhotoDownload(value.unsplashResponse)
 				} else if req.URL.Path == "/2/files/save_url" {
@@ -87,7 +93,12 @@ func TestSaveToDropbox(t *testing.T) {
 			}
 
 			fakeToken := "efvbjdkoefnejkmdefiojfndf3ffejfn"
-			path := fmt.Sprintf("/dropbox/save?token=%s&id=%s&url=%s", fakeToken, value.id, value.url)
+			path := fmt.Sprintf(
+				"/dropbox/save?token=%s&id=%s&url=%s",
+				fakeToken,
+				value.id,
+				value.url,
+			)
 			req, err := http.NewRequest(http.MethodGet, path, nil)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -110,7 +121,11 @@ func TestSaveToDropbox(t *testing.T) {
 
 			status, _ := clientError.ResponseHeaders()
 			if status != value.statusCode {
-				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+				t.Errorf(
+					"Status should be %d, got %d",
+					value.statusCode,
+					status,
+				)
 			}
 		})
 	}

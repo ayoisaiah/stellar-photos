@@ -47,7 +47,10 @@ func TestDownloadPhoto(t *testing.T) {
 			err = DownloadPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
-					t.Fatalf("Expected error for '%s', but got none", value.input)
+					t.Fatalf(
+						"Expected error for '%s', but got none",
+						value.input,
+					)
 				}
 
 				return
@@ -60,7 +63,11 @@ func TestDownloadPhoto(t *testing.T) {
 
 			status, _ := clientError.ResponseHeaders()
 			if status != value.statusCode {
-				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+				t.Errorf(
+					"Status should be %d, got %d",
+					value.statusCode,
+					status,
+				)
 			}
 		})
 	}
@@ -79,7 +86,9 @@ func TestSearchUnsplash(t *testing.T) {
 	for _, value := range searchTable {
 		t.Run(value.input, func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
-				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
+				jsonObj, err := ioutil.ReadFile(
+					fmt.Sprintf("../testdata/%s.json", value.jsonFile),
+				)
 				if err != nil {
 					return nil, err
 				}
@@ -107,11 +116,18 @@ func TestSearchUnsplash(t *testing.T) {
 
 				status, _ := clientError.ResponseHeaders()
 				if status != http.StatusOK {
-					t.Errorf("Status should be %d, got %d", http.StatusOK, status)
+					t.Errorf(
+						"Status should be %d, got %d",
+						http.StatusOK,
+						status,
+					)
 				}
 			}
 
 			resp := rr.Result()
+
+			defer resp.Body.Close()
+
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -124,9 +140,13 @@ func TestSearchUnsplash(t *testing.T) {
 			}
 
 			if s.Total != value.resultCount {
-				t.Errorf("Total search results for '%s' should be %d, got %d", value.input, value.resultCount, s.Total)
+				t.Errorf(
+					"Total search results for '%s' should be %d, got %d",
+					value.input,
+					value.resultCount,
+					s.Total,
+				)
 			}
-
 		})
 	}
 }
@@ -147,7 +167,9 @@ func TestGetRandomPhoto(t *testing.T) {
 				var body []byte
 				var err error
 				if strings.Contains(req.URL.Path, "/photos/random") {
-					body, err = ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", value.jsonFile))
+					body, err = ioutil.ReadFile(
+						fmt.Sprintf("../testdata/%s.json", value.jsonFile),
+					)
 					if err != nil {
 						return nil, err
 					}
@@ -178,7 +200,10 @@ func TestGetRandomPhoto(t *testing.T) {
 			err = GetRandomPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
-					t.Fatalf("Expected error for '%s', but got none", value.input)
+					t.Fatalf(
+						"Expected error for '%s', but got none",
+						value.input,
+					)
 				}
 
 				return
@@ -191,11 +216,14 @@ func TestGetRandomPhoto(t *testing.T) {
 
 			status, _ := clientError.ResponseHeaders()
 			if status != value.statusCode {
-				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+				t.Errorf(
+					"Status should be %d, got %d",
+					value.statusCode,
+					status,
+				)
 			}
 		})
 	}
-
 }
 
 func TestValidateCollections(t *testing.T) {
@@ -214,10 +242,16 @@ func TestValidateCollections(t *testing.T) {
 		jsonFile   string
 		statusCode int
 	}{
-		"998309":   {jsonFile: "sample_collections_response", statusCode: 200},
-		"317099":   {jsonFile: "sample_collections_response", statusCode: 200},
-		"39843782": {jsonFile: "collections_not_found_response", statusCode: 404},
-		"4993402":  {jsonFile: "collections_not_found_response", statusCode: 404},
+		"998309": {jsonFile: "sample_collections_response", statusCode: 200},
+		"317099": {jsonFile: "sample_collections_response", statusCode: 200},
+		"39843782": {
+			jsonFile:   "collections_not_found_response",
+			statusCode: 404,
+		},
+		"4993402": {
+			jsonFile:   "collections_not_found_response",
+			statusCode: 404,
+		},
 	}
 
 	for _, value := range collections {
@@ -231,7 +265,9 @@ func TestValidateCollections(t *testing.T) {
 				}
 
 				file := m[id].jsonFile
-				jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", file))
+				jsonObj, err := ioutil.ReadFile(
+					fmt.Sprintf("../testdata/%s.json", file),
+				)
 				if err != nil {
 					return nil, err
 				}
@@ -244,7 +280,10 @@ func TestValidateCollections(t *testing.T) {
 				}, nil
 			}
 
-			path := fmt.Sprintf("/validate-collections?collections=%s", value.input)
+			path := fmt.Sprintf(
+				"/validate-collections?collections=%s",
+				value.input,
+			)
 			req, err := http.NewRequest(http.MethodGet, path, nil)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -254,7 +293,10 @@ func TestValidateCollections(t *testing.T) {
 			err = ValidateCollections(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
-					t.Fatalf("Expected error for '%s', but got none", value.input)
+					t.Fatalf(
+						"Expected error for '%s', but got none",
+						value.input,
+					)
 				}
 
 				return
@@ -267,7 +309,11 @@ func TestValidateCollections(t *testing.T) {
 
 			status, _ := clientError.ResponseHeaders()
 			if status != value.statusCode {
-				t.Errorf("Status should be %d, got %d", value.statusCode, status)
+				t.Errorf(
+					"Status should be %d, got %d",
+					value.statusCode,
+					status,
+				)
 			}
 		})
 	}

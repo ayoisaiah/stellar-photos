@@ -41,7 +41,7 @@ func (e *HTTPError) ResponseBody() ([]byte, error) {
 }
 
 // ResponseHeaders returns http status code and headers.
-func (e *HTTPError) ResponseHeaders() (int, map[string]string) {
+func (e *HTTPError) ResponseHeaders() (status int, headers map[string]string) {
 	return e.Status, map[string]string{
 		"Content-Type": "application/json; charset=utf-8",
 	}
@@ -69,6 +69,13 @@ func CheckForErrors(resp *http.Response) ([]byte, error) {
 	case http.StatusOK:
 		return buf, nil
 	default:
-		return nil, NewHTTPError(fmt.Errorf("%s", string(buf)), resp.StatusCode, fmt.Sprintf("%d — Request to external API produced an error response", resp.StatusCode))
+		return nil, NewHTTPError(
+			fmt.Errorf("%s", string(buf)),
+			resp.StatusCode,
+			fmt.Sprintf(
+				"%d — Request to external API produced an error response",
+				resp.StatusCode,
+			),
+		)
 	}
 }

@@ -52,7 +52,10 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(status)
-	w.Write(body)
+	_, err = w.Write(body)
+	if err != nil {
+		return
+	}
 }
 
 // newRouter creates and returns a new HTTP request multiplexer
@@ -86,7 +89,7 @@ func newRouter() *http.ServeMux {
 }
 
 func run() error {
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	// Initialising the config package will crash the program if one of
 	// the required Env values is not set
