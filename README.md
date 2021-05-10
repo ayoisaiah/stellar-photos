@@ -1,6 +1,6 @@
 # Stellar Photos - Beautiful hi-res photos in your browser tabs!
 
-Experience a beautiful photo from [Unsplash](https://unsplash.com) every time you open a new tab alongside current weather information for your city.
+Experience a beautiful photo from [Unsplash](https://unsplash.com) every time you open a new browser tab.
 
 ![Screenshot of Stellar Photos on Google Chrome](https://ik.imagekit.io/turnupdev/stellar-chrome_e5UZfh90_JMv.png)
 
@@ -19,7 +19,6 @@ Chrome | Firefox | Edge
 - Search Unsplash's library of over 1 million hi-res photos and save your favourites.
 - View basic photo information such as ISO, Camera Model, Shutter Speed e.t.c.
 - Load images from any of favourite Unsplash collections (must be a public collection).
-- View current weather information for your location.
 - See the images from the last 10 tabs you've opened. Update the current background image to any one of them as you please.
 
 ## Screenshots

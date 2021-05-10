@@ -1,7 +1,5 @@
 import { html, nothing, TemplateResult } from 'lit-html';
-import { format } from 'timeago.js';
 import { cloudButton } from './cloud-button';
-import { Forecast } from '../types/weather';
 import { ChromeLocalStorage } from '../types';
 import { $ } from '../helpers';
 import { downloadButton } from './download';
@@ -17,27 +15,6 @@ function openDialog(): void {
   if (dialog) {
     dialog.classList.add('is-open');
   }
-}
-
-function weatherInfo(forecast: Forecast): TemplateResult {
-  const location = forecast.name;
-  const temperature = Math.round(forecast.main.temp);
-  const { description } = forecast.weather[0]!;
-  const lastUpdatedTime = format(new Date(forecast.timestamp ?? Date.now()));
-
-  return html`
-    <span class="location">
-      <svg class="icon location-icon"><use href="#icon-location"></use></svg>
-      <span class="location-text">${location}</span>
-    </span>
-    <span class="temperature">
-      <svg class="icon temperature-icon">
-        <use href="#icon-temperature"></use>
-      </svg>
-      <span class="temperature-text">${temperature}° - ${description}</span>
-    </span>
-    <span class="last-updated">${lastUpdatedTime}</span>
-  `;
 }
 
 function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
@@ -66,7 +43,7 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
 }
 
 function footer(data: ChromeLocalStorage): TemplateResult {
-  const { nextImage, forecast, cloudService } = data;
+  const { nextImage, cloudService } = data;
 
   return html`
     <footer
@@ -76,13 +53,6 @@ function footer(data: ChromeLocalStorage): TemplateResult {
       id="js-footer"
     >
       <div class="footer-content js-footer-content">
-        ${forecast
-          ? html`
-              <section class="weather" id="footer-weather">
-                ${weatherInfo(forecast)}
-              </section>
-            `
-          : nothing}
         ${nextImage ? unsplashCredit(nextImage) : nothing}
         <section class="controls" id="footer-controls">
           ${nextImage ? downloadButton(nextImage) : nothing}

@@ -1,6 +1,5 @@
 import * as r from 'runtypes';
 import { UnsplashImage } from './unsplash';
-import { Forecast } from './weather';
 
 type PhotoFrequency =
   | 'newtab'
@@ -34,7 +33,6 @@ type OAuth2 = r.Static<typeof OAuth2>;
 export interface ChromeLocalStorage {
   history?: UnsplashImage[];
   nextImage?: UnsplashImage;
-  forecast?: Forecast;
   cloudService?: 'dropbox' | 'onedrive' | 'googledrive';
   dropbox?: string;
   onedrive?: OAuth2 & { timestamp: number };

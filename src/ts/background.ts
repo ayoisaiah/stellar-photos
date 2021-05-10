@@ -1,16 +1,10 @@
 import {
-  getForecast,
   getRandomPhoto,
   authorizeOnedrive,
   authorizeGoogleDrive,
 } from './requests';
-import { Forecast } from './types/weather';
 import { UnsplashImage } from './types/unsplash';
-import {
-  getChromeStorageData,
-  getFromChromeSyncStorage,
-  lessThanTimeAgo,
-} from './helpers';
+import { getChromeStorageData, lessThanTimeAgo } from './helpers';
 import {
   notifyCloudAuthenticationSuccessful,
   notifyCloudConnectionFailed,
@@ -57,39 +51,11 @@ async function fetchRandomPhoto(): Promise<void> {
   }
 }
 
-async function getWeatherInfo(): Promise<void> {
-  try {
-    const syncData = await getFromChromeSyncStorage(null);
-    if (syncData.coords) {
-      const { longitude, latitude } = syncData.coords;
-      const unit = syncData.temperatureFormat || 'metric';
-
-      const response = await getForecast(latitude, longitude, unit);
-      const forecast = await response.json();
-
-      // Throws error if the forecast object does not match
-      // expected structure
-      Forecast.check(forecast);
-
-      const f = {
-        timestamp: Date.now(),
-        ...forecast,
-      };
-
-      chrome.storage.local.set({ forecast: f });
-
-      chrome.alarms.create('loadweather', { periodInMinutes: 60 });
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
 async function refresh(): Promise<void> {
   try {
     const data = await getChromeStorageData();
 
-    const { nextImage, forecast, photoFrequency } = data;
+    const { nextImage, photoFrequency } = data;
 
     if (nextImage) {
       switch (photoFrequency) {
@@ -119,15 +85,6 @@ async function refresh(): Promise<void> {
     } else {
       fetchRandomPhoto();
     }
-
-    if (forecast) {
-      const { timestamp } = forecast;
-      if (timestamp) {
-        if (!lessThanTimeAgo(timestamp, 3600)) {
-          getWeatherInfo();
-        }
-      }
-    }
   } catch (err) {
     console.error(err);
   }
@@ -155,7 +112,6 @@ type Commands =
   | 'close-tab'
   | 'set-dropbox-token'
   | 'code-flow'
-  | 'update-weather'
   | 'set-onedrive-alarm';
 
 interface Request {
@@ -242,8 +198,6 @@ chrome.runtime.onMessage.addListener((request: Request, sender) => {
       });
     },
 
-    'update-weather': () => getWeatherInfo(),
-
     'set-onedrive-alarm': () => {
       chrome.alarms.create('refresh-onedrive-token', {
         periodInMinutes: Number(request.expires_in / 60),
@@ -267,9 +221,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     switch (alarm.name) {
       case 'loadphoto':
         await fetchRandomPhoto();
-        break;
-      case 'loadweather':
-        await getWeatherInfo();
         break;
       case 'refresh-onedrive-token':
         await refreshOnedriveToken();

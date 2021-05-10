@@ -25,16 +25,6 @@ function validateCollections(collections: string): Promise<Response> {
   );
 }
 
-function getForecast(
-  latitude: number,
-  longitude: number,
-  metricSystem: string
-): Promise<Response> {
-  return makeRequest(
-    `${baseUrl}/get-weather/?lat=${latitude}&lon=${longitude}&metric=${metricSystem}`
-  );
-}
-
 function saveToDropboxApi(
   imageId: string,
   dropboxToken: string,
@@ -90,7 +80,6 @@ function saveToGoogleDriveApi(
 export {
   getRandomPhoto,
   searchPhotos,
-  getForecast,
   saveToDropboxApi,
   getDropboxKey,
   authorizeOnedrive,

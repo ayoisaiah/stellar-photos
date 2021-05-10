@@ -19,7 +19,7 @@
   }
 
   .footer-content > section {
-    width: 33.33%;
+    width: 48%;
   }
 
   &.history-open {
@@ -30,44 +30,6 @@
     fill: #fff;
     width: 20px;
     height: 20px;
-  }
-
-  .weather {
-    display: flex;
-    height: 100%;
-    font-size: 1.5rem;
-    align-items: center;
-
-    .last-updated {
-      color: #999;
-    }
-
-    svg + span {
-      padding-left: 7px;
-    }
-
-    .temperature span {
-      margin-right: 6px;
-    }
-
-    > span {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-right: 20px;
-    }
-
-    + .unsplash-credit {
-      justify-content: center;
-    }
-
-    @media screen and (max-width: 1250px) {
-      display: none !important;
-
-      + .unsplash-credit {
-        justify-content: flex-start !important;
-      }
-    }
   }
 
   .controls {
