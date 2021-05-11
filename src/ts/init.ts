@@ -13,6 +13,18 @@ function loadCSS(url: string) {
   });
 }
 
+function loadFont(url: string) {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.type = 'font/woff2';
+    link.as = 'font';
+    link.href = url;
+    link.onload = resolve;
+    link.onerror = reject;
+    document.getElementsByTagName('head')[0]!.appendChild(link);
+  });
+}
+
 function loadJS(url: string) {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -50,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCSS('css/main.css');
     await loadJS('js/main.bundle.js');
     await loadJS('js/events.bundle.js');
+    await loadFont('/fonts/Inter-Bold.woff2');
+    await loadFont('/fonts/Inter-Regular.woff2');
     chrome.runtime.sendMessage({ command: 'refresh' });
   } catch (err) {
     console.error(err);

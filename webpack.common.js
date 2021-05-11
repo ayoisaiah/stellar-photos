@@ -130,6 +130,10 @@ module.exports = (env) => {
             to: 'icons',
           },
           {
+            from: './src/fonts',
+            to: 'fonts',
+          },
+          {
             from: './src/images',
             to: 'images',
           },
