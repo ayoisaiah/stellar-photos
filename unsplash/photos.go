@@ -205,6 +205,8 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		collections = "998309"
 	}
 
+	resolution := values.Get("resolution")
+
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/random?collections=%s&client_id=%s",
@@ -220,7 +222,15 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	imageURL := res.Urls.Raw + "&w=2000"
+	var imageWidth = "2000"
+	switch resolution {
+	case "high":
+		imageWidth = "4000"
+	case "max":
+		imageWidth = strconv.Itoa(res.Width)
+	}
+
+	imageURL := res.Urls.Raw + "&w=" + imageWidth
 
 	base64, err := utils.ImageURLToBase64(imageURL)
 	if err != nil {
