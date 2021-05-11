@@ -32,7 +32,7 @@ function imageInfo(nextImage: UnsplashImage): TemplateResult {
       <div class="dialog-content">
         <div class="image-info">
           <div class="general-info">
-            <h2 class="title">Photo Information</h2>
+            <h2 class="title">About this photo</h2>
 
             <div class="stats">
               <div class="downloads">

@@ -23,6 +23,7 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
       <span>
         <svg class="icon icon-camera"><use href="#icon-camera"></use></svg>
         <a
+          target="_blank"
           rel="noopener"
           href="${nextImage.user?.links
             .html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
@@ -35,6 +36,7 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
                 <use href="#icon-location"></use>
               </svg>
               <a
+                target="_blank"
                 rel="noopener"
                 href="${nextImage.links
                   ?.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"

@@ -157,7 +157,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
               value="newtab"
               ?selected=${settings.photoFrequency === 'newtab'}
             >
-              On every new tab (default)
+              Every new tab
             </option>
             <option
               value="every15minutes"
