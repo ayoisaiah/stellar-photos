@@ -17,13 +17,18 @@ async function fetchRandomPhoto(): Promise<void> {
   try {
     const storageData = await getChromeStorageData();
     const { imageSource } = storageData;
+    let { imageResolution } = storageData;
     let collections = '998309';
 
     if (imageSource === 'custom') {
       collections = storageData.collections || collections;
     }
 
-    const response = await getRandomPhoto(collections);
+    if (!imageResolution) {
+      imageResolution = 'standard';
+    }
+
+    const response = await getRandomPhoto(collections, imageResolution);
     const data = await response.json();
 
     UnsplashImage.check(data);
@@ -93,6 +98,7 @@ async function refresh(): Promise<void> {
 async function setDefaultExtensionSettings(): Promise<void> {
   const syncSettings: ChromeSyncStorage = {
     photoFrequency: 'newtab',
+    imageResolution: 'standard',
     imageSource: 'official',
     temperatureFormat: 'metric',
   };

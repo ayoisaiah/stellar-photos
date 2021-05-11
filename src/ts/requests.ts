@@ -1,4 +1,5 @@
 import { validateResponse } from './helpers';
+import { ChromeSyncStorage } from './types';
 
 const baseUrl =
   // @ts-ignore
@@ -11,8 +12,13 @@ async function makeRequest(url: string): Promise<Response> {
   return validateResponse(response);
 }
 
-function getRandomPhoto(collections: string): Promise<Response> {
-  return makeRequest(`${baseUrl}/random-photo/?collections=${collections}`);
+function getRandomPhoto(
+  collections: string,
+  resolution: ChromeSyncStorage['imageResolution']
+): Promise<Response> {
+  return makeRequest(
+    `${baseUrl}/random-photo/?collections=${collections}&resolution=${resolution}`
+  );
 }
 
 function searchPhotos(key: string, page: number): Promise<Response> {

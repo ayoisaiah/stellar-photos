@@ -1,6 +1,8 @@
 import * as r from 'runtypes';
 import { UnsplashImage } from './unsplash';
 
+type ImageResolution = 'standard' | 'high' | 'max';
+
 type PhotoFrequency =
   | 'newtab'
   | 'every15minutes'
@@ -43,6 +45,7 @@ export interface ChromeSyncStorage {
   temperatureFormat?: TemparatureUnit;
   imageSource?: string;
   photoFrequency?: PhotoFrequency;
+  imageResolution?: ImageResolution;
   collections?: string;
   coords?: Coords;
   googleDriveRefreshToken?: string;

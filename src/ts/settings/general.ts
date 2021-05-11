@@ -25,6 +25,16 @@ function openChromeApps(e: MouseEvent): void {
 }
 /* CHROME_END */
 
+async function updateImageResolution(event: {
+  target: HTMLSelectElement;
+}): Promise<void> {
+  const selected = event.target[
+    event.target.selectedIndex
+  ] as HTMLOptionElement;
+
+  chrome.storage.sync.set({ imageResolution: selected.value });
+}
+
 async function updatePhotoFrequency(event: {
   target: HTMLSelectElement;
 }): Promise<void> {
@@ -132,7 +142,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
       <!-- /* CHROME_END */ -->
 
       <div class="photo-settings">
-        <div>
+        <div class="photo-frequency">
           <span class="dialog-label">
             How often should new photos be loaded?
           </span>
@@ -173,6 +183,35 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
               ?selected=${settings.photoFrequency === 'paused'}
             >
               Pause
+            </option>
+          </select>
+        </div>
+
+        <div class="image-resolution">
+          <span class="dialog-label">
+            Choose your preferred image resolution
+          </span>
+
+          <select
+            id="select-image-resolution"
+            @input=${updateImageResolution}
+            class="select-image-resolution"
+            name="image-resolution"
+          >
+            <option
+              value="standard"
+              ?selected=${settings.imageResolution === 'standard'}
+            >
+              Standard (2000px width)
+            </option>
+            <option
+              value="high"
+              ?selected=${settings.imageResolution === 'high'}
+            >
+              High (4000px width)
+            </option>
+            <option value="max" ?selected=${settings.imageResolution === 'max'}>
+              Max (Highest available resolution)
             </option>
           </select>
         </div>
