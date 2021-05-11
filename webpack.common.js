@@ -37,6 +37,20 @@ const typescript = {
   ],
 };
 
+const fonts = {
+  test: /\.(woff2)$/,
+  use: [
+    {
+      loader: 'file-loader',
+      options: {
+        name: '[name].[ext]',
+        outputPath: 'fonts/',
+        publicPath: '../fonts',
+      },
+    },
+  ],
+};
+
 const sass = {
   test: /\.scss$/,
   use: [
@@ -96,7 +110,7 @@ module.exports = (env) => {
     },
 
     module: {
-      rules: [typescript, sass],
+      rules: [typescript, sass, fonts],
     },
 
     resolve: {
@@ -128,6 +142,10 @@ module.exports = (env) => {
           {
             from: './src/icons',
             to: 'icons',
+          },
+          {
+            from: './src/fonts',
+            to: 'fonts',
           },
           {
             from: './src/images',
