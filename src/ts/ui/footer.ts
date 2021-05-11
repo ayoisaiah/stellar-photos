@@ -20,8 +20,8 @@ function openDialog(): void {
 function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
   return html`
     <section id="unsplash-credit" class="unsplash-credit">
-      <span
-        >Photo by
+      <span>
+        <svg class="icon icon-camera"><use href="#icon-camera"></use></svg>
         <a
           rel="noopener"
           href="${nextImage.user?.links
@@ -30,13 +30,17 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
           ${nextImage.user?.first_name || nothing}
           ${nextImage.user?.last_name || nothing}
         </a>
-        on
-        <a
-          rel="noopener"
-          href="${nextImage.links
-            ?.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
-          >Unsplash</a
-        >
+        ${nextImage.location?.title
+          ? html`<svg class="icon icon-location">
+                <use href="#icon-location"></use>
+              </svg>
+              <a
+                rel="noopener"
+                href="${nextImage.links
+                  ?.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+                >${nextImage.location.title}</a
+              >`
+          : nothing}
       </span>
     </section>
   `;
@@ -55,6 +59,22 @@ function footer(data: ChromeLocalStorage): TemplateResult {
       <div class="footer-content js-footer-content">
         ${nextImage ? unsplashCredit(nextImage) : nothing}
         <section class="controls" id="footer-controls">
+          ${nextImage
+            ? html`
+                <a
+                  title="View image on Unsplash"
+                  href="${nextImage.links
+                    .html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+                  target="_blank"
+                  rel="noopener"
+                  class="control-button unsplash-button js-info-button"
+                >
+                  <svg class="icon icon-anchor">
+                    <use href="#icon-anchor"></use>
+                  </svg>
+                </a>
+              `
+            : nothing}
           ${nextImage ? downloadButton(nextImage) : nothing}
           ${nextImage && cloudService
             ? cloudButton(nextImage, cloudService)

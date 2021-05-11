@@ -16,8 +16,18 @@
   align-items: center;
 
   span {
-    font-size: 16px;
+    font-size: 14px;
     color: #ccc;
+    display: flex;
+    align-items: center;
+  }
+
+  svg {
+    margin-right: 7px;
+  }
+
+  .icon-location {
+    margin-left: 20px;
   }
 
   a {

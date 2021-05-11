@@ -4,16 +4,16 @@
   cursor: pointer;
   border: none;
   outline: none;
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: auto;
 
   svg {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
   }
 
   &-open {
@@ -27,8 +27,8 @@
     }
 
     svg {
-      width: 30px;
-      height: 30px;
+      width: 20px;
+      height: 20px;
     }
   }
 
@@ -38,8 +38,8 @@
     top: 10px;
     right: 20px;
     display: none;
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     font-size: 32px !important;
     background: transparent;
 
@@ -54,8 +54,8 @@
 
   i {
     display: block;
-    width: 30px;
-    height: 5px;
+    width: 22px;
+    height: 3px;
     background-color: $white;
     margin: 5px 0;
     transition: 0.4s;

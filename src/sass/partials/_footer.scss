@@ -8,7 +8,7 @@
 
   .footer-content {
     color: $white;
-    height: 50px;
+    height: 45px;
     position: absolute;
     bottom: 0;
     width: 100%;
@@ -28,8 +28,8 @@
 
   svg {
     fill: #fff;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .controls {
@@ -41,7 +41,7 @@
       font-size: 1.4rem;
       line-height: 14px;
       display: inline-block;
-      padding: 8px 12px;
+      padding: 6px 8px;
       background-color: rgba(0, 0, 0, 0.9);
       cursor: pointer;
       margin-left: 15px;
