@@ -225,7 +225,12 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	var imageWidth = "2000"
 	switch resolution {
 	case "high":
-		imageWidth = "4000"
+		highRes := 4000
+		if res.Width >= highRes {
+			imageWidth = "4000"
+		} else {
+			imageWidth = strconv.Itoa(res.Width)
+		}
 	case "max":
 		imageWidth = strconv.Itoa(res.Width)
 	}
