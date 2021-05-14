@@ -117,14 +117,14 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
 
   return html`
     <section id="general-settings" class="general-settings">
-      <h3 class="settings-heading">General</h3>
+      <h3 class="subtitle is-4">General</h3>
 
       <!-- /* CHROME_START */ -->
       <div class="chrome-buttons">
         <button
           @click=${openDefaultTab}
           id="show-default-tab"
-          class="show-default-tab"
+          class="button show-default-tab"
           aria-dialog-label="Open Default Tab"
         >
           Open Default Tab
@@ -133,7 +133,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
         <button
           @click=${openChromeApps}
           id="show-chrome-apps"
-          class="show-chrome-apps"
+          class="button show-chrome-apps"
           aria-label="Show Chrome Apps"
         >
           Show Apps
@@ -142,84 +142,97 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
       <!-- /* CHROME_END */ -->
 
       <div class="photo-settings">
-        <div class="photo-frequency">
-          <span class="dialog-label">
+        <div class="field photo-frequency">
+          <label class="label dialog-label">
             How often should new photos be loaded?
-          </span>
+          </label>
 
-          <select
-            id="select-photo-frequency"
-            @input=${updatePhotoFrequency}
-            class="select-photo-frequency"
-            name="photo-frequency"
-          >
-            <option
-              value="newtab"
-              ?selected=${settings.photoFrequency === 'newtab'}
-            >
-              Every new tab
-            </option>
-            <option
-              value="every15minutes"
-              ?selected=${settings.photoFrequency === 'every15minutes'}
-            >
-              Every 15 minutes
-            </option>
-            <option
-              value="everyhour"
-              ?selected=${settings.photoFrequency === 'everyhour'}
-            >
-              Every hour
-            </option>
-            <option
-              value="everyday"
-              ?selected=${settings.photoFrequency === 'everyday'}
-            >
-              Every day
-            </option>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select
+                id="select-photo-frequency"
+                @input=${updatePhotoFrequency}
+                class="select-photo-frequency"
+                name="photo-frequency"
+              >
+                <option
+                  value="newtab"
+                  ?selected=${settings.photoFrequency === 'newtab'}
+                >
+                  Every new tab
+                </option>
+                <option
+                  value="every15minutes"
+                  ?selected=${settings.photoFrequency === 'every15minutes'}
+                >
+                  Every 15 minutes
+                </option>
+                <option
+                  value="everyhour"
+                  ?selected=${settings.photoFrequency === 'everyhour'}
+                >
+                  Every hour
+                </option>
+                <option
+                  value="everyday"
+                  ?selected=${settings.photoFrequency === 'everyday'}
+                >
+                  Every day
+                </option>
 
-            <option
-              value="paused"
-              ?selected=${settings.photoFrequency === 'paused'}
-            >
-              Pause
-            </option>
-          </select>
+                <option
+                  value="paused"
+                  ?selected=${settings.photoFrequency === 'paused'}
+                >
+                  Pause
+                </option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div class="image-resolution">
-          <span class="dialog-label">
+        <div class="field image-resolution">
+          <label class="label dialog-label">
             Choose your preferred image resolution
-          </span>
+          </label>
 
-          <select
-            id="select-image-resolution"
-            @input=${updateImageResolution}
-            class="select-image-resolution"
-            name="image-resolution"
-          >
-            <option
-              value="standard"
-              ?selected=${settings.imageResolution === 'standard'}
-            >
-              Standard (2000px width)
-            </option>
-            <option
-              value="high"
-              ?selected=${settings.imageResolution === 'high'}
-            >
-              High (4000px width)
-            </option>
-            <option value="max" ?selected=${settings.imageResolution === 'max'}>
-              Max (Highest available resolution)
-            </option>
-          </select>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select
+                id="select-image-resolution"
+                @input=${updateImageResolution}
+                class="select-image-resolution"
+                name="image-resolution"
+              >
+                <option
+                  value="standard"
+                  ?selected=${settings.imageResolution === 'standard'}
+                >
+                  Standard (2000px width)
+                </option>
+                <option
+                  value="high"
+                  ?selected=${settings.imageResolution === 'high'}
+                >
+                  High (4000px width)
+                </option>
+                <option
+                  value="max"
+                  ?selected=${settings.imageResolution === 'max'}
+                >
+                  Max (Highest available resolution)
+                </option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <form id="unsplash-collections" class="unsplash-collections">
-          <span class="dialog-label"
-            >Where should the images be fetched from?</span
-          >
+          <div class="field">
+            <label class="label dialog-label"
+              >Where should the images be fetched from?</label
+            >
+          </div>
           <div class="radio-container">
             <input
               type="radio"
@@ -260,41 +273,25 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
           </div>
 
           <div class="custom-collection ${customInput}">
-            <div class="custom-collection-input">
-              <input
-                type="text"
-                name="unsplash-collections__input"
-                class="unsplash-collections__input"
-                id="js-collections-input"
-                value=${collections}
-                placeholder="Collection IDs"
-              />
-
-              <span
-                data-tooltip="Enter one or more Unsplash collection IDs here.
- For example, 998309 is the collection ID for https://unsplash.com/collections/998309/stellar-photos.
- Separate multiple collection IDs with commas."
-              >
-                <svg
-                  id="icon-info"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <title>Info</title>
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12" y2="8"></line>
-                </svg>
-              </span>
+            <div class="field custom-collection-input">
+              <div class="control">
+                <input
+                  type="text"
+                  name="unsplash-collections__input"
+                  class="input unsplash-collections__input"
+                  id="js-collections-input"
+                  value=${collections}
+                  placeholder="Collection IDs"
+                />
+              </div>
+              <p class="help">
+                Enter Unsplash collection IDs here, seperated by commas.
+              </p>
             </div>
-
             <button
               type="button"
               @click=${updateCollections}
-              class="update-collections ladda-button"
+              class="button is-link update-collections ladda-button"
               data-style="expand-right"
             >
               <span class="ladda-label">Save Collections</span>

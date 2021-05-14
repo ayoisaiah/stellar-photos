@@ -6,9 +6,9 @@ async function renderSettings(): Promise<void> {
   try {
     const data = await getChromeStorageData();
 
-    const body = $('js-body');
-    if (body) {
-      render(settingsDialog(data), body);
+    const main = $('js-main');
+    if (main) {
+      render(settingsDialog(data), main);
     }
   } catch (err) {
     console.log(err);

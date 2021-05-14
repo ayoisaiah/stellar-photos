@@ -1,10 +1,10 @@
 import { $ } from '../helpers';
 
 function snackbar(message: string, className = ''): void {
-  const body = $('js-body');
+  const main = $('js-main');
 
-  if (body) {
-    body.insertAdjacentHTML(
+  if (main) {
+    main.insertAdjacentHTML(
       'beforeend',
       `<div id="js-snackbar" class="snackbar ${className}">${message}</div>`
     );

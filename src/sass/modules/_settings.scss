@@ -3,21 +3,23 @@
    ========================================================================== */
 
 .settings-content {
-  width: 550px;
+  width: 400px;
   height: 400px;
-  font-size: 1.6rem;
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.8), white 150px),
     url('https://images.unsplash.com/photo-1496047311392-22bec9423e0a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=200&q=60&blur=20');
   border-radius: 4px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 20px 15px;
 }
 
-.settings-heading {
-  font-size: 20px;
-  margin-bottom: 10px;
+.subtitle {
+  margin-bottom: 10px !important;
+}
+
+.subtitle.is-4 {
+  font-size: 1.4rem !important;
 }
 
 /* General settings
@@ -26,10 +28,11 @@
 .chrome-buttons {
   display: flex;
   align-items: center;
+  margin-bottom: 20px;
 }
 
 .show-default-tab {
-  margin-right: 20px;
+  margin-right: 10px;
 }
 
 .radio-container {
@@ -52,79 +55,35 @@
   }
 }
 
-.custom-collection-input {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-
-  input {
-    margin-right: 10px;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  svg,
-  use {
-    stroke: #111 !important;
-  }
-
-  span {
-    height: 20px;
-  }
-
-  @include tooltip;
-}
-
-.dialog-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-.longitude-input,
-.latitude-input {
-  margin-bottom: 10px;
-}
-
 .settings {
-  button,
-  .button {
-    display: block;
-    padding: 6px 20px;
-    background-color: rgb(68, 68, 69);
-    border: 1px solid rgb(68, 68, 69);
-    font-size: 1.4rem;
-    color: $white;
-    font-family: $font-stack;
-    cursor: pointer;
-    margin-bottom: 15px;
-    border-radius: 2px;
-    text-decoration: none;
-
-    &:hover {
-      border-color: #888;
-      background-color: #888;
-    }
-  }
-
-  select {
-    background-color: #f3f3f3;
-    border: 1px solid #a5a5a5;
-    border-radius: $global-border-radius;
-    padding: 6px 3px;
-    margin-right: 10px;
-    margin-bottom: 15px;
-  }
-
   .inline-notification {
     display: block;
   }
 
   .authorize {
-    margin-top: 0;
+    margin-top: 15px;
+  }
+
+  .twitter {
+    background-color: #1DA1F2;
+    border-color: #1DA1F2;
+    color: #fafafa;
+
+    &:hover {
+      background-color: #1a93de;
+      border-color: #1a93de;
+    }
+  }
+
+  .review {
+    background-color: #657786;
+    border-color: #657786;
+    color: #fafafa;
+
+    &:hover {
+      background-color: #586875;
+      border-color: #586875;
+    }
   }
 
   .success-message {
@@ -140,22 +99,19 @@
     margin-bottom: 20px;
   }
 
-  .label {
-    display: block;
-    margin-bottom: 10px;
+  .links {
+    margin-top: 20px;
   }
 
-  a {
-    text-decoration: underline;
+  .links .button {
+    margin-bottom: 15px;
+  }
+
+  a:not(.button) {
     color: inherit;
-  }
 
-  .latitude-label {
-    margin-top: 10px;
-  }
-
-  input[type='text'] {
-    padding: 5px 10px;
-    display: block;
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }

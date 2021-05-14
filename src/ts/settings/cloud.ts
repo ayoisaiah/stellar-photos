@@ -98,50 +98,52 @@ function cloudSettings(settings: ChromeStorage): TemplateResult {
 
   return html`
     <section id="cloud-settings" class="cloud-settings">
-      <h3 class="settings-heading">Cloud</h3>
-      <div class="saveTo">
-        <span class="dialog-label"
-          >Connect and sync photos to your preferred cloud service</span
-        >
+      <h3 class="subtitle is-4">Cloud settings</h3>
+      <div class="field saveTo">
+        <label class="label dialog-label">Sync photos to the Cloud</label>
 
-        <select
-          @input=${updateCloudService}
-          class="select-cloud-Storage"
-          id="select-cloud-storage"
-        >
-          <option
-            disabled
-            ?selected=${settings.cloudService === null}
-            value="noneselected"
-          >
-            -- Select an option --
-          </option>
-          <option
-            value="dropbox"
-            ?selected=${settings.cloudService === 'dropbox'}
-          >
-            Dropbox
-          </option>
-          <option
-            value="onedrive"
-            ?selected=${settings.cloudService === 'onedrive'}
-          >
-            OneDrive
-          </option>
-          <option
-            value="googledrive"
-            ?selected=${settings.cloudService === 'googledrive'}
-          >
-            Google Drive
-          </option>
-        </select>
+        <div class="control">
+          <div class="select is-fullwidth">
+            <select
+              @input=${updateCloudService}
+              class="select-cloud-Storage"
+              id="select-cloud-storage"
+            >
+              <option
+                disabled
+                ?selected=${settings.cloudService === null}
+                value="noneselected"
+              >
+                -- Select an option --
+              </option>
+              <option
+                value="dropbox"
+                ?selected=${settings.cloudService === 'dropbox'}
+              >
+                Dropbox
+              </option>
+              <option
+                value="onedrive"
+                ?selected=${settings.cloudService === 'onedrive'}
+              >
+                OneDrive
+              </option>
+              <option
+                value="googledrive"
+                ?selected=${settings.cloudService === 'googledrive'}
+              >
+                Google Drive
+              </option>
+            </select>
+          </div>
+        </div>
 
         <span class="action" id="js-action">
           ${!token
             ? html`
                 <button
                   @click=${authorizeCloud}
-                  class="authorize ladda-button"
+                  class="button is-link authorize ladda-button"
                   id="js-connect-cloud"
                   data-style="expand-right"
                 >

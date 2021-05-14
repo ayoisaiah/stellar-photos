@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .snackbar {
-  min-width: 400px;
+  min-width: calc(100% - 10%);
   padding: 12px;
   position: fixed;
   top: 35px;
@@ -14,7 +14,7 @@
   text-align: center;
   border-radius: $global-border-radius;
   z-index: 100;
-  font-size: 1.6rem;
+  font-size: 16px;
   animation: 0.5s ease fadeInControls, 0.5s ease fadeOutControls 3s;
 }
 
