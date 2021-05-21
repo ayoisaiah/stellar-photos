@@ -143,10 +143,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
 
       <div class="photo-settings">
         <div class="field photo-frequency">
-          <label class="label dialog-label">
-            How often should new photos be loaded?
-          </label>
-
+          <label class="label dialog-label"> Change background image </label>
           <div class="control">
             <div class="select is-fullwidth">
               <select
@@ -177,14 +174,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
                   value="everyday"
                   ?selected=${settings.photoFrequency === 'everyday'}
                 >
-                  Every day
-                </option>
-
-                <option
-                  value="paused"
-                  ?selected=${settings.photoFrequency === 'paused'}
-                >
-                  Pause
+                  Every 24 hours
                 </option>
               </select>
             </div>
@@ -192,10 +182,7 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
         </div>
 
         <div class="field image-resolution">
-          <label class="label dialog-label">
-            Choose your preferred image resolution
-          </label>
-
+          <label class="label dialog-label"> Preferred image resolution </label>
           <div class="control">
             <div class="select is-fullwidth">
               <select
@@ -224,78 +211,81 @@ function generalSettings(settings: ChromeStorage): TemplateResult {
                 </option>
               </select>
             </div>
+            <p class="help">
+              Higher resolution images will take longer to load.
+            </p>
           </div>
         </div>
 
         <form id="unsplash-collections" class="unsplash-collections">
           <div class="field">
-            <label class="label dialog-label"
-              >Where should the images be fetched from?</label
-            >
-          </div>
-          <div class="radio-container">
-            <input
-              type="radio"
-              @change=${updateImageSource}
-              id="official-collection"
-              name="image-source"
-              value="official"
-              ?checked=${settings.imageSource === 'official'}
-            />
-            <label for="official-collection"
-              >The official
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://unsplash.com/collections/998309/stellar-photos"
-                >Stellar Photos collection</a
-              ></label
-            >
-          </div>
-          <div class="radio-container">
-            <input
-              @change=${updateImageSource}
-              ?checked=${settings.imageSource === 'custom'}
-              type="radio"
-              id="custom-collection"
-              name="image-source"
-              value="custom"
-            />
-            <label for="custom-collection"
-              >Custom
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://unsplash.com/collections"
-                >Unsplash collections</a
-              ></label
-            >
-          </div>
-
-          <div class="custom-collection ${customInput}">
-            <div class="field custom-collection-input">
-              <div class="control">
+            <label class="label dialog-label">Image source</label>
+            <div class="control">
+              <div class="radio-container">
                 <input
-                  type="text"
-                  name="unsplash-collections__input"
-                  class="input unsplash-collections__input"
-                  id="js-collections-input"
-                  value=${collections}
-                  placeholder="Collection IDs"
+                  type="radio"
+                  @change=${updateImageSource}
+                  id="official-collection"
+                  name="image-source"
+                  value="official"
+                  ?checked=${settings.imageSource === 'official'}
                 />
+                <label for="official-collection"
+                  >The official
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://unsplash.com/collections/998309/stellar-photos"
+                    >Stellar Photos collection</a
+                  ></label
+                >
               </div>
-              <p class="help">
-                Enter Unsplash collection IDs here, seperated by commas.
-              </p>
+              <div class="radio-container">
+                <input
+                  @change=${updateImageSource}
+                  ?checked=${settings.imageSource === 'custom'}
+                  type="radio"
+                  id="custom-collection"
+                  name="image-source"
+                  value="custom"
+                />
+                <label for="custom-collection"
+                  >Custom
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://unsplash.com/collections"
+                    >Unsplash collections</a
+                  ></label
+                >
+              </div>
+
+              <div class="custom-collection ${customInput}">
+                <div class="field custom-collection-input">
+                  <div class="control">
+                    <input
+                      type="text"
+                      name="unsplash-collections__input"
+                      class="input unsplash-collections__input"
+                      id="js-collections-input"
+                      value=${collections}
+                      placeholder="Collection IDs"
+                    />
+                  </div>
+                  <p class="help">
+                    Enter Unsplash collection IDs here, seperated by commas.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click=${updateCollections}
+                  class="button is-link update-collections ladda-button"
+                  data-style="expand-right"
+                >
+                  <span class="ladda-label">Save Collections</span>
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              @click=${updateCollections}
-              class="button is-link update-collections ladda-button"
-              data-style="expand-right"
-            >
-              <span class="ladda-label">Save Collections</span>
-            </button>
           </div>
         </form>
       </div>

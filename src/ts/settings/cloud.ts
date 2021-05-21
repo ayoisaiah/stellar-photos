@@ -51,7 +51,7 @@ function updateCloudStatus(flag: boolean): void {
       id="js-connect-cloud"
       data-style="expand-right"
       @click=${authorizeCloud}
-      class="authorize"
+      class="button is-link authorize ladda-button"
       id="authorize"
     >
       Connect
@@ -100,7 +100,7 @@ function cloudSettings(settings: ChromeStorage): TemplateResult {
     <section id="cloud-settings" class="cloud-settings">
       <h3 class="subtitle is-4">Cloud settings</h3>
       <div class="field saveTo">
-        <label class="label dialog-label">Sync photos to the Cloud</label>
+        <label class="label dialog-label">Synchronise photos to</label>
 
         <div class="control">
           <div class="select is-fullwidth">

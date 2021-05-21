@@ -5,7 +5,8 @@ function addonInfo(): TemplateResult {
     <section id="addon-info" class="addon-info">
       <h3 class="subtitle is-4">About this extension</h3>
       <p>
-        Stellar is made by
+        <a href="https://github.com/ayoisaiah/stellar-photos">Stellar Photos</a>
+        is made by
         <a
           target="_blank"
           rel="noopener noreferrer"
