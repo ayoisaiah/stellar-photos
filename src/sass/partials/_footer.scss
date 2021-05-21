@@ -5,6 +5,7 @@
   right: 0;
   z-index: 2;
   height: 150px;
+  transition: transform .5s cubic-bezier(.28,.83,.67,1), opacity .5s ease;
 
   .footer-content {
     color: $white;
@@ -27,7 +28,7 @@
   }
 
   svg {
-    fill: #fff;
+    fill: $white;
     width: 18px;
     height: 18px;
   }
@@ -43,9 +44,9 @@
       display: inline-block;
       padding: 6px 8px;
       background-color: rgba(0, 0, 0, 0.9);
+      color: $white;
       cursor: pointer;
       margin-left: 15px;
-      color: $white;
       text-decoration: none;
       border-radius: $global-border-radius;
       border: none;

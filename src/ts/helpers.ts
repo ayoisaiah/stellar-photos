@@ -57,10 +57,10 @@ function lessThanTimeAgo(
 
 // Retrieve data from Chrome's Local storage area
 async function getFromChromeLocalStorage(
-  keys: string | string[] | Object | null
+  keys: string | string[] | Record<string, unknown> | null
 ): Promise<ChromeLocalStorage> {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(keys, function (result) {
+    chrome.storage.local.get(keys, (result) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
@@ -72,10 +72,10 @@ async function getFromChromeLocalStorage(
 
 // Retrieve data from Chrome's sync storage area
 async function getFromChromeSyncStorage(
-  keys: string | string[] | Object | null
+  keys: string | string[] | Record<string, unknown> | null
 ): Promise<ChromeSyncStorage> {
   return new Promise((resolve, reject) => {
-    chrome.storage.sync.get(keys, function (result) {
+    chrome.storage.sync.get(keys, (result) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {

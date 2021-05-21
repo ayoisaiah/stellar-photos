@@ -48,8 +48,14 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
   `;
 }
 
+function unpauseImage(this: HTMLButtonElement) {
+  chrome.storage.local.set({ imagePaused: false });
+  chrome.runtime.sendMessage({ command: 'refresh' });
+  this.remove();
+}
+
 function footer(data: ChromeLocalStorage): TemplateResult {
-  const { nextImage, cloudService } = data;
+  const { nextImage, cloudService, imagePaused } = data;
 
   return html`
     <footer
@@ -61,6 +67,21 @@ function footer(data: ChromeLocalStorage): TemplateResult {
       <div class="footer-content js-footer-content">
         ${nextImage ? unsplashCredit(nextImage) : nothing}
         <section class="controls" id="footer-controls">
+          ${imagePaused
+            ? html`
+                <button
+                  title="Background image has been paused. Click to unpause"
+                  target="_blank"
+                  rel="noopener"
+                  @click=${unpauseImage}
+                  class="control-button unsplash-button js-play-button"
+                >
+                  <svg class="icon icon-play">
+                    <use href="#icon-play"></use>
+                  </svg>
+                </button>
+              `
+            : nothing}
           ${nextImage
             ? html`
                 <a

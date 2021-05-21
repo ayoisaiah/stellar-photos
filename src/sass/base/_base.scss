@@ -34,7 +34,7 @@ body.no-bounce {
 
 .s-ui {
   opacity: 0;
-  transition: all 0.5s ease;
+  transition: opacity 0.5s ease;
 }
 
 .s-ui.show {

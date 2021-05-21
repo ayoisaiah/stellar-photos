@@ -1,10 +1,6 @@
 import { html, TemplateResult, nothing, render } from 'lit-html';
-import {
-  $,
-  getFromChromeLocalStorage,
-  getFromChromeSyncStorage,
-} from '../helpers';
-import { ChromeLocalStorage, ChromeSyncStorage } from '../types';
+import { $, getFromChromeLocalStorage } from '../helpers';
+import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
 import { cloudButton } from './cloud-button';
 import { downloadButton } from './download';
@@ -65,16 +61,10 @@ async function setBackgroundFromHistory(
       fadeInBackground();
     }
 
-    updateImageInfo(image);
+    chrome.storage.local.set({ nextImage: image });
+    chrome.storage.local.set({ imagePaused: true });
 
-    // Update paused image
-    const data: {
-      photoFrequency?: ChromeSyncStorage['photoFrequency'];
-    } = await getFromChromeSyncStorage(['photoFrequency']);
-    const { photoFrequency } = data;
-    if (photoFrequency === 'paused') {
-      chrome.storage.local.set({ nextImage: image });
-    }
+    updateImageInfo(image);
   } catch (err) {
     console.error(err);
   }

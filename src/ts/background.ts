@@ -60,12 +60,12 @@ async function refresh(): Promise<void> {
   try {
     const data = await getChromeStorageData();
 
-    const { nextImage, photoFrequency } = data;
+    const { nextImage, photoFrequency, imagePaused } = data;
+
+    if (imagePaused) return;
 
     if (nextImage) {
       switch (photoFrequency) {
-        case 'paused':
-          break;
         case 'newtab':
           fetchRandomPhoto();
           break;

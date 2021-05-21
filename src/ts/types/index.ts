@@ -3,12 +3,7 @@ import { UnsplashImage } from './unsplash';
 
 type ImageResolution = 'standard' | 'high' | 'max';
 
-type PhotoFrequency =
-  | 'newtab'
-  | 'every15minutes'
-  | 'everyhour'
-  | 'everyday'
-  | 'paused';
+type PhotoFrequency = 'newtab' | 'every15minutes' | 'everyhour' | 'everyday';
 
 type TemparatureUnit = 'metric' | 'imperial';
 
@@ -39,6 +34,7 @@ export interface ChromeLocalStorage {
   dropbox?: string;
   onedrive?: OAuth2 & { timestamp: number };
   googledrive?: OAuth2 & { timestamp: number };
+  imagePaused?: boolean;
 }
 
 export interface ChromeSyncStorage {
