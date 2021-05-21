@@ -231,24 +231,27 @@ func TestValidateCollections(t *testing.T) {
 		input      string
 		statusCode int
 	}{
-		{"998309,317099", 200},
+		{"998309,6DH-y8Ef6iY", 200},
 		{"39843782,4993402", 404},
 		{"998309,39843782", 404},
-		{"", 400},
-		{"ieufhhjej", 400},
+		{"ieufhhjej", 404},
 	}
 
 	m := map[string]struct {
 		jsonFile   string
 		statusCode int
 	}{
-		"998309": {jsonFile: "sample_collections_response", statusCode: 200},
-		"317099": {jsonFile: "sample_collections_response", statusCode: 200},
+		"998309":      {jsonFile: "sample_collections_response", statusCode: 200},
+		"6DH-y8Ef6iY": {jsonFile: "sample_collections_response", statusCode: 200},
 		"39843782": {
 			jsonFile:   "collections_not_found_response",
 			statusCode: 404,
 		},
 		"4993402": {
+			jsonFile:   "collections_not_found_response",
+			statusCode: 404,
+		},
+		"ieufhhjej": {
 			jsonFile:   "collections_not_found_response",
 			statusCode: 404,
 		},

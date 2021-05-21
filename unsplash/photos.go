@@ -265,22 +265,21 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 
 	collections := strings.Split(values.Get("collections"), ",")
 
+	if len(collections) == 0 {
+		return utils.NewHTTPError(
+			nil,
+			http.StatusBadRequest,
+			"At least one collection ID must be present",
+		)
+	}
+
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 
 	for _, value := range collections {
-		valueToNum, err := strconv.Atoi(value)
-		if err != nil {
-			return utils.NewHTTPError(
-				err,
-				http.StatusBadRequest,
-				"Collection ID must be a number",
-			)
-		}
-
 		url := fmt.Sprintf(
-			"%s/collections/%d/?client_id=%s",
+			"%s/collections/%s/?client_id=%s",
 			UnsplashAPILocation,
-			valueToNum,
+			value,
 			unsplashAccessKey,
 		)
 		_, err = utils.SendGETRequest(url, &collection{})
