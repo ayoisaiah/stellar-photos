@@ -10,7 +10,7 @@ stunning each time.
 
 ![Screenshot of Stellar Photos on Google Chrome](https://ik.imagekit.io/turnupdev/stellar-chrome_hLlZOg4St.png)
 
-## Install Stellar
+## Install Stellar Photos
 
 Chrome | Firefox | Edge
 -------|---------|---------
@@ -19,12 +19,12 @@ Chrome | Firefox | Edge
 ## Main features
 
 - Enjoy a new, carefully curated hi-res photo every time you open a new tab - [totally free](https://unsplash.com/license) for personal or commercial use with no attribution required.
-- Download your favourites to your computer or sync them over to Google Drive, Dropbox or Onedrive.
-- Change the frequency for loading new images. Options include: every new tab, every 15 minutes, hourly or daily.
-- Pause the current image until further notice.
-- Search Unsplash's library of over 1 million hi-res photos and save your favourites.
-- View basic photo information such as ISO, Camera Model, Shutter Speed e.t.c.
-- Load images from any of favourite Unsplash collections (must be a public collection).
+- Download your favourite images or sync them over to the cloud (Google Drive, Dropbox or Onedrive).
+- Change the frequency for loading new background images. Options include: every new tab, every 15 minutes, hourly or daily.
+- Pause the your favourite background images until further notice.
+- Search Unsplash's library of over 1 million hi-res photos.
+- View basic photo information such as ISO, Location, Camera Model, Shutter Speed e.t.c.
+- Load images from any of favourite public [Unsplash collections](https://unsplash.com/collections).
 - See the images from the last 10 tabs you've opened. Update the current background image to any one of them as you please.
 
 ## Screenshots
