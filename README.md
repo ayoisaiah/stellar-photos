@@ -1,8 +1,14 @@
-# Stellar Photos - Beautiful hi-res photos in your browser tabs!
+<p align="left">
+   <img src="https://ik.imagekit.io/turnupdev/stellar-banner_NTy94-aRV.png" width="400" alt="Stellar Photos">
+</p>
 
-Experience a beautiful photo from [Unsplash](https://unsplash.com) every time you open a new browser tab.
+# Beautiful hi-res photos in your browser tabs!
 
-![Screenshot of Stellar Photos on Google Chrome](https://ik.imagekit.io/turnupdev/stellar-chrome_e5UZfh90_JMv.png)
+Experience a beautiful photo from [Unsplash](https://unsplash.com) every time
+you open a new browser tab. Each image is specially curated and guaranteed to be
+stunning each time.
+
+![Screenshot of Stellar Photos on Google Chrome](https://ik.imagekit.io/turnupdev/stellar-chrome_hLlZOg4St.png)
 
 ## Install Stellar
 
@@ -23,11 +29,13 @@ Chrome | Firefox | Edge
 
 ## Screenshots
 
-![Screenshot of Stellar Photos on Firefox](https://ik.imagekit.io/turnupdev/stellar-gh-1_arUIExXed.png)
+![Screenshot of Stellar Photos on Google Chrome showing UI elements](https://ik.imagekit.io/turnupdev/stellar-chrome-2_a7muqGgMH.png)
 
-![Screenshot of Stellar Photos on Microsoft Edge](https://ik.imagekit.io/turnupdev/stellar-gh-2_omVu8Km9w.png)
+![Screenshot of Stellar Photos on Google Chrome showing history pane](https://ik.imagekit.io/turnupdev/stellar-chrome-3_xXUBuOzp4.png)
 
-![Screenshot of Stellar Photos on Microsoft Edge](https://ik.imagekit.io/turnupdev/stellar-gh-3_oO4NHUUKA.png)
+![Screenshot of Stellar Photos on Vivaldi showing photo information](https://ik.imagekit.io/turnupdev/stellar-vivaldi_N_mCOv_Fef.png)
+
+![Screenshot of Stellar Photos on Microsoft Edge showing UI elements](https://ik.imagekit.io/turnupdev/stellar-edge_qGV6FSutX.png)
 
 ## Supported Browsers
 
