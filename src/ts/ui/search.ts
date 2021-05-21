@@ -128,12 +128,14 @@ function handleSubmit(event: KeyboardEvent): void {
   event.preventDefault();
   closeForm();
 
-  const input = $('js-search-input');
+  const input = $('js-search-input') as HTMLInputElement;
+  const inputValue = input.value.trim();
+  if (!inputValue) return;
 
   // Reset search state
   state.page = 1;
   if (input) {
-    state.query = (input as HTMLInputElement).value;
+    state.query = inputValue;
   }
   state.results = [];
 
