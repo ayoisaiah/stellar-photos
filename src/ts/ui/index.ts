@@ -34,18 +34,22 @@ function loadHistory(
   return h;
 }
 
-type classListActions = 'toggle' | 'add' | 'remove';
+type ClassListActions = 'toggle' | 'add' | 'remove';
 
-function toggleHistoryPane(action: classListActions): void {
+function toggleHistoryPane(action: ClassListActions): void {
   if (action === 'add') fadeInControls();
   $('js-history')?.classList[action]('open');
   $('js-footer')?.classList[action]('history-open');
   $('js-hamburger')?.classList[action]('transform');
 }
 
-function handleScrollWheel(event: WheelEvent): void {
+function handleScrollWheel(
+  event: WheelEvent & { target: HTMLButtonElement }
+): void {
   const searchResults = $('js-search-results');
   if (searchResults && searchResults.hasChildNodes()) return;
+
+  if (event.target?.matches('.s-history *')) return;
 
   if (event.deltaY < 0) {
     toggleHistoryPane('add');

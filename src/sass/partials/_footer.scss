@@ -17,10 +17,10 @@
     display: flex;
     justify-content: space-between;
     padding: 0 20px;
-  }
 
-  .footer-content > section {
-    width: 48%;
+    // @media screen and (max-width: 1000px) {
+    //   justify-content: flex-end;
+    // }
   }
 
   &.history-open {
@@ -59,6 +59,12 @@
       &:active {
         outline: none;
       }
+    }
+  }
+
+  .photo-location {
+    @media screen and (max-width: 650px) {
+      display: none;
     }
   }
 }

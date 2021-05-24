@@ -32,7 +32,8 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
           ${nextImage.user?.last_name || nothing}
         </a>
         ${nextImage.location?.title
-          ? html`<svg class="icon icon-location">
+          ? html`<span class="photo-location">
+              <svg class="icon icon-location">
                 <use href="#icon-location"></use>
               </svg>
               <a
@@ -41,7 +42,8 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
                 href="${nextImage.links
                   ?.html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
                 >${nextImage.location.title}</a
-              >`
+              ></span
+            >`
           : nothing}
       </span>
     </section>
