@@ -11,7 +11,7 @@ async function openDropboxAuthPage(): Promise<void> {
   const data: { dropbox_key: string } = await response.json();
   const key = data.dropbox_key;
   chrome.tabs.create({
-    url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
+    url: `https://www.dropbox.com/1/oauth2/authorize?client_id=${key}&response_type=token&redirect_uri=https://stellar.freshman.tech`,
   });
 }
 

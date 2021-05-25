@@ -86,7 +86,7 @@ async function openOnedriveAuthPage(): Promise<void> {
     const { id } = json;
 
     chrome.tabs.create({
-      url: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${id}&scope=Files.ReadWrite.AppFolder offline_access&response_type=code&redirect_uri=https://ayoisaiah.github.io/stellar-photos`,
+      url: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${id}&scope=Files.ReadWrite.AppFolder offline_access&response_type=code&redirect_uri=https://stellar.freshman.tech`,
     });
   } catch (err) {
     console.error(err);
@@ -100,10 +100,9 @@ async function monitorUploadProgress(
   imageId: string
 ): Promise<void> {
   try {
-    console.log(url);
     const response = await fetch(url);
     const json: { status: string } = await validateResponse(response).json();
-    console.log(json);
+
     if (json.status === 'completed') {
       loadingIndicator().stop();
       clearInterval(interval);

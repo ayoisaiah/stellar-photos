@@ -38,7 +38,7 @@ function addonInfo(): TemplateResult {
           class="button twitter is-fullwidth"
           target="_blank"
           rel="noopener"
-          href="https://twitter.com/intent/tweet/?text=Replace your boring browser new tab page with a random hi-res photo from Unsplash. Get it here: https://ayoisaiah.github.io/stellar-photos"
+          href="https://twitter.com/intent/tweet/?text=Replace your browser's boring new tab page with an amazing hi-res photo from Unsplash. Get it here: https://stellar.freshman.tech"
           >Share Stellar Photos on Twitter</a
         >
 

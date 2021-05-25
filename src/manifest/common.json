@@ -21,7 +21,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://ayoisaiah.github.io/stellar-photos/*"],
+      "matches": ["https://stellar.freshman.tech/*"],
       "js": ["js/tab.bundle.js"]
     }
   ]

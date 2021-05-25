@@ -20,7 +20,7 @@ async function openGoogleDriveAuthPage(): Promise<void> {
   const data: { googledrive_key: string } = await response.json();
   const key = data.googledrive_key;
   chrome.tabs.create({
-    url: `https://accounts.google.com/o/oauth2/v2/auth?scope=https%3A//www.googleapis.com/auth/drive.file&access_type=offline&response_type=code&redirect_uri=https://ayoisaiah.github.io/stellar-photos&client_id=${key}`,
+    url: `https://accounts.google.com/o/oauth2/v2/auth?scope=https%3A//www.googleapis.com/auth/drive.file&access_type=offline&response_type=code&redirect_uri=https://stellar.freshman.tech/&client_id=${key}`,
   });
 }
 
