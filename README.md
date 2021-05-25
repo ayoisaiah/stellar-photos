@@ -24,8 +24,8 @@ Chrome | Firefox | Edge
 - Pause the your favourite background images until further notice.
 - Search Unsplash's library of over 1 million hi-res photos.
 - View basic photo information such as ISO, Location, Camera Model, Shutter Speed e.t.c.
-- Load images from any of favourite public [Unsplash collections](https://unsplash.com/collections).
-- See the images from the last 10 tabs you've opened. Update the current background image to any one of them as you please.
+- Load images from your favourite public [Unsplash collections](https://unsplash.com/collections).
+- See the images from the last 10 tabs you've opened and update the current background image to any one of them as you please.
 
 ## Screenshots
 
