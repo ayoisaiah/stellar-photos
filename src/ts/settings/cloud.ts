@@ -150,7 +150,11 @@ function cloudSettings(settings: ChromeStorage): TemplateResult {
                   <span class="ladda-label">Connect</span>
                 </button>
               `
-            : html` <span class="success-message">Connected</span> `}
+            : html`
+                <p class="success-message" style="margin-top: 6px;">
+                  Connected
+                </p>
+              `}
         </span>
       </div>
     </section>
