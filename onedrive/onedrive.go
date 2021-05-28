@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
@@ -60,7 +61,7 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  config.Conf.RedirectURL,
+		"redirect_uri":  strings.TrimSuffix(config.Conf.RedirectURL, "/"),
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
@@ -93,7 +94,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 		"client_id":     id,
 		"client_secret": secret,
 		"refresh_token": refreshToken,
-		"redirect_uri":  config.Conf.RedirectURL,
+		"redirect_uri":  strings.TrimSuffix(config.Conf.RedirectURL, "/"),
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
