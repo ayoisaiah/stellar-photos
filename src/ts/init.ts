@@ -9,7 +9,10 @@ function loadCSS(url: string) {
     link.href = url;
     link.onload = resolve;
     link.onerror = reject;
-    document.getElementsByTagName('head')[0]!.appendChild(link);
+    const head = document.getElementsByTagName('head')[0];
+    if (head) {
+      head.appendChild(link);
+    }
   });
 }
 
@@ -19,7 +22,10 @@ function loadJS(url: string) {
     script.src = url;
     script.onload = resolve;
     script.onerror = reject;
-    document.getElementsByTagName('head')[0]!.appendChild(script);
+    const head = document.getElementsByTagName('head')[0];
+    if (head) {
+      head.appendChild(script);
+    }
   });
 }
 
@@ -44,6 +50,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (body && nextImage.base64) {
         body.style.backgroundImage = `url(${nextImage.base64})`;
+        // ensure portrait images are place correctly in the frame
+        if (nextImage.height - nextImage.width > 500) {
+          body.style.backgroundPosition = '50% 20%';
+        } else {
+          body.style.backgroundPosition = '50%';
+        }
       }
     }
 

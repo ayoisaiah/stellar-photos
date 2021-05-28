@@ -100,13 +100,14 @@ function searchButton(): TemplateResult {
 
 function ui(data: ChromeLocalStorage): TemplateResult {
   return html`
-    <main @wheel=${handleScrollWheel} class="s-main" id="js-main">
-      <header
-        @mouseenter=${fadeInControls}
-        @mouseleave=${hideControls}
-        class="header s-ui"
-        id="header"
-      >
+    <main
+      @mouseenter=${fadeInControls}
+      @mouseleave=${hideControls}
+      @wheel=${handleScrollWheel}
+      class="s-main"
+      id="js-main"
+    >
+      <header class="header s-ui" id="header">
         <div class="header-content" id="header-content">
           ${hamburgerMenu()} ${searchButton()}
         </div>

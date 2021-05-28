@@ -4,7 +4,6 @@ import { ChromeLocalStorage } from '../types';
 import { $ } from '../helpers';
 import { downloadButton } from './download';
 import { UnsplashImage } from '../types/unsplash';
-import { fadeInControls, hideControls } from './utils';
 
 /*
  * The footer component
@@ -53,66 +52,67 @@ function unsplashCredit(nextImage: UnsplashImage): TemplateResult {
 function unpauseImage(this: HTMLButtonElement) {
   chrome.storage.local.set({ imagePaused: false });
   chrome.runtime.sendMessage({ command: 'refresh' });
-  this.remove();
+  this.classList.add('is-hidden');
+}
+
+function footerControls(data: ChromeLocalStorage): TemplateResult {
+  const { nextImage, cloudService, imagePaused } = data;
+  return html`
+    <section class="controls" id="footer-controls">
+      <button
+        title="Background image has been paused. Click to unpause"
+        target="_blank"
+        rel="noopener"
+        @click=${unpauseImage}
+        id="js-play-button"
+        class="${imagePaused
+          ? ''
+          : 'is-hidden'} control-button unsplash-button js-play-button"
+      >
+        <svg class="icon icon-play">
+          <use href="#icon-play"></use>
+        </svg>
+      </button>
+      ${nextImage
+        ? html`
+            <a
+              title="View image on Unsplash"
+              href="${nextImage.links
+                .html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
+              target="_blank"
+              rel="noopener"
+              class="control-button unsplash-button js-info-button"
+            >
+              <svg class="icon icon-anchor">
+                <use href="#icon-anchor"></use>
+              </svg>
+            </a>
+          `
+        : nothing}
+      ${nextImage ? downloadButton(nextImage) : nothing}
+      ${nextImage && cloudService
+        ? cloudButton(nextImage, cloudService)
+        : nothing}
+
+      <button
+        @click=${openDialog}
+        title="Photo info"
+        class="control-button info-button js-info-button"
+      >
+        <svg class="icon icon-info"><use href="#icon-info"></use></svg>
+      </button>
+    </section>
+  `;
 }
 
 function footer(data: ChromeLocalStorage): TemplateResult {
-  const { nextImage, cloudService, imagePaused } = data;
+  const { nextImage } = data;
 
   return html`
-    <footer
-      @mouseenter=${fadeInControls}
-      @mouseleave=${hideControls}
-      class="s-ui s-footer"
-      id="js-footer"
-    >
+    <footer class="s-ui s-footer" id="js-footer">
       <div class="footer-content js-footer-content">
         ${nextImage ? unsplashCredit(nextImage) : nothing}
-        <section class="controls" id="footer-controls">
-          ${imagePaused
-            ? html`
-                <button
-                  title="Background image has been paused. Click to unpause"
-                  target="_blank"
-                  rel="noopener"
-                  @click=${unpauseImage}
-                  class="control-button unsplash-button js-play-button"
-                >
-                  <svg class="icon icon-play">
-                    <use href="#icon-play"></use>
-                  </svg>
-                </button>
-              `
-            : nothing}
-          ${nextImage
-            ? html`
-                <a
-                  title="View image on Unsplash"
-                  href="${nextImage.links
-                    .html}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
-                  target="_blank"
-                  rel="noopener"
-                  class="control-button unsplash-button js-info-button"
-                >
-                  <svg class="icon icon-anchor">
-                    <use href="#icon-anchor"></use>
-                  </svg>
-                </a>
-              `
-            : nothing}
-          ${nextImage ? downloadButton(nextImage) : nothing}
-          ${nextImage && cloudService
-            ? cloudButton(nextImage, cloudService)
-            : nothing}
-
-          <button
-            @click=${openDialog}
-            title="Photo info"
-            class="control-button info-button js-info-button"
-          >
-            <svg class="icon icon-info"><use href="#icon-info"></use></svg>
-          </button>
-        </section>
+        ${nextImage ? footerControls(data) : nothing}
       </div>
     </footer>
   `;

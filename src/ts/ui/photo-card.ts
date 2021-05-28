@@ -58,11 +58,21 @@ async function setBackgroundFromHistory(
     const body = $('body');
     if (body && image.base64) {
       body.style.backgroundImage = `url(${image.base64})`;
+      // ensure portrait images are place correctly in the frame
+      if (image.height - image.width > 500) {
+        body.style.backgroundPosition = '50% 20%';
+      } else {
+        body.style.backgroundPosition = '50%';
+      }
       fadeInBackground();
     }
 
-    chrome.storage.local.set({ nextImage: image });
-    chrome.storage.local.set({ imagePaused: true });
+    chrome.storage.local.set({ nextImage: image, imagePaused: true });
+
+    const playButton = $('js-play-button');
+    if (playButton) {
+      playButton.classList.remove('is-hidden');
+    }
 
     updateImageInfo(image);
   } catch (err) {
