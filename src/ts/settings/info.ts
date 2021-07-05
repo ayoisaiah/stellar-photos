@@ -42,6 +42,17 @@ function addonInfo(): TemplateResult {
           >Share Stellar Photos on Twitter</a
         >
 
+        <!-- /* EDGE_START */ -->
+        <a
+          class="button review is-fullwidth"
+          target="_blank"
+          rel="noopener"
+          href="https://microsoftedge.microsoft.com/addons/detail/stellar-photos/oifbedjcmofkjgmjakgbppkocdfpjpjg"
+        >
+          Write a review on the Microsoft Edge Store
+        </a>
+        <!-- /* EDGE_END */ -->
+
         <!-- /* CHROME_START */ -->
         <a
           class="button review is-fullwidth"

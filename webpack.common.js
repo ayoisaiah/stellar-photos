@@ -65,23 +65,60 @@ module.exports = (env) => {
   const [mode, platform] = env.split(':');
 
   if (platform === 'firefox') {
-    typescript.use.push({
-      loader: 'webpack-strip-block',
-      options: {
-        start: 'CHROME_START',
-        end: 'CHROME_END',
+    typescript.use.push(
+      {
+        loader: 'webpack-strip-block',
+        options: {
+          start: 'CHROME_START',
+          end: 'CHROME_END',
+        },
       },
-    });
+      {
+        loader: 'webpack-strip-block',
+        options: {
+          start: 'EDGE_START',
+          end: 'EDGE_END',
+        },
+      }
+    );
+  }
+
+  if (platform === 'edge') {
+    typescript.use.push(
+      {
+        loader: 'webpack-strip-block',
+        options: {
+          start: 'FIREFOX_START',
+          end: 'FIREFOX_END',
+        },
+      },
+      {
+        loader: 'webpack-strip-block',
+        options: {
+          start: 'CHROME_START',
+          end: 'CHROME_END',
+        },
+      }
+    );
   }
 
   if (platform === 'chrome') {
-    typescript.use.push({
-      loader: 'webpack-strip-block',
-      options: {
-        start: 'FIREFOX_START',
-        end: 'FIREFOX_END',
+    typescript.use.push(
+      {
+        loader: 'webpack-strip-block',
+        options: {
+          start: 'FIREFOX_START',
+          end: 'FIREFOX_END',
+        },
       },
-    });
+      {
+        loader: 'webpack-strip-block',
+        options: {
+          start: 'EDGE_START',
+          end: 'EDGE_END',
+        },
+      }
+    );
   }
 
   typescript.use.push({

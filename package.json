@@ -11,7 +11,8 @@
     "build:chrome:dev": "concurrently -w \"yarn run clean\" \"npx webpack -w --display-max-modules 0 --env=dev:chrome --progress --colors --config webpack.dev.js\"",
     "build:firefox:dev": "concurrently -w \"yarn run clean\" \"npx webpack -w --display-max-modules 0 --env=dev:firefox --progress --colors --config webpack.dev.js\"",
     "build:chrome:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:chrome --progress --colors --config webpack.prod.js\"",
-    "build:firefox:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:firefox --progress --colors --config webpack.prod.js\""
+    "build:firefox:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:firefox --progress --colors --config webpack.prod.js\"",
+    "build:edge:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:edge --progress --colors --config webpack.prod.js\""
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",
