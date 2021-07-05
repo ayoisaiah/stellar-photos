@@ -18,6 +18,9 @@ $ yarn run build:chrome:prod
 $ yarn run build:firefox:dev
 # Option 4. Firefox production build
 $ yarn run build:firefox:prod
+# Option 5. Edge production build. Produces the same output as build:chrome:prod
+# except for a link to the Microsoft Edge store instead of the Chrome web store
+$ yarn run build:edge:prod
 ```
 
 Grab the [server code here](https://github.com/ayoisaiah/stellar-photos-server) (written in Go) and follow the instructions in the README to build and run it.
