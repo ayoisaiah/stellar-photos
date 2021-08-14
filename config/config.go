@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 )
 
 // Config represents the all the environmental variables that should be present
@@ -14,6 +15,14 @@ type Config struct {
 	Onedrive    OnedriveConfig
 	Dropbox     DropboxConfig
 	GoogleDrive GoogleDriveConfig
+	Redis       RedisConfig
+}
+
+// RedisConfig represents redis configuration variables
+type RedisConfig struct {
+	Addr     string
+	DB       int
+	Password string
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables
@@ -43,6 +52,12 @@ var Conf *Config
 
 // New returns a new Config struct
 func New() *Config {
+	redisDBStr := getEnv("REDIS_DB", "")
+	redisDBInt, err := strconv.Atoi(redisDBStr)
+	if err != nil {
+		log.Fatalln("ENV: REDIS_DB must be a positive integer")
+	}
+
 	Conf = &Config{
 		Port:        getEnv("PORT", "8080"),
 		RedirectURL: getEnv("REDIRECT_URL", ""),
@@ -59,6 +74,11 @@ func New() *Config {
 		GoogleDrive: GoogleDriveConfig{
 			Key:    getEnv("GOOGLE_DRIVE_KEY", ""),
 			Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
+		},
+		Redis: RedisConfig{
+			Addr:     "localhost:6379",
+			DB:       redisDBInt,
+			Password: getEnv("REDIS_URL", ""),
 		},
 	}
 

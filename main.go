@@ -11,6 +11,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/onedrive"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
@@ -89,11 +90,22 @@ func newRouter() *http.ServeMux {
 }
 
 func run() error {
-	_ = godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		return err
+	}
 
 	// Initialising the config package will crash the program if one of
 	// the required Env values is not set
 	conf := config.New()
+
+	r := redis.NewClient(&redis.Options{
+		Addr:     config.Conf.Redis.Addr,
+		Password: config.Conf.Redis.Password,
+		DB:       config.Conf.Redis.DB,
+	})
+
+	utils.InitRedis(r)
 
 	port := ":" + conf.Port
 

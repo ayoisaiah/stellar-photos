@@ -237,7 +237,9 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	imageURL := res.Urls.Raw + "&w=" + imageWidth
 
-	base64, err := utils.ImageURLToBase64(imageURL)
+	key := res.ID + "_" + imageWidth
+
+	base64, err := utils.GetImageBase64(imageURL, key)
 	if err != nil {
 		return err
 	}

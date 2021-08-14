@@ -125,9 +125,9 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 	return nil
 }
 
-// ImageURLToBase64 retrives the Base64 representation of an image URL and
+// imageURLToBase64 retrives the Base64 representation of an image URL and
 // returns it
-func ImageURLToBase64(endpoint string) (string, error) {
+func imageURLToBase64(endpoint string) (string, error) {
 	ctx, cncl := context.WithTimeout(
 		context.Background(),
 		time.Second*timeoutInSeconds,
