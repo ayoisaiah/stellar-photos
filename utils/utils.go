@@ -128,12 +128,14 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 // imageURLToBase64 retrives the Base64 representation of an image URL and
 // returns it
 func imageURLToBase64(endpoint string) (string, error) {
-	ctx, cncl := context.WithTimeout(
+	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		time.Second*timeoutInSeconds,
 	)
-	defer cncl()
 
+	defer cancel()
+
+	var base64Encoding string
 	request, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
@@ -141,37 +143,37 @@ func imageURLToBase64(endpoint string) (string, error) {
 		nil,
 	)
 	if err != nil {
-		return "", err
+		return base64Encoding, err
 	}
 
 	resp, err := Client.Do(request)
 	if err != nil {
 		if os.IsTimeout(err) {
-			return "", NewHTTPError(
+			return base64Encoding, NewHTTPError(
 				err,
 				http.StatusRequestTimeout,
-				"Request to external API timed out",
+				"Timeout exceeded while fetching image from network for base64 encoding",
 			)
 		}
 
-		return "", err
+		return base64Encoding, err
 	}
 
 	defer resp.Body.Close()
 
 	bytes, err := CheckForErrors(resp)
 	if err != nil {
-		return "", err
+		return base64Encoding, err
 	}
-
-	var base64Encoding string
 	mimeType := http.DetectContentType(bytes)
 
 	switch mimeType {
 	case "image/jpeg":
 		base64Encoding += "data:image/jpeg;base64,"
+	case "image/png":
+		base64Encoding += "data:image/png;base64,"
 	default:
-		return "", fmt.Errorf("Only JPEG images are supported")
+		return "", fmt.Errorf("Only image/jpeg and image/png mime types are supported. Got %s", mimeType)
 	}
 
 	base64Encoding += base64.StdEncoding.EncodeToString(bytes)

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"context"
-	"log"
+	"errors"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -36,27 +36,28 @@ func GetImageBase64(url, key string) (string, error) {
 		// Sliding expiration based on last access
 		err = rdb.Expire(ctx, key, ttl).Err()
 		if err != nil {
-			log.Println(err)
+			Logger().Errorw("Unable to set new expiration time", "tag", "sliding_expiration", "key", key, "error", err)
 		}
 
-		log.Printf("CACHE HIT: %s retrieved from cache", url)
+		Logger().Infow("Image was successfully retrieved from the cache", "tag", "cache_hit", "key", key)
+
 		return base64, nil
 	}
 
-	if err != nil {
-		log.Println(err)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		Logger().Errorw("Error occurred while fetching value from Redis", "tag", "redis_get_error", "key", key, "error", err)
 	}
+
+	Logger().Infow("Image about to be retrieved from the network", "tag", "cache_miss", "key", key)
 
 	base64, err = imageURLToBase64(url)
 	if err != nil {
 		return "", err
 	}
 
-	log.Printf("CACHE MISS: %s retrieved from network", url)
-
 	err = rdb.Set(ctx, key, base64, ttl).Err()
 	if err != nil {
-		log.Println(err)
+		Logger().Errorw("Error occurred while setting key in Redis", "tag", "redis_set_error", "key", key, "error", err)
 	}
 
 	return base64, nil

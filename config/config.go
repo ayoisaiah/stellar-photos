@@ -1,9 +1,11 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
 // Config represents the all the environmental variables that should be present
@@ -16,6 +18,7 @@ type Config struct {
 	Dropbox     DropboxConfig
 	GoogleDrive GoogleDriveConfig
 	Redis       RedisConfig
+	LogLevel    int
 }
 
 // RedisConfig represents redis configuration variables
@@ -23,6 +26,7 @@ type RedisConfig struct {
 	Addr     string
 	DB       int
 	Password string
+	Username string
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables
@@ -54,8 +58,14 @@ var Conf *Config
 func New() *Config {
 	redisDBStr := getEnv("REDIS_DB", "")
 	redisDBInt, err := strconv.Atoi(redisDBStr)
+	if err != nil || redisDBInt < 0 {
+		utils.Logger().Fatalw("ENV: REDIS_DB must be a positive integer", "tag", "redis_db_env", "REDIS_DB", redisDBStr)
+	}
+
+	logLevel := getEnv("LOG_LEVEL", "0")
+	logLevelInt, err := strconv.Atoi(logLevel)
 	if err != nil {
-		log.Fatalln("ENV: REDIS_DB must be a positive integer")
+		utils.Logger().Fatalw("ENV: LOG_LEVEL must be an integer", "tag", "log_level_env", "REDIS_DB", redisDBStr)
 	}
 
 	Conf = &Config{
@@ -76,10 +86,12 @@ func New() *Config {
 			Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
 		},
 		Redis: RedisConfig{
-			Addr:     "localhost:6379",
+			Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
+			Username: getEnv("REDIS_USERNAME", ""),
 			DB:       redisDBInt,
-			Password: getEnv("REDIS_URL", ""),
+			Password: getEnv("REDIS_PASSWORD", ""),
 		},
+		LogLevel: logLevelInt,
 	}
 
 	return Conf
@@ -94,7 +106,7 @@ func getEnv(key, defaultVal string) string {
 	}
 
 	if defaultVal == "" {
-		log.Fatalf("%s has not been set in your ENV", key)
+		utils.Logger().Fatalw(fmt.Sprintf("%s has not been set in your ENV", key), "tag", "env_not_set", "key")
 	}
 
 	return defaultVal

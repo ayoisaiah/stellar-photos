@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -101,6 +102,7 @@ func run() error {
 
 	r := redis.NewClient(&redis.Options{
 		Addr:     config.Conf.Redis.Addr,
+		Username: config.Conf.Redis.Username,
 		Password: config.Conf.Redis.Password,
 		DB:       config.Conf.Redis.DB,
 	})
@@ -117,6 +119,8 @@ func run() error {
 		Addr:    port,
 		Handler: handler,
 	}
+
+	utils.Logger().Infow(fmt.Sprintf("Server is listening on port: %s", port))
 
 	return srv.ListenAndServe()
 }
