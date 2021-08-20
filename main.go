@@ -24,7 +24,8 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			log.Println("err: ", err, "trace: ", string(debug.Stack()))
+			utils.Logger().
+				Errorw("Recover error", "tag", "recover_error", "error", err, "trace", string(debug.Stack()))
 		}
 	}()
 
@@ -33,7 +34,8 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("An error accured: %v\n", err)
+	utils.Logger().
+		Errorw("HandlerFunc error", "tag", "handler_error", "error", err)
 
 	clientError, ok := err.(utils.ClientError)
 	if !ok {
@@ -43,7 +45,8 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	body, err := clientError.ResponseBody()
 	if err != nil {
-		log.Printf("An error accured: %v\n", err)
+		utils.Logger().
+			Errorw("An error occurred", "tag", "client_response_body", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
