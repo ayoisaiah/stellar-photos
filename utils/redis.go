@@ -20,8 +20,9 @@ func InitRedis(r Redis) {
 	rdb = r
 }
 
-var ttl = time.Hour * 6
 var redisTimeout = 5 * time.Second
+
+var ttl = time.Hour * 12
 
 // GetImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
@@ -54,6 +55,10 @@ func GetImageBase64(url, key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), redisTimeout)
+
+	defer cancel()
 
 	err = rdb.Set(ctx, key, base64, ttl).Err()
 	if err != nil {
