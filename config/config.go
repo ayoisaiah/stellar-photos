@@ -59,13 +59,15 @@ func New() *Config {
 	redisDBStr := getEnv("REDIS_DB", "")
 	redisDBInt, err := strconv.Atoi(redisDBStr)
 	if err != nil || redisDBInt < 0 {
-		utils.Logger().Fatalw("ENV: REDIS_DB must be a positive integer", "tag", "redis_db_env", "REDIS_DB", redisDBStr)
+		utils.Logger().
+			Fatalw("ENV: REDIS_DB must be a positive integer", "tag", "redis_db_env", "REDIS_DB", redisDBStr)
 	}
 
 	logLevel := getEnv("LOG_LEVEL", "0")
 	logLevelInt, err := strconv.Atoi(logLevel)
 	if err != nil {
-		utils.Logger().Fatalw("ENV: LOG_LEVEL must be an integer", "tag", "log_level_env", "REDIS_DB", redisDBStr)
+		utils.Logger().
+			Fatalw("ENV: LOG_LEVEL must be an integer", "tag", "log_level_env", "REDIS_DB", redisDBStr)
 	}
 
 	Conf = &Config{
@@ -106,7 +108,8 @@ func getEnv(key, defaultVal string) string {
 	}
 
 	if defaultVal == "" {
-		utils.Logger().Fatalw(fmt.Sprintf("%s has not been set in your ENV", key), "tag", "env_not_set", "key")
+		utils.Logger().
+			Fatalw(fmt.Sprintf("%s has not been set in your ENV", key), "tag", "env_not_set", "key")
 	}
 
 	return defaultVal
