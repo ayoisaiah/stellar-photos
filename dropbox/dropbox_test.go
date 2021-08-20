@@ -19,7 +19,12 @@ import (
 func init() {
 	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
-	config.New()
+	dropboxKey := config.DropboxConfig{
+		Key: "sample_key",
+	}
+	config.Conf = &config.Config{
+		Dropbox: dropboxKey,
+	}
 }
 
 func TestGetDropboxKey(t *testing.T) {

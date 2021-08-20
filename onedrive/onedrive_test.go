@@ -18,7 +18,12 @@ import (
 func init() {
 	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
-	config.New()
+	onedriveConfig := config.OnedriveConfig{
+		AppID: "sample_id",
+	}
+	config.Conf = &config.Config{
+		Onedrive: onedriveConfig,
+	}
 }
 
 func TestSendOnedriveID(t *testing.T) {

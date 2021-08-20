@@ -19,7 +19,12 @@ import (
 func init() {
 	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
-	config.New()
+	driveConfig := config.GoogleDriveConfig{
+		Key: "sample_key",
+	}
+	config.Conf = &config.Config{
+		GoogleDrive: driveConfig,
+	}
 }
 
 func TestSendGoogleDriveKey(t *testing.T) {
