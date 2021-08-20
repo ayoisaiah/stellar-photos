@@ -12,11 +12,9 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
-	"github.com/joho/godotenv"
 )
 
 func init() {
-	_ = godotenv.Load("../.env")
 	utils.Client = &mocks.MockClient{}
 	onedriveConfig := config.OnedriveConfig{
 		AppID: "sample_id",

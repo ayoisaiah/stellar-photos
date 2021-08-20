@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ import (
 func init() {
 	utils.Client = &mocks.MockClient{}
 	config.Conf = &config.Config{}
+	os.Setenv("LOG_LEVEL", "5")
 }
 
 func TestDownloadPhoto(t *testing.T) {
@@ -160,11 +162,20 @@ func (m *MockRedis) Get(ctx context.Context, key string) *redis.StringCmd {
 	return &redis.StringCmd{}
 }
 
-func (m *MockRedis) Set(ctx context.Context, key string, val interface{}, t time.Duration) *redis.StatusCmd {
+func (m *MockRedis) Set(
+	ctx context.Context,
+	key string,
+	val interface{},
+	t time.Duration,
+) *redis.StatusCmd {
 	return &redis.StatusCmd{}
 }
 
-func (m *MockRedis) Expire(ctx context.Context, key string, t time.Duration) *redis.BoolCmd {
+func (m *MockRedis) Expire(
+	ctx context.Context,
+	key string,
+	t time.Duration,
+) *redis.BoolCmd {
 	return &redis.BoolCmd{}
 }
 
@@ -260,8 +271,14 @@ func TestValidateCollections(t *testing.T) {
 		jsonFile   string
 		statusCode int
 	}{
-		"998309":      {jsonFile: "sample_collections_response", statusCode: 200},
-		"6DH-y8Ef6iY": {jsonFile: "sample_collections_response", statusCode: 200},
+		"998309": {
+			jsonFile:   "sample_collections_response",
+			statusCode: 200,
+		},
+		"6DH-y8Ef6iY": {
+			jsonFile:   "sample_collections_response",
+			statusCode: 200,
+		},
 		"39843782": {
 			jsonFile:   "collections_not_found_response",
 			statusCode: 404,
