@@ -18,7 +18,6 @@ type Config struct {
 	Dropbox     DropboxConfig
 	GoogleDrive GoogleDriveConfig
 	Redis       RedisConfig
-	LogLevel    int
 }
 
 // RedisConfig represents redis configuration variables
@@ -63,13 +62,6 @@ func New() *Config {
 			Fatalw("ENV: REDIS_DB must be a positive integer", "tag", "redis_db_env", "REDIS_DB", redisDBStr)
 	}
 
-	logLevel := getEnv("LOG_LEVEL", "0")
-	logLevelInt, err := strconv.Atoi(logLevel)
-	if err != nil {
-		utils.Logger().
-			Fatalw("ENV: LOG_LEVEL must be an integer", "tag", "log_level_env", "REDIS_DB", redisDBStr)
-	}
-
 	Conf = &Config{
 		Port:        getEnv("PORT", "8080"),
 		RedirectURL: getEnv("REDIRECT_URL", ""),
@@ -93,7 +85,6 @@ func New() *Config {
 			DB:       redisDBInt,
 			Password: getEnv("REDIS_PASSWORD", ""),
 		},
-		LogLevel: logLevelInt,
 	}
 
 	return Conf
