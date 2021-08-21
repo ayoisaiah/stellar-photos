@@ -1,5 +1,5 @@
-FROM golang:alpine
-# Set necessary environmet variables needed for our image
+FROM golang:alpine AS multistage
+# Set necessary environmental variables needed for the image
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
@@ -19,14 +19,12 @@ COPY . .
 # Build the application
 RUN go build -o stellar-photos-server .
 
-# Move to /dist directory as the place for resulting binary folder
-WORKDIR /dist
-
-# Copy binary from build to main folder
-RUN cp /build/stellar-photos-server .
+FROM alpine:latest AS stellar-prod
+# Copy from binary multistage image
+COPY --from=multistage /build/stellar-photos-server /go/bin
 
 # Export necessary port
 EXPOSE 8080
 
 # Command to run when starting the container
-CMD ["/dist/stellar-photos-server"]
+CMD ["/go/bin/stellar-photos-server"]
