@@ -5,7 +5,7 @@ const baseUrl =
   // @ts-ignore
   'STELLAR_ENV' === 'dev'
     ? 'http://localhost:8080'
-    : 'https://stellar-photos.herokuapp.com';
+    : 'https://stellarphotos.freshman.tech';
 
 async function makeRequest(url: string): Promise<Response> {
   const response = await fetch(url);
