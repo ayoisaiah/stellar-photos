@@ -17,9 +17,9 @@ const (
 )
 
 // SendGETRequest makes an HTTP GET request and decodes the JSON
-// response into the provided target interface
+// response into the provided target interface.
 func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
-	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	request, err := http.NewRequest(http.MethodGet, endpoint, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func SendPOSTRequest(
 }
 
 // GetURLQueryParams extracts the query parameters from a url string and returns
-// a map of strings
+// a map of strings.
 func GetURLQueryParams(s string) (url.Values, error) {
 	u, err := url.Parse(s)
 	if err != nil {
@@ -110,13 +110,16 @@ func GetURLQueryParams(s string) (url.Values, error) {
 	}
 
 	query := u.Query()
+
 	return query, nil
 }
 
-// JSONResponse sends a JSON response to the client. Error is always nil
+// JSONResponse sends a JSON response to the client.
 func JSONResponse(w http.ResponseWriter, bs []byte) error {
 	w.Header().Set("Content-Type", "application/json")
+
 	w.WriteHeader(http.StatusOK)
+
 	_, err := w.Write(bs)
 	if err != nil {
 		return err
@@ -126,7 +129,7 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 }
 
 // imageURLToBase64 retrives the Base64 representation of an image URL and
-// returns it
+// returns it.
 func imageURLToBase64(endpoint string) (string, error) {
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
@@ -136,11 +139,12 @@ func imageURLToBase64(endpoint string) (string, error) {
 	defer cancel()
 
 	var base64Encoding string
+
 	request, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
 		endpoint,
-		nil,
+		http.NoBody,
 	)
 	if err != nil {
 		return base64Encoding, err
@@ -165,6 +169,7 @@ func imageURLToBase64(endpoint string) (string, error) {
 	if err != nil {
 		return base64Encoding, err
 	}
+
 	mimeType := http.DetectContentType(bytes)
 
 	switch mimeType {
@@ -173,7 +178,10 @@ func imageURLToBase64(endpoint string) (string, error) {
 	case "image/png":
 		base64Encoding += "data:image/png;base64,"
 	default:
-		return "", fmt.Errorf("Only image/jpeg and image/png mime types are supported. Got %s", mimeType)
+		return "", fmt.Errorf(
+			"only image/jpeg and image/png mime types are supported, got %s",
+			mimeType,
+		)
 	}
 
 	base64Encoding += base64.StdEncoding.EncodeToString(bytes)

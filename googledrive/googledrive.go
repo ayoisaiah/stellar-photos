@@ -21,7 +21,7 @@ const (
 	saveToDriveTimeout = 180
 )
 
-// Google drive application key
+// Google drive application key.
 type key struct {
 	GoogleDriveKey string `json:"googledrive_key"`
 }
@@ -35,7 +35,7 @@ type googleDriveAuth struct {
 }
 
 // SendGoogleDriveKey sends the application key to the client on request to avoid
-// exposing it in the extension code
+// exposing it in the extension code.
 func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 	d := key{
 		GoogleDriveKey: config.Conf.GoogleDrive.Key,
@@ -50,7 +50,7 @@ func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 }
 
 // AuthorizeGoogleDrive redeems the authorization code received from the client for
-// an access token
+// an access token.
 func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -71,6 +71,7 @@ func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
+
 	body, err := utils.SendPOSTRequest(endpoint, formValues, &googleDriveAuth{})
 	if err != nil {
 		return err
@@ -80,7 +81,7 @@ func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 }
 
 // RefreshGoogleDriveToken generates additional access tokens after the initial
-// token has expired
+// token has expired.
 func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -89,7 +90,7 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 
 	refreshToken := values.Get("refresh_token")
 	if refreshToken == "" {
-		return errors.New("Refresh token not specified")
+		return errors.New("refresh token not specified")
 	}
 
 	id := config.Conf.GoogleDrive.Key
@@ -103,6 +104,7 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
+
 	body, err := utils.SendPOSTRequest(endpoint, formValues, &googleDriveAuth{})
 	if err != nil {
 		return err
@@ -112,7 +114,7 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 }
 
 // SaveToGoogleDrive saves the requested photo to the current user's
-// Google Drive account
+// Google Drive account.
 func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -136,7 +138,12 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	)
 	defer cncl()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		url,
+		http.NoBody,
+	)
 	if err != nil {
 		return err
 	}
@@ -158,13 +165,18 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	// Metadata content.
 	// New multipart writer.
 	body := &bytes.Buffer{}
+
 	writer := multipart.NewWriter(body)
 
 	// Metadata part.
 	metadata := fmt.Sprintf(`{"name": "photo-%s.jpeg"}`, id)
+
 	metadataHeader := textproto.MIMEHeader{}
+
 	metadataHeader.Set("Content-Type", "application/json; charset=UTF-8")
+
 	part, _ := writer.CreatePart(metadataHeader)
+
 	_, err = part.Write([]byte(metadata))
 	if err != nil {
 		return err
@@ -174,6 +186,7 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	mediaHeader.Set("Content-Type", "image/jpeg")
 
 	mediaPart, _ := writer.CreatePart(mediaHeader)
+
 	_, err = io.Copy(mediaPart, bytes.NewReader(respBody))
 	if err != nil {
 		return err
@@ -191,13 +204,14 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	request.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
 	contentType := fmt.Sprintf(
 		"multipart/related; boundary=%s",
 		writer.Boundary(),
 	)
+
 	request.Header.Set("Content-Type", contentType)
 	request.Header.Set("Authorization", v)
+	request.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
 
 	response, err := utils.Client.Do(request)
 	if err != nil {
@@ -212,5 +226,6 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
 	return nil
 }

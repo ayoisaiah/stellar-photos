@@ -10,12 +10,12 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-// Onedrive Application ID
+// Onedrive Application ID.
 type onedriveID struct {
 	ID string `json:"id"`
 }
 
-// onedriveAuth represents the request body after a successful authentication
+// onedriveAuth represents the request body after a successful authentication.
 type onedriveAuth struct {
 	TokenType    string `json:"token_type"`
 	ExpiresIn    int    `json:"expires_in"`
@@ -24,7 +24,7 @@ type onedriveAuth struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// SendOnedriveID sends the application id to the client on request
+// SendOnedriveID sends the application id to the client on request.
 func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
 	id := config.Conf.Onedrive.AppID
 
@@ -41,7 +41,7 @@ func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
 }
 
 // AuthorizeOnedrive redeems the authorization code received from the client for
-// an access token
+// an access token.
 func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -50,7 +50,7 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 
 	code := values.Get("code")
 	if code == "" {
-		return errors.New("Authorization code not specified")
+		return errors.New("authorization code not specified")
 	}
 
 	id := config.Conf.Onedrive.AppID
@@ -65,6 +65,7 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
 	body, err := utils.SendPOSTRequest(endpoint, formValues, &onedriveAuth{})
 	if err != nil {
 		return err
@@ -74,7 +75,7 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 }
 
 // RefreshOnedriveToken generates additional access tokens after the initial
-// token has expired
+// token has expired.
 func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -83,7 +84,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 
 	refreshToken := values.Get("refresh_token")
 	if refreshToken == "" {
-		return errors.New("Refresh token not specified")
+		return errors.New("refresh token not specified")
 	}
 
 	id := config.Conf.Onedrive.AppID
@@ -98,6 +99,7 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
 	body, err := utils.SendPOSTRequest(endpoint, formValues, &onedriveAuth{})
 	if err != nil {
 		return err

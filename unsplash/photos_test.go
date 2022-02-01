@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,15 +14,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
-	"github.com/go-redis/redis/v8"
 )
 
 func init() {
 	utils.Client = &mocks.MockClient{}
+
 	config.Conf = &config.Config{}
+
 	os.Setenv("LOG_LEVEL", "5")
 }
 
@@ -43,12 +47,13 @@ func TestDownloadPhoto(t *testing.T) {
 			}
 
 			path := fmt.Sprintf("/download-photo?id=%s", value.input)
-			req, err := http.NewRequest(http.MethodGet, path, nil)
+			req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
 			rr := httptest.NewRecorder()
+
 			err = DownloadPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
@@ -61,8 +66,9 @@ func TestDownloadPhoto(t *testing.T) {
 				return
 			}
 
-			clientError, ok := err.(utils.ClientError)
-			if !ok {
+			var clientError utils.ClientError
+
+			if !errors.As(err, &clientError) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
@@ -91,14 +97,14 @@ func TestSearchUnsplash(t *testing.T) {
 	for _, value := range searchTable {
 		t.Run(value.input, func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
-				jsonObj, err := ioutil.ReadFile(
+				jsonObj, err := os.ReadFile(
 					fmt.Sprintf("../testdata/%s.json", value.jsonFile),
 				)
 				if err != nil {
 					return nil, err
 				}
 
-				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
+				r := io.NopCloser(bytes.NewReader(jsonObj))
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Body:       r,
@@ -106,7 +112,7 @@ func TestSearchUnsplash(t *testing.T) {
 			}
 
 			path := fmt.Sprintf("/search-unsplash?key=%s&page=1", value.input)
-			req, err := http.NewRequest(http.MethodGet, path, nil)
+			req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -114,8 +120,9 @@ func TestSearchUnsplash(t *testing.T) {
 			rr := httptest.NewRecorder()
 			err = SearchUnsplash(rr, req)
 			if err != nil {
-				clientError, ok := err.(utils.ClientError)
-				if !ok {
+				var clientError utils.ClientError
+
+				if !errors.As(err, &clientError) {
 					t.Fatalf("Unexpected error: %v", err)
 				}
 
@@ -133,7 +140,7 @@ func TestSearchUnsplash(t *testing.T) {
 
 			defer resp.Body.Close()
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -195,7 +202,7 @@ func TestGetRandomPhoto(t *testing.T) {
 				var body []byte
 				var err error
 				if strings.Contains(req.URL.Path, "/photos/random") {
-					body, err = ioutil.ReadFile(
+					body, err = os.ReadFile(
 						fmt.Sprintf("../testdata/%s.json", value.jsonFile),
 					)
 					if err != nil {
@@ -204,13 +211,13 @@ func TestGetRandomPhoto(t *testing.T) {
 				}
 
 				if strings.Contains(req.URL.Path, ".jpg") {
-					body, err = ioutil.ReadFile("../testdata/random_image.jpg")
+					body, err = os.ReadFile("../testdata/random_image.jpg")
 					if err != nil {
 						return nil, err
 					}
 				}
 
-				r := ioutil.NopCloser(bytes.NewReader(body))
+				r := io.NopCloser(bytes.NewReader(body))
 
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -219,7 +226,7 @@ func TestGetRandomPhoto(t *testing.T) {
 			}
 
 			path := fmt.Sprintf("/random-photo?collections=%s", value.input)
-			req, err := http.NewRequest(http.MethodGet, path, nil)
+			req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -239,8 +246,9 @@ func TestGetRandomPhoto(t *testing.T) {
 				return
 			}
 
-			clientError, ok := err.(utils.ClientError)
-			if !ok {
+			var clientError utils.ClientError
+
+			if !errors.As(err, &clientError) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
@@ -304,14 +312,14 @@ func TestValidateCollections(t *testing.T) {
 				}
 
 				file := m[id].jsonFile
-				jsonObj, err := ioutil.ReadFile(
+				jsonObj, err := os.ReadFile(
 					fmt.Sprintf("../testdata/%s.json", file),
 				)
 				if err != nil {
 					return nil, err
 				}
 
-				r := ioutil.NopCloser(bytes.NewReader(jsonObj))
+				r := io.NopCloser(bytes.NewReader(jsonObj))
 
 				return &http.Response{
 					StatusCode: m[id].statusCode,
@@ -323,7 +331,7 @@ func TestValidateCollections(t *testing.T) {
 				"/validate-collections?collections=%s",
 				value.input,
 			)
-			req, err := http.NewRequest(http.MethodGet, path, nil)
+			req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -341,8 +349,9 @@ func TestValidateCollections(t *testing.T) {
 				return
 			}
 
-			clientError, ok := err.(utils.ClientError)
-			if !ok {
+			var clientError utils.ClientError
+
+			if !errors.As(err, &clientError) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 

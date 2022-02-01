@@ -26,7 +26,7 @@ var ttl = time.Hour * 12
 
 // GetImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
-// not found in the cache
+// not found in the cache.
 func GetImageBase64(url, key string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), redisTimeout)
 

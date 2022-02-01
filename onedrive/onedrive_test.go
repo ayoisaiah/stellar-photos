@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
@@ -25,7 +26,7 @@ func init() {
 }
 
 func TestSendOnedriveID(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "/onedrive/id/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/onedrive/id/", http.NoBody)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,12 +52,13 @@ func TestSendOnedriveID(t *testing.T) {
 
 func TestAuthorizeOnedrive(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := ioutil.ReadFile("../testdata/onedrive_auth_response.json")
+		body, err := os.ReadFile("../testdata/onedrive_auth_response.json")
 		if err != nil {
 			return nil, err
 		}
 
-		r := ioutil.NopCloser(bytes.NewReader(body))
+		r := io.NopCloser(bytes.NewReader(body))
+
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       r,
@@ -65,7 +67,8 @@ func TestAuthorizeOnedrive(t *testing.T) {
 
 	fakeCode := "df6aa589-1080-b241-b410-c4dff65dbf7c"
 	path := fmt.Sprintf("/onedrive/auth?code=%s", fakeCode)
-	req, err := http.NewRequest(http.MethodGet, path, nil)
+
+	req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -78,6 +81,7 @@ func TestAuthorizeOnedrive(t *testing.T) {
 	}
 
 	o := &onedriveAuth{}
+
 	err = json.NewDecoder(rr.Body).Decode(o)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -93,12 +97,13 @@ func TestAuthorizeOnedrive(t *testing.T) {
 
 func TestRefreshOnedriveToken(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := ioutil.ReadFile("../testdata/onedrive_auth_response.json")
+		body, err := os.ReadFile("../testdata/onedrive_auth_response.json")
 		if err != nil {
 			return nil, err
 		}
 
-		r := ioutil.NopCloser(bytes.NewReader(body))
+		r := io.NopCloser(bytes.NewReader(body))
+
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       r,
@@ -107,7 +112,8 @@ func TestRefreshOnedriveToken(t *testing.T) {
 
 	fakeToken := "M.R3_BAY.-CV6vzB3NeXGBlyaWzWQx!!EIl9syapPWbG9B5FMMNl5R5oBkoHpmncK1dE*JVhc75u7WqCSXDQRYnMw7Zz8hh96ua!BgiG6r5tzptVxXN2uR5oPIUBzM1rsxCh2znzikQNQX7VUPDlKtQSWRguKYYIVQTe1S6gfO6kugB!GVihfJjsP9FQuPPdJ06yyoGzwF!tz3tcdtJHFbN2XNGEzTALm*BiUWqFuM4mE1AnbeJoRA5F0tW4LDXJ4OTOCngcA84LWGFmLHIgE1lz*ZHTDBHewzfqdRGs2Z8WE1cjIYYheKQE5TQNrn10U6l0fhReHcNQkMDjRFKveuqW*RjuzcBzo$"
 	path := fmt.Sprintf("/onedrive/refresh?refresh_token=%s", fakeToken)
-	req, err := http.NewRequest(http.MethodGet, path, nil)
+
+	req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -120,6 +126,7 @@ func TestRefreshOnedriveToken(t *testing.T) {
 	}
 
 	o := &onedriveAuth{}
+
 	err = json.NewDecoder(rr.Body).Decode(o)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)

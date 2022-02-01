@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -26,7 +27,7 @@ func init() {
 }
 
 func TestSendGoogleDriveKey(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "/googledrive/key", nil)
+	req, err := http.NewRequest(http.MethodGet, "/googledrive/key", http.NoBody)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,14 +55,15 @@ func TestSendGoogleDriveKey(t *testing.T) {
 
 func TestAuthorizeGoogleDrive(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := ioutil.ReadFile(
+		body, err := os.ReadFile(
 			"../testdata/googledrive_auth_response.json",
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		r := ioutil.NopCloser(bytes.NewReader(body))
+		r := io.NopCloser(bytes.NewReader(body))
+
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       r,
@@ -70,7 +72,8 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 
 	fakeCode := "4/P7q7W91a-oMsCeLvIaQm6bTrgtp7"
 	path := fmt.Sprintf("/googledrive/auth?code=%s", fakeCode)
-	req, err := http.NewRequest(http.MethodGet, path, nil)
+
+	req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -83,6 +86,7 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 	}
 
 	o := &googleDriveAuth{}
+
 	err = json.NewDecoder(rr.Body).Decode(o)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -98,14 +102,15 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 
 func TestRefreshGoogleDriveToken(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := ioutil.ReadFile(
+		body, err := os.ReadFile(
 			"../testdata/googledrive_auth_response.json",
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		r := ioutil.NopCloser(bytes.NewReader(body))
+		r := io.NopCloser(bytes.NewReader(body))
+
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       r,
@@ -114,7 +119,8 @@ func TestRefreshGoogleDriveToken(t *testing.T) {
 
 	fakeToken := "debjejen2efemoee93fndmsnf4ie293jfndsmse29r3f48uvnfdmkcdnfehj2en2dnefeui2enejfe2i3fk4b3e2uh2jefrfbue2hiej3efkjbendmslakaqd20i3fihr2eji1pe2kdmnvfme"
 	path := fmt.Sprintf("/googledrive/refresh?refresh_token=%s", fakeToken)
-	req, err := http.NewRequest(http.MethodGet, path, nil)
+
+	req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -127,6 +133,7 @@ func TestRefreshGoogleDriveToken(t *testing.T) {
 	}
 
 	o := &googleDriveAuth{}
+
 	err = json.NewDecoder(rr.Body).Decode(o)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -143,24 +150,27 @@ func TestRefreshGoogleDriveToken(t *testing.T) {
 func TestSaveToGoogleDrive(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
 		var body []byte
+
 		var err error
+
 		statusCode := http.StatusOK
 
 		if strings.Contains(req.URL.Path, "download") {
 			return mocks.MockTrackPhotoDownload("sample_download_response")
 		} else if strings.Contains(req.URL.Host, "images.unsplash.com") {
-			body, err = ioutil.ReadFile("../testdata/random_image.jpg")
+			body, err = os.ReadFile("../testdata/random_image.jpg")
 			if err != nil {
 				return nil, err
 			}
 		} else if req.URL.Path == "/upload/drive/v3/files" {
-			body, err = ioutil.ReadFile("../testdata/googledrive_save_response.json")
+			body, err = os.ReadFile("../testdata/googledrive_save_response.json")
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		r := ioutil.NopCloser(bytes.NewReader(body))
+		r := io.NopCloser(bytes.NewReader(body))
+
 		return &http.Response{
 			StatusCode: statusCode,
 			Body:       r,
@@ -176,7 +186,8 @@ func TestSaveToGoogleDrive(t *testing.T) {
 		id,
 		url,
 	)
-	req, err := http.NewRequest(http.MethodGet, path, nil)
+
+	req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

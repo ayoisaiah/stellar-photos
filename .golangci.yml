@@ -16,7 +16,7 @@ linters-settings:
   gocyclo:
     min-complexity: 25
   goimports:
-    local-prefixes: github.com/ayoisaiah/f2
+    local-prefixes: github.com/ayoisaiah/stellar-photos
   golint:
     min-confidence: 0
   gomnd:
@@ -37,15 +37,16 @@ linters:
     - dogsled
     - dupl
     - errcheck
+    - errorlint
     - exportloopref
     - exhaustive
     - goconst
+    - godot
     - gocritic
-    - gocyclo
     - gofmt
     - goimports
-    - golint
     - gomnd
+    - gocyclo
     - goprintffuncname
     - gosec
     - gosimple
@@ -53,40 +54,38 @@ linters:
     - ineffassign
     - misspell
     - nakedret
-    - rowserrcheck
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
     - staticcheck
     - structcheck
     - stylecheck
+    - thelper
+    - tparallel
     - typecheck
     - unconvert
     - unparam
     - varcheck
     - whitespace
+    - wsl
 
 issues:
   fix: true
   exclude-rules:
-    - linters:
-      - gosec
-      text: "G101"
-    - linters:
-      - gocritic
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+
+    - path: _test\.go
       text: "ifElseChain"
-    - linters:
-      - dupl
-      text: "test"
-    - linters:
-      - gocyclo
-      text: "cyclomatic complexity"
-    - linters:
-      - golint
-      text: "error strings should not be capitalized"
-    - linters:
-      - stylecheck
-      text: "error strings should not be capitalized"
+      linters:
+        - gocritic
 rules:
   - linters:
-    - gosec
     - funlen
     severity: info
 

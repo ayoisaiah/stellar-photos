@@ -9,7 +9,7 @@ import (
 )
 
 // Config represents the all the environmental variables that should be present
-// on start up
+// on start up.
 type Config struct {
 	Port        string
 	RedirectURL string
@@ -20,7 +20,7 @@ type Config struct {
 	Redis       RedisConfig
 }
 
-// RedisConfig represents redis configuration variables
+// RedisConfig represents redis configuration variables.
 type RedisConfig struct {
 	Addr     string
 	DB       int
@@ -28,34 +28,35 @@ type RedisConfig struct {
 	Username string
 }
 
-// UnsplashConfig represents Unsplash's API configuration variables
+// UnsplashConfig represents Unsplash's API configuration variables.
 type UnsplashConfig struct {
 	AccessKey string
 }
 
-// OnedriveConfig represents Onedrive's API configuration variables
+// OnedriveConfig represents Onedrive's API configuration variables.
 type OnedriveConfig struct {
 	AppID  string
 	Secret string
 }
 
-// DropboxConfig represents Dropbox's API configuration variables
+// DropboxConfig represents Dropbox's API configuration variables.
 type DropboxConfig struct {
 	Key string
 }
 
-// GoogleDriveConfig represents Google Drive's API configuration variables
+// GoogleDriveConfig represents Google Drive's API configuration variables.
 type GoogleDriveConfig struct {
 	Key    string
 	Secret string
 }
 
-// Conf represents the application configuration
+// Conf represents the application configuration.
 var Conf *Config
 
-// New returns a new Config struct
+// New returns a new Config struct.
 func New() *Config {
 	redisDBStr := getEnv("REDIS_DB", "")
+
 	redisDBInt, err := strconv.Atoi(redisDBStr)
 	if err != nil || redisDBInt < 0 {
 		utils.Logger().
@@ -92,7 +93,7 @@ func New() *Config {
 
 // getEnv reads an environment variable and returns it or returns a default
 // value if the variable is optional. Otherwise, if a required variable is not
-// set, the program will crash
+// set, the program will crash.
 func getEnv(key, defaultVal string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value

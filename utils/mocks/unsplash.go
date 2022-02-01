@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 )
 
 type download struct {
@@ -13,25 +14,28 @@ type download struct {
 }
 
 func MockTrackPhotoDownload(file string) (*http.Response, error) {
-	jsonObj, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.json", file))
+	jsonObj, err := os.ReadFile(fmt.Sprintf("../testdata/%s.json", file))
 	if err != nil {
 		return nil, err
 	}
 
 	d := &download{}
+
 	err = json.Unmarshal(jsonObj, d)
 	if err != nil {
 		return nil, err
 	}
 
 	var statusCode int
+
 	if d.URL == "" {
 		statusCode = 404
 	} else {
 		statusCode = 200
 	}
 
-	r := ioutil.NopCloser(bytes.NewReader(jsonObj))
+	r := io.NopCloser(bytes.NewReader(jsonObj))
+
 	return &http.Response{
 		StatusCode: statusCode,
 		Body:       r,

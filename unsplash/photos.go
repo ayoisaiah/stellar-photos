@@ -11,10 +11,10 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-// UnsplashAPILocation represents the base URL for requests to Unsplash's API
+// UnsplashAPILocation represents the base URL for requests to Unsplash's API.
 const UnsplashAPILocation = "https://api.unsplash.com"
 
-// download represents the result from triggering a download on a photo
+// download represents the result from triggering a download on a photo.
 type download struct {
 	URL string `json:"url,omitempty"`
 }
@@ -26,12 +26,12 @@ type searchResult struct {
 	Results    []interface{} `json:"results,omitempty"`
 }
 
-// collection respresents a single Unsplash collection ID
+// collection respresents a single Unsplash collection ID.
 type collection struct {
 	ID string `json:"id,omitempty"`
 }
 
-// randomPhoto represents the result from fetching a random photo from Unsplash
+// randomPhoto represents the result from fetching a random photo from Unsplash.
 type randomPhoto struct {
 	ID             string `json:"id"`
 	CreatedAt      string `json:"created_at"`
@@ -114,13 +114,13 @@ type randomPhoto struct {
 	Downloads int `json:"downloads"`
 }
 
-// randomPhotoWithBase64 respresents the base64 encoding of randomPhoto
+// randomPhotoWithBase64 respresents the base64 encoding of randomPhoto.
 type randomPhotoBase64 struct {
 	*randomPhoto
 	Base64 string `json:"base64,omitempty"`
 }
 
-// DownloadPhoto is triggered each time a download is attempted
+// DownloadPhoto is triggered each time a download is attempted.
 func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -142,11 +142,12 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
 	return nil
 }
 
 // TrackPhotoDownload is used to increment the number of downloads
-// for the specified photo
+// for the specified photo.
 func TrackPhotoDownload(id string) ([]byte, error) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
@@ -193,7 +194,7 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 // GetRandomPhoto retrives a single random photo using the provided collection
 // IDs to narrow the pool of photos from which a random one will be chosen.
 // If no collection IDs are present, it defaults to 998309 which is the ID of
-// the official Stellar Photos collection
+// the official Stellar Photos collection.
 func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -223,6 +224,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	var imageWidth = "2000"
+
 	switch resolution {
 	case "high":
 		highRes := 4000
@@ -258,7 +260,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 }
 
 // ValidateCollections ensures that all the custom collection IDs that are added
-// to the extension are valid
+// to the extension are valid.
 func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -284,6 +286,7 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 			value,
 			unsplashAccessKey,
 		)
+
 		_, err = utils.SendGETRequest(url, &collection{})
 		if err != nil {
 			return err
@@ -291,5 +294,6 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
 	return nil
 }

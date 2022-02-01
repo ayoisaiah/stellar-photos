@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -21,7 +21,7 @@ type HTTPError struct {
 	Status int    `json:"-"`
 }
 
-// Error causes HTTPError to satisfy the error interface
+// Error causes HTTPError to satisfy the error interface.
 func (e *HTTPError) Error() string {
 	if e.Cause == nil {
 		return e.Detail
@@ -34,7 +34,7 @@ func (e *HTTPError) Error() string {
 func (e *HTTPError) ResponseBody() ([]byte, error) {
 	body, err := json.Marshal(e)
 	if err != nil {
-		return nil, fmt.Errorf("Error while parsing response body: %v", err)
+		return nil, fmt.Errorf("Error while parsing response body: %w", err)
 	}
 
 	return body, nil
@@ -47,7 +47,7 @@ func (e *HTTPError) ResponseHeaders() (status int, headers map[string]string) {
 	}
 }
 
-// NewHTTPError returns a new HTTPError
+// NewHTTPError returns a new HTTPError.
 func NewHTTPError(err error, status int, detail string) error {
 	return &HTTPError{
 		Cause:  err,
@@ -58,9 +58,9 @@ func NewHTTPError(err error, status int, detail string) error {
 
 // CheckForErrors reads the entire response body and checks the status code of
 // the response. If the status code is not 200, a error is returned. Otherwise,
-// the response body is returned
+// the response body is returned.
 func CheckForErrors(resp *http.Response) ([]byte, error) {
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

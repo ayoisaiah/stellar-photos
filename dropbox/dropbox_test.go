@@ -3,10 +3,12 @@ package dropbox
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -26,7 +28,7 @@ func init() {
 }
 
 func TestGetDropboxKey(t *testing.T) {
-	req, err := http.NewRequest("GET", "/dropbox/key/", nil)
+	req, err := http.NewRequest("GET", "/dropbox/key/", http.NoBody)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,18 +78,18 @@ func TestSaveToDropbox(t *testing.T) {
 				if strings.Contains(req.URL.Path, "download") {
 					return mocks.MockTrackPhotoDownload(value.unsplashResponse)
 				} else if req.URL.Path == "/2/files/save_url" {
-					body, err = ioutil.ReadFile("../testdata/dropbox_job_id_response.json")
+					body, err = os.ReadFile("../testdata/dropbox_job_id_response.json")
 					if err != nil {
 						return nil, err
 					}
 				} else if req.URL.Path == "/2/files/save_url/check_job_status" {
-					body, err = ioutil.ReadFile("../testdata/dropbox_complete_response.json")
+					body, err = os.ReadFile("../testdata/dropbox_complete_response.json")
 					if err != nil {
 						return nil, err
 					}
 				}
 
-				r := ioutil.NopCloser(bytes.NewReader(body))
+				r := io.NopCloser(bytes.NewReader(body))
 
 				return &http.Response{
 					StatusCode: statusCode,
@@ -102,7 +104,7 @@ func TestSaveToDropbox(t *testing.T) {
 				value.id,
 				value.url,
 			)
-			req, err := http.NewRequest(http.MethodGet, path, nil)
+			req, err := http.NewRequest(http.MethodGet, path, http.NoBody)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -117,8 +119,9 @@ func TestSaveToDropbox(t *testing.T) {
 				return
 			}
 
-			clientError, ok := err.(utils.ClientError)
-			if !ok {
+			var clientError utils.ClientError
+
+			if !errors.As(err, &clientError) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 

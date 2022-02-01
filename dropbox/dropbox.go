@@ -13,7 +13,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-// Dropbox application key
+// Dropbox application key.
 type key struct {
 	DropboxKey string `json:"dropbox_key"`
 }
@@ -24,7 +24,7 @@ type SaveURLResponse struct {
 }
 
 // SendDropboxKey sends the application key to the client on request to avoid
-// exposing it in the extension code
+// exposing it in the extension code.
 func SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
 	dropboxKey := config.Conf.Dropbox.Key
 
@@ -45,6 +45,7 @@ func checkJobStatus(jobID, token string) error {
 	requestBody, err := json.Marshal(map[string]string{
 		"async_job_id": jobID,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -97,10 +98,10 @@ func checkJobStatus(jobID, token string) error {
 		return checkJobStatus(jobID, token)
 	}
 
-	return fmt.Errorf("Job failed. Response from Dropbox: %s", string(b))
+	return fmt.Errorf("job failed. response from dropbox: %s", string(b))
 }
 
-// SaveToDropbox saves the requested photo to the current user's Dropbox account
+// SaveToDropbox saves the requested photo to the current user's Dropbox account.
 func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -174,11 +175,12 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 		}
 
 		w.WriteHeader(http.StatusOK)
+
 		return nil
 	} else if resp.Tag == "complete" {
 		w.WriteHeader(http.StatusOK)
 		return nil
 	}
 
-	return fmt.Errorf("Save URL error. Response from Dropbox: %s", string(b))
+	return fmt.Errorf("save URL error. response from dropbox: %s", string(b))
 }

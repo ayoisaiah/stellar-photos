@@ -1,10 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/dropbox"
@@ -12,9 +17,6 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/onedrive"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
-	"github.com/go-redis/redis/v8"
-	"github.com/joho/godotenv"
-	"github.com/rs/cors"
 )
 
 type rootHandler func(w http.ResponseWriter, r *http.Request) error
@@ -37,8 +39,9 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	utils.Logger().
 		Errorw("HandlerFunc error", "tag", "handler_error", "error", err)
 
-	clientError, ok := err.(utils.ClientError)
-	if !ok {
+	var clientError utils.ClientError
+
+	if !errors.As(err, &clientError) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -47,23 +50,27 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.Logger().
 			Errorw("An error occurred", "tag", "client_response_body", "error", err)
+
 		w.WriteHeader(http.StatusInternalServerError)
+
 		return
 	}
 
 	status, headers := clientError.ResponseHeaders()
+
 	for k, v := range headers {
 		w.Header().Set(k, v)
 	}
 
 	w.WriteHeader(status)
+
 	_, err = w.Write(body)
 	if err != nil {
 		return
 	}
 }
 
-// newRouter creates and returns a new HTTP request multiplexer
+// newRouter creates and returns a new HTTP request multiplexer.
 func newRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 
