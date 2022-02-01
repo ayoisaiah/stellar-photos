@@ -89,5 +89,8 @@
     "*.html": [
       "prettier --write"
     ]
+  },
+  "volta": {
+    "node": "16.13.2"
   }
 }
