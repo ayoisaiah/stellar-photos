@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/unsplash"
@@ -177,9 +176,7 @@ func cleanup(photos map[string]unsplash.Photo) {
 	cleaned := make(map[string]bool)
 
 	for _, f := range files {
-		fileName := f.Name()
-
-		id := strings.Split(fileName[:len(fileName)-len(filepath.Ext(fileName))], "_")[0]
+		id := f.Name()
 
 		if _, ok := cleaned[id]; ok {
 			continue
