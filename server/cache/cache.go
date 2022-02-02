@@ -69,13 +69,13 @@ func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 			return nil, err
 		}
 
-		allPhotos = append(allPhotos, photos...)
-
-		page++
-
 		if len(photos) == 0 {
 			break
 		}
+
+		allPhotos = append(allPhotos, photos...)
+
+		page++
 	}
 
 	var m = make(map[string]unsplash.Photo)
@@ -85,6 +85,8 @@ func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 
 		m[v.ID] = v
 	}
+
+	delete(m, "")
 
 	return m, nil
 }
