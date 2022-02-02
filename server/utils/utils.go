@@ -136,7 +136,7 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 func GetImageBase64(endpoint, filename, id string) (string, error) {
 	l := Logger()
 
-	filePath := filepath.Join("cached_images", id, filename)
+	filePath := filepath.Join("cached_images", id, filename) + ".txt"
 
 	var base64Str string
 
