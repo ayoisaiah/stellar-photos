@@ -2,7 +2,6 @@ package unsplash
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,9 +11,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/go-redis/redis/v8"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
@@ -163,29 +159,6 @@ func TestSearchUnsplash(t *testing.T) {
 	}
 }
 
-type MockRedis struct{}
-
-func (m *MockRedis) Get(ctx context.Context, key string) *redis.StringCmd {
-	return &redis.StringCmd{}
-}
-
-func (m *MockRedis) Set(
-	ctx context.Context,
-	key string,
-	val interface{},
-	t time.Duration,
-) *redis.StatusCmd {
-	return &redis.StatusCmd{}
-}
-
-func (m *MockRedis) Expire(
-	ctx context.Context,
-	key string,
-	t time.Duration,
-) *redis.BoolCmd {
-	return &redis.BoolCmd{}
-}
-
 func TestGetRandomPhoto(t *testing.T) {
 	collections := []struct {
 		input      string
@@ -230,8 +203,6 @@ func TestGetRandomPhoto(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-
-			utils.InitRedis(&MockRedis{})
 
 			rr := httptest.NewRecorder()
 			err = GetRandomPhoto(rr, req)

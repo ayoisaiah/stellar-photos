@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -126,6 +128,53 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 	}
 
 	return nil
+}
+
+// GetImageBase64 implements read-through caching in which the image's
+// base64 string is retrieved from the cache first or the network if
+// not found in the cache.
+func GetImageBase64(endpoint, filename, id string) (string, error) {
+	l := Logger()
+
+	filePath := filepath.Join("cached_images", id, filename)
+
+	var base64Str string
+
+	if _, err := os.Stat(filePath); err == nil || errors.Is(err, os.ErrExist) {
+		b, err := os.ReadFile(filePath)
+		if err == nil {
+			base64Str = string(b)
+
+			l.Infow("Retrieved Unsplash image from the cache",
+				"tag", "retrieve_unsplash_image_from_cache",
+				"image_id", id,
+				"file_name", filename,
+			)
+
+			return base64Str, nil
+		}
+
+		l.Warnw("Unable to read file from directory",
+			"tag", "read_cached_image_failure",
+			"path", filePath,
+			"error", err,
+		)
+	}
+
+	var err error
+
+	base64Str, err = imageURLToBase64(endpoint)
+	if err != nil {
+		return base64Str, err
+	}
+
+	l.Infow("Retrieved Unsplash image from the network",
+		"tag", "retrieve_unsplash_image_from_network",
+		"image_id", id,
+		"file_name", filename,
+	)
+
+	return base64Str, nil
 }
 
 // imageURLToBase64 retrives the Base64 representation of an image URL and

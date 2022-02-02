@@ -11,8 +11,8 @@ import (
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
 
-// UnsplashAPILocation represents the base URL for requests to Unsplash's API.
-const UnsplashAPILocation = "https://api.unsplash.com"
+// APIBaseURL represents the base URL for requests to Unsplash's API.
+const APIBaseURL = "https://api.unsplash.com"
 
 // download represents the result from triggering a download on a photo.
 type download struct {
@@ -26,13 +26,34 @@ type searchResult struct {
 	Results    []interface{} `json:"results,omitempty"`
 }
 
-// collection respresents a single Unsplash collection ID.
-type collection struct {
-	ID string `json:"id,omitempty"`
+// Collection respresents a single Unsplash collection.
+type Collection struct {
+	ID              string `json:"id"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	PublishedAt     string `json:"published_at"`
+	LastCollectedAt string `json:"last_collected_at"`
+	UpdatedAt       string `json:"updated_at"`
+	Curated         bool   `json:"curated"`
+	Featured        bool   `json:"featured"`
+	TotalPhotos     int    `json:"total_photos"`
+	Private         bool   `json:"private"`
+	ShareKey        string `json:"share_key"`
+	Links           struct {
+		Self    string `json:"self"`
+		HTML    string `json:"html"`
+		Photos  string `json:"photos"`
+		Related string `json:"related"`
+	} `json:"links"`
+	Meta struct {
+		Title       interface{} `json:"title"`
+		Description interface{} `json:"description"`
+		Index       bool        `json:"index"`
+	} `json:"meta"`
 }
 
-// randomPhoto represents the result from fetching a random photo from Unsplash.
-type randomPhoto struct {
+// Photo represents a single photo on Unsplash.
+type Photo struct {
 	ID             string `json:"id"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
@@ -114,9 +135,9 @@ type randomPhoto struct {
 	Downloads int `json:"downloads"`
 }
 
-// randomPhotoWithBase64 respresents the base64 encoding of randomPhoto.
-type randomPhotoBase64 struct {
-	*randomPhoto
+// photoWithBase64 respresents the base64 encoding of an Unsplash Photo.
+type photoWithBase64 struct {
+	*Photo
 	Base64 string `json:"base64,omitempty"`
 }
 
@@ -152,7 +173,7 @@ func TrackPhotoDownload(id string) ([]byte, error) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/%s/download?client_id=%s",
-		UnsplashAPILocation,
+		APIBaseURL,
 		id,
 		unsplashAccessKey,
 	)
@@ -174,7 +195,7 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s",
-		UnsplashAPILocation,
+		APIBaseURL,
 		page,
 		key,
 		"28",
@@ -211,12 +232,12 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/random?collections=%s&client_id=%s",
-		UnsplashAPILocation,
+		APIBaseURL,
 		collections,
 		unsplashAccessKey,
 	)
 
-	res := &randomPhoto{}
+	res := &Photo{}
 
 	_, err = utils.SendGETRequest(url, res)
 	if err != nil {
@@ -241,12 +262,12 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	key := res.ID + "_" + imageWidth
 
-	base64, err := utils.GetImageBase64(imageURL, key)
+	base64, err := utils.GetImageBase64(imageURL, key, res.ID)
 	if err != nil {
 		return err
 	}
 
-	data := randomPhotoBase64{
+	data := photoWithBase64{
 		res,
 		base64,
 	}
@@ -282,12 +303,12 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 	for _, value := range collections {
 		url := fmt.Sprintf(
 			"%s/collections/%s/?client_id=%s",
-			UnsplashAPILocation,
+			APIBaseURL,
 			value,
 			unsplashAccessKey,
 		)
 
-		_, err = utils.SendGETRequest(url, &collection{})
+		_, err = utils.SendGETRequest(url, &Collection{})
 		if err != nil {
 			return err
 		}

@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
+	cron "github.com/robfig/cron/v3"
 	"github.com/rs/cors"
 
+	"github.com/ayoisaiah/stellar-photos-server/cache"
 	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/dropbox"
 	"github.com/ayoisaiah/stellar-photos-server/googledrive"
@@ -110,15 +111,6 @@ func run() error {
 	// the required Env values is not set
 	conf := config.New()
 
-	r := redis.NewClient(&redis.Options{
-		Addr:     config.Conf.Redis.Addr,
-		Username: config.Conf.Redis.Username,
-		Password: config.Conf.Redis.Password,
-		DB:       config.Conf.Redis.DB,
-	})
-
-	utils.InitRedis(r)
-
 	port := ":" + conf.Port
 
 	mux := newRouter()
@@ -129,6 +121,23 @@ func run() error {
 		Addr:    port,
 		Handler: handler,
 	}
+
+	go func() {
+		cache.Photos()
+
+		c := cron.New()
+
+		_, err = c.AddFunc("@daily", func() {
+			cache.Photos()
+		})
+		if err != nil {
+			utils.Logger().Infow("Unable to call AddFunc",
+				"tag", "cron_schedule_daily",
+			)
+		}
+
+		c.Start()
+	}()
 
 	utils.Logger().Infow(fmt.Sprintf("Server is listening on port: %s", port))
 

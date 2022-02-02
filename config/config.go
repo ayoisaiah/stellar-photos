@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 )
@@ -17,15 +16,6 @@ type Config struct {
 	Onedrive    OnedriveConfig
 	Dropbox     DropboxConfig
 	GoogleDrive GoogleDriveConfig
-	Redis       RedisConfig
-}
-
-// RedisConfig represents redis configuration variables.
-type RedisConfig struct {
-	Addr     string
-	DB       int
-	Password string
-	Username string
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables.
@@ -55,14 +45,6 @@ var Conf *Config
 
 // New returns a new Config struct.
 func New() *Config {
-	redisDBStr := getEnv("REDIS_DB", "")
-
-	redisDBInt, err := strconv.Atoi(redisDBStr)
-	if err != nil || redisDBInt < 0 {
-		utils.Logger().
-			Fatalw("ENV: REDIS_DB must be a positive integer", "tag", "redis_db_env", "REDIS_DB", redisDBStr)
-	}
-
 	Conf = &Config{
 		Port:        getEnv("PORT", "8080"),
 		RedirectURL: getEnv("REDIRECT_URL", ""),
@@ -79,12 +61,6 @@ func New() *Config {
 		GoogleDrive: GoogleDriveConfig{
 			Key:    getEnv("GOOGLE_DRIVE_KEY", ""),
 			Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
-		},
-		Redis: RedisConfig{
-			Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
-			Username: getEnv("REDIS_USERNAME", ""),
-			DB:       redisDBInt,
-			Password: getEnv("REDIS_PASSWORD", ""),
 		},
 	}
 
