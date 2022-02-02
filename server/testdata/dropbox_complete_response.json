@@ -1,0 +1,20 @@
+{
+  ".tag": "complete",
+  "name": "photo-wHlF3Bbdyjk (2).jpg",
+  "path_lower": "/photo-whlf3bbdyjk (2).jpg",
+  "path_display": "/photo-wHlF3Bbdyjk (2).jpg",
+  "id": "id:6uypG1-IBDAAAAAAAAACOw",
+  "client_modified": "2021-01-01T13:17:07Z",
+  "server_modified": "2021-01-01T13:17:08Z",
+  "rev": "5b7d68eaf06eb565543f7",
+  "size": 3215354,
+  "media_info": {
+    ".tag": "metadata",
+    "metadata": {
+      ".tag": "photo",
+      "dimensions": { "height": 4608, "width": 3456 }
+    }
+  },
+  "is_downloadable": true,
+  "content_hash": "960210996dda93d3937da36c8fb37739ab149a7e64961fe224a84f733b16b055"
+}

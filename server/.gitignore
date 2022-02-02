@@ -1,0 +1,7 @@
+# Build
+bin
+
+# Environmental variables
+.env
+cached_images
+tmp
