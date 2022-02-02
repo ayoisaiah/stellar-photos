@@ -1,4 +1,4 @@
-name: Tests
+name: Run Server tests
 
 on:
   push:
@@ -8,6 +8,10 @@ on:
   pull_request:
     branches:
     - master
+
+defaults:
+  run:
+    working-directory: server
 
 jobs:
   build:
@@ -23,7 +27,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.16'
+        go-version: '1.17'
 
     # Tests
     - name: Run testing
