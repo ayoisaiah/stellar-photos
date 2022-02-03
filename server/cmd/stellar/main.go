@@ -21,6 +21,8 @@ import (
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
+const handlerTimeout = 60
+
 type loggingResponseWriter struct {
 	http.ResponseWriter
 	statusCode int
@@ -183,8 +185,13 @@ func run() error {
 	handler := cors.Default().Handler(mux)
 
 	srv := &http.Server{
-		Addr:    port,
-		Handler: handler,
+		Addr: port,
+		Handler: http.TimeoutHandler(
+			handler,
+			handlerTimeout*time.Second,
+			"request timed out",
+		),
+		ReadTimeout: 5 * time.Second,
 	}
 
 	go func() {
