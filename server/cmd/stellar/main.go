@@ -38,6 +38,11 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 type rootHandler func(w http.ResponseWriter, r *http.Request) error
 
 func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	ctx := r.Context()
 
 	reqIDRaw := ctx.Value(utils.ContextKeyRequestID)
