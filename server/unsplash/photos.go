@@ -170,7 +170,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 // TrackPhotoDownload is used to increment the number of downloads
 // for the specified photo.
 func TrackPhotoDownload(id string) ([]byte, error) {
-	unsplashAccessKey := config.Conf.Unsplash.AccessKey
+	unsplashAccessKey := config.Get().Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/%s/download?client_id=%s",
 		APIBaseURL,
@@ -192,7 +192,7 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	key := values.Get("key")
 	page := values.Get("page")
 
-	unsplashAccessKey := config.Conf.Unsplash.AccessKey
+	unsplashAccessKey := config.Get().Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s",
 		APIBaseURL,
@@ -229,7 +229,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	resolution := values.Get("resolution")
 
-	unsplashAccessKey := config.Conf.Unsplash.AccessKey
+	unsplashAccessKey := config.Get().Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/random?collections=%s&client_id=%s",
 		APIBaseURL,
@@ -260,7 +260,7 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	imageURL := res.Urls.Raw + "&w=" + imageWidth
 
-	base64, err := utils.GetImageBase64(imageURL, imageWidth, res.ID)
+	base64, err := utils.GetImageBase64(r.Context(), imageURL, imageWidth, res.ID)
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 		)
 	}
 
-	unsplashAccessKey := config.Conf.Unsplash.AccessKey
+	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
 	for _, value := range collections {
 		url := fmt.Sprintf(

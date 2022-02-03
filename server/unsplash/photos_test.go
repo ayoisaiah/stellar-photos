@@ -12,15 +12,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
 	"github.com/ayoisaiah/stellar-photos-server/utils"
 	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
 )
 
 func init() {
 	utils.Client = &mocks.MockClient{}
-
-	config.Conf = &config.Config{}
 
 	os.Setenv("LOG_LEVEL", "5")
 }

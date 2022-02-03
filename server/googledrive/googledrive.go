@@ -38,7 +38,7 @@ type googleDriveAuth struct {
 // exposing it in the extension code.
 func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 	d := key{
-		GoogleDriveKey: config.Conf.GoogleDrive.Key,
+		GoogleDriveKey: config.Get().GoogleDrive.Key,
 	}
 
 	b, err := json.Marshal(d)
@@ -59,15 +59,15 @@ func AuthorizeGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 
 	code := values.Get("code")
 
-	id := config.Conf.GoogleDrive.Key
-	secret := config.Conf.GoogleDrive.Secret
+	id := config.Get().GoogleDrive.Key
+	secret := config.Get().GoogleDrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  config.Conf.RedirectURL,
+		"redirect_uri":  config.Get().RedirectURL,
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
@@ -93,8 +93,8 @@ func RefreshGoogleDriveToken(w http.ResponseWriter, r *http.Request) error {
 		return errors.New("refresh token not specified")
 	}
 
-	id := config.Conf.GoogleDrive.Key
-	secret := config.Conf.GoogleDrive.Secret
+	id := config.Get().GoogleDrive.Key
+	secret := config.Get().GoogleDrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "refresh_token",

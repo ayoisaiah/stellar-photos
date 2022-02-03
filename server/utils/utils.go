@@ -14,8 +14,11 @@ import (
 	"time"
 )
 
+type contextKey string
+
 const (
-	timeoutInSeconds = 60
+	defaultTimeoutInSeconds            = 10
+	ContextKeyRequestID     contextKey = "requestID"
 )
 
 // SendGETRequest makes an HTTP GET request and decodes the JSON
@@ -28,14 +31,6 @@ func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
 
 	resp, err := Client.Do(request)
 	if err != nil {
-		if os.IsTimeout(err) {
-			return nil, NewHTTPError(
-				err,
-				http.StatusRequestTimeout,
-				"Request to external API timed out",
-			)
-		}
-
 		return nil, err
 	}
 
@@ -77,14 +72,6 @@ func SendPOSTRequest(
 
 	resp, err := Client.Do(request)
 	if err != nil {
-		if os.IsTimeout(err) {
-			return nil, NewHTTPError(
-				err,
-				http.StatusRequestTimeout,
-				"Request to external API timed out",
-			)
-		}
-
 		return nil, err
 	}
 
@@ -133,8 +120,14 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 // GetImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
 // not found in the cache.
-func GetImageBase64(endpoint, filename, id string) (string, error) {
+func GetImageBase64(ctx context.Context, endpoint, filename, id string) (string, error) {
 	l := L()
+
+	reqIDRaw := ctx.Value(ContextKeyRequestID)
+
+	requestID, _ := reqIDRaw.(string)
+
+	l = l.With("request_id", requestID)
 
 	filePath := filepath.Join("cached_images", id, filename) + ".txt"
 
@@ -154,7 +147,7 @@ func GetImageBase64(endpoint, filename, id string) (string, error) {
 			return base64Str, nil
 		}
 
-		l.Warnw("Unable to read file from directory",
+		l.Warnw("Unable to read cached image file",
 			"tag", "read_cached_image_failure",
 			"path", filePath,
 			"error", err,
@@ -182,7 +175,7 @@ func GetImageBase64(endpoint, filename, id string) (string, error) {
 func imageURLToBase64(endpoint string) (string, error) {
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
-		time.Second*timeoutInSeconds,
+		time.Second*defaultTimeoutInSeconds,
 	)
 
 	defer cancel()
@@ -201,14 +194,6 @@ func imageURLToBase64(endpoint string) (string, error) {
 
 	resp, err := Client.Do(request)
 	if err != nil {
-		if os.IsTimeout(err) {
-			return base64Encoding, NewHTTPError(
-				err,
-				http.StatusRequestTimeout,
-				"Timeout exceeded while fetching image from network for base64 encoding",
-			)
-		}
-
 		return base64Encoding, err
 	}
 

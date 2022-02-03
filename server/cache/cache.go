@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,7 +22,7 @@ const (
 
 // getCollection retrieves the stellar photos Unsplash collection.
 func getCollection() (unsplash.Collection, error) {
-	unsplashAccessKey := config.Conf.Unsplash.AccessKey
+	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
 	url := fmt.Sprintf(
 		"%s/collections/%d?client_id=%s",
@@ -48,7 +49,7 @@ func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 		return nil, err
 	}
 
-	unsplashAccessKey := config.Conf.Unsplash.AccessKey
+	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
 	var allPhotos = make([]unsplash.Photo, collection.TotalPhotos)
 
@@ -129,7 +130,9 @@ func downloadPhotos(photos map[string]unsplash.Photo) map[string]error {
 
 			var base64 string
 
-			base64, err = utils.GetImageBase64(imageURL, fileName, k)
+			ctx := context.WithValue(context.Background(), utils.ContextKeyRequestID, "cache")
+
+			base64, err = utils.GetImageBase64(ctx, imageURL, fileName, k)
 			if err != nil {
 				errs[k] = err
 				continue
@@ -174,7 +177,7 @@ func cleanup(photos map[string]unsplash.Photo) {
 
 	files, err := os.ReadDir("cached_images")
 	if err != nil {
-		l.Errorw("Unable to read cached_images directory",
+		l.Warnw("Unable to read cached_images directory",
 			"tag", "read_cached_images_dir_failure",
 			"error", err,
 		)
@@ -228,7 +231,7 @@ func Photos() {
 
 	photos, err := retrieveAllPhotos()
 	if err != nil {
-		l.Errorw("Unable to retrieve all images in default collection",
+		l.Warnw("Unable to retrieve all images in default collection",
 			"tag", "retrieve_all_photos_failure",
 			"error", err,
 		)
@@ -238,7 +241,7 @@ func Photos() {
 
 	errs := downloadPhotos(photos)
 	if len(errs) != 0 {
-		l.Errorw("Some downloads failed to complete",
+		l.Warnw("Some downloads failed to complete",
 			"tag", "download_photos_cache_failure",
 			"errors", errs,
 		)

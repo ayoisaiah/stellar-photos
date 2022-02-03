@@ -26,7 +26,7 @@ type onedriveAuth struct {
 
 // SendOnedriveID sends the application id to the client on request.
 func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
-	id := config.Conf.Onedrive.AppID
+	id := config.Get().Onedrive.AppID
 
 	d := onedriveID{
 		ID: id,
@@ -53,15 +53,15 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 		return errors.New("authorization code not specified")
 	}
 
-	id := config.Conf.Onedrive.AppID
-	secret := config.Conf.Onedrive.Secret
+	id := config.Get().Onedrive.AppID
+	secret := config.Get().Onedrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  strings.TrimSuffix(config.Conf.RedirectURL, "/"),
+		"redirect_uri":  strings.TrimSuffix(config.Get().RedirectURL, "/"),
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
@@ -87,15 +87,15 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 		return errors.New("refresh token not specified")
 	}
 
-	id := config.Conf.Onedrive.AppID
-	secret := config.Conf.Onedrive.Secret
+	id := config.Get().Onedrive.AppID
+	secret := config.Get().Onedrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "refresh_token",
 		"client_id":     id,
 		"client_secret": secret,
 		"refresh_token": refreshToken,
-		"redirect_uri":  strings.TrimSuffix(config.Conf.RedirectURL, "/"),
+		"redirect_uri":  strings.TrimSuffix(config.Get().RedirectURL, "/"),
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"

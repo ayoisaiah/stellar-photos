@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,14 +9,14 @@ import (
 // ClientError is an error whose details is to be shared with the client.
 type ClientError interface {
 	Error() string
-	ResponseBody() ([]byte, error)
+	ResponseBody() []byte
 	ResponseHeaders() (int, map[string]string)
 }
 
 // HTTPError implements ClientError interface.
 type HTTPError struct {
 	Cause  error  `json:"-"`
-	Detail string `json:"detail"`
+	Detail string `json:"error"`
 	Status int    `json:"-"`
 }
 
@@ -30,14 +29,9 @@ func (e *HTTPError) Error() string {
 	return e.Detail + " : " + e.Cause.Error()
 }
 
-// ResponseBody returns JSON response body.
-func (e *HTTPError) ResponseBody() ([]byte, error) {
-	body, err := json.Marshal(e)
-	if err != nil {
-		return nil, fmt.Errorf("Error while parsing response body: %w", err)
-	}
-
-	return body, nil
+// ResponseBody returns error details as JSON.
+func (e *HTTPError) ResponseBody() []byte {
+	return []byte(fmt.Sprintf("{%q: %q}", "error", e.Detail))
 }
 
 // ResponseHeaders returns http status code and headers.

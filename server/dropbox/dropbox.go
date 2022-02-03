@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/ayoisaiah/stellar-photos-server/config"
@@ -26,7 +25,7 @@ type SaveURLResponse struct {
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code.
 func SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
-	dropboxKey := config.Conf.Dropbox.Key
+	dropboxKey := config.Get().Dropbox.Key
 
 	d := key{
 		DropboxKey: dropboxKey,
@@ -66,14 +65,6 @@ func checkJobStatus(jobID, token string) error {
 
 	response, err := utils.Client.Do(request)
 	if err != nil {
-		if os.IsTimeout(err) {
-			return utils.NewHTTPError(
-				err,
-				http.StatusRequestTimeout,
-				"Request to external API timed out",
-			)
-		}
-
 		return err
 	}
 
@@ -143,14 +134,6 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 
 	response, err := utils.Client.Do(request)
 	if err != nil {
-		if os.IsTimeout(err) {
-			return utils.NewHTTPError(
-				err,
-				http.StatusRequestTimeout,
-				"Request to external API timed out",
-			)
-		}
-
 		return err
 	}
 

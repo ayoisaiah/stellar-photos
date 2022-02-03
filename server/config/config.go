@@ -2,20 +2,28 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
-
-	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"sync"
 )
 
 // Config represents the all the environmental variables that should be present
 // on start up.
 type Config struct {
+	LogLevel    string
 	Port        string
 	RedirectURL string
 	Unsplash    UnsplashConfig
 	Onedrive    OnedriveConfig
 	Dropbox     DropboxConfig
 	GoogleDrive GoogleDriveConfig
+	Telegram    TelegramConfig
+}
+
+// Telegram represents Telegram's API configuration variables.
+type TelegramConfig struct {
+	Token  string
+	ChatID string
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables.
@@ -40,31 +48,41 @@ type GoogleDriveConfig struct {
 	Secret string
 }
 
-// Conf represents the application configuration.
-var Conf *Config
+var (
+	once sync.Once
+	// Conf represents the application configuration.
+	conf *Config
+)
 
-// New returns a new Config struct.
-func New() *Config {
-	Conf = &Config{
-		Port:        getEnv("PORT", "8080"),
-		RedirectURL: getEnv("REDIRECT_URL", ""),
-		Unsplash: UnsplashConfig{
-			AccessKey: getEnv("UNSPLASH_ACCESS_KEY", ""),
-		},
-		Onedrive: OnedriveConfig{
-			AppID:  getEnv("ONEDRIVE_APPID", ""),
-			Secret: getEnv("ONEDRIVE_SECRET", ""),
-		},
-		Dropbox: DropboxConfig{
-			Key: getEnv("DROPBOX_KEY", ""),
-		},
-		GoogleDrive: GoogleDriveConfig{
-			Key:    getEnv("GOOGLE_DRIVE_KEY", ""),
-			Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
-		},
-	}
+// Get returns a new Config struct.
+func Get() *Config {
+	once.Do(func() {
+		conf = &Config{
+			Port:        getEnv("PORT", "8080"),
+			LogLevel:    getEnv("LOG_LEVEL", "0"),
+			RedirectURL: getEnv("REDIRECT_URL", ""),
+			Unsplash: UnsplashConfig{
+				AccessKey: getEnv("UNSPLASH_ACCESS_KEY", ""),
+			},
+			Onedrive: OnedriveConfig{
+				AppID:  getEnv("ONEDRIVE_APPID", ""),
+				Secret: getEnv("ONEDRIVE_SECRET", ""),
+			},
+			Dropbox: DropboxConfig{
+				Key: getEnv("DROPBOX_KEY", ""),
+			},
+			GoogleDrive: GoogleDriveConfig{
+				Key:    getEnv("GOOGLE_DRIVE_KEY", ""),
+				Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
+			},
+			Telegram: TelegramConfig{
+				Token:  getEnv("TELEGRAM_TOKEN", "*"),
+				ChatID: getEnv("TELEGRAM_CHAT_ID", "*"),
+			},
+		}
+	})
 
-	return Conf
+	return conf
 }
 
 // getEnv reads an environment variable and returns it or returns a default
@@ -76,8 +94,13 @@ func getEnv(key, defaultVal string) string {
 	}
 
 	if defaultVal == "" {
-		utils.L().
-			Fatalw(fmt.Sprintf("%s has not been set in your ENV", key), "tag", "env_not_set", "key")
+		log.Fatal(fmt.Sprintf("%s has not been set in your ENV", key))
+	}
+
+	// * denotes a variable that should not crash the program if not present in
+	// the environment
+	if defaultVal == "*" {
+		return ""
 	}
 
 	return defaultVal
