@@ -28,8 +28,11 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			utils.Logger().
-				Errorw("Recover error", "tag", "recover_error", "error", err, "trace", string(debug.Stack()))
+			utils.L().Fatalw("Recovering from panic failed",
+				"tag", "recover_from_panic_error",
+				"error", err,
+				"stack_trace", string(debug.Stack()),
+			)
 		}
 	}()
 
@@ -38,8 +41,10 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.Logger().
-		Errorw("HandlerFunc error", "tag", "handler_error", "error", err)
+	utils.L().Errorw("Error from handler",
+		"tag", "http_handler_error",
+		"error", err,
+	)
 
 	var clientError utils.ClientError
 
@@ -50,8 +55,11 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	body, err := clientError.ResponseBody()
 	if err != nil {
-		utils.Logger().
-			Errorw("An error occurred", "tag", "client_response_body", "error", err)
+		utils.L().
+			Errorw("Unexpected error while converting error response body to JSON",
+				"tag", "client_response_body_error",
+				"error", err,
+			)
 
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -68,7 +76,11 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(body)
 	if err != nil {
-		return
+		utils.L().
+			Errorw("Unexpected error while writing error response",
+				"tag", "http_write_body_error",
+				"error", err,
+			)
 	}
 }
 
@@ -78,7 +90,7 @@ func requestLogger(mux http.Handler) http.Handler {
 
 		mux.ServeHTTP(w, r)
 
-		utils.Logger().Infow("Incoming request",
+		utils.L().Infow("Incoming request",
 			"tag", "incoming_request",
 			"method", r.Method,
 			"uri", r.RequestURI,
@@ -149,7 +161,7 @@ func run() error {
 			cache.Photos()
 		})
 		if err != nil {
-			utils.Logger().Infow("Unable to call AddFunc",
+			utils.L().Infow("Unable to call AddFunc",
 				"tag", "cron_schedule_daily",
 			)
 		}
@@ -157,7 +169,7 @@ func run() error {
 		c.Start()
 	}()
 
-	utils.Logger().Infow(fmt.Sprintf("Server is listening on port: %s", port))
+	utils.L().Infow(fmt.Sprintf("Server is listening on port: %s", port))
 
 	return srv.ListenAndServe()
 }

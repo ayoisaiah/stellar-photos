@@ -153,7 +153,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 		return utils.NewHTTPError(
 			nil,
 			http.StatusBadRequest,
-			"Photo ID must not be empty",
+			"The photo ID must not be empty",
 		)
 	}
 

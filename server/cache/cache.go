@@ -19,7 +19,7 @@ const (
 	highRes     = 4000
 )
 
-// getCollection retrieves the stellar photos Unsplash collection
+// getCollection retrieves the stellar photos Unsplash collection.
 func getCollection() (unsplash.Collection, error) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 
@@ -41,7 +41,7 @@ func getCollection() (unsplash.Collection, error) {
 }
 
 // retrieveAllPhotos fetches all the images in the stellar photos Unslashcollection
-// collection
+// collection.
 func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 	collection, err := getCollection()
 	if err != nil {
@@ -94,7 +94,7 @@ func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 }
 
 // downloadPhotos caches various resolutions of the Unsplash images in a local
-// directory
+// directory.
 func downloadPhotos(photos map[string]unsplash.Photo) map[string]error {
 	errs := make(map[string]error)
 
@@ -168,9 +168,9 @@ func downloadPhotos(photos map[string]unsplash.Photo) map[string]error {
 }
 
 // cleanup deletes any locally cached image that is no longer present
-// in the default collection
+// in the default collection.
 func cleanup(photos map[string]unsplash.Photo) {
-	l := utils.Logger()
+	l := utils.L()
 
 	files, err := os.ReadDir("cached_images")
 	if err != nil {
@@ -194,10 +194,14 @@ func cleanup(photos map[string]unsplash.Photo) {
 		if _, ok := photos[id]; !ok {
 			err := os.RemoveAll(filepath.Join("cached_images", id))
 			if err != nil {
-				l.Warnw("Unable to clean deleted photo from cached_images directory",
-					"tag", "cache_clean_failure",
-					"image_id", id,
-					"error", err,
+				l.Warnw(
+					"Unable to clean deleted photo from cached_images directory",
+					"tag",
+					"cache_clean_failure",
+					"image_id",
+					id,
+					"error",
+					err,
 				)
 
 				continue
@@ -216,7 +220,7 @@ func cleanup(photos map[string]unsplash.Photo) {
 // Photos caches all Unsplash images in the default collection locally.
 // It also cleans up images that were deleted from the collection.
 func Photos() {
-	l := utils.Logger()
+	l := utils.L()
 
 	l.Infow("Pre-caching all images in default collection",
 		"tag", "pre_caching_start",

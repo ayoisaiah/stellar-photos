@@ -76,7 +76,7 @@ func getEnv(key, defaultVal string) string {
 	}
 
 	if defaultVal == "" {
-		utils.Logger().
+		utils.L().
 			Fatalw(fmt.Sprintf("%s has not been set in your ENV", key), "tag", "env_not_set", "key")
 	}
 

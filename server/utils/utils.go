@@ -134,7 +134,7 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 // base64 string is retrieved from the cache first or the network if
 // not found in the cache.
 func GetImageBase64(endpoint, filename, id string) (string, error) {
-	l := Logger()
+	l := L()
 
 	filePath := filepath.Join("cached_images", id, filename) + ".txt"
 
