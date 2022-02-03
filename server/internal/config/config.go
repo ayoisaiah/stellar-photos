@@ -93,7 +93,7 @@ func getEnv(key, defaultVal string) string {
 		return value
 	}
 
-	if defaultVal == "" {
+	if defaultVal == "" && os.Getenv("GO_ENV") != "testing" {
 		log.Fatal(fmt.Sprintf("%s has not been set in your ENV", key))
 	}
 

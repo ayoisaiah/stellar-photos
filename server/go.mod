@@ -1,4 +1,4 @@
-module github.com/ayoisaiah/stellar-photos-server
+module github.com/ayoisaiah/stellar-photos
 
 go 1.17
 

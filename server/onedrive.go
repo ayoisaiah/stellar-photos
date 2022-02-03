@@ -1,4 +1,4 @@
-package onedrive
+package stellar
 
 import (
 	"encoding/json"
@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
 // Onedrive Application ID.
-type onedriveID struct {
+type onedrive struct {
 	ID string `json:"id"`
 }
 
@@ -25,10 +24,10 @@ type onedriveAuth struct {
 }
 
 // SendOnedriveID sends the application id to the client on request.
-func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
-	id := config.Get().Onedrive.AppID
+func (a *App) SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
+	id := a.Config.Onedrive.AppID
 
-	d := onedriveID{
+	d := onedrive{
 		ID: id,
 	}
 
@@ -42,7 +41,7 @@ func SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
 
 // AuthorizeOnedrive redeems the authorization code received from the client for
 // an access token.
-func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
+func (a *App) AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -53,15 +52,15 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 		return errors.New("authorization code not specified")
 	}
 
-	id := config.Get().Onedrive.AppID
-	secret := config.Get().Onedrive.Secret
+	id := a.Config.Onedrive.AppID
+	secret := a.Config.Onedrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  strings.TrimSuffix(config.Get().RedirectURL, "/"),
+		"redirect_uri":  strings.TrimSuffix(a.Config.RedirectURL, "/"),
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
@@ -76,7 +75,10 @@ func AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 
 // RefreshOnedriveToken generates additional access tokens after the initial
 // token has expired.
-func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
+func (a *App) RefreshOnedriveToken(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -87,15 +89,15 @@ func RefreshOnedriveToken(w http.ResponseWriter, r *http.Request) error {
 		return errors.New("refresh token not specified")
 	}
 
-	id := config.Get().Onedrive.AppID
-	secret := config.Get().Onedrive.Secret
+	id := a.Config.Onedrive.AppID
+	secret := a.Config.Onedrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "refresh_token",
 		"client_id":     id,
 		"client_secret": secret,
 		"refresh_token": refreshToken,
-		"redirect_uri":  strings.TrimSuffix(config.Get().RedirectURL, "/"),
+		"redirect_uri":  strings.TrimSuffix(a.Config.RedirectURL, "/"),
 	}
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"

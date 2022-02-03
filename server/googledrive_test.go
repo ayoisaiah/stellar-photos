@@ -1,4 +1,4 @@
-package googledrive
+package stellar
 
 import (
 	"bytes"
@@ -11,20 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
-	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
+	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
 )
-
-func init() {
-	utils.Client = &mocks.MockClient{}
-	driveConfig := config.GoogleDriveConfig{
-		Key: "sample_key",
-	}
-	config.Conf = &config.Config{
-		GoogleDrive: driveConfig,
-	}
-}
 
 func TestSendGoogleDriveKey(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, "/googledrive/key", http.NoBody)
@@ -34,19 +22,19 @@ func TestSendGoogleDriveKey(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = SendGoogleDriveKey(rr, req)
+	err = testApp.SendGoogleDriveKey(rr, req)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
 
-	o := &key{}
+	o := &googleDrive{}
 
 	err = json.NewDecoder(rr.Body).Decode(o)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
 
-	if o.GoogleDriveKey == "" {
+	if o.Key == "" {
 		t.Errorf(
 			"Expected GoogleDriveKey to have string value, got empty string",
 		)
@@ -56,7 +44,7 @@ func TestSendGoogleDriveKey(t *testing.T) {
 func TestAuthorizeGoogleDrive(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
 		body, err := os.ReadFile(
-			"../testdata/googledrive_auth_response.json",
+			"testdata/googledrive_auth_response.json",
 		)
 		if err != nil {
 			return nil, err
@@ -80,7 +68,7 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = AuthorizeGoogleDrive(rr, req)
+	err = testApp.AuthorizeGoogleDrive(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -103,7 +91,7 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 func TestRefreshGoogleDriveToken(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
 		body, err := os.ReadFile(
-			"../testdata/googledrive_auth_response.json",
+			"testdata/googledrive_auth_response.json",
 		)
 		if err != nil {
 			return nil, err
@@ -127,7 +115,7 @@ func TestRefreshGoogleDriveToken(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = RefreshGoogleDriveToken(rr, req)
+	err = testApp.RefreshGoogleDriveToken(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -158,12 +146,12 @@ func TestSaveToGoogleDrive(t *testing.T) {
 		if strings.Contains(req.URL.Path, "download") {
 			return mocks.MockTrackPhotoDownload("sample_download_response")
 		} else if strings.Contains(req.URL.Host, "images.unsplash.com") {
-			body, err = os.ReadFile("../testdata/random_image.jpg")
+			body, err = os.ReadFile("testdata/random_image.jpg")
 			if err != nil {
 				return nil, err
 			}
 		} else if req.URL.Path == "/upload/drive/v3/files" {
-			body, err = os.ReadFile("../testdata/googledrive_save_response.json")
+			body, err = os.ReadFile("testdata/googledrive_save_response.json")
 			if err != nil {
 				return nil, err
 			}
@@ -194,7 +182,7 @@ func TestSaveToGoogleDrive(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = SaveToGoogleDrive(rr, req)
+	err = testApp.SaveToGoogleDrive(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

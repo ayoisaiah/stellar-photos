@@ -1,4 +1,4 @@
-package dropbox
+package stellar
 
 import (
 	"bytes"
@@ -12,20 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
-	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
+	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
 )
-
-func init() {
-	utils.Client = &mocks.MockClient{}
-	dropboxKey := config.DropboxConfig{
-		Key: "sample_key",
-	}
-	config.Conf = &config.Config{
-		Dropbox: dropboxKey,
-	}
-}
 
 func TestGetDropboxKey(t *testing.T) {
 	req, err := http.NewRequest("GET", "/dropbox/key/", http.NoBody)
@@ -35,19 +24,19 @@ func TestGetDropboxKey(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = SendDropboxKey(rr, req)
+	err = testApp.SendDropboxKey(rr, req)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
 
-	key := &key{}
+	d := &dropbox{}
 
-	err = json.NewDecoder(rr.Body).Decode(key)
+	err = json.NewDecoder(rr.Body).Decode(d)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
 
-	if key.DropboxKey == "" {
+	if d.Key == "" {
 		t.Errorf("Expected string value, got empty string")
 	}
 }
@@ -78,12 +67,12 @@ func TestSaveToDropbox(t *testing.T) {
 				if strings.Contains(req.URL.Path, "download") {
 					return mocks.MockTrackPhotoDownload(value.unsplashResponse)
 				} else if req.URL.Path == "/2/files/save_url" {
-					body, err = os.ReadFile("../testdata/dropbox_job_id_response.json")
+					body, err = os.ReadFile("testdata/dropbox_job_id_response.json")
 					if err != nil {
 						return nil, err
 					}
 				} else if req.URL.Path == "/2/files/save_url/check_job_status" {
-					body, err = os.ReadFile("../testdata/dropbox_complete_response.json")
+					body, err = os.ReadFile("testdata/dropbox_complete_response.json")
 					if err != nil {
 						return nil, err
 					}
@@ -110,9 +99,9 @@ func TestSaveToDropbox(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = SaveToDropbox(rr, req)
+			err = testApp.SaveToDropbox(rr, req)
 			if err == nil {
-				if value.statusCode > 300 {
+				if value.statusCode != http.StatusOK {
 					t.Fatalf("Expected error for '%s', but got none", value.id)
 				}
 

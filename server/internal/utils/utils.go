@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/ayoisaiah/stellar-photos/internal/logger"
 )
 
 type contextKey string
@@ -120,8 +122,11 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 // GetImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
 // not found in the cache.
-func GetImageBase64(ctx context.Context, endpoint, filename, id string) (string, error) {
-	l := L()
+func GetImageBase64(
+	ctx context.Context,
+	endpoint, filename, id string,
+) (string, error) {
+	l := logger.L()
 
 	reqIDRaw := ctx.Value(ContextKeyRequestID)
 

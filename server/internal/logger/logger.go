@@ -1,4 +1,4 @@
-package utils
+package logger
 
 import (
 	"context"
@@ -13,14 +13,56 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
+	"github.com/ayoisaiah/stellar-photos/internal/config"
 )
 
 var once sync.Once
 
 var logger *zap.Logger
 
-func notifyTelegram(msg string) error {
+const (
+	defaultTimeoutInSeconds = 10
+)
+
+type MyCore struct {
+	zapcore.Core
+}
+
+// nolint:gocritic
+func (c *MyCore) Check(
+	entry zapcore.Entry,
+	checked *zapcore.CheckedEntry,
+) *zapcore.CheckedEntry {
+	if c.Enabled(entry.Level) {
+		return checked.AddCore(entry, c)
+	}
+
+	return checked
+}
+
+// nolint:gocritic
+func (c *MyCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	if entry.Level >= zapcore.WarnLevel {
+		enc := zapcore.NewMapObjectEncoder()
+		for _, f := range fields {
+			f.AddTo(enc)
+		}
+
+		var str string
+
+		for k, v := range enc.Fields {
+			str += fmt.Sprintf("%s 👉 %v\n", k, v)
+		}
+
+		_ = notifyTelegram(
+			entry.Message, str,
+		)
+	}
+
+	return c.Core.Write(entry, fields)
+}
+
+func notifyTelegram(title, msg string) error {
 	telegramService, err := telegram.New(config.Get().Telegram.Token)
 	if err != nil {
 		return err
@@ -37,11 +79,14 @@ func notifyTelegram(msg string) error {
 
 	notifier.UseServices(telegramService)
 
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeoutInSeconds*time.Second)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		defaultTimeoutInSeconds*time.Second,
+	)
 
 	defer cancel()
 
-	return notifier.Send(ctx, "", msg)
+	return notifier.Send(ctx, title, msg)
 }
 
 // L initializes a zap logger once and returns it.
@@ -72,15 +117,7 @@ func L() *zap.SugaredLogger {
 			atom,
 		)
 
-		logger = zap.New(core).WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-			if entry.Level < zapcore.WarnLevel {
-				return nil
-			}
-
-			_ = notifyTelegram(fmt.Sprintf("[Stellar Photos]: %s", entry.Message))
-
-			return nil
-		}))
+		logger = zap.New(&MyCore{Core: core})
 	})
 
 	return logger.Sugar()

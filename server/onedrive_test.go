@@ -1,4 +1,4 @@
-package onedrive
+package stellar
 
 import (
 	"bytes"
@@ -10,20 +10,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
-	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
+	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
 )
-
-func init() {
-	utils.Client = &mocks.MockClient{}
-	onedriveConfig := config.OnedriveConfig{
-		AppID: "sample_id",
-	}
-	config.Conf = &config.Config{
-		Onedrive: onedriveConfig,
-	}
-}
 
 func TestSendOnedriveID(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, "/onedrive/id/", http.NoBody)
@@ -33,12 +21,12 @@ func TestSendOnedriveID(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = SendOnedriveID(rr, req)
+	err = testApp.SendOnedriveID(rr, req)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
 
-	o := &onedriveID{}
+	o := &onedrive{}
 
 	err = json.NewDecoder(rr.Body).Decode(o)
 	if err != nil {
@@ -52,7 +40,7 @@ func TestSendOnedriveID(t *testing.T) {
 
 func TestAuthorizeOnedrive(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := os.ReadFile("../testdata/onedrive_auth_response.json")
+		body, err := os.ReadFile("testdata/onedrive_auth_response.json")
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +63,7 @@ func TestAuthorizeOnedrive(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = AuthorizeOnedrive(rr, req)
+	err = testApp.AuthorizeOnedrive(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -97,7 +85,7 @@ func TestAuthorizeOnedrive(t *testing.T) {
 
 func TestRefreshOnedriveToken(t *testing.T) {
 	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
-		body, err := os.ReadFile("../testdata/onedrive_auth_response.json")
+		body, err := os.ReadFile("testdata/onedrive_auth_response.json")
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +108,7 @@ func TestRefreshOnedriveToken(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = RefreshOnedriveToken(rr, req)
+	err = testApp.RefreshOnedriveToken(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

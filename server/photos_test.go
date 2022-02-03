@@ -1,4 +1,4 @@
-package unsplash
+package stellar
 
 import (
 	"bytes"
@@ -12,15 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ayoisaiah/stellar-photos-server/utils"
-	"github.com/ayoisaiah/stellar-photos-server/utils/mocks"
+	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
 )
-
-func init() {
-	utils.Client = &mocks.MockClient{}
-
-	os.Setenv("LOG_LEVEL", "5")
-}
 
 func TestDownloadPhoto(t *testing.T) {
 	imageIds := []struct {
@@ -47,7 +41,7 @@ func TestDownloadPhoto(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			err = DownloadPhoto(rr, req)
+			err = testApp.DownloadPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
 					t.Fatalf(
@@ -91,7 +85,7 @@ func TestSearchUnsplash(t *testing.T) {
 		t.Run(value.input, func(t *testing.T) {
 			mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
 				jsonObj, err := os.ReadFile(
-					fmt.Sprintf("../testdata/%s.json", value.jsonFile),
+					fmt.Sprintf("testdata/%s.json", value.jsonFile),
 				)
 				if err != nil {
 					return nil, err
@@ -111,7 +105,8 @@ func TestSearchUnsplash(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = SearchUnsplash(rr, req)
+
+			err = testApp.SearchUnsplash(rr, req)
 			if err != nil {
 				var clientError utils.ClientError
 
@@ -138,7 +133,7 @@ func TestSearchUnsplash(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			s := &searchResult{}
+			s := &unsplashSearchResult{}
 			err = json.Unmarshal(body, s)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -173,7 +168,7 @@ func TestGetRandomPhoto(t *testing.T) {
 				var err error
 				if strings.Contains(req.URL.Path, "/photos/random") {
 					body, err = os.ReadFile(
-						fmt.Sprintf("../testdata/%s.json", value.jsonFile),
+						fmt.Sprintf("testdata/%s.json", value.jsonFile),
 					)
 					if err != nil {
 						return nil, err
@@ -181,7 +176,7 @@ func TestGetRandomPhoto(t *testing.T) {
 				}
 
 				if strings.Contains(req.URL.Path, ".jpg") {
-					body, err = os.ReadFile("../testdata/random_image.jpg")
+					body, err = os.ReadFile("testdata/random_image.jpg")
 					if err != nil {
 						return nil, err
 					}
@@ -202,7 +197,7 @@ func TestGetRandomPhoto(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = GetRandomPhoto(rr, req)
+			err = testApp.GetRandomPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
 					t.Fatalf(
@@ -281,7 +276,7 @@ func TestValidateCollections(t *testing.T) {
 
 				file := m[id].jsonFile
 				jsonObj, err := os.ReadFile(
-					fmt.Sprintf("../testdata/%s.json", file),
+					fmt.Sprintf("testdata/%s.json", file),
 				)
 				if err != nil {
 					return nil, err
@@ -305,7 +300,7 @@ func TestValidateCollections(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = ValidateCollections(rr, req)
+			err = testApp.ValidateCollections(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
 					t.Fatalf(

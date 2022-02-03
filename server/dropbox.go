@@ -1,4 +1,4 @@
-package dropbox
+package stellar
 
 import (
 	"bytes"
@@ -7,14 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/unsplash"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
 // Dropbox application key.
-type key struct {
-	DropboxKey string `json:"dropbox_key"`
+type dropbox struct {
+	Key string `json:"dropbox_key"`
 }
 
 type SaveURLResponse struct {
@@ -24,11 +22,11 @@ type SaveURLResponse struct {
 
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code.
-func SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
-	dropboxKey := config.Get().Dropbox.Key
+func (a *App) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
+	dropboxKey := a.Config.Dropbox.Key
 
-	d := key{
-		DropboxKey: dropboxKey,
+	d := dropbox{
+		Key: dropboxKey,
 	}
 
 	bs, err := json.Marshal(d)
@@ -93,7 +91,7 @@ func checkJobStatus(jobID, token string) error {
 }
 
 // SaveToDropbox saves the requested photo to the current user's Dropbox account.
-func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
+func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -103,7 +101,7 @@ func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	_, err = unsplash.TrackPhotoDownload(id)
+	_, err = a.TrackPhotoDownload(id)
 	if err != nil {
 		return err
 	}

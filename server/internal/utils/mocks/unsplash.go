@@ -14,7 +14,7 @@ type download struct {
 }
 
 func MockTrackPhotoDownload(file string) (*http.Response, error) {
-	jsonObj, err := os.ReadFile(fmt.Sprintf("../testdata/%s.json", file))
+	jsonObj, err := os.ReadFile(fmt.Sprintf("testdata/%s.json", file))
 	if err != nil {
 		return nil, err
 	}

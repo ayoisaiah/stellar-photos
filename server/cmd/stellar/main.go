@@ -15,13 +15,10 @@ import (
 	"github.com/rs/cors"
 	"github.com/rs/xid"
 
-	"github.com/ayoisaiah/stellar-photos-server/cache"
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/dropbox"
-	"github.com/ayoisaiah/stellar-photos-server/googledrive"
-	"github.com/ayoisaiah/stellar-photos-server/onedrive"
-	"github.com/ayoisaiah/stellar-photos-server/unsplash"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/ayoisaiah/stellar-photos"
+	"github.com/ayoisaiah/stellar-photos/internal/cache"
+	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
 type loggingResponseWriter struct {
@@ -29,7 +26,7 @@ type loggingResponseWriter struct {
 	statusCode int
 }
 
-func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
+func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 	return &loggingResponseWriter{w, http.StatusOK}
 }
 
@@ -52,7 +49,7 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			utils.L().Fatalw("Could not recover from panic",
+			logger.L().Fatalw("Could not recover from panic",
 				"tag", "recover_from_panic_error",
 				"error", err,
 				"stack_trace", string(debug.Stack()),
@@ -74,7 +71,7 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusRequestTimeout
 		}
 
-		utils.L().Errorw("Unexpected error from HTTP handler",
+		logger.L().Errorw("Unexpected error from HTTP handler",
 			"tag", "http_handler_error",
 			"error", err,
 			"status_code", status,
@@ -98,7 +95,7 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(body)
 	if err != nil {
-		utils.L().
+		logger.L().
 			Errorw("Unexpected error while writing error response",
 				"tag", "http_write_body_error",
 				"error", err,
@@ -119,11 +116,11 @@ func requestLogger(mux http.Handler) http.Handler {
 
 		r = r.WithContext(ctx)
 
-		lrw := NewLoggingResponseWriter(w)
+		lrw := newLoggingResponseWriter(w)
 
 		mux.ServeHTTP(lrw, r)
 
-		utils.L().Infow("Incoming request",
+		logger.L().Infow("Incoming request",
 			"tag", "incoming_request",
 			"method", r.Method,
 			"uri", r.RequestURI,
@@ -137,31 +134,31 @@ func requestLogger(mux http.Handler) http.Handler {
 }
 
 // newRouter creates and returns a new HTTP request multiplexer.
-func newRouter() http.Handler {
+func newRouter(app *stellar.App) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("/download-photo/", rootHandler(unsplash.DownloadPhoto))
-	mux.Handle("/search-unsplash/", rootHandler(unsplash.SearchUnsplash))
-	mux.Handle("/random-photo/", rootHandler(unsplash.GetRandomPhoto))
+	mux.Handle("/download-photo/", rootHandler(app.DownloadPhoto))
+	mux.Handle("/search-unsplash/", rootHandler(app.SearchUnsplash))
+	mux.Handle("/random-photo/", rootHandler(app.GetRandomPhoto))
 	mux.Handle(
 		"/validate-collections/",
-		rootHandler(unsplash.ValidateCollections),
+		rootHandler(app.ValidateCollections),
 	)
-	mux.Handle("/dropbox/key/", rootHandler(dropbox.SendDropboxKey))
-	mux.Handle("/dropbox/save/", rootHandler(dropbox.SaveToDropbox))
-	mux.Handle("/onedrive/id/", rootHandler(onedrive.SendOnedriveID))
-	mux.Handle("/onedrive/auth/", rootHandler(onedrive.AuthorizeOnedrive))
-	mux.Handle("/onedrive/refresh/", rootHandler(onedrive.RefreshOnedriveToken))
-	mux.Handle("/googledrive/key/", rootHandler(googledrive.SendGoogleDriveKey))
+	mux.Handle("/dropbox/key/", rootHandler(app.SendDropboxKey))
+	mux.Handle("/dropbox/save/", rootHandler(app.SaveToDropbox))
+	mux.Handle("/onedrive/id/", rootHandler(app.SendOnedriveID))
+	mux.Handle("/onedrive/auth/", rootHandler(app.AuthorizeOnedrive))
+	mux.Handle("/onedrive/refresh/", rootHandler(app.RefreshOnedriveToken))
+	mux.Handle("/googledrive/key/", rootHandler(app.SendGoogleDriveKey))
 	mux.Handle(
 		"/googledrive/auth/",
-		rootHandler(googledrive.AuthorizeGoogleDrive),
+		rootHandler(app.AuthorizeGoogleDrive),
 	)
 	mux.Handle(
 		"/googledrive/refresh/",
-		rootHandler(googledrive.RefreshGoogleDriveToken),
+		rootHandler(app.RefreshGoogleDriveToken),
 	)
-	mux.Handle("/googledrive/save/", rootHandler(googledrive.SaveToGoogleDrive))
+	mux.Handle("/googledrive/save/", rootHandler(app.SaveToGoogleDrive))
 
 	return requestLogger(mux)
 }
@@ -172,13 +169,11 @@ func run() error {
 		return err
 	}
 
-	// Initialising the config package will crash the program if one of
-	// the required Env values is not set
-	conf := config.Get()
+	app := stellar.NewApp()
 
-	port := ":" + conf.Port
+	port := ":" + app.Config.Port
 
-	mux := newRouter()
+	mux := newRouter(app)
 
 	handler := cors.Default().Handler(mux)
 
@@ -188,7 +183,7 @@ func run() error {
 	}
 
 	go func() {
-		// cache.Photos()
+		cache.Photos()
 
 		c := cron.New()
 
@@ -196,7 +191,7 @@ func run() error {
 			cache.Photos()
 		})
 		if err != nil {
-			utils.L().Infow("Unable to schedule cron job",
+			app.L.Infow("Unable to schedule cron job",
 				"tag", "cron_schedule_error",
 				"error", err,
 			)
@@ -205,7 +200,7 @@ func run() error {
 		c.Start()
 	}()
 
-	utils.L().Infow(fmt.Sprintf("Server is listening on port: %s", conf.Port),
+	app.L.Infow(fmt.Sprintf("Server is listening on port: %s", app.Config.Port),
 		"tag", "start_server",
 	)
 

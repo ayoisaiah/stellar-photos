@@ -1,4 +1,4 @@
-package unsplash
+package stellar
 
 import (
 	"encoding/json"
@@ -7,27 +7,26 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ayoisaiah/stellar-photos-server/config"
-	"github.com/ayoisaiah/stellar-photos-server/utils"
+	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
-// APIBaseURL represents the base URL for requests to Unsplash's API.
-const APIBaseURL = "https://api.unsplash.com"
+// UnsplashAPIBaseURL represents the base URL for requests to Unsplash's API.
+const UnsplashAPIBaseURL = "https://api.unsplash.com"
 
 // download represents the result from triggering a download on a photo.
 type download struct {
 	URL string `json:"url,omitempty"`
 }
 
-// searchResult represents the result for a search for photos.
-type searchResult struct {
+// unsplashSearchResult represents the result for a search for photos.
+type unsplashSearchResult struct {
 	Total      int           `json:"total,omitempty"`
 	TotalPages int           `json:"total_pages,omitempty"`
 	Results    []interface{} `json:"results,omitempty"`
 }
 
-// Collection respresents a single Unsplash collection.
-type Collection struct {
+// UnsplashCollection respresents a single Unsplash collection.
+type UnsplashCollection struct {
 	ID              string `json:"id"`
 	Title           string `json:"title"`
 	Description     string `json:"description"`
@@ -52,8 +51,8 @@ type Collection struct {
 	} `json:"meta"`
 }
 
-// Photo represents a single photo on Unsplash.
-type Photo struct {
+// UnsplashPhoto represents a single photo on Unsplash.
+type UnsplashPhoto struct {
 	ID             string `json:"id"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
@@ -135,14 +134,14 @@ type Photo struct {
 	Downloads int `json:"downloads"`
 }
 
-// photoWithBase64 respresents the base64 encoding of an Unsplash Photo.
-type photoWithBase64 struct {
-	*Photo
+// unsplashPhotoWithBase64 respresents the base64 encoding of an Unsplash Photo.
+type unsplashPhotoWithBase64 struct {
+	*UnsplashPhoto
 	Base64 string `json:"base64,omitempty"`
 }
 
 // DownloadPhoto is triggered each time a download is attempted.
-func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
+func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -157,7 +156,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 		)
 	}
 
-	_, err = TrackPhotoDownload(id)
+	_, err = a.TrackPhotoDownload(id)
 	if err != nil {
 		return err
 	}
@@ -169,11 +168,11 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 // TrackPhotoDownload is used to increment the number of downloads
 // for the specified photo.
-func TrackPhotoDownload(id string) ([]byte, error) {
-	unsplashAccessKey := config.Get().Unsplash.AccessKey
+func (a *App) TrackPhotoDownload(id string) ([]byte, error) {
+	unsplashAccessKey := a.Config.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/%s/download?client_id=%s",
-		APIBaseURL,
+		UnsplashAPIBaseURL,
 		id,
 		unsplashAccessKey,
 	)
@@ -183,7 +182,7 @@ func TrackPhotoDownload(id string) ([]byte, error) {
 
 // SearchUnsplash triggers a photo search and sends a single page of photo
 // results for a query.
-func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
+func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -192,17 +191,17 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	key := values.Get("key")
 	page := values.Get("page")
 
-	unsplashAccessKey := config.Get().Unsplash.AccessKey
+	unsplashAccessKey := a.Config.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s",
-		APIBaseURL,
+		UnsplashAPIBaseURL,
 		page,
 		key,
 		"28",
 		unsplashAccessKey,
 	)
 
-	s := &searchResult{}
+	s := &unsplashSearchResult{}
 
 	bs, err := utils.SendGETRequest(url, s)
 	if err != nil {
@@ -216,7 +215,7 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 // IDs to narrow the pool of photos from which a random one will be chosen.
 // If no collection IDs are present, it defaults to 998309 which is the ID of
 // the official Stellar Photos collection.
-func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
+func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -229,15 +228,15 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	resolution := values.Get("resolution")
 
-	unsplashAccessKey := config.Get().Unsplash.AccessKey
+	unsplashAccessKey := a.Config.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/random?collections=%s&client_id=%s",
-		APIBaseURL,
+		UnsplashAPIBaseURL,
 		collections,
 		unsplashAccessKey,
 	)
 
-	res := &Photo{}
+	res := &UnsplashPhoto{}
 
 	_, err = utils.SendGETRequest(url, res)
 	if err != nil {
@@ -260,12 +259,17 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	imageURL := res.Urls.Raw + "&w=" + imageWidth
 
-	base64, err := utils.GetImageBase64(r.Context(), imageURL, imageWidth, res.ID)
+	base64, err := utils.GetImageBase64(
+		r.Context(),
+		imageURL,
+		imageWidth,
+		res.ID,
+	)
 	if err != nil {
 		return err
 	}
 
-	data := photoWithBase64{
+	data := unsplashPhotoWithBase64{
 		res,
 		base64,
 	}
@@ -280,7 +284,10 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 // ValidateCollections ensures that all the custom collection IDs that are added
 // to the extension are valid.
-func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
+func (a *App) ValidateCollections(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -296,17 +303,17 @@ func ValidateCollections(w http.ResponseWriter, r *http.Request) error {
 		)
 	}
 
-	unsplashAccessKey := config.Get().Unsplash.AccessKey
+	unsplashAccessKey := a.Config.Unsplash.AccessKey
 
 	for _, value := range collections {
 		url := fmt.Sprintf(
 			"%s/collections/%s/?client_id=%s",
-			APIBaseURL,
+			UnsplashAPIBaseURL,
 			value,
 			unsplashAccessKey,
 		)
 
-		_, err = utils.SendGETRequest(url, &Collection{})
+		_, err = utils.SendGETRequest(url, &UnsplashCollection{})
 		if err != nil {
 			return err
 		}
