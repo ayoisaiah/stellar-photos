@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"time"
 
 	"github.com/joho/godotenv"
 	cron "github.com/robfig/cron/v3"
@@ -71,8 +72,25 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func requestLogger(mux http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		mux.ServeHTTP(w, r)
+
+		utils.Logger().Infow("Incoming request",
+			"tag", "incoming_request",
+			"method", r.Method,
+			"uri", r.RequestURI,
+			"user_agent", r.UserAgent(),
+			"timestamp", start.Format(time.RFC3339),
+			"time_taken_ms", time.Since(start).Milliseconds(),
+		)
+	})
+}
+
 // newRouter creates and returns a new HTTP request multiplexer.
-func newRouter() *http.ServeMux {
+func newRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("/download-photo/", rootHandler(unsplash.DownloadPhoto))
@@ -98,7 +116,7 @@ func newRouter() *http.ServeMux {
 	)
 	mux.Handle("/googledrive/save/", rootHandler(googledrive.SaveToGoogleDrive))
 
-	return mux
+	return requestLogger(mux)
 }
 
 func run() error {
