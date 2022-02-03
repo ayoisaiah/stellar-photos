@@ -19,6 +19,7 @@ const (
 	highRes     = 4000
 )
 
+// getCollection retrieves the stellar photos Unsplash collection
 func getCollection() (unsplash.Collection, error) {
 	unsplashAccessKey := config.Conf.Unsplash.AccessKey
 
@@ -39,6 +40,8 @@ func getCollection() (unsplash.Collection, error) {
 	return c, nil
 }
 
+// retrieveAllPhotos fetches all the images in the stellar photos Unslashcollection
+// collection
 func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 	collection, err := getCollection()
 	if err != nil {
@@ -90,15 +93,17 @@ func retrieveAllPhotos() (map[string]unsplash.Photo, error) {
 	return m, nil
 }
 
-func downloadPhotos(photos map[string]unsplash.Photo) []error {
-	var errs []error
+// downloadPhotos caches various resolutions of the Unsplash images in a local
+// directory
+func downloadPhotos(photos map[string]unsplash.Photo) map[string]error {
+	errs := make(map[string]error)
 
 	for k := range photos {
 		v := photos[k]
 
 		err := os.MkdirAll(filepath.Join("cached_images", k), os.ModePerm)
 		if err != nil {
-			errs = append(errs, err)
+			errs[k] = err
 			continue
 		}
 
@@ -126,13 +131,13 @@ func downloadPhotos(photos map[string]unsplash.Photo) []error {
 
 			base64, err = utils.GetImageBase64(imageURL, fileName, k)
 			if err != nil {
-				errs = append(errs, err)
+				errs[k] = err
 				continue
 			}
 
 			err = os.WriteFile(filePath, []byte(base64), os.ModePerm)
 			if err != nil {
-				errs = append(errs, err)
+				errs[k] = err
 				continue
 			}
 		}
@@ -148,13 +153,13 @@ func downloadPhotos(photos map[string]unsplash.Photo) []error {
 
 		b, err := json.Marshal(v)
 		if err != nil {
-			errs = append(errs, err)
+			errs[k] = err
 			continue
 		}
 
 		err = os.WriteFile(filePath, b, os.ModePerm)
 		if err != nil {
-			errs = append(errs, err)
+			errs[k] = err
 			continue
 		}
 	}
@@ -162,10 +167,14 @@ func downloadPhotos(photos map[string]unsplash.Photo) []error {
 	return errs
 }
 
+// cleanup deletes any locally cached image that is no longer present
+// in the default collection
 func cleanup(photos map[string]unsplash.Photo) {
+	l := utils.Logger()
+
 	files, err := os.ReadDir("cached_images")
 	if err != nil {
-		utils.Logger().Errorw("Unable to read cached_images directory",
+		l.Errorw("Unable to read cached_images directory",
 			"tag", "read_cached_images_dir_failure",
 			"error", err,
 		)
@@ -185,22 +194,21 @@ func cleanup(photos map[string]unsplash.Photo) {
 		if _, ok := photos[id]; !ok {
 			err := os.RemoveAll(filepath.Join("cached_images", id))
 			if err != nil {
-				utils.Logger().
-					Warnw("Unable to clean deleted photo from cached_images directory",
-						"tag", "cache_clean_failure",
-						"image_id", id,
-						"error", err,
-					)
+				l.Warnw("Unable to clean deleted photo from cached_images directory",
+					"tag", "cache_clean_failure",
+					"image_id", id,
+					"error", err,
+				)
 
 				continue
 			}
 
 			cleaned[id] = true
 
-			utils.Logger().
-				Infow("Photo cleaned from cached_images directory successfully",
-					"image_id", id,
-				)
+			l.Infow("Cleaned image from cached_images directory successfully",
+				"tag", "cache_clean_success",
+				"image_id", id,
+			)
 		}
 	}
 }
@@ -228,7 +236,7 @@ func Photos() {
 	if len(errs) != 0 {
 		l.Errorw("Some downloads failed to complete",
 			"tag", "download_photos_cache_failure",
-			"error", errs,
+			"errors", errs,
 		)
 
 		return
