@@ -19,7 +19,7 @@ import (
 type contextKey string
 
 const (
-	defaultTimeoutInSeconds            = 10
+	defaultTimeoutInSeconds            = 60
 	ContextKeyRequestID     contextKey = "requestID"
 )
 
