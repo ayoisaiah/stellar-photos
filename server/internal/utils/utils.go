@@ -163,7 +163,11 @@ func GetImageBase64(
 
 	base64Str, err = imageURLToBase64(endpoint)
 	if err != nil {
-		return base64Str, err
+		return base64Str, fmt.Errorf(
+			"unable to encode image at url '%s' as base64: %w",
+			endpoint,
+			err,
+		)
 	}
 
 	l.Infow("Retrieved Unsplash image from the network",
