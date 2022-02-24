@@ -1,13 +1,16 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -35,6 +38,34 @@ func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.statusCode = code
 	lrw.ResponseWriter.WriteHeader(code)
+}
+
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func gzipCompression(fn http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			fn.ServeHTTP(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Encoding", "gzip")
+
+		gz := gzip.NewWriter(w)
+
+		defer gz.Close()
+
+		gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+
+		fn.ServeHTTP(gzr, r)
+	})
 }
 
 type rootHandler func(w http.ResponseWriter, r *http.Request) error
@@ -146,7 +177,10 @@ func newRouter(app *stellar.App) http.Handler {
 
 	mux.Handle("/download-photo/", rootHandler(app.DownloadPhoto))
 	mux.Handle("/search-unsplash/", rootHandler(app.SearchUnsplash))
-	mux.Handle("/random-photo/", rootHandler(app.GetRandomPhoto))
+	mux.Handle(
+		"/random-photo/",
+		gzipCompression(rootHandler(app.GetRandomPhoto)),
+	)
 	mux.Handle(
 		"/validate-collections/",
 		rootHandler(app.ValidateCollections),
