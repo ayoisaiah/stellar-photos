@@ -205,10 +205,9 @@ func newRouter(app *stellar.App) http.Handler {
 }
 
 func run() error {
-	err := godotenv.Load()
-	if err != nil {
-		return err
-	}
+	// Ignore error if `.env` file is not found since env variables
+	// may be injected in some other way
+	_ = godotenv.Load()
 
 	app := stellar.NewApp()
 
@@ -233,7 +232,7 @@ func run() error {
 
 		c := cron.New()
 
-		_, err = c.AddFunc("@daily", func() {
+		_, err := c.AddFunc("@daily", func() {
 			cache.Photos()
 		})
 		if err != nil {
