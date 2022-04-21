@@ -1,30 +1,28 @@
-FROM golang:alpine AS multistage
-# Set necessary environmental variables needed for the image
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+FROM golang:1.18-alpine AS builder
 
 # Move to working directory /build
 WORKDIR /build
 
 # Copy and download dependency using go mod
-COPY go.mod .
-COPY go.sum .
+COPY go.mod go.sum ./
+
 RUN go mod download
 
 # Copy the code into the container
-COPY . .
+COPY . ./
 
 # Build the application
-RUN go build -o stellar-photos-server .
+RUN go build -o stellar ./cmd/stellar...
 
 FROM alpine:latest AS stellar-prod
-# Copy from binary multistage image
-COPY --from=multistage /build/stellar-photos-server /go/bin
 
-# Export necessary port
+WORKDIR /app
+
+# Copy binary from builder image
+COPY --from=builder /build/stellar ./
+
+# Export the necessary port
 EXPOSE 8080
 
 # Command to run when starting the container
-CMD ["/go/bin/stellar-photos-server"]
+CMD ["/app/stellar"]
