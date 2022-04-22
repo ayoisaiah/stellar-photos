@@ -32,4 +32,6 @@ func TestMain(m *testing.M) {
 	testApp.Config.Onedrive = config.OnedriveConfig{
 		AppID: "sample_id",
 	}
+
+	os.Exit(m.Run())
 }
