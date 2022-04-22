@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/ayoisaiah/stellar-photos"
 	"github.com/ayoisaiah/stellar-photos/internal/config"
 	"github.com/ayoisaiah/stellar-photos/internal/logger"
@@ -97,7 +99,10 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 
 // downloadPhotos caches various resolutions of the Unsplash images in a local
 // directory.
-func downloadPhotos(photos map[string]stellar.UnsplashPhoto) map[string]error {
+func downloadPhotos(
+	photos map[string]stellar.UnsplashPhoto,
+	l *zap.SugaredLogger,
+) map[string]error {
 	errs := make(map[string]error)
 
 	for k := range photos {
@@ -137,7 +142,7 @@ func downloadPhotos(photos map[string]stellar.UnsplashPhoto) map[string]error {
 				"cache",
 			)
 
-			base64, err = utils.GetImageBase64(ctx, imageURL, fileName, k)
+			base64, err = utils.GetImageBase64(ctx, imageURL, fileName, k, l)
 			if err != nil {
 				errs[k] = err
 				continue
@@ -227,9 +232,7 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 
 // Photos caches all Unsplash images in the default collection locally.
 // It also cleans up images that were deleted from the collection.
-func Photos() {
-	l := logger.L()
-
+func Photos(l *zap.SugaredLogger) {
 	l.Infow("Pre-caching all images in default collection",
 		"tag", "pre_caching_start",
 	)
@@ -244,7 +247,7 @@ func Photos() {
 		return
 	}
 
-	errs := downloadPhotos(photos)
+	errs := downloadPhotos(photos, l)
 	if len(errs) != 0 {
 		l.Warnw("Some downloads failed to complete",
 			"tag", "download_photos_cache_failure",

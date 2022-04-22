@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"go.uber.org/zap"
 )
 
 type contextKey string
@@ -125,9 +125,8 @@ func JSONResponse(w http.ResponseWriter, bs []byte) error {
 func GetImageBase64(
 	ctx context.Context,
 	endpoint, filename, id string,
+	l *zap.SugaredLogger,
 ) (string, error) {
-	l := logger.L()
-
 	reqIDRaw := ctx.Value(ContextKeyRequestID)
 
 	requestID, _ := reqIDRaw.(string)

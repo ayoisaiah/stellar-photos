@@ -236,9 +236,9 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		unsplashAccessKey,
 	)
 
-	res := &UnsplashPhoto{}
+	photo := &UnsplashPhoto{}
 
-	_, err = utils.SendGETRequest(url, res)
+	_, err = utils.SendGETRequest(url, photo)
 	if err != nil {
 		return fmt.Errorf("unable to retrieve a random image: %w", err)
 	}
@@ -248,29 +248,30 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	switch resolution {
 	case "high":
 		highRes := 4000
-		if res.Width >= highRes {
+		if photo.Width >= highRes {
 			imageWidth = "4000"
 		} else {
-			imageWidth = strconv.Itoa(res.Width)
+			imageWidth = strconv.Itoa(photo.Width)
 		}
 	case "max":
-		imageWidth = strconv.Itoa(res.Width)
+		imageWidth = strconv.Itoa(photo.Width)
 	}
 
-	imageURL := res.Urls.Raw + "&w=" + imageWidth
+	imageURL := photo.Urls.Raw + "&w=" + imageWidth
 
 	base64, err := utils.GetImageBase64(
 		r.Context(),
 		imageURL,
 		imageWidth,
-		res.ID,
+		photo.ID,
+		a.L,
 	)
 	if err != nil {
 		return err
 	}
 
 	data := unsplashPhotoWithBase64{
-		res,
+		photo,
 		base64,
 	}
 

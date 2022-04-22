@@ -228,12 +228,12 @@ func run() error {
 	}
 
 	go func() {
-		cache.Photos()
+		cache.Photos(app.L)
 
 		c := cron.New()
 
 		_, err := c.AddFunc("@daily", func() {
-			cache.Photos()
+			cache.Photos(app.L)
 		})
 		if err != nil {
 			app.L.Infow("Unable to schedule cron job",
