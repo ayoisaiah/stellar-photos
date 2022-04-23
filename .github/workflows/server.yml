@@ -1,4 +1,4 @@
-name: Run tests and build server Docker image
+name: Run tests, build server Docker image, and deploy to production
 on:
   workflow_dispatch:
   push:
@@ -51,3 +51,43 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:${{ github.sha }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:latest
+      - name: Create SSH Key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Create .env file
+        uses: SpicyPizza/create-envfile@v1.3
+        with:
+          envkey_PORT: ${{ secrets.PORT }}
+          envkey_UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          envkey_ONEDRIVE_APPID: ${{ secrets.ONEDRIVE_APPID }}
+          envkey_ONEDRIVE_SECRET: ${{ secrets.ONEDRIVE_SECRET }}
+          envkey_GOOGLE_DRIVE_KEY: ${{ secrets.GOOGLE_DRIVE_KEY }}
+          envkey_GOOGLE_DRIVE_SECRET: ${{ secrets.GOOGLE_DRIVE_SECRET }}
+          envkey_DROPBOX_KEY: ${{ secrets.DROPBOX_KEY }}
+          envkey_REDIRECT_URL: ${{ secrets.REDIRECT_URL }}
+          envkey_LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
+          envkey_TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          envkey_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          directory: ./server/scripts
+
+      - name: Copy files to server via ssh
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+          local: './server/scripts'
+          remote: 'stellar_github_action'
+          dotfiles: true
+
+      - name: Execute deploy script
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # prettier-ignore
+          script: chmod +x stellar_github_action/deploy.sh && ./stellar_github_action/deploy.sh
