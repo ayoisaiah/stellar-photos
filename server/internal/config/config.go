@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -17,13 +16,7 @@ type Config struct {
 	Onedrive    OnedriveConfig
 	Dropbox     DropboxConfig
 	GoogleDrive GoogleDriveConfig
-	Telegram    TelegramConfig
-}
-
-// Telegram represents Telegram's API configuration variables.
-type TelegramConfig struct {
-	Token  string
-	ChatID string
+	GoEnv       string
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables.
@@ -50,7 +43,7 @@ type GoogleDriveConfig struct {
 
 var (
 	once sync.Once
-	// Conf represents the application configuration.
+	// conf represents the application configuration.
 	conf *Config
 )
 
@@ -59,6 +52,7 @@ func Get() *Config {
 	once.Do(func() {
 		conf = &Config{
 			Port:        getEnv("PORT", "8080"),
+			GoEnv:       getEnv("GO_ENV", "development"),
 			LogLevel:    getEnv("LOG_LEVEL", "0"),
 			RedirectURL: getEnv("REDIRECT_URL", ""),
 			Unsplash: UnsplashConfig{
@@ -75,10 +69,6 @@ func Get() *Config {
 				Key:    getEnv("GOOGLE_DRIVE_KEY", ""),
 				Secret: getEnv("GOOGLE_DRIVE_SECRET", ""),
 			},
-			Telegram: TelegramConfig{
-				Token:  getEnv("TELEGRAM_TOKEN", "*"),
-				ChatID: getEnv("TELEGRAM_CHAT_ID", "*"),
-			},
 		}
 	})
 
@@ -94,7 +84,7 @@ func getEnv(key, defaultVal string) string {
 	}
 
 	if defaultVal == "" && os.Getenv("GO_ENV") != "testing" {
-		log.Fatal(fmt.Sprintf("%s has not been set in your ENV", key))
+		log.Fatalf("%s has not been set in your ENV", key)
 	}
 
 	// * denotes a variable that should not crash the program if not present in
