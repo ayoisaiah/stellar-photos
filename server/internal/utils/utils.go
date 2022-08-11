@@ -3,17 +3,14 @@ package utils
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
 type contextKey string
@@ -23,115 +20,14 @@ const (
 	ContextKeyRequestID     contextKey = "requestID"
 )
 
-// SendGETRequest makes an HTTP GET request and decodes the JSON
-// response into the provided target interface.
-func SendGETRequest(endpoint string, target interface{}) ([]byte, error) {
-	request, err := http.NewRequest(http.MethodGet, endpoint, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := Client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := CheckForErrors(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(body, target)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(target)
-}
-
-func SendPOSTRequest(
-	endpoint string,
-	formValues map[string]string,
-	target interface{},
-) ([]byte, error) {
-	form := url.Values{}
-	for key, value := range formValues {
-		form.Add(key, value)
-	}
-
-	request, err := http.NewRequest(
-		http.MethodPost,
-		endpoint,
-		strings.NewReader(form.Encode()),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := Client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := CheckForErrors(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(body, target)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(target)
-}
-
-// GetURLQueryParams extracts the query parameters from a url string and returns
-// a map of strings.
-func GetURLQueryParams(s string) (url.Values, error) {
-	u, err := url.Parse(s)
-	if err != nil {
-		return nil, err
-	}
-
-	query := u.Query()
-
-	return query, nil
-}
-
-// JSONResponse sends a JSON response to the client.
-func JSONResponse(w http.ResponseWriter, bs []byte) error {
-	w.Header().Set("Content-Type", "application/json")
-
-	w.WriteHeader(http.StatusOK)
-
-	_, err := w.Write(bs)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // GetImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
 // not found in the cache.
 func GetImageBase64(
 	ctx context.Context,
 	endpoint, filename, id string,
-	l *zap.SugaredLogger,
 ) (string, error) {
-	reqIDRaw := ctx.Value(ContextKeyRequestID)
-
-	requestID, _ := reqIDRaw.(string)
-
-	l = l.With("request_id", requestID)
+	l := logger.FromCtx(ctx)
 
 	filePath := filepath.Join("cached_images", id, filename) + ".txt"
 
@@ -142,8 +38,7 @@ func GetImageBase64(
 		if err == nil {
 			base64Str = string(b)
 
-			l.Infow("Retrieved Unsplash image from the cache",
-				"tag", "retrieve_unsplash_image_from_cache",
+			l.Infow("retrieved unsplash image from the cache",
 				"image_id", id,
 				"file_name", filename,
 			)
@@ -151,8 +46,7 @@ func GetImageBase64(
 			return base64Str, nil
 		}
 
-		l.Warnw("Unable to read cached image file",
-			"tag", "read_cached_image_failure",
+		l.Warnw("unable to read cached image file",
 			"path", filePath,
 			"error", err,
 		)
@@ -169,8 +63,7 @@ func GetImageBase64(
 		)
 	}
 
-	l.Infow("Retrieved Unsplash image from the network",
-		"tag", "retrieve_unsplash_image_from_network",
+	l.Infow("retrieved unsplash image from the network",
 		"image_id", id,
 		"file_name", filename,
 	)

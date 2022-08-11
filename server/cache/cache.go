@@ -8,12 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
-
 	"github.com/ayoisaiah/stellar-photos"
-	"github.com/ayoisaiah/stellar-photos/internal/config"
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
 const stellarPhotosCollectionID = 998309
@@ -23,7 +21,7 @@ const (
 	highRes     = 4000
 )
 
-// getCollection retrieves the stellar photos Unsplash collection.
+// getCollection retrieves the Stellar Photos Unsplash collection.
 func getCollection() (stellar.UnsplashCollection, error) {
 	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
@@ -36,7 +34,7 @@ func getCollection() (stellar.UnsplashCollection, error) {
 
 	var c stellar.UnsplashCollection
 
-	_, err := utils.SendGETRequest(url, &c)
+	_, err := utils.SendGETRequest(context.Background(), url, &c)
 	if err != nil {
 		return c, err
 	}
@@ -44,7 +42,7 @@ func getCollection() (stellar.UnsplashCollection, error) {
 	return c, nil
 }
 
-// retrieveAllPhotos fetches all the images in the stellar photos Unslashcollection
+// retrieveAllPhotos fetches all the images in the default Stellar Photos
 // collection.
 func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 	collection, err := getCollection()
@@ -70,7 +68,7 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 			unsplashAccessKey,
 		)
 
-		_, err := utils.SendGETRequest(url, &photos)
+		_, err := utils.SendGETRequest(context.Background(), url, &photos)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +99,6 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 // directory.
 func downloadPhotos(
 	photos map[string]stellar.UnsplashPhoto,
-	l *zap.SugaredLogger,
 ) map[string]error {
 	errs := make(map[string]error)
 
@@ -142,7 +139,7 @@ func downloadPhotos(
 				"cache",
 			)
 
-			base64, err = utils.GetImageBase64(ctx, imageURL, fileName, k, l)
+			base64, err = utils.GetImageBase64(ctx, imageURL, fileName, k)
 			if err != nil {
 				errs[k] = err
 				continue
@@ -187,8 +184,7 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 
 	files, err := os.ReadDir("cached_images")
 	if err != nil {
-		l.Warnw("Unable to read cached_images directory",
-			"tag", "read_cached_images_dir_failure",
+		l.Warnw("unable to locate cache directory",
 			"error", err,
 		)
 
@@ -208,9 +204,7 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 			err := os.RemoveAll(filepath.Join("cached_images", id))
 			if err != nil {
 				l.Warnw(
-					"Unable to clean deleted photo from cached_images directory",
-					"tag",
-					"cache_clean_failure",
+					"unable to delete photo from image cache",
 					"image_id",
 					id,
 					"error",
@@ -222,8 +216,7 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 
 			cleaned[id] = true
 
-			l.Infow("Cleaned image from cached_images directory successfully",
-				"tag", "cache_clean_success",
+			l.Infow("deleted image from cache successfully",
 				"image_id", id,
 			)
 		}
@@ -231,26 +224,31 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 }
 
 // Photos caches all Unsplash images in the default collection locally.
-// It also cleans up images that were deleted from the collection.
-func Photos(l *zap.SugaredLogger) {
-	l.Infow("Pre-caching all images in default collection",
-		"tag", "pre_caching_start",
-	)
+// to speed up delivery. It also cleans up images that were deleted from
+// the default collection.
+func Photos() {
+	conf := config.Get()
+
+	if conf.GoEnv != "production" {
+		return
+	}
+
+	l := logger.L()
+
+	l.Infow("pre-caching all images in default collection")
 
 	photos, err := retrieveAllPhotos()
 	if err != nil {
-		l.Warnw("Unable to retrieve all images in default collection",
-			"tag", "retrieve_all_photos_failure",
+		l.Errorw("unable to retrieve all images in default collection",
 			"error", err,
 		)
 
 		return
 	}
 
-	errs := downloadPhotos(photos, l)
+	errs := downloadPhotos(photos)
 	if len(errs) != 0 {
-		l.Warnw("Some downloads failed to complete",
-			"tag", "download_photos_cache_failure",
+		l.Warnw("some cache image downloads failed to complete",
 			"errors", errs,
 		)
 
@@ -259,7 +257,5 @@ func Photos(l *zap.SugaredLogger) {
 
 	cleanup(photos)
 
-	l.Infow("Cached images updated successfully!",
-		"tag", "pre_caching_end",
-	)
+	l.Infow("default images cached successfully!")
 }

@@ -1,6 +1,7 @@
 package stellar
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -140,8 +141,22 @@ type unsplashPhotoWithBase64 struct {
 	Base64 string `json:"base64,omitempty"`
 }
 
+var (
+	errEmptyPhotoID = &utils.HTTPError{
+		Detail: "the photo ID must not be empty",
+		Status: http.StatusBadRequest,
+	}
+
+	errEmptyCollectionID = &utils.HTTPError{
+		Detail: "at least one collection ID must be present",
+		Status: http.StatusBadRequest,
+	}
+)
+
 // DownloadPhoto is triggered each time a download is attempted.
 func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -149,14 +164,10 @@ func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	id := values.Get("id")
 	if id == "" {
-		return utils.NewHTTPError(
-			nil,
-			http.StatusBadRequest,
-			"The photo ID must not be empty",
-		)
+		return errEmptyPhotoID
 	}
 
-	_, err = a.TrackPhotoDownload(id)
+	_, err = a.TrackPhotoDownload(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -168,7 +179,10 @@ func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 // TrackPhotoDownload is used to increment the number of downloads
 // for the specified photo.
-func (a *App) TrackPhotoDownload(id string) ([]byte, error) {
+func (a *App) TrackPhotoDownload(
+	ctx context.Context,
+	id string,
+) ([]byte, error) {
 	unsplashAccessKey := a.Config.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/%s/download?client_id=%s",
@@ -177,12 +191,14 @@ func (a *App) TrackPhotoDownload(id string) ([]byte, error) {
 		unsplashAccessKey,
 	)
 
-	return utils.SendGETRequest(url, &download{})
+	return utils.SendGETRequest(ctx, url, &download{})
 }
 
 // SearchUnsplash triggers a photo search and sends a single page of photo
 // results for a query.
 func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -203,12 +219,12 @@ func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 
 	s := &unsplashSearchResult{}
 
-	bs, err := utils.SendGETRequest(url, s)
+	b, err := utils.SendGETRequest(ctx, url, s)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, bs)
+	return utils.JSONResponse(ctx, w, b)
 }
 
 // GetRandomPhoto retrives a single random photo using the provided collection
@@ -216,6 +232,8 @@ func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 // If no collection IDs are present, it defaults to 998309 which is the ID of
 // the official Stellar Photos collection.
 func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -238,9 +256,9 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	photo := &UnsplashPhoto{}
 
-	_, err = utils.SendGETRequest(url, photo)
+	_, err = utils.SendGETRequest(ctx, url, photo)
 	if err != nil {
-		return fmt.Errorf("unable to retrieve a random image: %w", err)
+		return fmt.Errorf("unable to fetch a random image from : %w", err)
 	}
 
 	imageWidth := "2000"
@@ -264,7 +282,6 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		imageURL,
 		imageWidth,
 		photo.ID,
-		a.L,
 	)
 	if err != nil {
 		return err
@@ -275,12 +292,12 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		base64,
 	}
 
-	bytes, err := json.Marshal(data)
+	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, bytes)
+	return utils.JSONResponse(ctx, w, b)
 }
 
 // ValidateCollections ensures that all the custom collection IDs that are added
@@ -289,6 +306,8 @@ func (a *App) ValidateCollections(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -297,11 +316,7 @@ func (a *App) ValidateCollections(
 	collections := strings.Split(values.Get("collections"), ",")
 
 	if len(collections) == 0 {
-		return utils.NewHTTPError(
-			nil,
-			http.StatusBadRequest,
-			"At least one collection ID must be present",
-		)
+		return errEmptyCollectionID
 	}
 
 	unsplashAccessKey := a.Config.Unsplash.AccessKey
@@ -314,7 +329,7 @@ func (a *App) ValidateCollections(
 			unsplashAccessKey,
 		)
 
-		_, err = utils.SendGETRequest(url, &UnsplashCollection{})
+		_, err = utils.SendGETRequest(ctx, url, &UnsplashCollection{})
 		if err != nil {
 			return err
 		}

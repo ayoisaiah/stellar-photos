@@ -3,8 +3,8 @@ package stellar
 import (
 	"go.uber.org/zap"
 
-	"github.com/ayoisaiah/stellar-photos/internal/config"
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/config"
+	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
 type App struct {

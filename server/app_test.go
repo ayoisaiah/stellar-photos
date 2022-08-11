@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/ayoisaiah/stellar-photos/internal/config"
+	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
 )

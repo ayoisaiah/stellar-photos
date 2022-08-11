@@ -2,6 +2,7 @@ package stellar
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -23,22 +24,25 @@ type SaveURLResponse struct {
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code.
 func (a *App) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	dropboxKey := a.Config.Dropbox.Key
 
 	d := dropbox{
 		Key: dropboxKey,
 	}
 
-	bs, err := json.Marshal(d)
+	b, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, bs)
+	return utils.JSONResponse(ctx, w, b)
 }
 
-func checkJobStatus(jobID, token string) error {
+func checkJobStatus(ctx context.Context, jobID, token string) error {
 	v := fmt.Sprintf("Bearer %s", token)
+
 	requestBody, err := json.Marshal(map[string]string{
 		"async_job_id": jobID,
 	})
@@ -48,7 +52,8 @@ func checkJobStatus(jobID, token string) error {
 
 	endpoint := "https://api.dropboxapi.com/2/files/save_url/check_job_status"
 
-	request, err := http.NewRequest(
+	request, err := http.NewRequestWithContext(
+		ctx,
 		"POST",
 		endpoint,
 		bytes.NewBuffer(requestBody),
@@ -83,7 +88,7 @@ func checkJobStatus(jobID, token string) error {
 		return nil
 	} else if resp.Tag == "in_progress" {
 		time.Sleep(1 * time.Second)
-		return checkJobStatus(jobID, token)
+		return checkJobStatus(ctx, jobID, token)
 	}
 
 	return fmt.Errorf("job failed. response from dropbox: %s", string(b))
@@ -91,6 +96,8 @@ func checkJobStatus(jobID, token string) error {
 
 // SaveToDropbox saves the requested photo to the current user's Dropbox account.
 func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -100,7 +107,7 @@ func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	_, err = a.TrackPhotoDownload(id)
+	_, err = a.TrackPhotoDownload(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -117,7 +124,8 @@ func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 
 	endpoint := "https://api.dropboxapi.com/2/files/save_url"
 
-	request, err := http.NewRequest(
+	request, err := http.NewRequestWithContext(
+		ctx,
 		"POST",
 		endpoint,
 		bytes.NewBuffer(requestBody),
@@ -149,7 +157,7 @@ func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if resp.Tag == "async_job_id" {
-		err = checkJobStatus(resp.AsyncJobID, token)
+		err = checkJobStatus(ctx, resp.AsyncJobID, token)
 		if err != nil {
 			return err
 		}

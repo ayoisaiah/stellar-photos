@@ -1,44 +1,53 @@
 package utils
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+
+	"github.com/ayoisaiah/stellar-photos/logger"
 )
+
+type ErrorPayload struct {
+	Error string `json:"error"`
+}
 
 // ClientError is an error whose details is to be shared with the client.
 type ClientError interface {
 	Error() string
-	ResponseBody() []byte
-	ResponseHeaders() (int, map[string]string)
+	ResponseMessage() string
+	StatusCode() int
 }
 
 // HTTPError implements ClientError interface.
 type HTTPError struct {
-	Cause  error  `json:"-"`
+	// The underlying error message
+	Cause error `json:"-"`
+	// Safe error message for client delivery
 	Detail string `json:"error"`
-	Status int    `json:"-"`
+	Status int    `json:"code"`
 }
 
 // Error causes HTTPError to satisfy the error interface.
-func (e *HTTPError) Error() string {
+func (e HTTPError) Error() string {
 	if e.Cause == nil {
 		return e.Detail
 	}
 
-	return e.Detail + " : " + e.Cause.Error()
+	return e.Cause.Error()
 }
 
-// ResponseBody returns error details as JSON.
-func (e *HTTPError) ResponseBody() []byte {
-	return []byte(fmt.Sprintf("{%q: %q}", "error", e.Detail))
+// ResponseMessage returns error message to be shown to client.
+func (e HTTPError) ResponseMessage() string {
+	return e.Detail
 }
 
-// ResponseHeaders returns http status code and headers.
-func (e *HTTPError) ResponseHeaders() (status int, headers map[string]string) {
-	return e.Status, map[string]string{
-		"Content-Type": "application/json; charset=utf-8",
-	}
+// StatusCode returns status code to be used in http response.
+func (e HTTPError) StatusCode() int {
+	return e.Status
 }
 
 // NewHTTPError returns a new HTTPError.
@@ -70,6 +79,58 @@ func CheckForErrors(resp *http.Response) ([]byte, error) {
 				"%d — Request to external API produced an error response",
 				resp.StatusCode,
 			),
+		)
+	}
+}
+
+func HandleError(
+	ctx context.Context,
+	w http.ResponseWriter,
+	origErr error,
+) {
+	l := logger.FromCtx(ctx)
+
+	statusCode := http.StatusInternalServerError
+
+	if os.IsTimeout(origErr) {
+		statusCode = http.StatusRequestTimeout
+	}
+
+	contentType := "application/json"
+
+	errMsg := "internal server error"
+
+	//nolint:errorlint // nolint
+	clientError, ok := origErr.(ClientError)
+	if ok {
+		errMsg = clientError.ResponseMessage()
+
+		statusCode = clientError.StatusCode()
+	}
+
+	var payload ErrorPayload
+	payload.Error = errMsg
+
+	b, err := json.Marshal(&payload)
+	if err != nil {
+		l.Errorw("Encoding error payload failed")
+
+		b = []byte(fmt.Sprintf("{\"error\":\"%v\"}", errMsg))
+	}
+
+	if statusCode >= http.StatusInternalServerError {
+		l.Errorw("an unexpected error occurred",
+			"error", origErr,
+		)
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(statusCode)
+
+	_, err = w.Write(b)
+	if err != nil {
+		l.Errorw("unable to send error response to client",
+			"error", err,
 		)
 	}
 }

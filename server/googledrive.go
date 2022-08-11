@@ -35,6 +35,8 @@ type googleDriveAuth struct {
 // SendGoogleDriveKey sends the application key to the client on request to avoid
 // exposing it in the extension code.
 func (a *App) SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	d := googleDrive{
 		Key: a.Config.GoogleDrive.Key,
 	}
@@ -44,7 +46,7 @@ func (a *App) SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return utils.JSONResponse(w, b)
+	return utils.JSONResponse(ctx, w, b)
 }
 
 // AuthorizeGoogleDrive redeems the authorization code received from the client for
@@ -53,6 +55,8 @@ func (a *App) AuthorizeGoogleDrive(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -73,12 +77,17 @@ func (a *App) AuthorizeGoogleDrive(
 
 	endpoint := "https://oauth2.googleapis.com/token"
 
-	body, err := utils.SendPOSTRequest(endpoint, formValues, &googleDriveAuth{})
+	body, err := utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&googleDriveAuth{},
+	)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, body)
+	return utils.JSONResponse(ctx, w, body)
 }
 
 // RefreshGoogleDriveToken generates additional access tokens after the initial
@@ -87,6 +96,8 @@ func (a *App) RefreshGoogleDriveToken(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -109,17 +120,24 @@ func (a *App) RefreshGoogleDriveToken(
 
 	endpoint := "https://oauth2.googleapis.com/token"
 
-	body, err := utils.SendPOSTRequest(endpoint, formValues, &googleDriveAuth{})
+	body, err := utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&googleDriveAuth{},
+	)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, body)
+	return utils.JSONResponse(ctx, w, body)
 }
 
 // SaveToGoogleDrive saves the requested photo to the current user's
 // Google Drive account.
 func (a *App) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -129,7 +147,7 @@ func (a *App) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	_, err = a.TrackPhotoDownload(id)
+	_, err = a.TrackPhotoDownload(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -137,7 +155,7 @@ func (a *App) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	v := fmt.Sprintf("Bearer %s", token)
 
 	ctx, cncl := context.WithTimeout(
-		context.Background(),
+		ctx,
 		time.Second*saveToDriveTimeout,
 	)
 	defer cncl()

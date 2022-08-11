@@ -59,7 +59,7 @@ func TestDownloadPhoto(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			status, _ := clientError.ResponseHeaders()
+			status := clientError.StatusCode()
 			if status != value.statusCode {
 				t.Errorf(
 					"Status should be %d, got %d",
@@ -114,7 +114,7 @@ func TestSearchUnsplash(t *testing.T) {
 					t.Fatalf("Unexpected error: %v", err)
 				}
 
-				status, _ := clientError.ResponseHeaders()
+				status := clientError.StatusCode()
 				if status != http.StatusOK {
 					t.Errorf(
 						"Status should be %d, got %d",
@@ -215,7 +215,7 @@ func TestGetRandomPhoto(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			status, _ := clientError.ResponseHeaders()
+			status := clientError.StatusCode()
 			if status != value.statusCode {
 				t.Errorf(
 					"Status should be %d, got %d",
@@ -318,7 +318,7 @@ func TestValidateCollections(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			status, _ := clientError.ResponseHeaders()
+			status := clientError.StatusCode()
 			if status != value.statusCode {
 				t.Errorf(
 					"Status should be %d, got %d",

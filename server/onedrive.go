@@ -25,23 +25,26 @@ type onedriveAuth struct {
 
 // SendOnedriveID sends the application id to the client on request.
 func (a *App) SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
 	id := a.Config.Onedrive.AppID
 
 	d := onedrive{
 		ID: id,
 	}
 
-	bytes, err := json.Marshal(d)
+	b, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, bytes)
+	return utils.JSONResponse(ctx, w, b)
 }
 
 // AuthorizeOnedrive redeems the authorization code received from the client for
 // an access token.
 func (a *App) AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -65,12 +68,17 @@ func (a *App) AuthorizeOnedrive(w http.ResponseWriter, r *http.Request) error {
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 
-	body, err := utils.SendPOSTRequest(endpoint, formValues, &onedriveAuth{})
+	body, err := utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&onedriveAuth{},
+	)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, body)
+	return utils.JSONResponse(ctx, w, body)
 }
 
 // RefreshOnedriveToken generates additional access tokens after the initial
@@ -79,6 +87,8 @@ func (a *App) RefreshOnedriveToken(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	ctx := r.Context()
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -102,10 +112,15 @@ func (a *App) RefreshOnedriveToken(
 
 	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
 
-	body, err := utils.SendPOSTRequest(endpoint, formValues, &onedriveAuth{})
+	body, err := utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&onedriveAuth{},
+	)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(w, body)
+	return utils.JSONResponse(ctx, w, body)
 }

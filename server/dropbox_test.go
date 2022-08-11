@@ -114,7 +114,7 @@ func TestSaveToDropbox(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			status, _ := clientError.ResponseHeaders()
+			status := clientError.StatusCode()
 			if status != value.statusCode {
 				t.Errorf(
 					"Status should be %d, got %d",
