@@ -9,8 +9,6 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var (
-	Client HTTPClient = &http.Client{
-		Timeout: defaultTimeoutInSeconds * time.Second,
-	}
-)
+var Client HTTPClient = &http.Client{
+	Timeout: defaultTimeoutInSeconds * time.Second,
+}

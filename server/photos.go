@@ -243,7 +243,7 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf("unable to retrieve a random image: %w", err)
 	}
 
-	var imageWidth = "2000"
+	imageWidth := "2000"
 
 	switch resolution {
 	case "high":

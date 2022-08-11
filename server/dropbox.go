@@ -42,7 +42,6 @@ func checkJobStatus(jobID, token string) error {
 	requestBody, err := json.Marshal(map[string]string{
 		"async_job_id": jobID,
 	})
-
 	if err != nil {
 		return err
 	}

@@ -54,7 +54,7 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 
 	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
-	var allPhotos = make([]stellar.UnsplashPhoto, collection.TotalPhotos)
+	allPhotos := make([]stellar.UnsplashPhoto, collection.TotalPhotos)
 
 	page, perPage := 1, 30
 
@@ -84,7 +84,7 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 		page++
 	}
 
-	var m = make(map[string]stellar.UnsplashPhoto)
+	m := make(map[string]stellar.UnsplashPhoto)
 
 	for i := range allPhotos {
 		v := allPhotos[i]
