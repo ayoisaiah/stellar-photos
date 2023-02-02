@@ -22,7 +22,7 @@ func TestSendGoogleDriveKey(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.SendGoogleDriveKey(rr, req)
+	err = SendGoogleDriveKey(rr, req)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
@@ -68,7 +68,7 @@ func TestAuthorizeGoogleDrive(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.AuthorizeGoogleDrive(rr, req)
+	err = AuthorizeGoogleDrive(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestRefreshGoogleDriveToken(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.RefreshGoogleDriveToken(rr, req)
+	err = RefreshGoogleDriveToken(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -182,7 +182,7 @@ func TestSaveToGoogleDrive(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.SaveToGoogleDrive(rr, req)
+	err = SaveToGoogleDrive(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

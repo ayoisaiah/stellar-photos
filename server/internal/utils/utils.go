@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/logger"
 )
@@ -38,17 +41,17 @@ func GetImageBase64(
 		if err == nil {
 			base64Str = string(b)
 
-			l.Infow("retrieved unsplash image from the cache",
-				"image_id", id,
-				"file_name", filename,
+			l.Info("retrieved unsplash image from the cache",
+				zap.String("image_id", id),
+				zap.String("file_name", filename),
 			)
 
 			return base64Str, nil
 		}
 
-		l.Warnw("unable to read cached image file",
-			"path", filePath,
-			"error", err,
+		l.Warn("unable to read cached image file",
+			zap.String("path", filePath),
+			zap.Error(err),
 		)
 	}
 
@@ -63,9 +66,9 @@ func GetImageBase64(
 		)
 	}
 
-	l.Infow("retrieved unsplash image from the network",
-		"image_id", id,
-		"file_name", filename,
+	l.Info("retrieved unsplash image from the network",
+		zap.String("image_id", id),
+		zap.String("file_name", filename),
 	)
 
 	return base64Str, nil
@@ -122,4 +125,20 @@ func imageURLToBase64(endpoint string) (string, error) {
 	base64Encoding += base64.StdEncoding.EncodeToString(bytes)
 
 	return base64Encoding, nil
+}
+
+func GetGitRevision() string {
+	var gitRevision string
+
+	buildInfo, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, v := range buildInfo.Settings {
+			if v.Key == "vcs.revision" {
+				gitRevision = v.Value
+				break
+			}
+		}
+	}
+
+	return gitRevision
 }

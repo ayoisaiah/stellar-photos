@@ -41,7 +41,7 @@ func TestDownloadPhoto(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			err = testApp.DownloadPhoto(rr, req)
+			err = DownloadPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
 					t.Fatalf(
@@ -106,7 +106,7 @@ func TestSearchUnsplash(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			err = testApp.SearchUnsplash(rr, req)
+			err = SearchUnsplash(rr, req)
 			if err != nil {
 				var clientError utils.ClientError
 
@@ -197,7 +197,7 @@ func TestGetRandomPhoto(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = testApp.GetRandomPhoto(rr, req)
+			err = GetRandomPhoto(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
 					t.Fatalf(
@@ -300,7 +300,7 @@ func TestValidateCollections(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = testApp.ValidateCollections(rr, req)
+			err = ValidateCollections(rr, req)
 			if err == nil {
 				if value.statusCode > 300 {
 					t.Fatalf(

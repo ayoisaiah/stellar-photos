@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
@@ -154,7 +155,7 @@ var (
 )
 
 // DownloadPhoto is triggered each time a download is attempted.
-func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
+func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -167,7 +168,8 @@ func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 		return errEmptyPhotoID
 	}
 
-	_, err = a.TrackPhotoDownload(ctx, id)
+	_, err = TrackPhotoDownload(ctx, id)
+
 	if err != nil {
 		return err
 	}
@@ -179,11 +181,13 @@ func (a *App) DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 // TrackPhotoDownload is used to increment the number of downloads
 // for the specified photo.
-func (a *App) TrackPhotoDownload(
+func TrackPhotoDownload(
 	ctx context.Context,
 	id string,
 ) ([]byte, error) {
-	unsplashAccessKey := a.Config.Unsplash.AccessKey
+	conf := config.Get()
+
+	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/%s/download?client_id=%s",
 		UnsplashAPIBaseURL,
@@ -196,7 +200,9 @@ func (a *App) TrackPhotoDownload(
 
 // SearchUnsplash triggers a photo search and sends a single page of photo
 // results for a query.
-func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
+func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
+	conf := config.Get()
+
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -207,7 +213,7 @@ func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	key := values.Get("key")
 	page := values.Get("page")
 
-	unsplashAccessKey := a.Config.Unsplash.AccessKey
+	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/search/photos?page=%s&query=%s&per_page=%s&client_id=%s",
 		UnsplashAPIBaseURL,
@@ -231,7 +237,9 @@ func (a *App) SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 // IDs to narrow the pool of photos from which a random one will be chosen.
 // If no collection IDs are present, it defaults to 998309 which is the ID of
 // the official Stellar Photos collection.
-func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
+func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
+	conf := config.Get()
+
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -246,7 +254,7 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	resolution := values.Get("resolution")
 
-	unsplashAccessKey := a.Config.Unsplash.AccessKey
+	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
 		"%s/photos/random?collections=%s&client_id=%s",
 		UnsplashAPIBaseURL,
@@ -302,10 +310,12 @@ func (a *App) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 // ValidateCollections ensures that all the custom collection IDs that are added
 // to the extension are valid.
-func (a *App) ValidateCollections(
+func ValidateCollections(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	conf := config.Get()
+
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -319,7 +329,7 @@ func (a *App) ValidateCollections(
 		return errEmptyCollectionID
 	}
 
-	unsplashAccessKey := a.Config.Unsplash.AccessKey
+	unsplashAccessKey := conf.Unsplash.AccessKey
 
 	for _, value := range collections {
 		url := fmt.Sprintf(

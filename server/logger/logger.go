@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"sync"
 
@@ -14,12 +15,12 @@ import (
 
 var once sync.Once
 
-var defaultLogger *zap.SugaredLogger
+var defaultLogger *zap.Logger
 
 type ctxKey struct{}
 
 // L initializes a zap logger once and returns it.
-func L() *zap.SugaredLogger {
+func L() *zap.Logger {
 	once.Do(func() {
 		logLevel := config.Get().LogLevel
 		logLevelInt, err := strconv.Atoi(logLevel)
@@ -46,7 +47,22 @@ func L() *zap.SugaredLogger {
 			atom,
 		)
 
-		defaultLogger = zap.New(core).Sugar()
+		var gitRevision string
+
+		buildInfo, ok := debug.ReadBuildInfo()
+		if ok {
+			for _, v := range buildInfo.Settings {
+				if v.Key == "vcs.revision" {
+					gitRevision = v.Value
+					break
+				}
+			}
+		}
+
+		defaultLogger = zap.New(core).With(
+			zap.String("git_revision", gitRevision),
+			zap.String("go_version", buildInfo.GoVersion),
+		)
 	})
 
 	return defaultLogger
@@ -55,18 +71,18 @@ func L() *zap.SugaredLogger {
 // FromCtx returns the Logger associated with the ctx. If no logger
 // is associated, the default logger is returned, unless it is nil
 // in which case a disabled logger is returned.
-func FromCtx(ctx context.Context) *zap.SugaredLogger {
-	if l, ok := ctx.Value(ctxKey{}).(*zap.SugaredLogger); ok {
+func FromCtx(ctx context.Context) *zap.Logger {
+	if l, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
 		return l
 	} else if l := defaultLogger; l != nil {
 		return l
 	}
 
-	return zap.NewNop().Sugar()
+	return zap.NewNop()
 }
 
-func WithContext(ctx context.Context, l *zap.SugaredLogger) context.Context {
-	if lp, ok := ctx.Value(ctxKey{}).(*zap.SugaredLogger); ok {
+func WithContext(ctx context.Context, l *zap.Logger) context.Context {
+	if lp, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
 		if lp == l {
 			// Do not store same logger.
 			return ctx

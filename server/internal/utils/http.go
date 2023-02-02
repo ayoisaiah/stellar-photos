@@ -107,7 +107,7 @@ func GetURLQueryParams(s string) (url.Values, error) {
 }
 
 // JSONResponse sends a JSON response to the client.
-func JSONResponse(ctx context.Context, w http.ResponseWriter, b []byte) error {
+func JSONResponse(_ context.Context, w http.ResponseWriter, b []byte) error {
 	if !json.Valid(b) {
 		return errInvalidJSONPayload
 	}

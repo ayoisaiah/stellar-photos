@@ -24,7 +24,7 @@ func TestGetDropboxKey(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.SendDropboxKey(rr, req)
+	err = SendDropboxKey(rr, req)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
@@ -99,7 +99,7 @@ func TestSaveToDropbox(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			err = testApp.SaveToDropbox(rr, req)
+			err = SaveToDropbox(rr, req)
 			if err == nil {
 				if value.statusCode != http.StatusOK {
 					t.Fatalf("Expected error for '%s', but got none", value.id)

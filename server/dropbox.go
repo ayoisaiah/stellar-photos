@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
@@ -23,10 +24,12 @@ type SaveURLResponse struct {
 
 // SendDropboxKey sends the application key to the client on request to avoid
 // exposing it in the extension code.
-func (a *App) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
+func SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
+	conf := config.Get()
+
 	ctx := r.Context()
 
-	dropboxKey := a.Config.Dropbox.Key
+	dropboxKey := conf.Dropbox.Key
 
 	d := dropbox{
 		Key: dropboxKey,
@@ -95,7 +98,7 @@ func checkJobStatus(ctx context.Context, jobID, token string) error {
 }
 
 // SaveToDropbox saves the requested photo to the current user's Dropbox account.
-func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
+func SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -107,7 +110,7 @@ func (a *App) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	_, err = a.TrackPhotoDownload(ctx, id)
+	_, err = TrackPhotoDownload(ctx, id)
 	if err != nil {
 		return err
 	}

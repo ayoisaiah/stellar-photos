@@ -12,6 +12,7 @@ import (
 	"net/textproto"
 	"time"
 
+	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
@@ -34,11 +35,11 @@ type googleDriveAuth struct {
 
 // SendGoogleDriveKey sends the application key to the client on request to avoid
 // exposing it in the extension code.
-func (a *App) SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
+func SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
 	d := googleDrive{
-		Key: a.Config.GoogleDrive.Key,
+		Key: config.Get().GoogleDrive.Key,
 	}
 
 	b, err := json.Marshal(d)
@@ -51,10 +52,12 @@ func (a *App) SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
 
 // AuthorizeGoogleDrive redeems the authorization code received from the client for
 // an access token.
-func (a *App) AuthorizeGoogleDrive(
+func AuthorizeGoogleDrive(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	conf := config.Get()
+
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -64,15 +67,15 @@ func (a *App) AuthorizeGoogleDrive(
 
 	code := values.Get("code")
 
-	id := a.Config.GoogleDrive.Key
-	secret := a.Config.GoogleDrive.Secret
+	id := conf.GoogleDrive.Key
+	secret := conf.GoogleDrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "authorization_code",
 		"client_id":     id,
 		"client_secret": secret,
 		"code":          code,
-		"redirect_uri":  a.Config.RedirectURL,
+		"redirect_uri":  conf.RedirectURL,
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
@@ -92,10 +95,12 @@ func (a *App) AuthorizeGoogleDrive(
 
 // RefreshGoogleDriveToken generates additional access tokens after the initial
 // token has expired.
-func (a *App) RefreshGoogleDriveToken(
+func RefreshGoogleDriveToken(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
+	conf := config.Get()
+
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -108,8 +113,8 @@ func (a *App) RefreshGoogleDriveToken(
 		return errors.New("refresh token not specified")
 	}
 
-	id := a.Config.GoogleDrive.Key
-	secret := a.Config.GoogleDrive.Secret
+	id := conf.GoogleDrive.Key
+	secret := conf.GoogleDrive.Secret
 
 	formValues := map[string]string{
 		"grant_type":    "refresh_token",
@@ -135,7 +140,7 @@ func (a *App) RefreshGoogleDriveToken(
 
 // SaveToGoogleDrive saves the requested photo to the current user's
 // Google Drive account.
-func (a *App) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
+func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
@@ -147,7 +152,7 @@ func (a *App) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
-	_, err = a.TrackPhotoDownload(ctx, id)
+	_, err = TrackPhotoDownload(ctx, id)
 	if err != nil {
 		return err
 	}

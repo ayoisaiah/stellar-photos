@@ -9,7 +9,7 @@ import (
 
 type App struct {
 	Config *config.Config
-	L      *zap.SugaredLogger
+	L      *zap.Logger
 }
 
 func NewApp() *App {

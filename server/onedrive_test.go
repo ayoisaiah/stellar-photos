@@ -21,7 +21,7 @@ func TestSendOnedriveID(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.SendOnedriveID(rr, req)
+	err = SendOnedriveID(rr, req)
 	if err != nil {
 		t.Errorf("Expected no errors, but got %v", err)
 	}
@@ -63,7 +63,7 @@ func TestAuthorizeOnedrive(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.AuthorizeOnedrive(rr, req)
+	err = AuthorizeOnedrive(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestRefreshOnedriveToken(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	err = testApp.RefreshOnedriveToken(rr, req)
+	err = RefreshOnedriveToken(rr, req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

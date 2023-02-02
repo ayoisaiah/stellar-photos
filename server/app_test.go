@@ -4,8 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
@@ -18,18 +16,17 @@ func TestMain(m *testing.M) {
 
 	os.Setenv("GO_ENV", "testing")
 
-	testApp = &App{
-		Config: &config.Config{},
-		L:      zap.NewNop().Sugar(),
+	conf := config.Get()
+
+	conf.Dropbox = config.DropboxConfig{
+		Key: "sample_key",
 	}
 
-	testApp.Config.Dropbox = config.DropboxConfig{
+	conf.GoogleDrive = config.GoogleDriveConfig{
 		Key: "sample_key",
 	}
-	testApp.Config.GoogleDrive = config.GoogleDriveConfig{
-		Key: "sample_key",
-	}
-	testApp.Config.Onedrive = config.OnedriveConfig{
+
+	conf.Onedrive = config.OnedriveConfig{
 		AppID: "sample_id",
 	}
 

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
@@ -113,14 +115,14 @@ func HandleError(
 
 	b, err := json.Marshal(&payload)
 	if err != nil {
-		l.Errorw("Encoding error payload failed")
+		l.Error("Encoding error payload failed")
 
 		b = []byte(fmt.Sprintf("{\"error\":\"%v\"}", errMsg))
 	}
 
 	if statusCode >= http.StatusInternalServerError {
-		l.Errorw("an unexpected error occurred",
-			"error", origErr,
+		l.Error("an unexpected error occurred",
+			zap.Error(origErr),
 		)
 	}
 
@@ -129,8 +131,8 @@ func HandleError(
 
 	_, err = w.Write(b)
 	if err != nil {
-		l.Errorw("unable to send error response to client",
-			"error", err,
+		l.Error("unable to send error response to client",
+			zap.Error(err),
 		)
 	}
 }

@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	cron "github.com/robfig/cron/v3"
 	"github.com/rs/cors"
 
 	"github.com/ayoisaiah/stellar-photos"
-	"github.com/ayoisaiah/stellar-photos/cache"
+	"github.com/ayoisaiah/stellar-photos/config"
+	"github.com/ayoisaiah/stellar-photos/health"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/ayoisaiah/stellar-photos/logger"
 	"github.com/ayoisaiah/stellar-photos/middleware"
 )
 
@@ -34,34 +35,37 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // newRouter creates and returns a new HTTP request multiplexer.
-func newRouter(app *stellar.App) http.Handler {
+func newRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("/download-photo/", rootHandler(app.DownloadPhoto))
-	mux.Handle("/search-unsplash/", rootHandler(app.SearchUnsplash))
+	mux.Handle("/health/live", rootHandler(health.Live))
+	mux.Handle("/health/ready", rootHandler(health.Ready))
+
+	mux.Handle("/download-photo/", rootHandler(stellar.DownloadPhoto))
+	mux.Handle("/search-unsplash/", rootHandler(stellar.SearchUnsplash))
 	mux.Handle(
 		"/random-photo/",
-		middleware.GzipCompression(rootHandler(app.GetRandomPhoto)),
+		middleware.GzipCompression(rootHandler(stellar.GetRandomPhoto)),
 	)
 	mux.Handle(
 		"/validate-collections/",
-		rootHandler(app.ValidateCollections),
+		rootHandler(stellar.ValidateCollections),
 	)
-	mux.Handle("/dropbox/key/", rootHandler(app.SendDropboxKey))
-	mux.Handle("/dropbox/save/", rootHandler(app.SaveToDropbox))
-	mux.Handle("/onedrive/id/", rootHandler(app.SendOnedriveID))
-	mux.Handle("/onedrive/auth/", rootHandler(app.AuthorizeOnedrive))
-	mux.Handle("/onedrive/refresh/", rootHandler(app.RefreshOnedriveToken))
-	mux.Handle("/googledrive/key/", rootHandler(app.SendGoogleDriveKey))
+	mux.Handle("/dropbox/key/", rootHandler(stellar.SendDropboxKey))
+	mux.Handle("/dropbox/save/", rootHandler(stellar.SaveToDropbox))
+	mux.Handle("/onedrive/id/", rootHandler(stellar.SendOnedriveID))
+	mux.Handle("/onedrive/auth/", rootHandler(stellar.AuthorizeOnedrive))
+	mux.Handle("/onedrive/refresh/", rootHandler(stellar.RefreshOnedriveToken))
+	mux.Handle("/googledrive/key/", rootHandler(stellar.SendGoogleDriveKey))
 	mux.Handle(
 		"/googledrive/auth/",
-		rootHandler(app.AuthorizeGoogleDrive),
+		rootHandler(stellar.AuthorizeGoogleDrive),
 	)
 	mux.Handle(
 		"/googledrive/refresh/",
-		rootHandler(app.RefreshGoogleDriveToken),
+		rootHandler(stellar.RefreshGoogleDriveToken),
 	)
-	mux.Handle("/googledrive/save/", rootHandler(app.SaveToGoogleDrive))
+	mux.Handle("/googledrive/save/", rootHandler(stellar.SaveToGoogleDrive))
 
 	return middleware.Recover(middleware.RequestLogger(mux))
 }
@@ -71,11 +75,11 @@ func run() error {
 	// may be injected in some other way
 	_ = godotenv.Load()
 
-	app := stellar.NewApp()
+	conf := config.Get()
 
-	port := ":" + app.Config.Port
+	port := ":" + conf.Port
 
-	mux := newRouter(app)
+	mux := newRouter()
 
 	handler := cors.Default().Handler(mux)
 
@@ -90,26 +94,27 @@ func run() error {
 		ReadTimeout:       5 * time.Second,
 	}
 
-	go func() {
-		cache.Photos()
+	// go func() {
+	// 	cache.Photos()
+	//
+	// 	c := cron.New()
+	//
+	// 	_, err := c.AddFunc("@daily", func() {
+	// 		cache.Photos()
+	// 	})
+	// 	if err != nil {
+	// 		app.L.Infow("unable to schedule cron job",
+	// 			"error", err,
+	// 		)
+	// 	}
+	//
+	// 	c.Start()
+	// }()
 
-		c := cron.New()
+	l := logger.L()
 
-		_, err := c.AddFunc("@daily", func() {
-			cache.Photos()
-		})
-		if err != nil {
-			app.L.Infow("unable to schedule cron job",
-				"error", err,
-			)
-		}
-
-		c.Start()
-	}()
-
-	app.L.Infof(
-		"Stellar Photos Server is listening on port: %s",
-		app.Config.Port,
+	l.Info(
+		"Stellar Photos Server is listening on port: " + conf.Port,
 	)
 
 	return srv.ListenAndServe()

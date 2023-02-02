@@ -3,6 +3,7 @@ package middleware
 import (
 	"compress/gzip"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"runtime"
@@ -54,12 +55,12 @@ func RequestLogger(next http.Handler) http.Handler {
 		*r = *r2
 
 		defer func() {
-			l.Infow("Incoming request",
-				"method", r.Method,
-				"uri", r.RequestURI,
-				"user_agent", r.UserAgent(),
-				"time_taken_ms", time.Since(start).Milliseconds(),
-				"status_code", lrw.statusCode,
+			l.Info("Incoming request",
+				zap.String("method", r.Method),
+				zap.String("uri", r.RequestURI),
+				zap.String("user_agent", r.UserAgent()),
+				zap.Int64("time_taken_ms", time.Since(start).Milliseconds()),
+				zap.Int("status_code", lrw.statusCode),
 			)
 		}()
 
@@ -78,9 +79,9 @@ func Recover(next http.Handler) http.Handler {
 				stack := make([]byte, stackSize)
 				stack = stack[:runtime.Stack(stack, false)]
 
-				l.Fatalw("panic recovery",
-					"stack", stack,
-					"error", err,
+				l.Fatal("panic recovery",
+					zap.ByteString("stack", stack),
+					zap.Error(fmt.Errorf("%v", err)),
 				)
 
 				http.Error(

@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	"github.com/ayoisaiah/stellar-photos"
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
@@ -184,8 +186,8 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 
 	files, err := os.ReadDir("cached_images")
 	if err != nil {
-		l.Warnw("unable to locate cache directory",
-			"error", err,
+		l.Warn("unable to locate cache directory",
+			zap.Error(err),
 		)
 
 		return
@@ -203,12 +205,10 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 		if _, ok := photos[id]; !ok {
 			err := os.RemoveAll(filepath.Join("cached_images", id))
 			if err != nil {
-				l.Warnw(
+				l.Warn(
 					"unable to delete photo from image cache",
-					"image_id",
-					id,
-					"error",
-					err,
+					zap.String("image_id", id),
+					zap.Error(err),
 				)
 
 				continue
@@ -216,8 +216,8 @@ func cleanup(photos map[string]stellar.UnsplashPhoto) {
 
 			cleaned[id] = true
 
-			l.Infow("deleted image from cache successfully",
-				"image_id", id,
+			l.Info("deleted image from cache successfully",
+				zap.String("image_id", id),
 			)
 		}
 	}
@@ -235,12 +235,12 @@ func Photos() {
 
 	l := logger.L()
 
-	l.Infow("pre-caching all images in default collection")
+	l.Info("pre-caching all images in default collection")
 
 	photos, err := retrieveAllPhotos()
 	if err != nil {
-		l.Errorw("unable to retrieve all images in default collection",
-			"error", err,
+		l.Error("unable to retrieve all images in default collection",
+			zap.Error(err),
 		)
 
 		return
@@ -248,8 +248,8 @@ func Photos() {
 
 	errs := downloadPhotos(photos)
 	if len(errs) != 0 {
-		l.Warnw("some cache image downloads failed to complete",
-			"errors", errs,
+		l.Warn("some cache image downloads failed to complete",
+			zap.Any("errors", errs),
 		)
 
 		return
@@ -257,5 +257,5 @@ func Photos() {
 
 	cleanup(photos)
 
-	l.Infow("default images cached successfully!")
+	l.Info("default images cached successfully!")
 }
