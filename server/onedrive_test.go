@@ -39,7 +39,7 @@ func TestSendOnedriveID(t *testing.T) {
 }
 
 func TestAuthorizeOnedrive(t *testing.T) {
-	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
+	mocks.GetDoFunc = func(_ *http.Request) (*http.Response, error) {
 		body, err := os.ReadFile("testdata/onedrive_auth_response.json")
 		if err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func TestAuthorizeOnedrive(t *testing.T) {
 }
 
 func TestRefreshOnedriveToken(t *testing.T) {
-	mocks.GetDoFunc = func(req *http.Request) (*http.Response, error) {
+	mocks.GetDoFunc = func(_ *http.Request) (*http.Response, error) {
 		body, err := os.ReadFile("testdata/onedrive_auth_response.json")
 		if err != nil {
 			return nil, err

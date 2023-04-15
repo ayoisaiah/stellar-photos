@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/logger"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 )
 
 type contextKey string
@@ -28,11 +29,11 @@ const (
 // not found in the cache.
 func GetImageBase64(
 	ctx context.Context,
-	endpoint, filename, id string,
+	endpoint, imageWidth, id string,
 ) (string, error) {
 	l := logger.FromCtx(ctx)
 
-	filePath := filepath.Join("cached_images", id, filename) + ".txt"
+	filePath := filepath.Join("cached_images", id, imageWidth) + ".txt"
 
 	var base64Str string
 
@@ -41,15 +42,19 @@ func GetImageBase64(
 		if err == nil {
 			base64Str = string(b)
 
-			l.Info("retrieved unsplash image from the cache",
+			m := metrics.Get()
+			m.CacheOrNetwork.WithLabelValues("cache").Inc()
+
+			l.Debug("successfully retrieved cached unsplash image",
 				zap.String("image_id", id),
-				zap.String("file_name", filename),
+				zap.String("image_width", imageWidth),
+				zap.Bool("cache", true),
 			)
 
 			return base64Str, nil
 		}
 
-		l.Warn("unable to read cached image file",
+		l.Warn("failed to read cached image file",
 			zap.String("path", filePath),
 			zap.Error(err),
 		)
@@ -60,15 +65,15 @@ func GetImageBase64(
 	base64Str, err = imageURLToBase64(endpoint)
 	if err != nil {
 		return base64Str, fmt.Errorf(
-			"unable to encode image at url '%s' as base64: %w",
+			"unable to base64 encode image at url '%s': %w",
 			endpoint,
 			err,
 		)
 	}
 
-	l.Info("retrieved unsplash image from the network",
+	l.Debug("successfully retrieved unsplash image from the network",
 		zap.String("image_id", id),
-		zap.String("file_name", filename),
+		zap.String("image_width", imageWidth),
 	)
 
 	return base64Str, nil

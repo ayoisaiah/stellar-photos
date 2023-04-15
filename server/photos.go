@@ -8,8 +8,12 @@ import (
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/ayoisaiah/stellar-photos/logger"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 )
 
 // UnsplashAPIBaseURL represents the base URL for requests to Unsplash's API.
@@ -158,21 +162,36 @@ var (
 func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
+	l := logger.FromCtx(ctx)
+
+	l.Log(logger.TraceLevel, "photo download initated")
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
 	}
+
+	l.Debug(
+		"query parameters for download request",
+		zap.String("query", values.Encode()),
+	)
 
 	id := values.Get("id")
 	if id == "" {
 		return errEmptyPhotoID
 	}
 
+	ctx = context.WithValue(ctx, DownloadCtxKey, "save_locally")
+
 	_, err = TrackPhotoDownload(ctx, id)
 
 	if err != nil {
 		return err
 	}
+
+	l.Log(logger.TraceLevel, "download successfully initiated for photo: "+id,
+		zap.String("image_id", id),
+	)
 
 	w.WriteHeader(http.StatusOK)
 
@@ -186,6 +205,22 @@ func TrackPhotoDownload(
 	id string,
 ) ([]byte, error) {
 	conf := config.Get()
+
+	l := logger.FromCtx(ctx)
+
+	l.Log(
+		logger.TraceLevel,
+		"notify Unsplash of download intent for: "+id,
+		zap.String("image_id", id),
+	)
+
+	val, ok := ctx.Value(DownloadCtxKey).(string)
+	if !ok {
+		val = "unknown"
+	}
+
+	m := metrics.Get()
+	m.ImageDownload.WithLabelValues(id, val)
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
@@ -205,6 +240,8 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := r.Context()
 
+	l := logger.FromCtx(ctx)
+
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -212,6 +249,11 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 
 	key := values.Get("key")
 	page := values.Get("page")
+
+	l.Debug("search query initated for: "+key,
+		zap.String("key", key),
+		zap.String("page", page),
+	)
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
@@ -253,6 +295,9 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	resolution := values.Get("resolution")
+	if resolution == "" {
+		resolution = "standard"
+	}
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(
@@ -269,9 +314,14 @@ func GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf("unable to fetch a random image from : %w", err)
 	}
 
-	imageWidth := "2000"
+	m := metrics.Get()
+	m.ResolutionCount.WithLabelValues(resolution).Inc()
+
+	var imageWidth string
 
 	switch resolution {
+	case "standard":
+		imageWidth = "2000"
 	case "high":
 		highRes := 4000
 		if photo.Width >= highRes {

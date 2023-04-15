@@ -110,7 +110,11 @@ func Ready(w http.ResponseWriter, r *http.Request) error {
 	h := newHealth()
 	h.Description = "readiness checks"
 
-	c := unsplashCheck(r.Context())
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+
+	defer cancel()
+
+	c := unsplashCheck(ctx)
 
 	h.Checks = make(map[string]*Check)
 	h.Checks["unsplash"] = c

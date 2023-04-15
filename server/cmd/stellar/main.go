@@ -6,13 +6,21 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 	"github.com/rs/cors"
+	"go.uber.org/zap"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ayoisaiah/stellar-photos"
+	"github.com/ayoisaiah/stellar-photos/cache"
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/health"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/logger"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 	"github.com/ayoisaiah/stellar-photos/middleware"
 )
 
@@ -31,6 +39,9 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	m := metrics.Get()
+	m.ErrorCount.WithLabelValues().Inc()
+
 	utils.HandleError(r.Context(), w, err)
 }
 
@@ -38,8 +49,16 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func newRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("/health/live", rootHandler(health.Live))
-	mux.Handle("/health/ready", rootHandler(health.Ready))
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewGoCollector())
+	metrics.Init(reg)
+	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{
+		Registry: reg,
+	})
+
+	mux.Handle("/metrics/", promHandler)
+	mux.Handle("/health/live/", rootHandler(health.Live))
+	mux.Handle("/health/ready/", rootHandler(health.Ready))
 
 	mux.Handle("/download-photo/", rootHandler(stellar.DownloadPhoto))
 	mux.Handle("/search-unsplash/", rootHandler(stellar.SearchUnsplash))
@@ -77,6 +96,8 @@ func run() error {
 
 	conf := config.Get()
 
+	l := logger.L()
+
 	port := ":" + conf.Port
 
 	mux := newRouter()
@@ -94,24 +115,24 @@ func run() error {
 		ReadTimeout:       5 * time.Second,
 	}
 
-	// go func() {
-	// 	cache.Photos()
-	//
-	// 	c := cron.New()
-	//
-	// 	_, err := c.AddFunc("@daily", func() {
-	// 		cache.Photos()
-	// 	})
-	// 	if err != nil {
-	// 		app.L.Infow("unable to schedule cron job",
-	// 			"error", err,
-	// 		)
-	// 	}
-	//
-	// 	c.Start()
-	// }()
+	if conf.GoEnv == config.EnvProduction {
+		go func() {
+			cache.Photos()
 
-	l := logger.L()
+			c := cron.New()
+
+			_, err := c.AddFunc("@daily", func() {
+				cache.Photos()
+			})
+			if err != nil {
+				l.Error("unable to schedule cron job",
+					zap.Error(err),
+				)
+			}
+
+			c.Start()
+		}()
+	}
 
 	l.Info(
 		"Stellar Photos Server is listening on port: " + conf.Port,

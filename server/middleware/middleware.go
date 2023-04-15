@@ -7,14 +7,17 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/mileusna/useragent"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/logger"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 )
 
 type loggingResponseWriter struct {
@@ -31,8 +34,15 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.ResponseWriter.WriteHeader(code)
 }
 
+// RequestLogger logs incoming requests and increments relevant metrics.
 func RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ua := useragent.Parse(r.UserAgent())
+
+		m := metrics.Get()
+		m.TotalRequests.WithLabelValues(r.URL.Path).Inc()
+		m.UserAgent.WithLabelValues(ua.Name).Inc()
+
 		start := time.Now()
 
 		requestID := xid.New().String()
@@ -55,9 +65,21 @@ func RequestLogger(next http.Handler) http.Handler {
 		*r = *r2
 
 		defer func() {
-			l.Info("Incoming request",
+			m.RequestDuration.WithLabelValues(r.URL.Path).
+				Observe(time.Since(start).Seconds())
+
+			l.Info(
+				strings.Join(
+					[]string{
+						"Incoming request:",
+						r.Method,
+						r.URL.RequestURI(),
+						strconv.Itoa(lrw.statusCode),
+					},
+					" ",
+				),
 				zap.String("method", r.Method),
-				zap.String("uri", r.RequestURI),
+				zap.String("uri", r.URL.RequestURI()),
 				zap.String("user_agent", r.UserAgent()),
 				zap.Int64("time_taken_ms", time.Since(start).Milliseconds()),
 				zap.Int("status_code", lrw.statusCode),
@@ -68,6 +90,7 @@ func RequestLogger(next http.Handler) http.Handler {
 	})
 }
 
+// Recover is used to log a panic before exiting the program.
 func Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -79,15 +102,16 @@ func Recover(next http.Handler) http.Handler {
 				stack := make([]byte, stackSize)
 				stack = stack[:runtime.Stack(stack, false)]
 
-				l.Fatal("panic recovery",
-					zap.ByteString("stack", stack),
-					zap.Error(fmt.Errorf("%v", err)),
-				)
-
 				http.Error(
 					w,
 					http.StatusText(http.StatusInternalServerError),
 					http.StatusInternalServerError,
+				)
+
+				// This will exit the program after logging the error
+				l.Fatal("panic recovery",
+					zap.ByteString("stack", stack),
+					zap.Error(fmt.Errorf("%v", err)),
 				)
 			}
 		}()

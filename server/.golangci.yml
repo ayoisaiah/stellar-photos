@@ -32,7 +32,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - dupl
@@ -59,14 +58,13 @@ linters:
     - predeclared
     - revive
     - staticcheck
-    - structcheck
     - stylecheck
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
-    - varcheck
+    - unused
     - whitespace
     - wsl
 
@@ -81,12 +79,12 @@ issues:
         - gosec
 
     - path: _test\.go
-      text: "ifElseChain"
+      text: 'ifElseChain'
       linters:
         - gocritic
 rules:
   - linters:
-    - funlen
+      - funlen
     severity: info
 
 run:

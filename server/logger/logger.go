@@ -13,11 +13,37 @@ import (
 	"github.com/ayoisaiah/stellar-photos/config"
 )
 
+const TraceLevel = zapcore.DebugLevel - 1
+
 var once sync.Once
 
 var defaultLogger *zap.Logger
 
 type ctxKey struct{}
+
+func NewDevZapLogger(lvl zapcore.LevelEnabler) *zap.Logger {
+	encCfg := zap.NewDevelopmentEncoderConfig()
+	encCfg.EncodeLevel = lowerCaseLevelEncoder
+	zapCore := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encCfg),
+		zapcore.AddSync(os.Stderr),
+		lvl,
+	)
+
+	return zap.New(zapCore)
+}
+
+func lowerCaseLevelEncoder(
+	level zapcore.Level,
+	enc zapcore.PrimitiveArrayEncoder,
+) {
+	if level == TraceLevel {
+		enc.AppendString("trace")
+		return
+	}
+
+	zapcore.LowercaseLevelEncoder(level, enc)
+}
 
 // L initializes a zap logger once and returns it.
 func L() *zap.Logger {
@@ -28,7 +54,7 @@ func L() *zap.Logger {
 			logLevelInt = int(zap.InfoLevel)
 		}
 
-		if logLevelInt > 5 || logLevelInt < -1 {
+		if logLevelInt > 5 || logLevelInt < -2 {
 			logLevelInt = int(zap.InfoLevel)
 		}
 
@@ -40,6 +66,7 @@ func L() *zap.Logger {
 		encoderCfg := zap.NewProductionEncoderConfig()
 		encoderCfg.TimeKey = "timestamp"
 		encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+		encoderCfg.EncodeLevel = lowerCaseLevelEncoder
 
 		core := zapcore.NewCore(
 			zapcore.NewJSONEncoder(encoderCfg),
@@ -62,6 +89,7 @@ func L() *zap.Logger {
 		defaultLogger = zap.New(core).With(
 			zap.String("git_revision", gitRevision),
 			zap.String("go_version", buildInfo.GoVersion),
+			zap.Int("pid", os.Getpid()),
 		)
 	})
 

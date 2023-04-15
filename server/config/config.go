@@ -6,6 +6,12 @@ import (
 	"sync"
 )
 
+const (
+	EnvProduction  = "production"
+	EnvDevelopment = "development"
+	EnvTesting     = "testing"
+)
+
 // Config represents the all the environmental variables that should be present
 // on start up.
 type Config struct {
@@ -52,7 +58,7 @@ func Get() *Config {
 	once.Do(func() {
 		conf = &Config{
 			Port:        getEnv("PORT", "8080"),
-			GoEnv:       getEnv("GO_ENV", "development"),
+			GoEnv:       getEnv("GO_ENV", EnvDevelopment),
 			LogLevel:    getEnv("LOG_LEVEL", "0"),
 			RedirectURL: getEnv("REDIRECT_URL", ""),
 			Unsplash: UnsplashConfig{
@@ -83,7 +89,7 @@ func getEnv(key, defaultVal string) string {
 		return value
 	}
 
-	if defaultVal == "" && os.Getenv("GO_ENV") != "testing" {
+	if defaultVal == "" && os.Getenv("GO_ENV") != EnvTesting {
 		log.Fatalf("%s has not been set in your ENV", key)
 	}
 

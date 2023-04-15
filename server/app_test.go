@@ -9,8 +9,6 @@ import (
 	"github.com/ayoisaiah/stellar-photos/internal/utils/mocks"
 )
 
-var testApp *App
-
 func TestMain(m *testing.M) {
 	utils.Client = &mocks.MockClient{}
 

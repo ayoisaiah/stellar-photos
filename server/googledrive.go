@@ -152,6 +152,8 @@ func SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
 	id := values.Get("id")
 	url := values.Get("url")
 
+	ctx = context.WithValue(ctx, DownloadCtxKey, "save_to_googledrive")
+
 	_, err = TrackPhotoDownload(ctx, id)
 	if err != nil {
 		return err
