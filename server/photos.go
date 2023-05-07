@@ -181,7 +181,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 		return errEmptyPhotoID
 	}
 
-	ctx = context.WithValue(ctx, DownloadCtxKey, "save_locally")
+	ctx = context.WithValue(ctx, DownloadCtxKey, "local")
 
 	_, err = TrackPhotoDownload(ctx, id)
 
@@ -214,13 +214,13 @@ func TrackPhotoDownload(
 		zap.String("image_id", id),
 	)
 
-	val, ok := ctx.Value(DownloadCtxKey).(string)
+	downloadCtx, ok := ctx.Value(DownloadCtxKey).(string)
 	if !ok {
-		val = "unknown"
+		downloadCtx = "unknown"
 	}
 
 	m := metrics.Get()
-	m.ImageDownload.WithLabelValues(id, val)
+	m.ImageDownload.WithLabelValues(downloadCtx)
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
 	url := fmt.Sprintf(

@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 type Prometheus struct {
@@ -16,7 +17,10 @@ type Prometheus struct {
 
 var m *Prometheus
 
-func Init(reg prometheus.Registerer) {
+func Init() *prometheus.Registry {
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewGoCollector())
+
 	m = &Prometheus{
 		TotalRequests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -27,7 +31,7 @@ func Init(reg prometheus.Registerer) {
 		),
 		ResolutionCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "resolution_count_total",
+				Name: "image_resolution_count_total",
 				Help: "Tracking requested image resolutions",
 			},
 			[]string{"resolution"},
@@ -45,7 +49,7 @@ func Init(reg prometheus.Registerer) {
 				Help: "Tracking downloaded images",
 			},
 
-			[]string{"image_id", "download_ctx"},
+			[]string{"download_ctx"},
 		),
 		UserAgent: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -78,8 +82,14 @@ func Init(reg prometheus.Registerer) {
 		m.UserAgent,
 		m.CacheOrNetwork,
 	)
+
+	return reg
 }
 
 func Get() *Prometheus {
+	if m == nil {
+		Init()
+	}
+
 	return m
 }

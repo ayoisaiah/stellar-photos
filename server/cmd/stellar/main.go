@@ -10,8 +10,6 @@ import (
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ayoisaiah/stellar-photos"
@@ -49,9 +47,7 @@ func (fn rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func newRouter() http.Handler {
 	mux := http.NewServeMux()
 
-	reg := prometheus.NewRegistry()
-	reg.MustRegister(collectors.NewGoCollector())
-	metrics.Init(reg)
+	reg := metrics.Init()
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{
 		Registry: reg,
 	})
