@@ -2,13 +2,13 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/cors"
-	"go.uber.org/zap"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -122,7 +122,7 @@ func run() error {
 			})
 			if err != nil {
 				l.Error("unable to schedule cron job",
-					zap.Error(err),
+					slog.Any("error", err),
 				)
 			}
 

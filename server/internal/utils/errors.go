@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
-
-	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/logger"
 )
@@ -122,7 +121,7 @@ func HandleError(
 
 	if statusCode >= http.StatusInternalServerError {
 		l.Error("an unexpected error occurred",
-			zap.Error(origErr),
+			slog.Any("error", origErr),
 		)
 	}
 
@@ -132,7 +131,7 @@ func HandleError(
 	_, err = w.Write(b)
 	if err != nil {
 		l.Error("unable to send error response to client",
-			zap.Error(err),
+			slog.Any("error", err),
 		)
 	}
 }

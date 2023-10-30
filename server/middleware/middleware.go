@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -13,7 +15,6 @@ import (
 
 	"github.com/mileusna/useragent"
 	"github.com/rs/xid"
-	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/logger"
@@ -57,8 +58,7 @@ func RequestLogger(next http.Handler) http.Handler {
 
 		lrw := newLoggingResponseWriter(w)
 
-		l := logger.L().
-			WithOptions(zap.Fields(zap.String("request_id", requestID)))
+		l := logger.L().With(slog.String("request_id", requestID))
 
 		r2 = r2.WithContext(logger.WithContext(r2.Context(), l))
 
@@ -68,7 +68,9 @@ func RequestLogger(next http.Handler) http.Handler {
 			m.RequestDuration.WithLabelValues(r.URL.Path).
 				Observe(time.Since(start).Seconds())
 
-			l.Info(
+			l.Log(
+				ctx,
+				slog.LevelInfo,
 				strings.Join(
 					[]string{
 						"Incoming request:",
@@ -78,11 +80,11 @@ func RequestLogger(next http.Handler) http.Handler {
 					},
 					" ",
 				),
-				zap.String("method", r.Method),
-				zap.String("uri", r.URL.RequestURI()),
-				zap.String("user_agent", r.UserAgent()),
-				zap.Int64("time_taken_ms", time.Since(start).Milliseconds()),
-				zap.Int("status_code", lrw.statusCode),
+				slog.String("method", r.Method),
+				slog.String("uri", r.URL.RequestURI()),
+				slog.String("user_agent", r.UserAgent()),
+				slog.Int64("time_taken_ms", time.Since(start).Milliseconds()),
+				slog.Int("status_code", lrw.statusCode),
 			)
 		}()
 
@@ -109,10 +111,11 @@ func Recover(next http.Handler) http.Handler {
 				)
 
 				// This will exit the program after logging the error
-				l.Fatal("panic recovery",
-					zap.ByteString("stack", stack),
-					zap.Error(fmt.Errorf("%v", err)),
+				l.Log(ctx, logger.LevelFatal, "panic recovery",
+					slog.String("stack", string(stack)),
+					slog.Any("error", fmt.Errorf("%v", err)),
 				)
+				os.Exit(1)
 			}
 		}()
 

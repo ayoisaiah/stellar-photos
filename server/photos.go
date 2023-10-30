@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
@@ -164,7 +163,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	l := logger.FromCtx(ctx)
 
-	l.Log(logger.TraceLevel, "photo download initated")
+	l.Log(ctx, logger.LevelTrace, "photo download initated")
 
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
@@ -173,7 +172,7 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	l.Debug(
 		"query parameters for download request",
-		zap.String("query", values.Encode()),
+		slog.String("query", values.Encode()),
 	)
 
 	id := values.Get("id")
@@ -189,8 +188,11 @@ func DownloadPhoto(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	l.Log(logger.TraceLevel, "download successfully initiated for photo: "+id,
-		zap.String("image_id", id),
+	l.Log(
+		ctx,
+		logger.LevelTrace,
+		"download successfully initiated for photo: "+id,
+		slog.String("image_id", id),
 	)
 
 	w.WriteHeader(http.StatusOK)
@@ -209,9 +211,10 @@ func TrackPhotoDownload(
 	l := logger.FromCtx(ctx)
 
 	l.Log(
-		logger.TraceLevel,
+		ctx,
+		logger.LevelTrace,
 		"notify Unsplash of download intent for: "+id,
-		zap.String("image_id", id),
+		slog.String("image_id", id),
 	)
 
 	downloadCtx, ok := ctx.Value(DownloadCtxKey).(string)
@@ -251,8 +254,8 @@ func SearchUnsplash(w http.ResponseWriter, r *http.Request) error {
 	page := values.Get("page")
 
 	l.Debug("search query initated for: "+key,
-		zap.String("key", key),
-		zap.String("page", page),
+		slog.String("key", key),
+		slog.String("page", page),
 	)
 
 	unsplashAccessKey := conf.Unsplash.AccessKey

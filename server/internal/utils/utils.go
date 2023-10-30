@@ -5,13 +5,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/ayoisaiah/stellar-photos/logger"
 	"github.com/ayoisaiah/stellar-photos/metrics"
@@ -46,17 +45,17 @@ func GetImageBase64(
 			m.CacheOrNetwork.WithLabelValues("cache").Inc()
 
 			l.Debug("successfully retrieved cached unsplash image",
-				zap.String("image_id", id),
-				zap.String("image_width", imageWidth),
-				zap.Bool("cache", true),
+				slog.String("image_id", id),
+				slog.String("image_width", imageWidth),
+				slog.Bool("cache", true),
 			)
 
 			return base64Str, nil
 		}
 
 		l.Warn("failed to read cached image file",
-			zap.String("path", filePath),
-			zap.Error(err),
+			slog.String("path", filePath),
+			slog.Any("error", err),
 		)
 	}
 
@@ -72,8 +71,8 @@ func GetImageBase64(
 	}
 
 	l.Debug("successfully retrieved unsplash image from the network",
-		zap.String("image_id", id),
-		zap.String("image_width", imageWidth),
+		slog.String("image_id", id),
+		slog.String("image_width", imageWidth),
 	)
 
 	return base64Str, nil
