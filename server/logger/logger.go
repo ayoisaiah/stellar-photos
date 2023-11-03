@@ -98,10 +98,10 @@ func L() *slog.Logger {
 	return defaultLogger
 }
 
-// FromCtx returns the Logger associated with the ctx. If no logger
+// Ctx returns the Logger associated with the ctx. If no logger
 // is associated, the default logger is returned, unless it is nil
 // in which case a disabled logger is returned.
-func FromCtx(ctx context.Context) *slog.Logger {
+func Ctx(ctx context.Context) *slog.Logger {
 	if l, ok := ctx.Value(ctxKey{}).(*slog.Logger); ok {
 		return l
 	} else if l := defaultLogger; l != nil {

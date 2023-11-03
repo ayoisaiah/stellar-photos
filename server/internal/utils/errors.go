@@ -89,7 +89,7 @@ func HandleError(
 	w http.ResponseWriter,
 	origErr error,
 ) {
-	l := logger.FromCtx(ctx)
+	l := logger.Ctx(ctx)
 
 	statusCode := http.StatusInternalServerError
 

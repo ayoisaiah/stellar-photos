@@ -27,7 +27,11 @@ type Config struct {
 
 // UnsplashConfig represents Unsplash's API configuration variables.
 type UnsplashConfig struct {
-	AccessKey string
+	AccessKey         string
+	DefaultCollection string
+	DefaultResolution string
+	DefaultPerPage    int
+	BaseURL           string
 }
 
 // OnedriveConfig represents Onedrive's API configuration variables.
@@ -62,7 +66,11 @@ func Get() *Config {
 			LogLevel:    getEnv("LOG_LEVEL", "0"),
 			RedirectURL: getEnv("REDIRECT_URL", ""),
 			Unsplash: UnsplashConfig{
-				AccessKey: getEnv("UNSPLASH_ACCESS_KEY", ""),
+				AccessKey:         getEnv("UNSPLASH_ACCESS_KEY", ""),
+				DefaultCollection: "998309",
+				DefaultResolution: "standard",
+				DefaultPerPage:    28,
+				BaseURL:           "https://api.unsplash.com",
 			},
 			Onedrive: OnedriveConfig{
 				AppID:  getEnv("ONEDRIVE_APPID", ""),

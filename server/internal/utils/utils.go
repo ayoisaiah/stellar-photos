@@ -30,7 +30,7 @@ func GetImageBase64(
 	ctx context.Context,
 	endpoint, imageWidth, id string,
 ) (string, error) {
-	l := logger.FromCtx(ctx)
+	l := logger.Ctx(ctx)
 
 	filePath := filepath.Join("cached_images", id, imageWidth) + ".txt"
 

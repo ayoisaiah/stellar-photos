@@ -13,6 +13,27 @@ var errInvalidJSONPayload = &HTTPError{
 	Status: http.StatusInternalServerError,
 }
 
+func GETRequest(ctx context.Context, endpoint string) ([]byte, error) {
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint,
+		http.NoBody,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := Client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	return CheckForErrors(resp)
+}
+
 // SendGETRequest makes an HTTP GET request and decodes the JSON
 // response into the provided target interface.
 func SendGETRequest(
