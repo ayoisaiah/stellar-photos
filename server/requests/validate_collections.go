@@ -7,33 +7,31 @@ import (
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
-var errEmptyCollectionID = &utils.HTTPError{
-	Detail: "At least one collection ID must be present",
-	Status: http.StatusBadRequest,
-}
-
-// UnsplashCollections represents a request to validate the provided collection
+// ValidateFilters represents a request to validate the provided collection
 // IDs.
-type UnsplashCollections struct {
+type ValidateFilters struct {
 	Collections []string `json:"-"`
+	Topics      []string `json:"-"`
 }
 
-func (u *UnsplashCollections) Init(r *http.Request) error {
+func (v *ValidateFilters) Init(r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
 	}
 
 	collections := strings.Split(values.Get("collections"), ",")
+	topics := strings.Split(values.Get("topics"), ",")
 
-	u.Collections = collections
+	v.Collections = collections
+	v.Topics = topics
 
-	return u.validate()
+	return v.validate()
 }
 
-func (u *UnsplashCollections) validate() error {
-	if len(u.Collections) == 0 {
-		return errEmptyCollectionID
+func (v *ValidateFilters) validate() error {
+	if len(v.Collections) == 0 && len(v.Topics) == 0 {
+		// TODO: Return an error
 	}
 
 	return nil

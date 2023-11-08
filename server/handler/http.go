@@ -86,11 +86,11 @@ func (h *Handler) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	return utils.JSONResponse(ctx, w, resp)
 }
 
-func (h *Handler) ValidateCollections(
+func (h *Handler) ValidateFilters(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	var p requests.UnsplashCollections
+	var p requests.ValidateFilters
 
 	err := p.Init(r)
 	if err != nil {
@@ -99,7 +99,7 @@ func (h *Handler) ValidateCollections(
 
 	ctx := r.Context()
 
-	err = h.app.ValidateCollections(ctx, &p)
+	err = h.app.ValidateFilters(ctx, &p)
 	if err != nil {
 		return err
 	}

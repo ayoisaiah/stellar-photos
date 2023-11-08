@@ -63,7 +63,7 @@ func NewHTTPServer() *http.Server {
 		r.Method(
 			http.MethodGet,
 			"/collections",
-			middleware.ErrorHandler(s.h.ValidateCollections),
+			middleware.ErrorHandler(s.h.ValidateFilters),
 		)
 	})
 

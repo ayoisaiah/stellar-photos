@@ -148,9 +148,9 @@ func (a *App) GetRandomPhoto(
 	return json.Marshal(p)
 }
 
-func (a *App) ValidateCollections(
+func (a *App) ValidateFilters(
 	ctx context.Context,
-	req *requests.UnsplashCollections,
+	req *requests.ValidateFilters,
 ) error {
 	conf := config.Get()
 
@@ -165,6 +165,22 @@ func (a *App) ValidateCollections(
 		)
 
 		var c models.UnsplashCollection
+
+		_, err := utils.SendGETRequest(ctx, url, &c)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, value := range req.Topics {
+		url := fmt.Sprintf(
+			"%s/topics/%s/?client_id=%s",
+			conf.Unsplash.BaseURL,
+			value,
+			unsplashAccessKey,
+		)
+
+		var c models.UnsplashTopic
 
 		_, err := utils.SendGETRequest(ctx, url, &c)
 		if err != nil {
