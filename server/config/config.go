@@ -29,7 +29,6 @@ type Config struct {
 type UnsplashConfig struct {
 	AccessKey         string
 	DefaultCollection string
-	DefaultResolution string
 	DefaultPerPage    int
 	BaseURL           string
 }
@@ -68,7 +67,6 @@ func Get() *Config {
 			Unsplash: UnsplashConfig{
 				AccessKey:         getEnv("UNSPLASH_ACCESS_KEY", ""),
 				DefaultCollection: "998309",
-				DefaultResolution: "standard",
 				DefaultPerPage:    28,
 				BaseURL:           "https://api.unsplash.com",
 			},

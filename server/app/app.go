@@ -107,10 +107,24 @@ func (a *App) GetRandomPhoto(
 
 	var p models.UnsplashPhoto
 
+	var filter string
+
+	//nolint:gocritic // rewrite to switch unnecessary
+	if req.Collections != "" {
+		filter = "collections=" + req.Collections
+	} else if req.Topics != "" {
+		filter = "topics=" + req.Topics
+	} else if req.Query != "" {
+		// TODO: URL encode query?
+		filter = "query=" + req.Query
+	}
+
 	url := fmt.Sprintf(
-		"%s/photos/random?collections=%s&client_id=%s",
+		"%s/photos/random?%s&orientation=%s&content_filter=%s&client_id=%s",
 		conf.Unsplash.BaseURL,
-		req.Collections,
+		filter,
+		req.Orientation,
+		req.ContentFilter,
 		unsplashAccessKey,
 	)
 
