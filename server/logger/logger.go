@@ -8,9 +8,8 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
-	"time"
 
-	"github.com/lmittmann/tint"
+	"github.com/charmbracelet/log"
 
 	"github.com/ayoisaiah/stellar-photos/config"
 )
@@ -78,10 +77,7 @@ func L() *slog.Logger {
 		}
 
 		if conf.GoEnv == config.EnvDevelopment {
-			handler = tint.NewHandler(os.Stdout, &tint.Options{
-				Level:      logLevel,
-				TimeFormat: time.Kitchen,
-			})
+			handler = log.New(os.Stdout)
 		}
 
 		defaultLogger = slog.New(handler)
