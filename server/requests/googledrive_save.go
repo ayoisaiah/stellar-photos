@@ -7,13 +7,15 @@ import (
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
-type SavePhotoToDrive struct {
-	Token string `json:"-"`
-	ImageID    string `json:"-"`
-	URL   string `json:"-"`
+// SavePhotoToCloud represents a request to upload an image to either
+// Google Drive or Dropbox.
+type SavePhotoToCloud struct {
+	Token   string `json:"-"`
+	ImageID string `json:"-"`
+	URL     string `json:"-"`
 }
 
-func (p *SavePhotoToDrive) Init(r *http.Request) error {
+func (p *SavePhotoToCloud) Init(r *http.Request) error {
 	values, err := utils.GetURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
@@ -26,7 +28,7 @@ func (p *SavePhotoToDrive) Init(r *http.Request) error {
 	return p.validate()
 }
 
-func (p *SavePhotoToDrive) validate() error {
+func (p *SavePhotoToCloud) validate() error {
 	// TODO: validate
 
 	return nil

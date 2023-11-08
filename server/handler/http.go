@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/ayoisaiah/stellar-photos/app"
 	"github.com/ayoisaiah/stellar-photos/config"
+	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/requests"
 )
@@ -109,7 +112,10 @@ func (h *Handler) ValidateCollections(
 // SendGoogleDriveKey handles /gdrive/key
 // It sends the application key to the client on request to avoid exposing it in
 // the extension code.
-func (h *Handler) SendGoogleDriveKey(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) SendGoogleDriveKey(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
 	ctx := r.Context()
 
 	key := config.Get().GoogleDrive.Key
@@ -161,14 +167,16 @@ func (h *Handler) RefreshGoogleDriveToken(
 	if err != nil {
 		return err
 	}
-
 	return utils.JSONResponse(ctx, w, resp)
 }
 
 // SaveToGoogleDrive handles /gdrive/save
 // It saves the requested photo to the current user's Google Drive account.
-func (h *Handler) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) error {
-	var p requests.SavePhotoToDrive
+func (h *Handler) SaveToGoogleDrive(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
+	var p requests.SavePhotoToCloud
 
 	err := p.Init(r)
 	if err != nil {
@@ -185,4 +193,142 @@ func (h *Handler) SaveToGoogleDrive(w http.ResponseWriter, r *http.Request) erro
 	w.WriteHeader(http.StatusOK)
 
 	return nil
+}
+
+// SendDropboxKey handles GET /dropbox/key
+// It sends the application key to the client on request to avoid exposing it in
+// the extension code.
+func (h *Handler) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
+	conf := config.Get()
+
+	ctx := r.Context()
+
+	key := conf.Dropbox.Key
+
+	b := []byte("{\"dropbox_key\":" + key + "}")
+
+	return utils.JSONResponse(ctx, w, b)
+}
+
+// SaveToDropbox handles GET /dropbox/save
+// It saves the requested photo to the current user's Dropbox account.
+func (h *Handler) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
+	var p requests.SavePhotoToCloud
+
+	err := p.Init(r)
+	if err != nil {
+		return err
+	}
+
+	ctx := r.Context()
+
+	err = h.app.SaveToDropbox(ctx, &p)
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	return nil
+}
+
+// SendOnedriveID sends the application id to the client on request.
+func (h *Handler) SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+	id := config.Get().Onedrive.AppID
+
+	b := []byte("{\"id\":" + id + "}")
+
+	return utils.JSONResponse(ctx, w, b)
+}
+
+// AuthorizeOnedrive handles GET /onedrive/auth.
+func (h *Handler) AuthorizeOnedrive(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
+	conf := config.Get()
+
+	ctx := r.Context()
+
+	values, err := utils.GetURLQueryParams(r.URL.String())
+	if err != nil {
+		return err
+	}
+
+	code := values.Get("code")
+	if code == "" {
+		return errors.New("authorization code not specified")
+	}
+
+	id := conf.Onedrive.AppID
+	secret := conf.Onedrive.Secret
+
+	formValues := map[string]string{
+		"grant_type":    "authorization_code",
+		"client_id":     id,
+		"client_secret": secret,
+		"code":          code,
+		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
+	}
+
+	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+	body, err := utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&models.OnedriveAuth{},
+	)
+	if err != nil {
+		return err
+	}
+
+	return utils.JSONResponse(ctx, w, body)
+}
+
+// RefreshOnedriveToken GET /onedrive/refresh
+// generates additional access tokens after the initial token has expired.
+func (h *Handler) RefreshOnedriveToken(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
+	conf := config.Get()
+
+	ctx := r.Context()
+
+	values, err := utils.GetURLQueryParams(r.URL.String())
+	if err != nil {
+		return err
+	}
+
+	refreshToken := values.Get("refresh_token")
+	if refreshToken == "" {
+		return errors.New("refresh token not specified")
+	}
+
+	id := conf.Onedrive.AppID
+	secret := conf.Onedrive.Secret
+
+	formValues := map[string]string{
+		"grant_type":    "refresh_token",
+		"client_id":     id,
+		"client_secret": secret,
+		"refresh_token": refreshToken,
+		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
+	}
+
+	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+	body, err := utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&models.OnedriveAuth{},
+	)
+	if err != nil {
+		return err
+	}
+
+	return utils.JSONResponse(ctx, w, body)
 }

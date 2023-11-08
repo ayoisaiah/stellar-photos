@@ -68,11 +68,58 @@ func NewHTTPServer() *http.Server {
 	})
 
 	mux.Route("/gdrive", func(r chi.Router) {
-		r.Method(http.MethodGet, "/key", middleware.ErrorHandler(s.h.SendGoogleDriveKey))
-		r.Method(http.MethodGet, "/auth", middleware.ErrorHandler(s.h.AuthorizeGoogleDrive))
-		r.Method(http.MethodGet, "/refresh", middleware.ErrorHandler(s.h.RefreshGoogleDriveToken))
+		r.Method(
+			http.MethodGet,
+			"/key",
+			middleware.ErrorHandler(s.h.SendGoogleDriveKey),
+		)
+		r.Method(
+			http.MethodGet,
+			"/auth",
+			middleware.ErrorHandler(s.h.AuthorizeGoogleDrive),
+		)
+		r.Method(
+			http.MethodGet,
+			"/refresh",
+			middleware.ErrorHandler(s.h.RefreshGoogleDriveToken),
+		)
 
-		r.Method(http.MethodGet, "/refresh", middleware.ErrorHandler(s.h.SaveToGoogleDrive))
+		r.Method(
+			http.MethodGet,
+			"/save",
+			middleware.ErrorHandler(s.h.SaveToGoogleDrive),
+		)
+	})
+
+	mux.Route("/dropbox", func(r chi.Router) {
+		r.Method(
+			http.MethodGet,
+			"/key",
+			middleware.ErrorHandler(s.h.SendDropboxKey),
+		)
+		r.Method(
+			http.MethodGet,
+			"/save",
+			middleware.ErrorHandler(s.h.SaveToDropbox),
+		)
+	})
+
+	mux.Route("/onedrive", func(r chi.Router) {
+		r.Method(
+			http.MethodGet,
+			"/id",
+			middleware.ErrorHandler(s.h.SendOnedriveID),
+		)
+		r.Method(
+			http.MethodGet,
+			"/auth",
+			middleware.ErrorHandler(s.h.AuthorizeOnedrive),
+		)
+		r.Method(
+			http.MethodGet,
+			"/refresh",
+			middleware.ErrorHandler(s.h.RefreshOnedriveToken),
+		)
 	})
 
 	// TODO: Review server options

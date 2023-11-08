@@ -1,10 +1,16 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/textproto"
 	"strconv"
+	"time"
 
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
@@ -18,7 +24,7 @@ func NewApp() App {
 	return App{}
 }
 
-func getDownloadURL(ctx context.Context, id string) ([]byte, error) {
+func trackPhotoDownload(ctx context.Context, id string) ([]byte, error) {
 	conf := config.Get()
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
@@ -38,7 +44,7 @@ func (a *App) GetDownloadLink(
 	ctx context.Context,
 	req *requests.DownloadPhoto,
 ) ([]byte, error) {
-	return getDownloadURL(ctx, req.ID)
+	return trackPhotoDownload(ctx, req.ID)
 }
 
 func (a *App) SearchPhotos(
@@ -57,9 +63,9 @@ func (a *App) SearchPhotos(
 		unsplashAccessKey,
 	)
 
-	var s *models.UnsplashSearchResult
+	var s models.UnsplashSearchResult
 
-	return utils.SendGETRequest(ctx, url, s)
+	return utils.SendGETRequest(ctx, url, &s)
 }
 
 func getBase64(
@@ -99,7 +105,7 @@ func (a *App) GetRandomPhoto(
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
 
-	var p *models.UnsplashPhoto
+	var p models.UnsplashPhoto
 
 	url := fmt.Sprintf(
 		"%s/photos/random?collections=%s&client_id=%s",
@@ -113,12 +119,12 @@ func (a *App) GetRandomPhoto(
 		return nil, err
 	}
 
-	err = json.Unmarshal(b, p)
+	err = json.Unmarshal(b, &p)
 	if err != nil {
 		return nil, err
 	}
 
-	base64, err := getBase64(ctx, req, p)
+	base64, err := getBase64(ctx, req, &p)
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +150,9 @@ func (a *App) ValidateCollections(
 			unsplashAccessKey,
 		)
 
-		var c *models.UnsplashCollection
+		var c models.UnsplashCollection
 
-		_, err := utils.SendGETRequest(ctx, url, c)
+		_, err := utils.SendGETRequest(ctx, url, &c)
 		if err != nil {
 			return err
 		}
@@ -174,13 +180,13 @@ func (a *App) AuthorizeGoogleDrive(
 
 	endpoint := "https://oauth2.googleapis.com/token"
 
-	var g *models.GoogleDriveAuth
+	var g models.GoogleDriveAuth
 
 	return utils.SendPOSTRequest(
 		ctx,
 		endpoint,
 		formValues,
-		g,
+		&g,
 	)
 }
 
@@ -202,12 +208,188 @@ func (a *App) RefreshGoogleDriveToken(
 
 	endpoint := "https://oauth2.googleapis.com/token"
 
-	var g *models.GoogleDriveAuth
+	var g models.GoogleDriveAuth
 
 	return utils.SendPOSTRequest(
 		ctx,
 		endpoint,
 		formValues,
-		g,
+		&g,
 	)
+}
+
+func (a *App) SaveToGoogleDrive(
+	ctx context.Context,
+	req *requests.SavePhotoToCloud,
+) error {
+	const saveToDriveTimeout = 180
+
+	_, err := trackPhotoDownload(ctx, req.ImageID)
+	if err != nil {
+		return err
+	}
+
+	v := fmt.Sprintf("Bearer %s", req.Token)
+
+	ctx, cncl := context.WithTimeout(
+		ctx,
+		time.Second*saveToDriveTimeout,
+	)
+	defer cncl()
+
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		req.URL,
+		http.NoBody,
+	)
+	if err != nil {
+		return err
+	}
+
+	resp, err := utils.Client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	respBody, err := utils.CheckForErrors(resp)
+	if err != nil {
+		return err
+	}
+
+	endpoint := "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
+
+	// Metadata content.
+	// New multipart writer.
+	body := &bytes.Buffer{}
+
+	writer := multipart.NewWriter(body)
+
+	// Metadata part.
+	metadata := fmt.Sprintf(`{"name": "photo-%s.jpeg"}`, req.ImageID)
+
+	metadataHeader := textproto.MIMEHeader{}
+
+	metadataHeader.Set("Content-Type", "application/json; charset=UTF-8")
+
+	part, _ := writer.CreatePart(metadataHeader)
+
+	_, err = part.Write([]byte(metadata))
+	if err != nil {
+		return err
+	}
+
+	mediaHeader := textproto.MIMEHeader{}
+	mediaHeader.Set("Content-Type", "image/jpeg")
+
+	mediaPart, _ := writer.CreatePart(mediaHeader)
+
+	_, err = io.Copy(mediaPart, bytes.NewReader(respBody))
+	if err != nil {
+		return err
+	}
+
+	// Close multipart writer.
+	writer.Close()
+
+	request, err = http.NewRequest(
+		"POST",
+		endpoint,
+		bytes.NewReader(body.Bytes()),
+	)
+	if err != nil {
+		return err
+	}
+
+	contentType := fmt.Sprintf(
+		"multipart/related; boundary=%s",
+		writer.Boundary(),
+	)
+
+	request.Header.Set("Content-Type", contentType)
+	request.Header.Set("Authorization", v)
+	request.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
+
+	response, err := utils.Client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	defer response.Body.Close()
+
+	_, err = utils.CheckForErrors(response)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) SaveToDropbox(
+	ctx context.Context,
+	req *requests.SavePhotoToCloud,
+) error {
+	_, err := trackPhotoDownload(ctx, req.ImageID)
+	if err != nil {
+		return err
+	}
+
+	v := fmt.Sprintf("Bearer %s", req.Token)
+
+	requestBody, err := json.Marshal(map[string]string{
+		"path": fmt.Sprintf("/photo-%s.jpg", req.ImageID),
+		"url":  req.URL,
+	})
+	if err != nil {
+		return err
+	}
+
+	endpoint := "https://api.dropboxapi.com/2/files/save_url"
+
+	request, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		endpoint,
+		bytes.NewBuffer(requestBody),
+	)
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", v)
+
+	response, err := utils.Client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	defer response.Body.Close()
+
+	b, err := utils.CheckForErrors(response)
+	if err != nil {
+		return err
+	}
+
+	resp := &models.DropboxSaveURLResponse{}
+
+	err = json.Unmarshal(b, resp)
+	if err != nil {
+		return err
+	}
+
+	if resp.Tag == "async_job_id" {
+		err = checkDropboxUploadStatus(ctx, resp.AsyncJobID, req.Token)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	} else if resp.Tag == "complete" {
+		return nil
+	}
+
+	return fmt.Errorf("save URL error. response from dropbox: %s", string(b))
 }
