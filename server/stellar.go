@@ -1,11 +1,10 @@
-package routes
+package stellar
 
 import (
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/go-chi/cors"
 
 	"github.com/ayoisaiah/stellar-photos/app"
 	"github.com/ayoisaiah/stellar-photos/config"
@@ -38,12 +37,11 @@ func NewHTTPServer() *http.Server {
 
 	s := NewRouter()
 
-	// TODO: Manage CORS in Caddy
-	mux.Use(cors.Handler(cors.Options{}))
 	mux.Use(middleware.CtxLogger)
 	mux.Use(middleware.RequestID)
 	mux.Use(middleware.Recover)
 
+	// TODO: Default 404 response?
 	mux.Route("/unsplash", func(r chi.Router) {
 		r.Method(
 			http.MethodGet,
@@ -62,7 +60,7 @@ func NewHTTPServer() *http.Server {
 		)
 		r.Method(
 			http.MethodGet,
-			"/collections",
+			"/validate",
 			middleware.ErrorHandler(s.h.ValidateFilters),
 		)
 	})
@@ -108,17 +106,17 @@ func NewHTTPServer() *http.Server {
 		r.Method(
 			http.MethodGet,
 			"/id",
-			middleware.ErrorHandler(s.h.SendOnedriveID),
+			middleware.ErrorHandler(s.h.SendOneDriveID),
 		)
 		r.Method(
 			http.MethodGet,
 			"/auth",
-			middleware.ErrorHandler(s.h.AuthorizeOnedrive),
+			middleware.ErrorHandler(s.h.AuthorizeOneDrive),
 		)
 		r.Method(
 			http.MethodGet,
 			"/refresh",
-			middleware.ErrorHandler(s.h.RefreshOnedriveToken),
+			middleware.ErrorHandler(s.h.RefreshOneDriveToken),
 		)
 	})
 

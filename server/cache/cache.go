@@ -9,31 +9,33 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ayoisaiah/stellar-photos"
 	"github.com/ayoisaiah/stellar-photos/config"
+	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
-const stellarPhotosCollectionID = 998309
+const modelsPhotosCollectionID = 998309
 
 const (
 	standardRes = 2000
 	highRes     = 4000
 )
 
-// getCollection retrieves the Stellar Photos Unsplash collection.
-func getCollection() (stellar.UnsplashCollection, error) {
+// getCollection retrieves the models Photos Unsplash collection.
+func getCollection() (models.UnsplashCollection, error) {
+	conf := config.Get()
+
 	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
 	url := fmt.Sprintf(
 		"%s/collections/%d?client_id=%s",
-		stellar.UnsplashAPIBaseURL,
-		stellarPhotosCollectionID,
+		conf.Unsplash.BaseURL,
+		modelsPhotosCollectionID,
 		unsplashAccessKey,
 	)
 
-	var c stellar.UnsplashCollection
+	var c models.UnsplashCollection
 
 	_, err := utils.SendGETRequest(context.Background(), url, &c)
 	if err != nil {
@@ -43,9 +45,11 @@ func getCollection() (stellar.UnsplashCollection, error) {
 	return c, nil
 }
 
-// retrieveAllPhotos fetches all the images in the default Stellar Photos
+// retrieveAllPhotos fetches all the images in the default models Photos
 // collection.
-func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
+func retrieveAllPhotos() (map[string]models.UnsplashPhoto, error) {
+	conf := config.Get()
+
 	collection, err := getCollection()
 	if err != nil {
 		return nil, err
@@ -53,17 +57,17 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 
 	unsplashAccessKey := config.Get().Unsplash.AccessKey
 
-	allPhotos := make([]stellar.UnsplashPhoto, collection.TotalPhotos)
+	allPhotos := make([]models.UnsplashPhoto, collection.TotalPhotos)
 
 	page, perPage := 1, 30
 
 	for {
-		var photos []stellar.UnsplashPhoto
+		var photos []models.UnsplashPhoto
 
 		url := fmt.Sprintf(
 			"%s/collections/%d/photos?page=%d&per_page=%d&client_id=%s",
-			stellar.UnsplashAPIBaseURL,
-			stellarPhotosCollectionID,
+			conf.Unsplash.BaseURL,
+			modelsPhotosCollectionID,
 			page,
 			perPage,
 			unsplashAccessKey,
@@ -83,7 +87,7 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 		page++
 	}
 
-	m := make(map[string]stellar.UnsplashPhoto)
+	m := make(map[string]models.UnsplashPhoto)
 
 	for i := range allPhotos {
 		v := allPhotos[i]
@@ -99,7 +103,7 @@ func retrieveAllPhotos() (map[string]stellar.UnsplashPhoto, error) {
 // downloadPhotos caches various resolutions of the Unsplash images in a local
 // directory.
 func downloadPhotos(
-	photos map[string]stellar.UnsplashPhoto,
+	photos map[string]models.UnsplashPhoto,
 ) map[string]error {
 	errs := make(map[string]error)
 
@@ -180,7 +184,7 @@ func downloadPhotos(
 
 // cleanup deletes any locally cached image that is no longer present
 // in the default collection.
-func cleanup(photos map[string]stellar.UnsplashPhoto) {
+func cleanup(photos map[string]models.UnsplashPhoto) {
 	l := logger.L()
 
 	files, err := os.ReadDir("cached_images")

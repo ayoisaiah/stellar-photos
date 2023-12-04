@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
-	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
 // DownloadPhoto represents a request to download an Unsplash image.
@@ -13,7 +12,7 @@ type DownloadPhoto struct {
 }
 
 func (d *DownloadPhoto) Init(r *http.Request) error {
-	values, err := utils.GetURLQueryParams(r.URL.String())
+	values, err := getURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
 	}

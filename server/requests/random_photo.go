@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/internal/utils"
 )
 
+// RandomPhoto represents a request to retrieve a random image from Unsplash
 type RandomPhoto struct {
 	Collections   string `json:"-"`
 	Resolution    string `json:"-"`
@@ -17,7 +17,6 @@ type RandomPhoto struct {
 	Orientation   string `json:"-"`
 	ContentFilter string `json:"-"`
 	Query         string `json:"-"`
-	// TODO: Add ability to filter by topic, user, query, orientation, etc
 }
 
 const (
@@ -39,11 +38,15 @@ const (
 
 var (
 	resolutions  = []string{ResolutionStandard, ResolutionHigh, ResolutionMax}
-	orientations = []string{OrientationLandscape, OrientationPortrait, OrientationSquarish}
+	orientations = []string{
+		OrientationLandscape,
+		OrientationPortrait,
+		OrientationSquarish,
+	}
 )
 
 func (p *RandomPhoto) Init(r *http.Request) error {
-	values, err := utils.GetURLQueryParams(r.URL.String())
+	values, err := getURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
 	}

@@ -1,13 +1,10 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/ayoisaiah/stellar-photos/app"
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/requests"
 )
@@ -23,7 +20,8 @@ func NewHandler(application app.App) Handler {
 }
 
 // DownloadPhoto handles GET /unsplash/download
-// It increments the number of downloads for the specified photo.
+// It increments the number of downloads for the specified photo and retrieves
+// the download link
 func (h *Handler) DownloadPhoto(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -46,7 +44,7 @@ func (h *Handler) DownloadPhoto(
 }
 
 // SearchUnsplash handles GET /unsplash/search
-// It retrieves a single page of photo results for a query.
+// It retrieves a single page of photo results for a specific query.
 func (h *Handler) SearchPhotos(w http.ResponseWriter, r *http.Request) error {
 	var p requests.SearchUnsplash
 
@@ -86,6 +84,9 @@ func (h *Handler) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	return utils.JSONResponse(ctx, w, resp)
 }
 
+// ValidateFilters handles GET /unsplash/validate
+// It ensures that the provided random image filters are valid before they are
+// saved to the extension settings
 func (h *Handler) ValidateFilters(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -120,7 +121,7 @@ func (h *Handler) SendGoogleDriveKey(
 
 	key := config.Get().GoogleDrive.Key
 
-	b := []byte("{\"google_drive_key\":" + key + "}")
+	b := []byte(`{"google_drive_key":"` + key + `"}`)
 
 	return utils.JSONResponse(ctx, w, b)
 }
@@ -205,7 +206,7 @@ func (h *Handler) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
 
 	key := conf.Dropbox.Key
 
-	b := []byte("{\"dropbox_key\":" + key + "}")
+	b := []byte(`{"dropbox_key":"` + key + `"}`)
 
 	return utils.JSONResponse(ctx, w, b)
 }
@@ -232,103 +233,57 @@ func (h *Handler) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// SendOnedriveID sends the application id to the client on request.
-func (h *Handler) SendOnedriveID(w http.ResponseWriter, r *http.Request) error {
+// SendOneDriveID sends the application id to the client on request.
+func (h *Handler) SendOneDriveID(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	id := config.Get().Onedrive.AppID
 
-	b := []byte("{\"id\":" + id + "}")
+	b := []byte(`{"id":"` + id + `"}`)
 
 	return utils.JSONResponse(ctx, w, b)
 }
 
-// AuthorizeOnedrive handles GET /onedrive/auth.
-func (h *Handler) AuthorizeOnedrive(
+// AuthorizeOneDrive handles GET /onedrive/auth.
+func (h *Handler) AuthorizeOneDrive(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	conf := config.Get()
+	var p requests.OneDriveAuth
+
+	err := p.Init(r)
+	if err != nil {
+		return err
+	}
 
 	ctx := r.Context()
 
-	values, err := utils.GetURLQueryParams(r.URL.String())
+	resp, err := h.app.AuthorizeOneDrive(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	code := values.Get("code")
-	if code == "" {
-		return errors.New("authorization code not specified")
-	}
-
-	id := conf.Onedrive.AppID
-	secret := conf.Onedrive.Secret
-
-	formValues := map[string]string{
-		"grant_type":    "authorization_code",
-		"client_id":     id,
-		"client_secret": secret,
-		"code":          code,
-		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
-	}
-
-	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-
-	body, err := utils.SendPOSTRequest(
-		ctx,
-		endpoint,
-		formValues,
-		&models.OnedriveAuth{},
-	)
-	if err != nil {
-		return err
-	}
-
-	return utils.JSONResponse(ctx, w, body)
+	return utils.JSONResponse(ctx, w, resp)
 }
 
-// RefreshOnedriveToken GET /onedrive/refresh
-// generates additional access tokens after the initial token has expired.
-func (h *Handler) RefreshOnedriveToken(
+// RefreshOneDriveToken GET /onedrive/refresh
+// It generates additional access tokens after the initial token has expired.
+func (h *Handler) RefreshOneDriveToken(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	conf := config.Get()
+	var p requests.RefreshOneDriveToken
+
+	err := p.Init(r)
+	if err != nil {
+		return err
+	}
 
 	ctx := r.Context()
 
-	values, err := utils.GetURLQueryParams(r.URL.String())
+	resp, err := h.app.RefreshOneDriveToken(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	refreshToken := values.Get("refresh_token")
-	if refreshToken == "" {
-		return errors.New("refresh token not specified")
-	}
-
-	id := conf.Onedrive.AppID
-	secret := conf.Onedrive.Secret
-
-	formValues := map[string]string{
-		"grant_type":    "refresh_token",
-		"client_id":     id,
-		"client_secret": secret,
-		"refresh_token": refreshToken,
-		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
-	}
-
-	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-
-	body, err := utils.SendPOSTRequest(
-		ctx,
-		endpoint,
-		formValues,
-		&models.OnedriveAuth{},
-	)
-	if err != nil {
-		return err
-	}
-
-	return utils.JSONResponse(ctx, w, body)
+	return utils.JSONResponse(ctx, w, resp)
 }

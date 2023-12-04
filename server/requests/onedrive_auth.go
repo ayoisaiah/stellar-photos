@@ -7,23 +7,23 @@ import (
 	"github.com/ayoisaiah/stellar-photos/apperror"
 )
 
-type GoogleDriveAuth struct {
+type OneDriveAuth struct {
 	Code string `json:"-"`
 }
 
-func (g *GoogleDriveAuth) Init(r *http.Request) error {
+func (o *OneDriveAuth) Init(r *http.Request) error {
 	values, err := getURLQueryParams(r.URL.String())
 	if err != nil {
 		return err
 	}
 
-	g.Code = strings.TrimSpace(values.Get("code"))
+	o.Code = strings.TrimSpace(values.Get("code"))
 
-	return g.validate()
+	return o.validate()
 }
 
-func (g *GoogleDriveAuth) validate() error {
-	if g.Code == "" {
+func (o *OneDriveAuth) validate() error {
+	if o.Code == "" {
 		return apperror.ErrAuthCodeRequired
 	}
 

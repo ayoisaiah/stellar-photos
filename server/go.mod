@@ -2,15 +2,13 @@ module github.com/ayoisaiah/stellar-photos
 
 go 1.21
 
-require (
-	github.com/joho/godotenv v1.3.0
-	github.com/rs/cors v1.6.0
-)
+require github.com/joho/godotenv v1.3.0
 
 require (
+	github.com/charmbracelet/log v0.3.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/cors v1.2.1
-	github.com/lmittmann/tint v1.0.3
 	github.com/prometheus/client_golang v1.14.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/segmentio/ksuid v1.0.4
@@ -21,7 +19,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/charmbracelet/lipgloss v0.9.1 // indirect
-	github.com/charmbracelet/log v0.3.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

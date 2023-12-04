@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/ayoisaiah/stellar-photos/apperror"
 	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
@@ -61,7 +62,7 @@ func NewHTTPError(err error, status int, detail string) error {
 }
 
 // CheckForErrors reads the entire response body and checks the status code of
-// the response. If the status code is not 200, a error is returned. Otherwise,
+// the response. If the status code is not 200, an error is returned. Otherwise,
 // the response body is returned.
 func CheckForErrors(resp *http.Response) ([]byte, error) {
 	buf, err := io.ReadAll(resp.Body)
@@ -72,15 +73,10 @@ func CheckForErrors(resp *http.Response) ([]byte, error) {
 	switch resp.StatusCode {
 	case http.StatusOK:
 		return buf, nil
+	case http.StatusNotFound:
+		return nil, apperror.ErrNotFound
 	default:
-		return nil, NewHTTPError(
-			fmt.Errorf("%s", string(buf)),
-			resp.StatusCode,
-			fmt.Sprintf(
-				"%d — Request to external API produced an error response",
-				resp.StatusCode,
-			),
-		)
+		return nil, fmt.Errorf("%s", string(buf))
 	}
 }
 

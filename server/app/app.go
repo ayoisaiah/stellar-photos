@@ -4,14 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/ayoisaiah/stellar-photos/apperror"
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
@@ -35,9 +39,9 @@ func trackPhotoDownload(ctx context.Context, id string) ([]byte, error) {
 		unsplashAccessKey,
 	)
 
-	var d *models.UnsplashDownload
+	var d models.UnsplashDownload
 
-	return utils.SendGETRequest(ctx, url, d)
+	return utils.SendGETRequest(ctx, url, &d)
 }
 
 func (a *App) GetDownloadLink(
@@ -107,27 +111,37 @@ func (a *App) GetRandomPhoto(
 
 	var p models.UnsplashPhoto
 
-	var filter string
+	var filter url.Values
 
 	//nolint:gocritic // rewrite to switch unnecessary
 	if req.Collections != "" {
-		filter = "collections=" + req.Collections
-	} else if req.Topics != "" {
-		filter = "topics=" + req.Topics
-	} else if req.Query != "" {
-		// TODO: URL encode query?
-		filter = "query=" + req.Query
+		filter.Set("collections", req.Collections)
+	}
+
+	if req.Topics != "" {
+		filter.Set("topics", req.Topics)
+	}
+
+	if req.Username != "" {
+		filter.Set("username", req.Username)
+	}
+
+	if req.Query != "" {
+		// Query cannot be used with any other filter
+		filter = url.Values{}
+		filter.Set("query", req.Query)
 	}
 
 	url := fmt.Sprintf(
 		"%s/photos/random?%s&orientation=%s&content_filter=%s&client_id=%s",
 		conf.Unsplash.BaseURL,
-		filter,
+		filter.Encode(),
 		req.Orientation,
 		req.ContentFilter,
 		unsplashAccessKey,
 	)
 
+	// TODO: What if an empty response is received?
 	b, err := utils.GETRequest(ctx, url)
 	if err != nil {
 		return nil, err
@@ -158,7 +172,7 @@ func (a *App) ValidateFilters(
 
 	for _, value := range req.Collections {
 		url := fmt.Sprintf(
-			"%s/collections/%s/?client_id=%s",
+			"%s/collections/%s?client_id=%s",
 			conf.Unsplash.BaseURL,
 			value,
 			unsplashAccessKey,
@@ -168,22 +182,50 @@ func (a *App) ValidateFilters(
 
 		_, err := utils.SendGETRequest(ctx, url, &c)
 		if err != nil {
+			if errors.Is(err, apperror.ErrNotFound) {
+				return apperror.ErrInvalidFilter.Fmt("collection", value)
+			}
+
 			return err
 		}
 	}
 
 	for _, value := range req.Topics {
 		url := fmt.Sprintf(
-			"%s/topics/%s/?client_id=%s",
+			"%s/topics/%s?client_id=%s",
 			conf.Unsplash.BaseURL,
 			value,
 			unsplashAccessKey,
 		)
 
-		var c models.UnsplashTopic
+		var t models.UnsplashTopic
 
-		_, err := utils.SendGETRequest(ctx, url, &c)
+		_, err := utils.SendGETRequest(ctx, url, &t)
 		if err != nil {
+			if errors.Is(err, apperror.ErrNotFound) {
+				return apperror.ErrInvalidFilter.Fmt("topic", value)
+			}
+
+			return err
+		}
+	}
+
+	if req.Username != "" {
+		url := fmt.Sprintf(
+			"%s/users/%s?client_id=%s",
+			conf.Unsplash.BaseURL,
+			req.Username,
+			unsplashAccessKey,
+		)
+
+		var u models.UnsplashUser
+
+		_, err := utils.SendGETRequest(ctx, url, &u)
+		if err != nil {
+			if errors.Is(err, apperror.ErrNotFound) {
+				return apperror.ErrInvalidFilter.Fmt("username", req.Username)
+			}
+
 			return err
 		}
 	}
@@ -252,6 +294,7 @@ func (a *App) SaveToGoogleDrive(
 	ctx context.Context,
 	req *requests.SavePhotoToCloud,
 ) error {
+	// TODO: How to set appropriate timeouts?
 	const saveToDriveTimeout = 180
 
 	_, err := trackPhotoDownload(ctx, req.ImageID)
@@ -422,4 +465,64 @@ func (a *App) SaveToDropbox(
 	}
 
 	return fmt.Errorf("save URL error. response from dropbox: %s", string(b))
+}
+
+func (a *App) AuthorizeOneDrive(
+	ctx context.Context,
+	req *requests.OneDriveAuth,
+) ([]byte, error) {
+	conf := config.Get()
+
+	id := conf.Onedrive.AppID
+	secret := conf.Onedrive.Secret
+
+	formValues := map[string]string{
+		"grant_type":    "authorization_code",
+		"client_id":     id,
+		"client_secret": secret,
+		"code":          req.Code,
+		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
+	}
+
+	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+	var o models.OnedriveAuth
+
+	return utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&o,
+	)
+}
+
+// RefreshOneDriveToken sends the request to retrieve a new OneDrive access
+// token
+func (a *App) RefreshOneDriveToken(
+	ctx context.Context,
+	req *requests.RefreshOneDriveToken,
+) ([]byte, error) {
+	conf := config.Get()
+
+	id := conf.Onedrive.AppID
+	secret := conf.Onedrive.Secret
+
+	formValues := map[string]string{
+		"grant_type":    "refresh_token",
+		"client_id":     id,
+		"client_secret": secret,
+		"refresh_token": req.Token,
+		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
+	}
+
+	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+	var o models.OnedriveAuth
+
+	return utils.SendPOSTRequest(
+		ctx,
+		endpoint,
+		formValues,
+		&o,
+	)
 }
