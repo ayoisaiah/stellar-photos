@@ -1,16 +1,11 @@
 package utils
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
-	"os"
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
-	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
 type ErrorPayload struct {
@@ -77,57 +72,5 @@ func CheckForErrors(resp *http.Response) ([]byte, error) {
 		return nil, apperror.ErrNotFound
 	default:
 		return nil, fmt.Errorf("%s", string(buf))
-	}
-}
-
-func HandleError(
-	ctx context.Context,
-	w http.ResponseWriter,
-	origErr error,
-) {
-	l := logger.Ctx(ctx)
-
-	statusCode := http.StatusInternalServerError
-
-	if os.IsTimeout(origErr) {
-		statusCode = http.StatusRequestTimeout
-	}
-
-	contentType := "application/json"
-
-	errMsg := "internal server error"
-
-	//nolint:errorlint // nolint
-	clientError, ok := origErr.(ClientError)
-	if ok {
-		errMsg = clientError.ResponseMessage()
-
-		statusCode = clientError.StatusCode()
-	}
-
-	var payload ErrorPayload
-	payload.Error = errMsg
-
-	b, err := json.Marshal(&payload)
-	if err != nil {
-		l.Error("Encoding error payload failed")
-
-		b = []byte(fmt.Sprintf("{\"error\":\"%v\"}", errMsg))
-	}
-
-	if statusCode >= http.StatusInternalServerError {
-		l.Error("an unexpected error occurred",
-			slog.Any("error", origErr),
-		)
-	}
-
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(statusCode)
-
-	_, err = w.Write(b)
-	if err != nil {
-		l.Error("unable to send error response to client",
-			slog.Any("error", err),
-		)
 	}
 }

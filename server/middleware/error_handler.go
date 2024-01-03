@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
@@ -17,20 +18,22 @@ func (fn ErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errorResponse(r.Context(), w, err)
+	sendErrorResponse(r.Context(), w, err)
 }
 
-// errorResponse takes care of logging errors and sending them to the client.
-func errorResponse(
-	_ context.Context,
+// sendErrorResponse sends error responses to the client. In the case of
+// unexpected errors, they are logged first.
+func sendErrorResponse(
+	ctx context.Context,
 	w http.ResponseWriter,
-	handlerErr error,
-	keysAndValues ...any,
+	handlerErr error, // the error from the HTTP handler
 ) {
+	// The default error
 	errResp := apperror.ErrorPayload{
 		Error: "Internal server error",
 	}
 
+	// Default status code
 	statusCode := http.StatusInternalServerError
 
 	//nolint:errorlint // nolint
@@ -43,19 +46,23 @@ func errorResponse(
 
 	b, err := json.Marshal(&errResp)
 	if err != nil {
-		// l.Error().Err(err).Msg("encoding error payload failed")
+		slog.ErrorContext(
+			ctx,
+			"encoding error payload as JSON failed, falling back to manual encoding",
+			slog.Any("error", err),
+		)
 
 		b = []byte(fmt.Sprintf("{\"error\":\"%v\"}", errResp.Error))
 	}
 
 	if statusCode >= http.StatusInternalServerError {
-		// l.Error().
-		// 	Stack().
-		// 	Err(handlerErr).
-		// 	Fields(keysAndValues).
-		// 	Msg("an unexpected error occurred")
+		slog.ErrorContext(
+			ctx,
+			"an unexpected error occurred",
+			slog.Any("error", handlerErr),
+		)
 	} else {
-		// l.Debug().Err(handlerErr).Msg("an expected error occurred")
+		slog.DebugContext(ctx, "delivering normal error response", slog.Any("error", handlerErr))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -63,7 +70,10 @@ func errorResponse(
 
 	_, err = w.Write(b)
 	if err != nil {
-		// TODO: Log error?
-		// l.Error().Err(err).Msg("sending error response failed")
+		slog.ErrorContext(
+			ctx,
+			"sending error response failed",
+			slog.Any("error", err),
+		)
 	}
 }

@@ -1,0 +1,25 @@
+api:
+  enabled: true
+
+sources:
+  stellar:
+    type: "docker_logs"
+    include_images: ["stellar-photos"]
+
+  caddy:
+    type: "docker_logs"
+    include_images: ["caddy"]
+
+  vector:
+    type: "internal_logs"
+
+  # docker_daemon:
+  #   type: "journald"
+  #   include_units: ["docker.service"]
+
+sinks:
+  console:
+    type: "console"
+    inputs: ["vector", "caddy", "stellar"]
+    encoding:
+      codec: "text"

@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    logging:
+      driver: local
+    image: stellar-photos:1.0.0-alpine
+    build:
+      context: .
+      target: final
+    container_name: stellar-photos
+    volumes:
+      - .:/stellar-photos
+    ports:
+      - '8080:8080'
+
+  webserver:
+    logging:
+      driver: local
+    image: caddy:2.7.6-alpine
+    container_name: caddy
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - caddy-config:/config
+      - caddy-data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+
+  vector:
+    logging:
+      driver: local
+    image: timberio/vector:0.34.1-alpine
+    container_name: vector
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '8686:8686'
+    depends_on:
+      - webserver
+      - app
+
+volumes:
+  caddy-config:
+  caddy-data:

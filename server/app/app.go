@@ -17,6 +17,7 @@ import (
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
 	"github.com/ayoisaiah/stellar-photos/config"
+	"github.com/ayoisaiah/stellar-photos/internal/fetch"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/requests"
@@ -32,7 +33,8 @@ func trackPhotoDownload(ctx context.Context, id string) ([]byte, error) {
 	conf := config.Get()
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
-	url := fmt.Sprintf(
+
+	endpoint := fmt.Sprintf(
 		"%s/photos/%s/download?client_id=%s",
 		conf.Unsplash.BaseURL,
 		id,
@@ -41,7 +43,7 @@ func trackPhotoDownload(ctx context.Context, id string) ([]byte, error) {
 
 	var d models.UnsplashDownload
 
-	return utils.SendGETRequest(ctx, url, &d)
+	return fetch.HTTPGet(ctx, endpoint, &d)
 }
 
 func (a *App) GetDownloadLink(
@@ -58,7 +60,7 @@ func (a *App) SearchPhotos(
 	conf := config.Get()
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
-	url := fmt.Sprintf(
+	endpoint := fmt.Sprintf(
 		"%s/search/photos?page=%d&query=%s&per_page=%d&client_id=%s",
 		conf.Unsplash.BaseURL,
 		req.PageNumber,
@@ -69,7 +71,7 @@ func (a *App) SearchPhotos(
 
 	var s models.UnsplashSearchResult
 
-	return utils.SendGETRequest(ctx, url, &s)
+	return fetch.HTTPGet(ctx, endpoint, &s)
 }
 
 func getBase64(
@@ -111,9 +113,8 @@ func (a *App) GetRandomPhoto(
 
 	var p models.UnsplashPhoto
 
-	var filter url.Values
+	filter := make(url.Values)
 
-	//nolint:gocritic // rewrite to switch unnecessary
 	if req.Collections != "" {
 		filter.Set("collections", req.Collections)
 	}
@@ -132,7 +133,7 @@ func (a *App) GetRandomPhoto(
 		filter.Set("query", req.Query)
 	}
 
-	url := fmt.Sprintf(
+	endpoint := fmt.Sprintf(
 		"%s/photos/random?%s&orientation=%s&content_filter=%s&client_id=%s",
 		conf.Unsplash.BaseURL,
 		filter.Encode(),
@@ -142,7 +143,7 @@ func (a *App) GetRandomPhoto(
 	)
 
 	// TODO: What if an empty response is received?
-	b, err := utils.GETRequest(ctx, url)
+	b, err := utils.GETRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +172,7 @@ func (a *App) ValidateFilters(
 	unsplashAccessKey := conf.Unsplash.AccessKey
 
 	for _, value := range req.Collections {
-		url := fmt.Sprintf(
+		endpoint := fmt.Sprintf(
 			"%s/collections/%s?client_id=%s",
 			conf.Unsplash.BaseURL,
 			value,
@@ -180,7 +181,7 @@ func (a *App) ValidateFilters(
 
 		var c models.UnsplashCollection
 
-		_, err := utils.SendGETRequest(ctx, url, &c)
+		_, err := fetch.HTTPGet(ctx, endpoint, &c)
 		if err != nil {
 			if errors.Is(err, apperror.ErrNotFound) {
 				return apperror.ErrInvalidFilter.Fmt("collection", value)
@@ -191,7 +192,7 @@ func (a *App) ValidateFilters(
 	}
 
 	for _, value := range req.Topics {
-		url := fmt.Sprintf(
+		endpoint := fmt.Sprintf(
 			"%s/topics/%s?client_id=%s",
 			conf.Unsplash.BaseURL,
 			value,
@@ -200,7 +201,7 @@ func (a *App) ValidateFilters(
 
 		var t models.UnsplashTopic
 
-		_, err := utils.SendGETRequest(ctx, url, &t)
+		_, err := fetch.HTTPGet(ctx, endpoint, &t)
 		if err != nil {
 			if errors.Is(err, apperror.ErrNotFound) {
 				return apperror.ErrInvalidFilter.Fmt("topic", value)
@@ -211,7 +212,7 @@ func (a *App) ValidateFilters(
 	}
 
 	if req.Username != "" {
-		url := fmt.Sprintf(
+		endpoint := fmt.Sprintf(
 			"%s/users/%s?client_id=%s",
 			conf.Unsplash.BaseURL,
 			req.Username,
@@ -220,7 +221,7 @@ func (a *App) ValidateFilters(
 
 		var u models.UnsplashUser
 
-		_, err := utils.SendGETRequest(ctx, url, &u)
+		_, err := fetch.HTTPGet(ctx, endpoint, &u)
 		if err != nil {
 			if errors.Is(err, apperror.ErrNotFound) {
 				return apperror.ErrInvalidFilter.Fmt("username", req.Username)
@@ -254,7 +255,7 @@ func (a *App) AuthorizeGoogleDrive(
 
 	var g models.GoogleDriveAuth
 
-	return utils.SendPOSTRequest(
+	return fetch.HTTPPost(
 		ctx,
 		endpoint,
 		formValues,
@@ -282,7 +283,7 @@ func (a *App) RefreshGoogleDriveToken(
 
 	var g models.GoogleDriveAuth
 
-	return utils.SendPOSTRequest(
+	return fetch.HTTPPost(
 		ctx,
 		endpoint,
 		formValues,
@@ -383,7 +384,7 @@ func (a *App) SaveToGoogleDrive(
 
 	request.Header.Set("Content-Type", contentType)
 	request.Header.Set("Authorization", v)
-	request.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
+	request.Header.Set("Content-Length", strconv.Itoa(body.Len()))
 
 	response, err := utils.Client.Do(request)
 	if err != nil {
@@ -488,7 +489,7 @@ func (a *App) AuthorizeOneDrive(
 
 	var o models.OnedriveAuth
 
-	return utils.SendPOSTRequest(
+	return fetch.HTTPPost(
 		ctx,
 		endpoint,
 		formValues,
@@ -497,7 +498,7 @@ func (a *App) AuthorizeOneDrive(
 }
 
 // RefreshOneDriveToken sends the request to retrieve a new OneDrive access
-// token
+// token.
 func (a *App) RefreshOneDriveToken(
 	ctx context.Context,
 	req *requests.RefreshOneDriveToken,
@@ -519,7 +520,7 @@ func (a *App) RefreshOneDriveToken(
 
 	var o models.OnedriveAuth
 
-	return utils.SendPOSTRequest(
+	return fetch.HTTPPost(
 		ctx,
 		endpoint,
 		formValues,

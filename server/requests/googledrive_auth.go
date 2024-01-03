@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -9,6 +10,10 @@ import (
 
 type GoogleDriveAuth struct {
 	Code string `json:"-"`
+}
+
+func (g *GoogleDriveAuth) LogValue() slog.Value {
+	return slog.Value{}
 }
 
 func (g *GoogleDriveAuth) Init(r *http.Request) error {

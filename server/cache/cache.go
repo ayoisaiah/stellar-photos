@@ -12,7 +12,6 @@ import (
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/internal/utils"
-	"github.com/ayoisaiah/stellar-photos/logger"
 )
 
 const modelsPhotosCollectionID = 998309
@@ -185,11 +184,9 @@ func downloadPhotos(
 // cleanup deletes any locally cached image that is no longer present
 // in the default collection.
 func cleanup(photos map[string]models.UnsplashPhoto) {
-	l := logger.L()
-
 	files, err := os.ReadDir("cached_images")
 	if err != nil {
-		l.Warn("unable to locate cache directory",
+		slog.Warn("unable to locate cache directory",
 			slog.Any("error", err),
 		)
 
@@ -208,7 +205,7 @@ func cleanup(photos map[string]models.UnsplashPhoto) {
 		if _, ok := photos[id]; !ok {
 			err := os.RemoveAll(filepath.Join("cached_images", id))
 			if err != nil {
-				l.Warn(
+				slog.Warn(
 					"unable to delete photo from image cache",
 					slog.String("image_id", id),
 					slog.Any("error", err),
@@ -219,7 +216,7 @@ func cleanup(photos map[string]models.UnsplashPhoto) {
 
 			cleaned[id] = true
 
-			l.Info("deleted image from cache successfully",
+			slog.Info("deleted image from cache successfully",
 				slog.String("image_id", id),
 			)
 		}
@@ -236,13 +233,11 @@ func Photos() {
 		return
 	}
 
-	l := logger.L()
-
-	l.Info("pre-caching all images in default collection")
+	slog.Info("pre-caching all images in default collection")
 
 	photos, err := retrieveAllPhotos()
 	if err != nil {
-		l.Error("unable to retrieve all images in default collection",
+		slog.Error("unable to retrieve all images in default collection",
 			slog.Any("error", err),
 		)
 
@@ -251,7 +246,7 @@ func Photos() {
 
 	errs := downloadPhotos(photos)
 	if len(errs) != 0 {
-		l.Warn("some cache image downloads failed to complete",
+		slog.Warn("some cache image downloads failed to complete",
 			slog.Any("error", errs),
 		)
 
@@ -260,5 +255,5 @@ func Photos() {
 
 	cleanup(photos)
 
-	l.Info("default images cached successfully!")
+	slog.Info("default images cached successfully!")
 }

@@ -35,6 +35,11 @@ var (
 		Status: http.StatusNotFound,
 	}
 
+	ErrBadRequest = &Error{
+		Detail: "400 Bad Request",
+		Status: http.StatusBadRequest,
+	}
+
 	ErrImageIDRequired = &Error{
 		Detail: "Unsplash image ID is required",
 		Status: http.StatusBadRequest,
@@ -58,5 +63,10 @@ var (
 	ErrRefreshTokenRequired = &Error{
 		Detail: "Refresh token is required",
 		Status: http.StatusBadRequest,
+	}
+
+	ErrInvalidJSONPayload = &Error{
+		Detail: "The payload is not a valid JSON string",
+		Status: http.StatusInternalServerError,
 	}
 )

@@ -4,7 +4,5 @@ package ctxmanager
 type CtxKey string
 
 const (
-	// CorrelationIDKey is represents a requests correlation ID.
-	CorrelationIDKey CtxKey = "correlation_id"
-	DownloadCtxKey   CtxKey = "download"
+	SlogCtxKey CtxKey = "slog_ctx"
 )

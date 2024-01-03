@@ -1,36 +1,31 @@
 package config
 
 import (
-	"log"
+	"context"
+	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 )
 
-const (
-	EnvProduction  = "production"
-	EnvDevelopment = "development"
-	EnvTesting     = "testing"
-)
-
-// Config represents the all the environmental variables that should be present
-// on start up.
+// Config represents the program configuration.
 type Config struct {
-	LogLevel    string
+	GoogleDrive GoogleDriveConfig
+	Onedrive    OnedriveConfig
 	Port        string
 	RedirectURL string
-	Unsplash    UnsplashConfig
-	Onedrive    OnedriveConfig
 	Dropbox     DropboxConfig
-	GoogleDrive GoogleDriveConfig
+	LogLevel    string
 	GoEnv       string
+	Unsplash    UnsplashConfig
 }
 
 // UnsplashConfig represents Unsplash's API configuration variables.
 type UnsplashConfig struct {
 	AccessKey         string
 	DefaultCollection string
-	DefaultPerPage    int
 	BaseURL           string
+	DefaultPerPage    int
 }
 
 // OnedriveConfig represents Onedrive's API configuration variables.
@@ -49,6 +44,16 @@ type GoogleDriveConfig struct {
 	Key    string
 	Secret string
 }
+
+const (
+	EnvProduction  = "production"
+	EnvDevelopment = "development"
+	EnvTesting     = "testing"
+)
+
+const (
+	Version = "1.0.0"
+)
 
 var (
 	once sync.Once
@@ -87,20 +92,23 @@ func Get() *Config {
 	return conf
 }
 
-// getEnv reads an environment variable and returns it or returns a default
-// value if the variable is optional. Otherwise, if a required variable is not
+// getEnv reads an environment variable and returns it or a default
+// value if the variable is not found. If a required variable is not
 // set, the program will crash.
 func getEnv(key, defaultVal string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
 
-	if defaultVal == "" && os.Getenv("GO_ENV") != EnvTesting {
-		log.Fatalf("%s has not been set in your ENV", key)
+	if defaultVal == "" {
+		slog.ErrorContext(
+			context.Background(),
+			fmt.Sprintf("config error: %s is missing in your ENV", key),
+		)
+		os.Exit(1)
 	}
 
-	// * denotes a variable that should not crash the program if not present in
-	// the environment
+	// * denotes an optional variable that should not crash the program if missing
 	if defaultVal == "*" {
 		return ""
 	}

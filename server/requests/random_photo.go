@@ -8,15 +8,15 @@ import (
 	"github.com/ayoisaiah/stellar-photos/config"
 )
 
-// RandomPhoto represents a request to retrieve a random image from Unsplash
+// RandomPhoto represents a request to retrieve a random image from Unsplash.
 type RandomPhoto struct {
-	Collections   string `json:"-"`
-	Resolution    string `json:"-"`
-	Topics        string `json:"-"`
-	Username      string `json:"-"`
-	Orientation   string `json:"-"`
-	ContentFilter string `json:"-"`
-	Query         string `json:"-"`
+	Collections   string `json:"collections"`
+	Resolution    string `json:"resolution"`
+	Topics        string `json:"topics"`
+	Username      string `json:"username"`
+	Orientation   string `json:"orientation"`
+	ContentFilter string `json:"content_filter"`
+	Query         string `json:"query"`
 }
 
 const (

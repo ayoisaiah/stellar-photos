@@ -12,7 +12,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/ayoisaiah/stellar-photos/logger"
 	"github.com/ayoisaiah/stellar-photos/metrics"
 )
 
@@ -23,6 +22,20 @@ const (
 	ContextKeyRequestID     contextKey = "requestID"
 )
 
+var GitRevision string
+
+func init() {
+	buildInfo, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, v := range buildInfo.Settings {
+			if v.Key == "vcs.revision" {
+				GitRevision = v.Value
+				break
+			}
+		}
+	}
+}
+
 // GetImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
 // not found in the cache.
@@ -30,8 +43,6 @@ func GetImageBase64(
 	ctx context.Context,
 	endpoint, imageWidth, id string,
 ) (string, error) {
-	l := logger.Ctx(ctx)
-
 	filePath := filepath.Join("cached_images", id, imageWidth) + ".txt"
 
 	var base64Str string
@@ -44,7 +55,9 @@ func GetImageBase64(
 			m := metrics.Get()
 			m.CacheOrNetwork.WithLabelValues("cache").Inc()
 
-			l.Debug("successfully retrieved cached unsplash image",
+			slog.DebugContext(
+				ctx,
+				"successfully retrieved cached unsplash image",
 				slog.String("image_id", id),
 				slog.String("image_width", imageWidth),
 				slog.Bool("cache", true),
@@ -53,7 +66,7 @@ func GetImageBase64(
 			return base64Str, nil
 		}
 
-		l.Warn("failed to read cached image file",
+		slog.WarnContext(ctx, "failed to read cached image file",
 			slog.String("path", filePath),
 			slog.Any("error", err),
 		)
@@ -70,7 +83,9 @@ func GetImageBase64(
 		)
 	}
 
-	l.Debug("successfully retrieved unsplash image from the network",
+	slog.DebugContext(
+		ctx,
+		"successfully retrieved unsplash image from the network",
 		slog.String("image_id", id),
 		slog.String("image_width", imageWidth),
 	)
@@ -129,20 +144,4 @@ func imageURLToBase64(endpoint string) (string, error) {
 	base64Encoding += base64.StdEncoding.EncodeToString(bytes)
 
 	return base64Encoding, nil
-}
-
-func GetGitRevision() string {
-	var gitRevision string
-
-	buildInfo, ok := debug.ReadBuildInfo()
-	if ok {
-		for _, v := range buildInfo.Settings {
-			if v.Key == "vcs.revision" {
-				gitRevision = v.Value
-				break
-			}
-		}
-	}
-
-	return gitRevision
 }

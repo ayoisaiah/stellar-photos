@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    extends:
+      file: docker-compose.yml
+      service: app
+    image: stellar-photos:dev
+    container_name: stellar-photos-dev
+    build:
+      target: dev

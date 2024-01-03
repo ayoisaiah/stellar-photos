@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -9,6 +10,10 @@ import (
 
 type RefreshOneDriveToken struct {
 	Token string `json:"-"`
+}
+
+func (o *RefreshOneDriveToken) LogValue() slog.Value {
+	return slog.Value{}
 }
 
 func (o *RefreshOneDriveToken) Init(r *http.Request) error {

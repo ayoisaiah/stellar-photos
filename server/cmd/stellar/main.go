@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"log/slog"
+	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
@@ -10,7 +10,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos"
 	"github.com/ayoisaiah/stellar-photos/cache"
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/logger"
+	"github.com/ayoisaiah/stellar-photos/internal/logger"
 )
 
 func run() error {
@@ -19,6 +19,8 @@ func run() error {
 	_ = godotenv.Load()
 
 	l := logger.L()
+
+	slog.SetDefault(l)
 
 	conf := config.Get()
 
@@ -34,7 +36,7 @@ func run() error {
 				cache.Photos()
 			})
 			if err != nil {
-				l.Error("unable to schedule cron job",
+				slog.Error("unable to schedule cron job",
 					slog.Any("error", err),
 				)
 			}
@@ -43,8 +45,8 @@ func run() error {
 		}()
 	}
 
-	l.Info(
-		"Stellar Photos Server is listening on port: " + srv.Addr,
+	slog.Info(
+		"Stellar Photos server is listening on port: " + srv.Addr,
 	)
 
 	return srv.ListenAndServe()
@@ -52,6 +54,7 @@ func run() error {
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatal(err)
+		slog.Error("server startup failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 }

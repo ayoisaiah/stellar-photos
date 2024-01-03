@@ -8,11 +8,11 @@ import (
 )
 
 // ValidateFilters represents a request to validate the provided collection
-// IDs, topics, and username
+// IDs, topics, and username.
 type ValidateFilters struct {
-	Collections []string `json:"-"`
-	Topics      []string `json:"-"`
-	Username    string   `json:"-"`
+	Username    string   `json:"username"`
+	Collections []string `json:"collections"`
+	Topics      []string `json:"topics"`
 }
 
 func (v *ValidateFilters) Init(r *http.Request) error {

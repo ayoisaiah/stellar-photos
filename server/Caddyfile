@@ -1,0 +1,26 @@
+http://localhost {
+	encode gzip
+	# tls internal
+
+  rewrite /download-photo* /unsplash/download?{query}
+  rewrite /search-unsplash* /unsplash/search?{query}
+  rewrite /validate-collections* /unsplash/validate?{query}
+  rewrite /random-photo* /unsplash/random?{query}
+
+  rewrite /googledrive/key /gdrive/key
+  rewrite /googledrive/auth /gdrive/auth?{query}
+  rewrite /googledrive/refresh /gdrive/refresh?{query}
+
+	# TODO: Possible to allow from extension only?
+	header Access-Control-Allow-Origin "*"
+
+	log caddy_server {
+		output stdout
+		format json {
+			time_format rfc3339_nano
+		}
+		level error
+	}
+
+	reverse_proxy app:8080
+}

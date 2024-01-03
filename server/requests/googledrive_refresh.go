@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -9,6 +10,10 @@ import (
 
 type RefreshGoogleDriveToken struct {
 	Token string `json:"-"`
+}
+
+func (g *RefreshGoogleDriveToken) LogValue() slog.Value {
+	return slog.Value{}
 }
 
 func (g *RefreshGoogleDriveToken) Init(r *http.Request) error {

@@ -9,8 +9,8 @@ import (
 
 // SearchUnsplash represents a request to search for Unsplash photos.
 type SearchUnsplash struct {
-	SearchKey  string `json:"-"`
-	PageNumber int    `json:"-"`
+	SearchKey  string `json:"search_key"`
+	PageNumber int    `json:"page_num"`
 }
 
 func (s *SearchUnsplash) Init(r *http.Request) error {

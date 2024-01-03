@@ -1,4 +1,7 @@
 linters-settings:
+  decorder:
+    disable-dec-num-check: true
+    disable-dec-order-check: false
   errcheck:
     check-type-assertions: true
   goconst:
@@ -7,37 +10,43 @@ linters-settings:
   gocritic:
     enabled-tags:
       - diagnostic
-      - experimental
-      - opinionated
       - performance
       - style
-    disabled-checks:
-      - whyNoLint
-  gocyclo:
-    min-complexity: 25
   goimports:
     local-prefixes: github.com/ayoisaiah/stellar-photos
-  golint:
-    min-confidence: 0
   gomnd:
-    settings:
-      mnd:
-        # don't include the "operation" and "assign"
-        checks: argument,case,condition,return
+    checks:
+      - argument
+      - case
+      - condition
+      - return
   govet:
     check-shadowing: true
-  maligned:
-    suggest-new: true
+    enable-all: true
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+  revive:
+    rules:
+      - name: error-naming
+        severity: warning
+        disabled: true # handled by errname
+
 linters:
   disable-all: true
   enable:
     - bodyclose
     - dogsled
     - dupl
+    - durationcheck
+    - decorder
     - errcheck
     - errorlint
+    - errname
     - exportloopref
     - exhaustive
+    - gocheckcompilerdirectives
+    - gochecksumtype
     - goconst
     - godot
     - gocritic
@@ -50,17 +59,20 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - mirror
     - misspell
     - nakedret
+    - nilnil
     - nolintlint
     - prealloc
     - predeclared
+    - perfsprint
     - revive
     - staticcheck
     - stylecheck
+    - sloglint
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
@@ -69,22 +81,9 @@ linters:
 
 issues:
   fix: true
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-
-    - path: _test\.go
-      text: 'ifElseChain'
-      linters:
-        - gocritic
-rules:
-  - linters:
-      - funlen
-    severity: info
+  max-issues-per-linter: 0
+  max-same-issues: 0
 
 run:
   issues-exit-code: 1
+  allow-parallel-runners: true

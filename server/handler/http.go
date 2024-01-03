@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/ayoisaiah/stellar-photos/app"
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/ayoisaiah/stellar-photos/internal/fetch"
 	"github.com/ayoisaiah/stellar-photos/requests"
 )
 
@@ -21,7 +22,7 @@ func NewHandler(application app.App) Handler {
 
 // DownloadPhoto handles GET /unsplash/download
 // It increments the number of downloads for the specified photo and retrieves
-// the download link
+// the download link.
 func (h *Handler) DownloadPhoto(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -35,12 +36,18 @@ func (h *Handler) DownloadPhoto(
 
 	ctx := r.Context()
 
+	slog.InfoContext(
+		ctx,
+		"download request initiated",
+		slog.Any("parameters", p),
+	)
+
 	resp, err := h.app.GetDownloadLink(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(ctx, w, resp)
+	return fetch.JSONResponse(ctx, w, resp)
 }
 
 // SearchUnsplash handles GET /unsplash/search
@@ -55,12 +62,14 @@ func (h *Handler) SearchPhotos(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := r.Context()
 
+	slog.InfoContext(ctx, "search request initiated", slog.Any("parameters", p))
+
 	resp, err := h.app.SearchPhotos(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(ctx, w, resp)
+	return fetch.JSONResponse(ctx, w, resp)
 }
 
 // GetRandomPhoto handles GET /unsplash/random
@@ -76,17 +85,19 @@ func (h *Handler) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	ctx := r.Context()
 
+	slog.InfoContext(ctx, "fetching random photo", slog.Any("parameters", p))
+
 	resp, err := h.app.GetRandomPhoto(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(ctx, w, resp)
+	return fetch.JSONResponse(ctx, w, resp)
 }
 
 // ValidateFilters handles GET /unsplash/validate
 // It ensures that the provided random image filters are valid before they are
-// saved to the extension settings
+// saved to the extension settings.
 func (h *Handler) ValidateFilters(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -99,6 +110,12 @@ func (h *Handler) ValidateFilters(
 	}
 
 	ctx := r.Context()
+
+	slog.InfoContext(
+		ctx,
+		"validating unsplash filters request",
+		slog.Any("parameters", p),
+	)
 
 	err = h.app.ValidateFilters(ctx, &p)
 	if err != nil {
@@ -123,7 +140,7 @@ func (h *Handler) SendGoogleDriveKey(
 
 	b := []byte(`{"google_drive_key":"` + key + `"}`)
 
-	return utils.JSONResponse(ctx, w, b)
+	return fetch.JSONResponse(ctx, w, b)
 }
 
 // AuthorizeGoogleDrive handles GET /gdrive/code
@@ -141,12 +158,14 @@ func (h *Handler) AuthorizeGoogleDrive(
 
 	ctx := r.Context()
 
+	slog.InfoContext(ctx, "initiating Google Drive authorization")
+
 	resp, err := h.app.AuthorizeGoogleDrive(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(ctx, w, resp)
+	return fetch.JSONResponse(ctx, w, resp)
 }
 
 // RefreshGoogleDriveToken handles /gdrive/refresh
@@ -164,11 +183,14 @@ func (h *Handler) RefreshGoogleDriveToken(
 
 	ctx := r.Context()
 
+	slog.InfoContext(ctx, "refreshing Google Drive token")
+
 	resp, err := h.app.RefreshGoogleDriveToken(ctx, &p)
 	if err != nil {
 		return err
 	}
-	return utils.JSONResponse(ctx, w, resp)
+
+	return fetch.JSONResponse(ctx, w, resp)
 }
 
 // SaveToGoogleDrive handles /gdrive/save
@@ -185,6 +207,12 @@ func (h *Handler) SaveToGoogleDrive(
 	}
 
 	ctx := r.Context()
+
+	slog.InfoContext(
+		ctx,
+		"saving image to Google Drive",
+		slog.Any("parameters", p),
+	)
 
 	err = h.app.SaveToGoogleDrive(ctx, &p)
 	if err != nil {
@@ -208,7 +236,7 @@ func (h *Handler) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
 
 	b := []byte(`{"dropbox_key":"` + key + `"}`)
 
-	return utils.JSONResponse(ctx, w, b)
+	return fetch.JSONResponse(ctx, w, b)
 }
 
 // SaveToDropbox handles GET /dropbox/save
@@ -222,6 +250,8 @@ func (h *Handler) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	ctx := r.Context()
+
+	slog.InfoContext(ctx, "saving image to Dropbox", slog.Any("parameters", p))
 
 	err = h.app.SaveToDropbox(ctx, &p)
 	if err != nil {
@@ -240,7 +270,7 @@ func (h *Handler) SendOneDriveID(w http.ResponseWriter, r *http.Request) error {
 
 	b := []byte(`{"id":"` + id + `"}`)
 
-	return utils.JSONResponse(ctx, w, b)
+	return fetch.JSONResponse(ctx, w, b)
 }
 
 // AuthorizeOneDrive handles GET /onedrive/auth.
@@ -257,12 +287,14 @@ func (h *Handler) AuthorizeOneDrive(
 
 	ctx := r.Context()
 
+	slog.InfoContext(ctx, "initiating OneDrive authorization")
+
 	resp, err := h.app.AuthorizeOneDrive(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(ctx, w, resp)
+	return fetch.JSONResponse(ctx, w, resp)
 }
 
 // RefreshOneDriveToken GET /onedrive/refresh
@@ -280,10 +312,12 @@ func (h *Handler) RefreshOneDriveToken(
 
 	ctx := r.Context()
 
+	slog.InfoContext(ctx, "refreshing OneDrive token")
+
 	resp, err := h.app.RefreshOneDriveToken(ctx, &p)
 	if err != nil {
 		return err
 	}
 
-	return utils.JSONResponse(ctx, w, resp)
+	return fetch.JSONResponse(ctx, w, resp)
 }

@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -11,8 +12,12 @@ import (
 // Google Drive or Dropbox.
 type SavePhotoToCloud struct {
 	Token   string `json:"-"`
-	ImageID string `json:"-"`
-	URL     string `json:"-"`
+	ImageID string `json:"image_id"`
+	URL     string `json:"url"`
+}
+
+func (p *SavePhotoToCloud) LogValue() slog.Value {
+	return slog.GroupValue(slog.String("image_id", p.ImageID))
 }
 
 func (p *SavePhotoToCloud) Init(r *http.Request) error {
