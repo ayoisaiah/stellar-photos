@@ -1,5 +1,5 @@
 import * as Ladda from 'ladda';
-import { html, render, TemplateResult } from 'lit-html';
+import { html, render, RootPart, TemplateResult } from 'lit-html';
 import { openOnedriveAuthPage } from '../onedrive';
 import { openDropboxAuthPage } from '../dropbox';
 import { openGoogleDriveAuthPage } from '../googledrive';
@@ -28,14 +28,14 @@ async function authorizeCloud(): Promise<void> {
     if (selected === 'googledrive') {
       await openGoogleDriveAuthPage();
     }
-  } catch (err) {
+  } catch (err: any) {
     snackbar(err, 'error');
   } finally {
     spinner.stop();
   }
 }
 
-function updateCloudStatus(flag: boolean): void {
+function updateCloudStatus(flag: boolean): RootPart {
   const action = $('js-action') as HTMLSpanElement;
 
   if (flag) {

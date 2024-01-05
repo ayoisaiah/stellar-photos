@@ -104,8 +104,8 @@ async function updateCollections(): Promise<void> {
 
     snackbar('Collections saved successfully');
     chrome.runtime.sendMessage({ command: 'refresh' });
-  } catch (err) {
-    snackbar(err, 'error');
+  } catch (err: any) {
+    snackbar(err.message, 'error');
   } finally {
     spinner.stop();
   }

@@ -16,13 +16,13 @@
   },
   "permissions": ["storage", "unlimitedStorage", "notifications", "alarms"],
   "background": {
-    "scripts": ["js/background.bundle.js"],
+    "scripts": ["background.js"],
     "persistent": false
   },
   "content_scripts": [
     {
       "matches": ["https://stellar.freshman.tech/*"],
-      "js": ["js/tab.bundle.js"]
+      "js": ["tab.js"]
     }
   ]
 }

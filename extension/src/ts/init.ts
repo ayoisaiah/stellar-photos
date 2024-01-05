@@ -59,9 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    await loadCSS('css/main.css');
-    await loadJS('js/main.bundle.js');
-    await loadJS('js/events.bundle.js');
+    await loadCSS('main.css');
+    await loadJS('main.js');
+    await loadJS('events.js');
     chrome.runtime.sendMessage({ command: 'refresh' });
   } catch (err) {
     console.error(err);

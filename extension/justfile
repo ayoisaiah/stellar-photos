@@ -1,0 +1,31 @@
+APP := "stellar-photos"
+
+test:
+	@pnpm test
+
+chrome-dev:
+	@pnpm build:chrome:dev
+
+chrome-prod:
+	@pnpm build:chrome:prod
+
+firefox-dev:
+  @pnpm build:firefox:dev
+
+firefox-prod:
+  @pnpm build:firefox:prod
+
+lint:
+	@pnpm lint
+
+fmt:
+	@pnpm fmt
+
+pre-commit:
+	@pre-commit run
+
+clean:
+	@rm -r dist
+
+sloc:
+  @tokei

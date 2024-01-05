@@ -1,0 +1,8 @@
+{
+  "ignore": ["dist/**"],
+  "ext": "js,ts,scss,woff,woff2,svg,json",
+  "watch": ["src", "build.js", "*.json"],
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

@@ -1,5 +1,6 @@
 {
   "name": "stellar-photos",
+  "type": "module",
   "version": "4.1.2",
   "description": "Beautiful high-res photos in your browser tabs. Available for Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox",
   "main": "src/js/index.js",
@@ -7,62 +8,44 @@
   "author": "Ayooluwa Isaiah <ayo@freshman.tech>",
   "license": "MIT",
   "scripts": {
-    "clean": "rm -rf dist",
-    "build:chrome:dev": "concurrently -w \"yarn run clean\" \"npx webpack -w --display-max-modules 0 --env=dev:chrome --progress --colors --config webpack.dev.js\"",
-    "build:firefox:dev": "concurrently -w \"yarn run clean\" \"npx webpack -w --display-max-modules 0 --env=dev:firefox --progress --colors --config webpack.dev.js\"",
-    "build:chrome:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:chrome --progress --colors --config webpack.prod.js\"",
-    "build:firefox:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:firefox --progress --colors --config webpack.prod.js\"",
-    "build:edge:prod": "concurrently \"yarn run clean\" \"npx webpack --display-max-modules 0 --env=prod:edge --progress --colors --config webpack.prod.js\""
+    "build:firefox:dev": "BROWSER=firefox nodemon build.js",
+    "build:chrome:dev": "BROWSER=chrome nodemon build.js",
+    "build:firefox:prod": "BROWSER=firefox NODE_ENV=production node build.js",
+    "build:chrome:prod": "BROWSER=chrome NODE_ENV=production node build.js",
+    "test": "vitest",
+    "lint": "lit-analyzer && eslint --fix .",
+    "fmt": "prettier -w .",
+    "prepare": "husky install"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.7",
-    "@babel/plugin-proposal-class-properties": "^7.10.4",
-    "@babel/plugin-proposal-object-rest-spread": "^7.11.0",
-    "@babel/plugin-transform-runtime": "^7.23.7",
-    "@babel/preset-env": "^7.23.7",
-    "@babel/preset-typescript": "^7.23.3",
+    "@jgoz/esbuild-plugin-typecheck": "^3.1.0",
     "@types/chrome": "^0.0.254",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "autoprefixer": "^10.4.16",
-    "babel-loader": "^9.1.3",
-    "clean-webpack-plugin": "^4.0.0",
-    "concurrently": "^8.2.2",
-    "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.8.1",
-    "cssnano": "^6.0.2",
+    "esbuild": "^0.19.11",
+    "esbuild-plugin-inline-image": "^0.0.9",
+    "esbuild-plugin-inline-import": "^1.0.2",
+    "esbuild-plugin-json-merge": "^0.1.0",
+    "esbuild-plugin-replace": "^1.4.0",
+    "esbuild-sass-plugin": "^2.16.1",
     "eslint": "^8.56.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-prettier": "^5.1.2",
-    "file-loader": "^6.2.0",
-    "fork-ts-checker-webpack-plugin": "^9.0.2",
-    "generate-json-webpack-plugin": "^2.0.0",
     "husky": ">=8.0.3",
     "lint-staged": ">=15.2.0",
-    "mini-css-extract-plugin": "^2.7.6",
-    "optimize-css-assets-webpack-plugin": "^6.0.1",
-    "placeholder-loader": "^2.0.1",
-    "postcss-loader": "^7.3.4",
+    "nodemon": "^3.0.2",
+    "postcss": "^8.4.32",
     "postcss-preset-env": "^9.3.0",
-    "postcss-reporter": "^7.0.5",
     "prettier": "^3.1.1",
+    "rimraf": "^5.0.5",
     "sass": "^1.69.7",
-    "sass-loader": "^13.3.3",
-    "style-loader": "^3.3.3",
     "stylelint": "^16.1.0",
     "stylelint-config-standard": "^36.0.0",
-    "stylelint-scss": "^6.0.0",
-    "terser-webpack-plugin": "^5.3.10",
-    "typescript": "^5.3.3",
-    "uglifyjs-webpack-plugin": "^2.2.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-fix-style-only-entries": "^0.6.1",
-    "webpack-merge": "^5.10.0",
-    "webpack-strip-block": "^0.3.0"
+    "stylelint-scss": "^6.0.0"
   },
   "dependencies": {
     "bulma": "^0.9.4",
@@ -70,7 +53,8 @@
     "ladda": "^2.0.3",
     "lit-html": "^3.1.0",
     "runtypes": "^6.7.0",
-    "timeago.js": "^4.0.2"
+    "timeago.js": "^4.0.2",
+    "typescript": "^5.3.3"
   },
   "husky": {
     "hooks": {
@@ -91,6 +75,6 @@
     ]
   },
   "volta": {
-    "node": "16.13.2"
+    "node": "20.10.0"
   }
 }

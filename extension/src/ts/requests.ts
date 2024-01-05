@@ -3,8 +3,8 @@ import { ChromeSyncStorage } from './types';
 
 const baseUrl =
   // @ts-ignore
-  'STELLAR_ENV' === 'dev'
-    ? 'http://localhost:8080'
+  'NODE_ENV' === 'development'
+    ? 'http://localhost'
     : 'https://stellarphotos.freshman.tech';
 
 async function makeRequest(url: string): Promise<Response> {
