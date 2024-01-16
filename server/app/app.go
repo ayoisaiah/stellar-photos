@@ -236,19 +236,24 @@ func (a *App) ValidateFilters(
 
 func (a *App) AuthorizeGoogleDrive(
 	ctx context.Context,
-	req *requests.GoogleDriveAuth,
+	req *requests.CloudAuth,
 ) ([]byte, error) {
 	conf := config.Get()
 
 	id := conf.GoogleDrive.Key
 	secret := conf.GoogleDrive.Secret
 
-	formValues := map[string]string{
-		"grant_type":    "authorization_code",
-		"client_id":     id,
-		"client_secret": secret,
-		"code":          req.Code,
-		"redirect_uri":  conf.RedirectURL,
+	form := url.Values{}
+	form.Add("grant_type", "authorization_code")
+	form.Add("client_id", id)
+	form.Add("client_secret", secret)
+	form.Add("code", req.Code)
+	form.Add("redirect_uri", strings.TrimSuffix(conf.RedirectURL, "/"))
+
+	reqBody := strings.NewReader(form.Encode())
+
+	reqHeaders := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
@@ -258,25 +263,31 @@ func (a *App) AuthorizeGoogleDrive(
 	return fetch.HTTPPost(
 		ctx,
 		endpoint,
-		formValues,
+		reqHeaders,
+		reqBody,
 		&g,
 	)
 }
 
 func (a *App) RefreshGoogleDriveToken(
 	ctx context.Context,
-	req *requests.RefreshGoogleDriveToken,
+	req *requests.RefreshToken,
 ) ([]byte, error) {
 	conf := config.Get()
 
 	id := conf.GoogleDrive.Key
 	secret := conf.GoogleDrive.Secret
 
-	formValues := map[string]string{
-		"grant_type":    "refresh_token",
-		"client_id":     id,
-		"client_secret": secret,
-		"refresh_token": req.Token,
+	form := url.Values{}
+	form.Add("grant_type", "refresh_token")
+	form.Add("client_id", id)
+	form.Add("client_secret", secret)
+	form.Add("refresh_token", req.Token)
+
+	reqBody := strings.NewReader(form.Encode())
+
+	reqHeaders := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
 	endpoint := "https://oauth2.googleapis.com/token"
@@ -286,7 +297,8 @@ func (a *App) RefreshGoogleDriveToken(
 	return fetch.HTTPPost(
 		ctx,
 		endpoint,
-		formValues,
+		reqHeaders,
+		reqBody,
 		&g,
 	)
 }
@@ -295,40 +307,12 @@ func (a *App) SaveToGoogleDrive(
 	ctx context.Context,
 	req *requests.SavePhotoToCloud,
 ) error {
-	// TODO: How to set appropriate timeouts?
-	const saveToDriveTimeout = 180
-
 	_, err := trackPhotoDownload(ctx, req.ImageID)
 	if err != nil {
 		return err
 	}
 
-	v := fmt.Sprintf("Bearer %s", req.Token)
-
-	ctx, cncl := context.WithTimeout(
-		ctx,
-		time.Second*saveToDriveTimeout,
-	)
-	defer cncl()
-
-	request, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodGet,
-		req.URL,
-		http.NoBody,
-	)
-	if err != nil {
-		return err
-	}
-
-	resp, err := utils.Client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	respBody, err := utils.CheckForErrors(resp)
+	respBody, err := fetch.HTTPGet[any](ctx, req.URL, nil)
 	if err != nil {
 		return err
 	}
@@ -368,23 +352,230 @@ func (a *App) SaveToGoogleDrive(
 	// Close multipart writer.
 	writer.Close()
 
-	request, err = http.NewRequest(
-		"POST",
-		endpoint,
-		bytes.NewReader(body.Bytes()),
-	)
-	if err != nil {
-		return err
-	}
-
 	contentType := fmt.Sprintf(
 		"multipart/related; boundary=%s",
 		writer.Boundary(),
 	)
 
-	request.Header.Set("Content-Type", contentType)
-	request.Header.Set("Authorization", v)
-	request.Header.Set("Content-Length", strconv.Itoa(body.Len()))
+	bearerToken := fmt.Sprintf("Bearer %s", req.Token)
+
+	reqHeaders := map[string]string{
+		"Content-Type":   contentType,
+		"Authorization":  bearerToken,
+		"Content-Length": strconv.Itoa(body.Len()),
+	}
+
+	_, err = fetch.HTTPPost[any](
+		ctx,
+		endpoint,
+		reqHeaders,
+		bytes.NewReader(body.Bytes()),
+		nil,
+	)
+
+	return err
+}
+
+func (a *App) SaveToDropbox(
+	ctx context.Context,
+	req *requests.SavePhotoToCloud,
+) error {
+	_, err := trackPhotoDownload(ctx, req.ImageID)
+	if err != nil {
+		return err
+	}
+
+	reqBody, err := json.Marshal(map[string]string{
+		"path": fmt.Sprintf("/photo-%s.jpg", req.ImageID),
+		"url":  req.URL,
+	})
+	if err != nil {
+		return err
+	}
+
+	bearerToken := fmt.Sprintf("Bearer %s", req.Token)
+
+	reqHeaders := map[string]string{
+		"Authorization": bearerToken,
+		"Content-Type":  "application/json",
+	}
+
+	endpoint := "https://api.dropboxapi.com/2/files/save_url"
+
+	var uploadStatus models.DropboxUploadStatus
+
+	b, err := fetch.HTTPPost(
+		ctx,
+		endpoint,
+		reqHeaders,
+		bytes.NewBuffer(reqBody),
+		&uploadStatus,
+	)
+	if err != nil {
+		return err
+	}
+
+	if uploadStatus.Tag == "async_job_id" {
+		return checkDropboxUploadStatus(ctx, uploadStatus.AsyncJobID, req.Token)
+	}
+
+	if uploadStatus.Tag == "complete" {
+		return nil
+	}
+
+	return apperror.ErrSaveToCloudFailed.Err(errors.New(string(b)))
+}
+
+func checkDropboxUploadStatus(ctx context.Context, jobID, token string) error {
+	for {
+		bearerToken := fmt.Sprintf("Bearer %s", token)
+
+		reqBody, err := json.Marshal(map[string]string{
+			"async_job_id": jobID,
+		})
+		if err != nil {
+			return err
+		}
+
+		endpoint := "https://api.dropboxapi.com/2/files/save_url/check_job_status"
+
+		reqHeaders := map[string]string{
+			"Authorization": bearerToken,
+			"Content-Type":  "application/json",
+		}
+
+		var uploadStatus models.DropboxUploadStatus
+
+		b, err := fetch.HTTPPost(
+			ctx,
+			endpoint,
+			reqHeaders,
+			bytes.NewBuffer(reqBody),
+			&uploadStatus,
+		)
+		if err != nil {
+			return err
+		}
+
+		if uploadStatus.Tag == "complete" {
+			return nil
+		}
+
+		if uploadStatus.Tag == "in_progress" {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		return apperror.ErrSaveToCloudFailed.Err(errors.New(string(b)))
+	}
+}
+
+func (a *App) AuthorizeOneDrive(
+	ctx context.Context,
+	req *requests.CloudAuth,
+) ([]byte, error) {
+	conf := config.Get()
+
+	id := conf.Onedrive.AppID
+	secret := conf.Onedrive.Secret
+
+	form := url.Values{}
+	form.Add("grant_type", "authorization_code")
+	form.Add("client_id", id)
+	form.Add("client_secret", secret)
+	form.Add("code", req.Code)
+	form.Add("redirect_uri", strings.TrimSuffix(conf.RedirectURL, "/"))
+
+	reqBody := strings.NewReader(form.Encode())
+
+	reqHeaders := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+
+	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+	var o models.OnedriveAuth
+
+	return fetch.HTTPPost(
+		ctx,
+		endpoint,
+		reqHeaders,
+		reqBody,
+		&o,
+	)
+}
+
+// RefreshOneDriveToken sends the request to retrieve a new OneDrive access
+// token.
+func (a *App) RefreshOneDriveToken(
+	ctx context.Context,
+	req *requests.RefreshToken,
+) ([]byte, error) {
+	conf := config.Get()
+
+	id := conf.Onedrive.AppID
+	secret := conf.Onedrive.Secret
+
+	form := url.Values{}
+	form.Add("grant_type", "refresh_token")
+	form.Add("client_id", id)
+	form.Add("client_secret", secret)
+	form.Add("refresh_token", req.Token)
+	form.Add("redirect_uri", strings.TrimSuffix(conf.RedirectURL, "/"))
+
+	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+	reqBody := strings.NewReader(form.Encode())
+
+	reqHeaders := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+
+	var o models.OnedriveAuth
+
+	return fetch.HTTPPost(
+		ctx,
+		endpoint,
+		reqHeaders,
+		reqBody,
+		&o,
+	)
+}
+
+func (a *App) SaveToOneDrive(
+	ctx context.Context,
+	req *requests.SavePhotoToCloud,
+) error {
+	_, err := trackPhotoDownload(ctx, req.ImageID)
+	if err != nil {
+		return err
+	}
+
+	bearerToken := fmt.Sprintf("Bearer %s", req.Token)
+
+	requestBody, err := json.Marshal(map[string]string{
+		"name":                       fmt.Sprintf("/photo-%s.jpg", req.ImageID),
+		"@microsoft.graph.sourceUrl": req.URL,
+	})
+	if err != nil {
+		return err
+	}
+
+	endpoint := "https://graph.microsoft.com/v1.0/drive/special/approot/children"
+
+	request, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		endpoint,
+		bytes.NewBuffer(requestBody),
+	)
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", bearerToken)
+	request.Header.Set("Prefer", "response-async")
 
 	response, err := utils.Client.Do(request)
 	if err != nil {
@@ -398,132 +589,29 @@ func (a *App) SaveToGoogleDrive(
 		return err
 	}
 
-	return nil
+	location := response.Header.Get("location")
+	if location != "" {
+		return checkOneDriveUploadStatus(ctx, location)
+	}
+
+	return apperror.ErrSaveToCloudFailed
 }
 
-func (a *App) SaveToDropbox(
-	ctx context.Context,
-	req *requests.SavePhotoToCloud,
-) error {
-	_, err := trackPhotoDownload(ctx, req.ImageID)
-	if err != nil {
-		return err
-	}
+func checkOneDriveUploadStatus(ctx context.Context, endpoint string) error {
+	for {
+		var uploadStatus models.OneDriveUploadStatus
 
-	v := fmt.Sprintf("Bearer %s", req.Token)
-
-	requestBody, err := json.Marshal(map[string]string{
-		"path": fmt.Sprintf("/photo-%s.jpg", req.ImageID),
-		"url":  req.URL,
-	})
-	if err != nil {
-		return err
-	}
-
-	endpoint := "https://api.dropboxapi.com/2/files/save_url"
-
-	request, err := http.NewRequestWithContext(
-		ctx,
-		"POST",
-		endpoint,
-		bytes.NewBuffer(requestBody),
-	)
-	if err != nil {
-		return err
-	}
-
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", v)
-
-	response, err := utils.Client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	defer response.Body.Close()
-
-	b, err := utils.CheckForErrors(response)
-	if err != nil {
-		return err
-	}
-
-	resp := &models.DropboxSaveURLResponse{}
-
-	err = json.Unmarshal(b, resp)
-	if err != nil {
-		return err
-	}
-
-	if resp.Tag == "async_job_id" {
-		err = checkDropboxUploadStatus(ctx, resp.AsyncJobID, req.Token)
+		_, err := fetch.HTTPGet(ctx, endpoint, &uploadStatus)
 		if err != nil {
 			return err
 		}
 
-		return nil
-	} else if resp.Tag == "complete" {
-		return nil
+		if uploadStatus.Status == "completed" {
+			return nil
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 
-	return fmt.Errorf("save URL error. response from dropbox: %s", string(b))
-}
-
-func (a *App) AuthorizeOneDrive(
-	ctx context.Context,
-	req *requests.OneDriveAuth,
-) ([]byte, error) {
-	conf := config.Get()
-
-	id := conf.Onedrive.AppID
-	secret := conf.Onedrive.Secret
-
-	formValues := map[string]string{
-		"grant_type":    "authorization_code",
-		"client_id":     id,
-		"client_secret": secret,
-		"code":          req.Code,
-		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
-	}
-
-	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-
-	var o models.OnedriveAuth
-
-	return fetch.HTTPPost(
-		ctx,
-		endpoint,
-		formValues,
-		&o,
-	)
-}
-
-// RefreshOneDriveToken sends the request to retrieve a new OneDrive access
-// token.
-func (a *App) RefreshOneDriveToken(
-	ctx context.Context,
-	req *requests.RefreshOneDriveToken,
-) ([]byte, error) {
-	conf := config.Get()
-
-	id := conf.Onedrive.AppID
-	secret := conf.Onedrive.Secret
-
-	formValues := map[string]string{
-		"grant_type":    "refresh_token",
-		"client_id":     id,
-		"client_secret": secret,
-		"refresh_token": req.Token,
-		"redirect_uri":  strings.TrimSuffix(conf.RedirectURL, "/"),
-	}
-
-	endpoint := "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-
-	var o models.OnedriveAuth
-
-	return fetch.HTTPPost(
-		ctx,
-		endpoint,
-		formValues,
-		&o,
-	)
+	return apperror.ErrSaveToCloudFailed
 }

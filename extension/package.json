@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@jgoz/esbuild-plugin-typecheck": "^3.1.0",
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/chrome": "^0.0.254",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
@@ -35,12 +36,13 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-prettier": "^5.1.2",
-    "husky": ">=8.0.3",
-    "lint-staged": ">=15.2.0",
     "nodemon": "^3.0.2",
     "postcss": "^8.4.32",
     "postcss-preset-env": "^9.3.0",
     "prettier": "^3.1.1",
+    "prettier-plugin-css-order": "^2.0.1",
+    "prettier-plugin-organize-attributes": "^1.0.0",
+    "prettier-plugin-tailwindcss": "^0.5.11",
     "rimraf": "^5.0.5",
     "sass": "^1.69.7",
     "stylelint": "^16.1.0",
@@ -48,6 +50,7 @@
     "stylelint-scss": "^6.0.0"
   },
   "dependencies": {
+    "@webcomponents/custom-elements": "^1.6.0",
     "bulma": "^0.9.4",
     "dompurify": "^3.0.6",
     "ladda": "^2.0.3",

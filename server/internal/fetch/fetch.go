@@ -7,8 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -71,6 +69,7 @@ func checkForErrors(resp *http.Response) ([]byte, error) {
 
 // HTTPGet makes an HTTP GET request and decodes the JSON
 // response into the provided target interface.
+// If `target` is `nil`, the response body is returned as is
 func HTTPGet[T any](
 	ctx context.Context,
 	endpoint string,
@@ -99,19 +98,23 @@ func HTTPGet[T any](
 
 	slog.DebugContext(
 		ctx,
-		fmt.Sprintf("request to %s took %dms", uri, elapsed),
+		fmt.Sprintf("GET request to %s took %dms", uri, elapsed),
 		slog.Int64("elapsed_ms", elapsed),
 		slog.String("uri", uri),
 	)
 
 	defer resp.Body.Close()
 
-	body, err := checkForErrors(resp)
+	b, err := checkForErrors(resp)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(body, target)
+	if target == nil {
+		return b, nil
+	}
+
+	err = json.Unmarshal(b, target)
 	if err != nil {
 		return nil, err
 	}
@@ -119,28 +122,29 @@ func HTTPGet[T any](
 	return json.Marshal(target)
 }
 
+// HTTPPost makes an HTTP POST request and decodes the JSON
+// response into the provided target interface.
+// If `target` is `nil`, the response body is returned as is
 func HTTPPost[T any](
 	ctx context.Context,
 	endpoint string,
-	formValues map[string]string,
+	headers map[string]string,
+	body io.Reader,
 	target *T,
 ) ([]byte, error) {
-	form := url.Values{}
-	for key, value := range formValues {
-		form.Add(key, value)
-	}
-
 	request, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
 		endpoint,
-		strings.NewReader(form.Encode()),
+		body,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	for key, value := range headers {
+		request.Header.Set(key, value)
+	}
 
 	start := time.Now()
 
@@ -155,19 +159,23 @@ func HTTPPost[T any](
 
 	slog.DebugContext(
 		ctx,
-		fmt.Sprintf("request to %s took %dms", uri, elapsed),
+		fmt.Sprintf("POST request to %s took %dms", uri, elapsed),
 		slog.Int64("elapsed_ms", elapsed),
 		slog.String("uri", uri),
 	)
 
 	defer resp.Body.Close()
 
-	body, err := checkForErrors(resp)
+	b, err := checkForErrors(resp)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(body, target)
+	if target == nil {
+		return b, nil
+	}
+
+	err = json.Unmarshal(b, target)
 	if err != nil {
 		return nil, err
 	}

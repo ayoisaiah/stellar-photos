@@ -73,17 +73,17 @@ func NewHTTPServer() *http.Server {
 			middleware.ErrorHandler(s.h.SendGoogleDriveKey),
 		)
 		r.Method(
-			http.MethodGet,
+			http.MethodPost,
 			"/auth",
 			middleware.ErrorHandler(s.h.AuthorizeGoogleDrive),
 		)
 		r.Method(
-			http.MethodGet,
+			http.MethodPost,
 			"/refresh",
 			middleware.ErrorHandler(s.h.RefreshGoogleDriveToken),
 		)
 		r.Method(
-			http.MethodGet,
+			http.MethodPost,
 			"/save",
 			middleware.ErrorHandler(s.h.SaveToGoogleDrive),
 		)
@@ -96,7 +96,7 @@ func NewHTTPServer() *http.Server {
 			middleware.ErrorHandler(s.h.SendDropboxKey),
 		)
 		r.Method(
-			http.MethodGet,
+			http.MethodPost,
 			"/save",
 			middleware.ErrorHandler(s.h.SaveToDropbox),
 		)
@@ -109,14 +109,19 @@ func NewHTTPServer() *http.Server {
 			middleware.ErrorHandler(s.h.SendOneDriveID),
 		)
 		r.Method(
-			http.MethodGet,
+			http.MethodPost,
 			"/auth",
 			middleware.ErrorHandler(s.h.AuthorizeOneDrive),
 		)
 		r.Method(
-			http.MethodGet,
+			http.MethodPost,
 			"/refresh",
 			middleware.ErrorHandler(s.h.RefreshOneDriveToken),
+		)
+		r.Method(
+			http.MethodPost,
+			"/save",
+			middleware.ErrorHandler(s.h.SaveToOneDrive),
 		)
 	})
 

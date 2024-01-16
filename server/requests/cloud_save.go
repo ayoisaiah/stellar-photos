@@ -3,15 +3,14 @@ package requests
 import (
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
 )
 
-// SavePhotoToCloud represents a request to upload an image to either
-// Google Drive or Dropbox.
+// SavePhotoToCloud represents a request to upload an image to
+// Google Drive, OneDrive or Dropbox.
 type SavePhotoToCloud struct {
-	Token   string `json:"-"`
+	Token   string `json:"token"`
 	ImageID string `json:"image_id"`
 	URL     string `json:"url"`
 }
@@ -21,14 +20,10 @@ func (p *SavePhotoToCloud) LogValue() slog.Value {
 }
 
 func (p *SavePhotoToCloud) Init(r *http.Request) error {
-	values, err := getURLQueryParams(r.URL.String())
+	err := decodeJSON(r.Body, p)
 	if err != nil {
 		return err
 	}
-
-	p.Token = strings.TrimSpace(values.Get("token"))
-	p.ImageID = strings.TrimSpace(values.Get("id"))
-	p.URL = strings.TrimSpace(values.Get("url"))
 
 	return p.validate()
 }

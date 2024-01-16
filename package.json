@@ -1,0 +1,9 @@
+{
+	"dependencies": {
+		"lit": "^3.1.0"
+	},
+	"devDependencies": {
+		"lit-analyzer": "^2.0.2",
+		"ts-lit-plugin": "^2.0.1"
+	}
+}

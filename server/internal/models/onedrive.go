@@ -8,3 +8,7 @@ type OnedriveAuth struct {
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
 }
+
+type OneDriveUploadStatus struct {
+	Status string `json:"status"`
+}

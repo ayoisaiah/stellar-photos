@@ -69,4 +69,39 @@ var (
 		Detail: "The payload is not a valid JSON string",
 		Status: http.StatusInternalServerError,
 	}
+
+	ErrSaveToCloudFailed = &Error{
+		Detail: "Failed to complete upload. Try again later",
+		Status: http.StatusInternalServerError,
+	}
+
+	ErrPayloadTooLarge = &Error{
+		Detail: "Request body is too large",
+		Status: http.StatusBadRequest,
+	}
+
+	ErrJSONSyntaxError = &Error{
+		Detail: "Request body contains badly-formed JSON (at position %d)",
+		Status: http.StatusBadRequest,
+	}
+
+	ErrJSONUnknownField = &Error{
+		Detail: "Request body contains unknown field '%s'",
+		Status: http.StatusBadRequest,
+	}
+
+	ErrJSONPayloadInvalid = &Error{
+		Detail: "The provided payload is not a valid JSON string",
+		Status: http.StatusBadRequest,
+	}
+
+	ErrJSONEmpty = &Error{
+		Detail: "The request body must not be empty",
+		Status: http.StatusBadRequest,
+	}
+
+	ErrJSONTypeInvalid = &Error{
+		Detail: "Request body contains an invalid value for the %q field (at position %d)",
+		Status: http.StatusBadRequest,
+	}
 )

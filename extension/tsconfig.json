@@ -2,18 +2,37 @@
   "compilerOptions": {
     "noEmit": true,
     "sourceMap": true,
-    "module": "es6",
+    "inlineSources": true,
+    "module": "esnext",
     "strict": true,
-    "target": "esnext",
-    "allowJs": true,
+    "target": "es2022",
+    "lib": [
+      "es2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "allowJs": false,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noUnusedParameters": true,
-    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noImplicitReturns": true,
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["src/js", "src/ts/**/*.ts"]
+    "noImplicitOverride": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "plugins": [
+      {
+        "name": "ts-lit-plugin",
+        "strict": true,
+        "rules": {
+          "no-missing-import": "off",
+        }
+      }
+    ]
+  }
 }

@@ -149,7 +149,7 @@ func (h *Handler) AuthorizeGoogleDrive(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	var p requests.GoogleDriveAuth
+	var p requests.CloudAuth
 
 	err := p.Init(r)
 	if err != nil {
@@ -174,7 +174,7 @@ func (h *Handler) RefreshGoogleDriveToken(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	var p requests.RefreshGoogleDriveToken
+	var p requests.RefreshToken
 
 	err := p.Init(r)
 	if err != nil {
@@ -240,7 +240,7 @@ func (h *Handler) SendDropboxKey(w http.ResponseWriter, r *http.Request) error {
 }
 
 // SaveToDropbox handles GET /dropbox/save
-// It saves the requested photo to the current user's Dropbox account.
+// It saves the specified photo to the user's OneDrive account.
 func (h *Handler) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	var p requests.SavePhotoToCloud
 
@@ -278,7 +278,7 @@ func (h *Handler) AuthorizeOneDrive(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	var p requests.OneDriveAuth
+	var p requests.CloudAuth
 
 	err := p.Init(r)
 	if err != nil {
@@ -303,7 +303,7 @@ func (h *Handler) RefreshOneDriveToken(
 	w http.ResponseWriter,
 	r *http.Request,
 ) error {
-	var p requests.RefreshOneDriveToken
+	var p requests.RefreshToken
 
 	err := p.Init(r)
 	if err != nil {
@@ -320,4 +320,35 @@ func (h *Handler) RefreshOneDriveToken(
 	}
 
 	return fetch.JSONResponse(ctx, w, resp)
+}
+
+// SaveToOneDrive POST /onedrive/save
+// It saves the specified photo to the user's OneDrive account.
+func (h *Handler) SaveToOneDrive(
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
+	var p requests.SavePhotoToCloud
+
+	err := p.Init(r)
+	if err != nil {
+		return err
+	}
+
+	ctx := r.Context()
+
+	slog.InfoContext(
+		ctx,
+		"saving image to OneDrive",
+		slog.Any("parameters", p),
+	)
+
+	err = h.app.SaveToOneDrive(ctx, &p)
+	if err != nil {
+		return err
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	return nil
 }
