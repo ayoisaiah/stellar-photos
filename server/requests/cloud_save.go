@@ -15,7 +15,7 @@ type SavePhotoToCloud struct {
 	URL     string `json:"url"`
 }
 
-func (p *SavePhotoToCloud) LogValue() slog.Value {
+func (p SavePhotoToCloud) LogValue() slog.Value {
 	return slog.GroupValue(slog.String("image_id", p.ImageID))
 }
 

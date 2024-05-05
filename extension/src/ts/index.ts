@@ -1,3 +1,4 @@
+import '../css/tailwind.global.css';
 import './newtab/main';
 
 // import { render } from 'lit-html';

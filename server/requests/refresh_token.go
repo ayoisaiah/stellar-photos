@@ -8,12 +8,12 @@ import (
 )
 
 // RefreshToken represents a request to refresh a Google Drive or OneDrive
-// access token
+// access token.
 type RefreshToken struct {
 	Token string `json:"token"`
 }
 
-func (t *RefreshToken) LogValue() slog.Value {
+func (t RefreshToken) LogValue() slog.Value {
 	return slog.Value{}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime/debug"
 	"sync"
 )
 
@@ -59,7 +60,21 @@ var (
 	once sync.Once
 	// conf represents the application configuration.
 	conf *Config
+
+	GitRevision string
 )
+
+func init() {
+	buildInfo, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, v := range buildInfo.Settings {
+			if v.Key == "vcs.revision" {
+				GitRevision = v.Value
+				break
+			}
+		}
+	}
+}
 
 // Get returns a new Config struct.
 func Get() *Config {

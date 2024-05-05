@@ -6,90 +6,83 @@ import (
 )
 
 type Prometheus struct {
-	TotalRequests   *prometheus.CounterVec
-	ResolutionCount *prometheus.CounterVec
-	RequestDuration *prometheus.SummaryVec
-	ImageDownload   *prometheus.CounterVec
-	UserAgent       *prometheus.CounterVec
-	CacheOrNetwork  *prometheus.CounterVec
-	ErrorCount      *prometheus.CounterVec
+	ResolutionCount  *prometheus.CounterVec
+	OrientationCount *prometheus.CounterVec
+	UserAgent        *prometheus.CounterVec
+	CacheOrNetwork   *prometheus.CounterVec
+	ErrorCount       *prometheus.CounterVec
+	CloudUploads     *prometheus.CounterVec
 }
 
-var m *Prometheus
+const namespace = "stellar"
 
-func Init() *prometheus.Registry {
-	reg := prometheus.NewRegistry()
-	reg.MustRegister(collectors.NewGoCollector())
+var M *Prometheus
 
-	m = &Prometheus{
-		TotalRequests: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Track number of requests",
-			},
-			[]string{"path"},
-		),
+func init() {
+	M = &Prometheus{
 		ResolutionCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "image_resolution_count_total",
-				Help: "Tracking requested image resolutions",
+				Namespace: namespace,
+				Name:      "resolution_count_total",
+				Help:      "Tracking requested image resolutions",
 			},
 			[]string{"resolution"},
 		),
-		RequestDuration: prometheus.NewSummaryVec(
-			prometheus.SummaryOpts{
-				Name: "http_request_duration_seconds",
-				Help: "Duration of requests",
-			},
-			[]string{"path"},
-		),
-		ImageDownload: prometheus.NewCounterVec(
+		OrientationCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "image_download_count_total",
-				Help: "Tracking downloaded images",
+				Namespace: namespace,
+				Name:      "orientation_count_total",
+				Help:      "Tracking requested image orientations",
 			},
-
-			[]string{"download_ctx"},
+			[]string{"orientation"},
 		),
 		UserAgent: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "user_agent_total",
-				Help: "Tracking user agent",
+				Namespace: namespace,
+				Name:      "user_agent_total",
+				Help:      "Tracking user agent",
 			},
 			[]string{"browser"},
 		),
 		ErrorCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "error_count_total",
-				Help: "Track error count",
+				Namespace: namespace,
+				Name:      "count_total",
+				Help:      "Track error count",
 			},
-			[]string{},
+			[]string{"path"},
 		),
 		CacheOrNetwork: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "cache_or_network_total",
-				Help: "Track if image is searved from cache or network",
+				Namespace: namespace,
+				Name:      "cache_or_network_total",
+				Help:      "Track if image is searved from cache or network",
 			},
 			[]string{"location"},
 		),
+		CloudUploads: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Name:      "cloud_uploads_total",
+				Help:      "Track the number of cloud uploads",
+			},
+			[]string{"service"},
+		),
 	}
+}
+
+func Reg() *prometheus.Registry {
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewGoCollector())
 
 	reg.MustRegister(
-		m.TotalRequests,
-		m.ResolutionCount,
-		m.RequestDuration,
-		m.ImageDownload,
-		m.UserAgent,
-		m.CacheOrNetwork,
+		M.OrientationCount,
+		M.ResolutionCount,
+		M.ErrorCount,
+		M.CloudUploads,
+		M.UserAgent,
+		M.CacheOrNetwork,
 	)
 
 	return reg
-}
-
-func Get() *Prometheus {
-	if m == nil {
-		Init()
-	}
-
-	return m
 }

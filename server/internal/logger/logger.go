@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/lmittmann/tint"
+	slogctx "github.com/veqryn/slog-context"
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
 	"github.com/ayoisaiah/stellar-photos/config"
@@ -106,7 +107,9 @@ func L() *slog.Logger {
 
 		jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
 
-		h := &ContextHandler{jsonHandler}
+		h := slogctx.NewHandler(jsonHandler, nil)
+
+		// h := &ContextHandler{jsonHandler}
 
 		Handler = h
 
@@ -123,7 +126,9 @@ func L() *slog.Logger {
 		}
 
 		if conf.GoEnv == config.EnvDevelopment {
-			Handler = &ContextHandler{tint.NewHandler(os.Stdout, nil)}
+			tintHandler := tint.NewHandler(os.Stdout, nil)
+			h = slogctx.NewHandler(tintHandler, nil)
+			Handler = &ContextHandler{h}
 		}
 
 		defaultLogger = slog.New(Handler)

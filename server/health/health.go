@@ -10,7 +10,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/fetch"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
-	"github.com/ayoisaiah/stellar-photos/internal/utils"
+	"github.com/go-resty/resty/v2"
 )
 
 type Health struct {
@@ -57,7 +57,7 @@ func newCheck(name string) *Check {
 func liveCheck() *Health {
 	var h Health
 	h.Status = statusPass
-	h.ReleaseID = utils.GitRevision
+	h.ReleaseID = config.GitRevision
 	h.Version = config.Version
 	h.Description = "Liveness check"
 
@@ -70,26 +70,31 @@ func healthResponse(w http.ResponseWriter, r *http.Request, h *Health) error {
 		return err
 	}
 
-	return utils.JSONResponse(r.Context(), w, b)
+	return fetch.JSONResponse(r.Context(), w, b)
 }
 
 func googleCheck(ctx context.Context) *Check {
 	conf := config.Get()
 
-	url := fmt.Sprintf(
+	endpoint := fmt.Sprintf(
 		"%s/photos/random?collections=998309&client_id=%s",
 		conf.Unsplash.BaseURL,
 		conf.Unsplash.AccessKey,
 	)
 
-	photo := &models.UnsplashPhoto{}
+	var photo models.UnsplashPhoto
 
 	c := newCheck("Unsplash API")
 	c.ComponentType = "api"
 
 	start := time.Now()
 
-	_, err := fetch.HTTPGet(ctx, url, photo)
+	client := resty.New()
+
+	_, err := client.R().
+		SetContext(ctx).
+		SetResult(&photo).
+		Get(endpoint)
 	if err != nil {
 		c.Output = err.Error()
 		c.Status = statusFail
@@ -120,20 +125,25 @@ func googleCheck(ctx context.Context) *Check {
 func unsplashCheck(ctx context.Context) *Check {
 	conf := config.Get()
 
-	url := fmt.Sprintf(
+	endpoint := fmt.Sprintf(
 		"%s/photos/random?collections=998309&client_id=%s",
 		conf.Unsplash.BaseURL,
 		conf.Unsplash.AccessKey,
 	)
 
-	photo := &models.UnsplashPhoto{}
-
+	var photo models.UnsplashPhoto
 	c := newCheck("Unsplash API")
+
 	c.ComponentType = "api"
 
 	start := time.Now()
 
-	_, err := fetch.HTTPGet(ctx, url, photo)
+	client := resty.New()
+
+	_, err := client.R().
+		SetContext(ctx).
+		SetResult(&photo).
+		Get(endpoint)
 	if err != nil {
 		c.Output = err.Error()
 		c.Status = statusFail

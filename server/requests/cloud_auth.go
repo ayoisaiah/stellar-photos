@@ -7,12 +7,12 @@ import (
 	"github.com/ayoisaiah/stellar-photos/apperror"
 )
 
-// CloudAuth represents a request to authorize Google Drive or OneDrive account
+// CloudAuth represents a request to authorize Google Drive or OneDrive account.
 type CloudAuth struct {
 	Code string `json:"code"`
 }
 
-func (c *CloudAuth) LogValue() slog.Value {
+func (c CloudAuth) LogValue() slog.Value {
 	return slog.Value{}
 }
 

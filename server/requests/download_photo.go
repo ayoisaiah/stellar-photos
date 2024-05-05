@@ -12,7 +12,7 @@ type DownloadPhoto struct {
 	ID string `json:"id"`
 }
 
-func (d *DownloadPhoto) LogValue() slog.Value {
+func (d DownloadPhoto) LogValue() slog.Value {
 	return slog.StringValue(d.ID)
 }
 

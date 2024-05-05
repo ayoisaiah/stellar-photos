@@ -3,9 +3,7 @@ import { ChromeSyncStorage } from './types';
 
 const baseUrl =
   // @ts-ignore
-  'NODE_ENV' === 'development'
-    ? 'http://localhost'
-    : 'https://stellarphotos.freshman.tech';
+  'NODE_ENV' === 'development' ? 'http://localhost' : 'http://localhost';
 
 async function makeRequest(url: string): Promise<Response> {
   const response = await fetch(url);
@@ -64,16 +62,16 @@ function authorizeOnedrive(code: string): Promise<Response> {
 
 function refreshOnedriveTokenApi(token: string): Promise<Response> {
   return postRequest(`${baseUrl}/onedrive/refresh`, {
-    refresh_token: token,
+    token,
   });
 }
 
 function trackDownload(id: string): Promise<Response> {
-  return makeRequest(`${baseUrl}/download-photo/?id=${id}`);
+  return makeRequest(`${baseUrl}/unsplash/download?id=${id}`);
 }
 
 function getOnedriveId(): Promise<Response> {
-  return makeRequest(`${baseUrl}/onedrive/id/`);
+  return makeRequest(`${baseUrl}/onedrive/id`);
 }
 
 function saveToOneDriveApi(

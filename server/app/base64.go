@@ -1,4 +1,4 @@
-package utils
+package app
 
 import (
 	"context"
@@ -9,37 +9,48 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/debug"
-	"time"
+	"strconv"
 
+	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/metrics"
+	"github.com/ayoisaiah/stellar-photos/requests"
+	"github.com/go-resty/resty/v2"
 )
 
-type contextKey string
+// getBase64 retrieves the base64 representation of an Unsplash image
+func getBase64(
+	ctx context.Context,
+	req *requests.RandomPhoto,
+	photo *models.UnsplashPhoto,
+) (string, error) {
+	imageWidth := 2000
 
-const (
-	defaultTimeoutInSeconds            = 60
-	ContextKeyRequestID     contextKey = "requestID"
-)
-
-var GitRevision string
-
-func init() {
-	buildInfo, ok := debug.ReadBuildInfo()
-	if ok {
-		for _, v := range buildInfo.Settings {
-			if v.Key == "vcs.revision" {
-				GitRevision = v.Value
-				break
-			}
+	switch req.Resolution {
+	case "high":
+		highRes := 4000
+		if photo.Width >= highRes {
+			imageWidth = 4000
+		} else {
+			imageWidth = photo.Width
 		}
+	case "max":
+		imageWidth = photo.Width
 	}
+
+	imageURL := fmt.Sprintf("%s&w=%d", photo.Urls.Raw, imageWidth)
+
+	return getImageBase64(
+		ctx,
+		imageURL,
+		strconv.Itoa(imageWidth),
+		photo.ID,
+	)
 }
 
-// GetImageBase64 implements read-through caching in which the image's
+// getImageBase64 implements read-through caching in which the image's
 // base64 string is retrieved from the cache first or the network if
 // not found in the cache.
-func GetImageBase64(
+func getImageBase64(
 	ctx context.Context,
 	endpoint, imageWidth, id string,
 ) (string, error) {
@@ -52,8 +63,7 @@ func GetImageBase64(
 		if err == nil {
 			base64Str = string(b)
 
-			m := metrics.Get()
-			m.CacheOrNetwork.WithLabelValues("cache").Inc()
+			metrics.M.CacheOrNetwork.WithLabelValues("cache").Inc()
 
 			slog.DebugContext(
 				ctx,
@@ -74,7 +84,7 @@ func GetImageBase64(
 
 	var err error
 
-	base64Str, err = imageURLToBase64(endpoint)
+	base64Str, err = imageURLToBase64(ctx, endpoint)
 	if err != nil {
 		return base64Str, fmt.Errorf(
 			"unable to base64 encode image at url '%s': %w",
@@ -95,39 +105,19 @@ func GetImageBase64(
 
 // imageURLToBase64 retrives the Base64 representation of an image URL and
 // returns it.
-func imageURLToBase64(endpoint string) (string, error) {
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		time.Second*defaultTimeoutInSeconds,
-	)
-
-	defer cancel()
-
+func imageURLToBase64(ctx context.Context, endpoint string) (string, error) {
+	// TODO: Set a timeout
 	var base64Encoding string
 
-	request, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodGet,
-		endpoint,
-		http.NoBody,
-	)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		Get(endpoint)
 	if err != nil {
-		return base64Encoding, err
+		return "", err
 	}
 
-	resp, err := Client.Do(request)
-	if err != nil {
-		return base64Encoding, err
-	}
-
-	defer resp.Body.Close()
-
-	bytes, err := CheckForErrors(resp)
-	if err != nil {
-		return base64Encoding, err
-	}
-
-	mimeType := http.DetectContentType(bytes)
+	mimeType := http.DetectContentType(resp.Body())
 
 	switch mimeType {
 	case "image/jpeg":
@@ -141,7 +131,7 @@ func imageURLToBase64(endpoint string) (string, error) {
 		)
 	}
 
-	base64Encoding += base64.StdEncoding.EncodeToString(bytes)
+	base64Encoding += base64.StdEncoding.EncodeToString(resp.Body())
 
 	return base64Encoding, nil
 }

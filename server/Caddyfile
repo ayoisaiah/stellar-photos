@@ -1,3 +1,11 @@
+{
+	servers {
+		metrics
+	}
+
+	admin :2019
+}
+
 http://localhost {
 	encode gzip
 	# tls internal

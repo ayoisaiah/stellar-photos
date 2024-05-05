@@ -5,10 +5,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/robfig/cron/v3"
 
 	"github.com/ayoisaiah/stellar-photos"
-	"github.com/ayoisaiah/stellar-photos/cache"
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/logger"
 )
@@ -28,20 +26,20 @@ func run() error {
 
 	if conf.GoEnv == config.EnvProduction {
 		go func() {
-			cache.Photos()
-
-			c := cron.New()
-
-			_, err := c.AddFunc("@daily", func() {
-				cache.Photos()
-			})
-			if err != nil {
-				slog.Error("unable to schedule cron job",
-					slog.Any("error", err),
-				)
-			}
-
-			c.Start()
+			// cache.Photos()
+			//
+			// c := cron.New()
+			//
+			// _, err := c.AddFunc("@daily", func() {
+			// 	cache.Photos()
+			// })
+			// if err != nil {
+			// 	slog.Error("unable to schedule cron job",
+			// 		slog.Any("error", err),
+			// 	)
+			// }
+			//
+			// c.Start()
 		}()
 	}
 

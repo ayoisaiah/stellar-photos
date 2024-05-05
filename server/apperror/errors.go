@@ -10,16 +10,6 @@ var (
 		Status: http.StatusBadRequest,
 	}
 
-	ErrEmptySearchKey = &Error{
-		Detail: "Search query must not be empty",
-		Status: http.StatusBadRequest,
-	}
-
-	ErrInvalidSearchPage = &Error{
-		Detail: "Search page must be a positive integer",
-		Status: http.StatusBadRequest,
-	}
-
 	ErrValidateNothing = &Error{
 		Detail: "Nothing to validate",
 		Status: http.StatusBadRequest,

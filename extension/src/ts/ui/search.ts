@@ -1,13 +1,13 @@
 import * as Ladda from 'ladda';
 import { html, TemplateResult, render } from 'lit-html';
 import { $, getFromChromeLocalStorage } from '../helpers';
-import { loadingIndicator } from './loading';
-import { searchPhotos } from '../requests';
 import { notifyNoSearchResults } from '../notifications';
+import { searchPhotos } from '../requests';
+import { ChromeLocalStorage } from '../types';
 import { UnsplashImage, UnsplashSearch } from '../types/unsplash';
+import { loadingIndicator } from './loading';
 import { photoCard } from './photo-card';
 import { snackbar } from './snackbar';
-import { ChromeLocalStorage } from '../types';
 
 interface State {
   query: string;
@@ -168,16 +168,16 @@ function search(): TemplateResult {
       </div>
       <section class="s-search" id="js-search" style="opacity: 0">
         <button
-          @click=${closeForm}
-          id="js-close-search"
           class="searchButton searchButton-close"
+          id="js-close-search"
+          @click=${closeForm}
           aria-label="Close search form"
         >
           <svg class="icon icon--cross">
             <use xlink:href="#icon-cross"></use>
           </svg>
         </button>
-        <form @submit=${handleSubmit} class="searchForm" id="js-search-form">
+        <form class="searchForm" id="js-search-form" @submit=${handleSubmit}>
           <input
             class="searchForm-input"
             id="js-search-input"
@@ -185,7 +185,6 @@ function search(): TemplateResult {
             type="search"
             placeholder="find free hi-res photos"
             autocomplete="off"
-            autocorrect="off"
             autocapitalize="off"
             spellcheck="false"
           />

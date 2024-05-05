@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ayoisaiah/stellar-photos/app"
 	"github.com/ayoisaiah/stellar-photos/apperror"
@@ -13,6 +14,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos/handler"
 	"github.com/ayoisaiah/stellar-photos/health"
 	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 	"github.com/ayoisaiah/stellar-photos/middleware"
 )
 
@@ -48,11 +50,6 @@ func NewHTTPServer() *http.Server {
 			http.MethodGet,
 			"/download",
 			middleware.ErrorHandler(s.h.DownloadPhoto),
-		)
-		r.Method(
-			http.MethodGet,
-			"/search",
-			middleware.ErrorHandler(s.h.SearchPhotos),
 		)
 		r.Method(
 			http.MethodGet,
@@ -132,6 +129,15 @@ func NewHTTPServer() *http.Server {
 			"/ready",
 			middleware.ErrorHandler(health.Ready),
 		)
+	})
+
+	mux.Route("/metrics", func(r chi.Router) {
+		reg := metrics.Reg()
+		promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{
+			Registry: reg,
+		})
+
+		r.Method(http.MethodGet, "/", promHandler)
 	})
 
 	mux.NotFound(middleware.ErrorHandler(

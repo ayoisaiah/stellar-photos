@@ -1,12 +1,12 @@
 import { html, TemplateResult } from 'lit-html';
-import { search } from './search';
 import { $ } from '../helpers';
-import { footer } from './footer';
-import { photoCard } from './photo-card';
-import { fadeInControls, hideControls } from './utils';
 import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
+import { footer } from './footer';
 import { imageInfo } from './image-info';
+import { photoCard } from './photo-card';
+import { search } from './search';
+import { fadeInControls, hideControls } from './utils';
 
 function loadHistory(
   history: UnsplashImage[],
@@ -67,9 +67,9 @@ function openSearch(): void {
 function hamburgerMenu(): TemplateResult {
   return html`
     <button
-      @click=${() => toggleHistoryPane('toggle')}
-      id="js-hamburger"
       class="historyButton historyButton-open"
+      id="js-hamburger"
+      @click=${() => toggleHistoryPane('toggle')}
       title="toggle history menu"
       aria-label="Toggle History Menu"
     >
@@ -85,10 +85,10 @@ function hamburgerMenu(): TemplateResult {
 function searchButton(): TemplateResult {
   return html`
     <button
+      class="searchButton searchButton-open"
+      id="js-open-search"
       @click=${openSearch}
       title="Find free hi-res photos"
-      id="js-open-search"
-      class="searchButton searchButton-open"
       aria-label="Open search form"
     >
       <svg class="icon icon--search">
@@ -101,11 +101,11 @@ function searchButton(): TemplateResult {
 function ui(data: ChromeLocalStorage): TemplateResult {
   return html`
     <main
+      class="s-main"
+      id="js-main"
       @mouseenter=${fadeInControls}
       @mouseleave=${hideControls}
       @wheel=${handleScrollWheel}
-      class="s-main"
-      id="js-main"
     >
       <header class="header s-ui" id="header">
         <div class="header-content" id="header-content">

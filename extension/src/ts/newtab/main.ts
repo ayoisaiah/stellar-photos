@@ -1,12 +1,12 @@
-import { LitElement, html } from 'lit';
+import { LitElement, html, unsafeCSS } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import tailwind from 'sass:../../sass/tailwind.global.scss';
 import { saveToDropbox } from '../cloud';
+import { saveToOneDrive } from '../cloud';
 import { saveToGoogleDrive } from '../googledrive';
 import { getChromeStorageData } from '../helpers';
-import { saveToOneDrive } from '../onedrive';
 import { trackDownload } from '../requests';
 import { ChromeStorage } from '../types';
-import { UnsplashImage } from '../types/unsplash';
 import {
   DownloadEvent,
   SaveToCloudEvent,
@@ -15,11 +15,12 @@ import {
 import './footer';
 import './header';
 import './history';
+import './loader';
+import './settings';
 
 @customElement('stellar-main')
 class Main extends LitElement {
-  @property({ type: Boolean })
-  searchOpen = false;
+  static override styles = [unsafeCSS(tailwind)];
 
   @property({ type: Boolean })
   historyOpen = false;
@@ -28,13 +29,13 @@ class Main extends LitElement {
   infoOpen = false;
 
   @property({ type: Boolean })
+  settingsOpen = false;
+
+  @property({ type: Boolean })
   controlsShown = false;
 
   @property({ type: Object })
   data: ChromeStorage | null = null;
-
-  @property({ type: Object })
-  currentImage!: UnsplashImage;
 
   @property({ type: Boolean })
   imagePaused = false;
@@ -46,19 +47,15 @@ class Main extends LitElement {
     this.historyOpen = !this.historyOpen;
   }
 
-  #openSearch(): void {
-    this.searchOpen = !this.searchOpen;
-  }
-
-  #showControls(): void {
-    this.controlsShown = true;
-  }
-
-  #hideControls(): void {
-    if (this.historyOpen) return;
-
-    this.controlsShown = false;
-  }
+  // #showControls(): void {
+  //   this.controlsShown = true;
+  // }
+  //
+  // #hideControls(): void {
+  //   if (this.historyOpen) return;
+  //
+  //   this.controlsShown = false;
+  // }
 
   #openInfo(): void {
     this.infoOpen = true;
@@ -69,30 +66,11 @@ class Main extends LitElement {
   }
 
   async #downloadImage(event: DownloadEvent): Promise<void> {
-    this.loading = true;
-
     const { imageID, downloadURL } = event.detail;
 
-    try {
-      await trackDownload(imageID);
+    trackDownload(imageID).catch((err) => console.error(err));
 
-      const a = document.createElement('a');
-      a.href = downloadURL || '';
-      a.setAttribute('download', `photo-${imageID}`);
-      a.setAttribute('style', 'opacity: 0;');
-
-      a.setAttribute('target', '_blank');
-      a.setAttribute('rel', 'noopener');
-
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (err) {
-      // snackbar('Download failed', 'error');
-      // TODO: Dispatch error event
-    } finally {
-      this.loading = false;
-    }
+    window.open(downloadURL, '_blank');
   }
 
   async #saveToCloud(event: SaveToCloudEvent): Promise<void> {
@@ -122,7 +100,7 @@ class Main extends LitElement {
 
   #setBackground(event: SetBackgroundEvent) {
     const { imageID } = event.detail;
-    const index = this.data!.history?.findIndex((e) => (e.id = imageID));
+    const index = this.data!.history?.findIndex((e) => e.id === imageID);
     const image = this.data!.history![index!];
 
     const body = document.getElementById('body');
@@ -130,9 +108,15 @@ class Main extends LitElement {
       body.style.backgroundImage = `url(${image.base64})`;
     }
 
-    this.currentImage = image;
-
     chrome.storage.local.set({ nextImage: image, imagePaused: true });
+
+    (async () => {
+      try {
+        this.data = await getChromeStorageData();
+      } catch (err) {
+        console.error(err);
+      }
+    })();
 
     const overlay = document.getElementById('js-overlay');
     if (overlay) {
@@ -152,22 +136,33 @@ class Main extends LitElement {
     }
   }
 
+  #openSettings() {
+    this.settingsOpen = true;
+  }
+
+  #handleScrollWheel(event: WheelEvent) {
+    if (event.deltaY < 0) {
+      this.historyOpen = true;
+    } else if (event.deltaY > 0) {
+      this.historyOpen = false;
+    }
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
 
     (async () => {
       try {
         this.data = await getChromeStorageData();
-        this.currentImage = this.data.nextImage!;
       } catch (err) {
         console.error(err);
       }
     })();
 
     this.addEventListener('toggle-history', this.#toggleHistory);
-    this.addEventListener('open-search', this.#openSearch);
     this.addEventListener('toggle-paused', this.#togglePaused);
     this.addEventListener('open-info', this.#openInfo);
+    this.addEventListener('close-settings', this.#openSettings);
     this.addEventListener(
       'download',
       this.#downloadImage as unknown as EventListener
@@ -180,31 +175,6 @@ class Main extends LitElement {
       'set-background',
       this.#setBackground as unknown as EventListener
     );
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-
-    this.removeEventListener('toggle-history', this.#toggleHistory);
-    this.removeEventListener('open-search', this.#openSearch);
-    this.removeEventListener('toggle-paused', this.#togglePaused);
-    this.removeEventListener('open-info', this.#openInfo);
-    this.removeEventListener(
-      'download',
-      this.#downloadImage as unknown as EventListener
-    );
-    this.removeEventListener(
-      'save-to-cloud',
-      this.#saveToCloud as unknown as EventListener
-    );
-    this.removeEventListener(
-      'set-background',
-      this.#setBackground as unknown as EventListener
-    );
-  }
-
-  override createRenderRoot(): this {
-    return this;
   }
 
   override render() {
@@ -213,12 +183,11 @@ class Main extends LitElement {
     }
 
     return html`<main
-      class="s-main"
+      class="h-screen leading-relaxed"
       id="js-main"
-      @mouseenter=${() => this.#showControls()}
-      @mouseleave=${() => window.setTimeout(() => this.#hideControls(), 2000)}
+      @wheel=${this.#handleScrollWheel}
     >
-      <div class="loader ${this.loading ? 'loader-active' : ''}"></div>
+      <stellar-loader .active=${this.loading}></stellar-loader>
       <stellar-header
         class="s-ui ${this.controlsShown ? 'show' : ''}"
         .historyOpen=${this.historyOpen}
@@ -233,6 +202,7 @@ class Main extends LitElement {
         .historyOpen=${this.historyOpen}
         .data=${this.data}
       ></stellar-history>
+      <stellar-settings></stellar-settings>
     </main>`;
   }
 }

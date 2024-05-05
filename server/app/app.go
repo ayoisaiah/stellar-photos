@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"net/textproto"
 	"net/url"
 	"strconv"
@@ -17,10 +16,9 @@ import (
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/internal/fetch"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
-	"github.com/ayoisaiah/stellar-photos/internal/utils"
 	"github.com/ayoisaiah/stellar-photos/requests"
+	"github.com/go-resty/resty/v2"
 )
 
 type App struct{}
@@ -29,7 +27,9 @@ func NewApp() App {
 	return App{}
 }
 
-func trackPhotoDownload(ctx context.Context, id string) ([]byte, error) {
+// trackPhotoDownload ensures that photos downloaded or saved to cloud storage
+// are tracked accordingly.
+func trackPhotoDownload(ctx context.Context, id string) {
 	conf := config.Get()
 
 	unsplashAccessKey := conf.Unsplash.AccessKey
@@ -43,64 +43,18 @@ func trackPhotoDownload(ctx context.Context, id string) ([]byte, error) {
 
 	var d models.UnsplashDownload
 
-	return fetch.HTTPGet(ctx, endpoint, &d)
+	// The result or error is not relevant
+	client := resty.New()
+	_, _ = client.R().SetContext(ctx).SetResult(&d).Get(endpoint)
 }
 
 func (a *App) GetDownloadLink(
 	ctx context.Context,
 	req *requests.DownloadPhoto,
-) ([]byte, error) {
-	return trackPhotoDownload(ctx, req.ID)
-}
-
-func (a *App) SearchPhotos(
-	ctx context.Context,
-	req *requests.SearchUnsplash,
-) ([]byte, error) {
-	conf := config.Get()
-
-	unsplashAccessKey := conf.Unsplash.AccessKey
-	endpoint := fmt.Sprintf(
-		"%s/search/photos?page=%d&query=%s&per_page=%d&client_id=%s",
-		conf.Unsplash.BaseURL,
-		req.PageNumber,
-		req.SearchKey,
-		conf.Unsplash.DefaultPerPage,
-		unsplashAccessKey,
-	)
-
-	var s models.UnsplashSearchResult
-
-	return fetch.HTTPGet(ctx, endpoint, &s)
-}
-
-func getBase64(
-	ctx context.Context,
-	req *requests.RandomPhoto,
-	photo *models.UnsplashPhoto,
-) (string, error) {
-	imageWidth := 2000
-
-	switch req.Resolution {
-	case "high":
-		highRes := 4000
-		if photo.Width >= highRes {
-			imageWidth = 4000
-		} else {
-			imageWidth = photo.Width
-		}
-	case "max":
-		imageWidth = photo.Width
-	}
-
-	imageURL := fmt.Sprintf("%s&w=%d", photo.Urls.Raw, imageWidth)
-
-	return utils.GetImageBase64(
-		ctx,
-		imageURL,
-		strconv.Itoa(imageWidth),
-		photo.ID,
-	)
+) {
+	go func() {
+		trackPhotoDownload(ctx, req.ID)
+	}()
 }
 
 func (a *App) GetRandomPhoto(
@@ -143,10 +97,13 @@ func (a *App) GetRandomPhoto(
 	)
 
 	// TODO: What if an empty response is received?
-	b, err := utils.GETRequest(ctx, endpoint)
+	client := resty.New()
+	resp, err := client.R().SetContext(ctx).Get(endpoint)
 	if err != nil {
 		return nil, err
 	}
+
+	b := resp.Body()
 
 	err = json.Unmarshal(b, &p)
 	if err != nil {
@@ -181,7 +138,8 @@ func (a *App) ValidateFilters(
 
 		var c models.UnsplashCollection
 
-		_, err := fetch.HTTPGet(ctx, endpoint, &c)
+		client := resty.New()
+		_, err := client.R().SetContext(ctx).SetResult(&c).Get(endpoint)
 		if err != nil {
 			if errors.Is(err, apperror.ErrNotFound) {
 				return apperror.ErrInvalidFilter.Fmt("collection", value)
@@ -201,7 +159,8 @@ func (a *App) ValidateFilters(
 
 		var t models.UnsplashTopic
 
-		_, err := fetch.HTTPGet(ctx, endpoint, &t)
+		client := resty.New()
+		_, err := client.R().SetContext(ctx).SetResult(&t).Get(endpoint)
 		if err != nil {
 			if errors.Is(err, apperror.ErrNotFound) {
 				return apperror.ErrInvalidFilter.Fmt("topic", value)
@@ -221,7 +180,8 @@ func (a *App) ValidateFilters(
 
 		var u models.UnsplashUser
 
-		_, err := fetch.HTTPGet(ctx, endpoint, &u)
+		client := resty.New()
+		_, err := client.R().SetContext(ctx).SetResult(&u).Get(endpoint)
 		if err != nil {
 			if errors.Is(err, apperror.ErrNotFound) {
 				return apperror.ErrInvalidFilter.Fmt("username", req.Username)
@@ -260,13 +220,15 @@ func (a *App) AuthorizeGoogleDrive(
 
 	var g models.GoogleDriveAuth
 
-	return fetch.HTTPPost(
-		ctx,
-		endpoint,
-		reqHeaders,
-		reqBody,
-		&g,
-	)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		SetResult(&g).
+		SetHeaders(reqHeaders).
+		SetBody(reqBody).
+		Post(endpoint)
+
+	return resp.Body(), err
 }
 
 func (a *App) RefreshGoogleDriveToken(
@@ -294,25 +256,29 @@ func (a *App) RefreshGoogleDriveToken(
 
 	var g models.GoogleDriveAuth
 
-	return fetch.HTTPPost(
-		ctx,
-		endpoint,
-		reqHeaders,
-		reqBody,
-		&g,
-	)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		SetResult(&g).
+		SetHeaders(reqHeaders).
+		SetBody(reqBody).
+		Post(endpoint)
+
+	return resp.Body(), err
 }
 
 func (a *App) SaveToGoogleDrive(
 	ctx context.Context,
 	req *requests.SavePhotoToCloud,
 ) error {
-	_, err := trackPhotoDownload(ctx, req.ImageID)
-	if err != nil {
-		return err
-	}
+	go func() {
+		trackPhotoDownload(ctx, req.ImageID)
+	}()
 
-	respBody, err := fetch.HTTPGet[any](ctx, req.URL, nil)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		Get(req.URL)
 	if err != nil {
 		return err
 	}
@@ -344,7 +310,7 @@ func (a *App) SaveToGoogleDrive(
 
 	mediaPart, _ := writer.CreatePart(mediaHeader)
 
-	_, err = io.Copy(mediaPart, bytes.NewReader(respBody))
+	_, err = io.Copy(mediaPart, bytes.NewReader(resp.Body()))
 	if err != nil {
 		return err
 	}
@@ -365,13 +331,11 @@ func (a *App) SaveToGoogleDrive(
 		"Content-Length": strconv.Itoa(body.Len()),
 	}
 
-	_, err = fetch.HTTPPost[any](
-		ctx,
-		endpoint,
-		reqHeaders,
-		bytes.NewReader(body.Bytes()),
-		nil,
-	)
+	_, err = client.R().
+		SetContext(ctx).
+		SetHeaders(reqHeaders).
+		SetBody(body.Bytes()).
+		Post(endpoint)
 
 	return err
 }
@@ -380,10 +344,9 @@ func (a *App) SaveToDropbox(
 	ctx context.Context,
 	req *requests.SavePhotoToCloud,
 ) error {
-	_, err := trackPhotoDownload(ctx, req.ImageID)
-	if err != nil {
-		return err
-	}
+	go func() {
+		trackPhotoDownload(ctx, req.ImageID)
+	}()
 
 	reqBody, err := json.Marshal(map[string]string{
 		"path": fmt.Sprintf("/photo-%s.jpg", req.ImageID),
@@ -404,13 +367,13 @@ func (a *App) SaveToDropbox(
 
 	var uploadStatus models.DropboxUploadStatus
 
-	b, err := fetch.HTTPPost(
-		ctx,
-		endpoint,
-		reqHeaders,
-		bytes.NewBuffer(reqBody),
-		&uploadStatus,
-	)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		SetResult(&uploadStatus).
+		SetHeaders(reqHeaders).
+		SetBody(reqBody).
+		Post(endpoint)
 	if err != nil {
 		return err
 	}
@@ -423,11 +386,15 @@ func (a *App) SaveToDropbox(
 		return nil
 	}
 
-	return apperror.ErrSaveToCloudFailed.Err(errors.New(string(b)))
+	return apperror.ErrSaveToCloudFailed.Err(errors.New(string(resp.Body())))
 }
 
 func checkDropboxUploadStatus(ctx context.Context, jobID, token string) error {
 	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		bearerToken := fmt.Sprintf("Bearer %s", token)
 
 		reqBody, err := json.Marshal(map[string]string{
@@ -446,13 +413,14 @@ func checkDropboxUploadStatus(ctx context.Context, jobID, token string) error {
 
 		var uploadStatus models.DropboxUploadStatus
 
-		b, err := fetch.HTTPPost(
-			ctx,
-			endpoint,
-			reqHeaders,
-			bytes.NewBuffer(reqBody),
-			&uploadStatus,
-		)
+		client := resty.New()
+
+		resp, err := client.R().
+			SetContext(ctx).
+			SetResult(&uploadStatus).
+			SetHeaders(reqHeaders).
+			SetBody(reqBody).
+			Post(endpoint)
 		if err != nil {
 			return err
 		}
@@ -466,7 +434,9 @@ func checkDropboxUploadStatus(ctx context.Context, jobID, token string) error {
 			continue
 		}
 
-		return apperror.ErrSaveToCloudFailed.Err(errors.New(string(b)))
+		return apperror.ErrSaveToCloudFailed.Err(
+			errors.New(string(resp.Body())),
+		)
 	}
 }
 
@@ -496,13 +466,15 @@ func (a *App) AuthorizeOneDrive(
 
 	var o models.OnedriveAuth
 
-	return fetch.HTTPPost(
-		ctx,
-		endpoint,
-		reqHeaders,
-		reqBody,
-		&o,
-	)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		SetResult(&o).
+		SetHeaders(reqHeaders).
+		SetBody(reqBody).
+		Post(endpoint)
+
+	return resp.Body(), err
 }
 
 // RefreshOneDriveToken sends the request to retrieve a new OneDrive access
@@ -533,29 +505,31 @@ func (a *App) RefreshOneDriveToken(
 
 	var o models.OnedriveAuth
 
-	return fetch.HTTPPost(
-		ctx,
-		endpoint,
-		reqHeaders,
-		reqBody,
-		&o,
-	)
+	client := resty.New()
+	resp, err := client.R().
+		SetContext(ctx).
+		SetResult(&o).
+		SetHeaders(reqHeaders).
+		SetBody(reqBody).
+		Post(endpoint)
+
+	return resp.Body(), err
 }
 
 func (a *App) SaveToOneDrive(
 	ctx context.Context,
 	req *requests.SavePhotoToCloud,
 ) error {
-	_, err := trackPhotoDownload(ctx, req.ImageID)
-	if err != nil {
-		return err
-	}
+	go func() {
+		trackPhotoDownload(ctx, req.ImageID)
+	}()
 
 	bearerToken := fmt.Sprintf("Bearer %s", req.Token)
 
-	requestBody, err := json.Marshal(map[string]string{
-		"name":                       fmt.Sprintf("/photo-%s.jpg", req.ImageID),
+	reqBody, err := json.Marshal(map[string]any{
+		"name":                       fmt.Sprintf("photo-%s.jpg", req.ImageID),
 		"@microsoft.graph.sourceUrl": req.URL,
+		"file":                       map[string]any{},
 	})
 	if err != nil {
 		return err
@@ -563,33 +537,26 @@ func (a *App) SaveToOneDrive(
 
 	endpoint := "https://graph.microsoft.com/v1.0/drive/special/approot/children"
 
-	request, err := http.NewRequestWithContext(
-		ctx,
-		"POST",
-		endpoint,
-		bytes.NewBuffer(requestBody),
-	)
+	reqHeaders := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": bearerToken,
+		"Prefer":        "respond-async",
+	}
+
+	client := resty.New()
+
+	resp, err := client.R().
+		SetContext(ctx).
+		SetHeaders(reqHeaders).
+		SetBody(reqBody).
+		Post(endpoint)
 	if err != nil {
 		return err
 	}
 
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Authorization", bearerToken)
-	request.Header.Set("Prefer", "response-async")
+	defer resp.RawResponse.Body.Close()
 
-	response, err := utils.Client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	defer response.Body.Close()
-
-	_, err = utils.CheckForErrors(response)
-	if err != nil {
-		return err
-	}
-
-	location := response.Header.Get("location")
+	location := resp.RawResponse.Header.Get("location")
 	if location != "" {
 		return checkOneDriveUploadStatus(ctx, location)
 	}
@@ -599,9 +566,18 @@ func (a *App) SaveToOneDrive(
 
 func checkOneDriveUploadStatus(ctx context.Context, endpoint string) error {
 	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		var uploadStatus models.OneDriveUploadStatus
 
-		_, err := fetch.HTTPGet(ctx, endpoint, &uploadStatus)
+		client := resty.New()
+
+		_, err := client.R().
+			SetContext(ctx).
+			SetResult(&uploadStatus).
+			Get(endpoint)
 		if err != nil {
 			return err
 		}

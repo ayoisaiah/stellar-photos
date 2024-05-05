@@ -7,13 +7,13 @@ const options = {
 
 const toggleHistoryEvent = new CustomEvent('toggle-history', options);
 
-const openSearchEvent = new CustomEvent('open-search', options);
-
 const fadeInEvent = new CustomEvent('fade-in', options);
 
 const togglePausedEvent = new CustomEvent('toggle-paused', options);
 
 const openInfoEvent = new CustomEvent('open-info', options);
+
+const openSettingsEvent = new CustomEvent('open-settings', options);
 
 interface DownloadEvent extends CustomEvent {
   detail: {
@@ -71,7 +71,7 @@ function getDownloadEvent(imageID: string, downloadURL: string): DownloadEvent {
   );
 }
 
-function getSetBackgroundEvent(imageID: string): SetBackgroundEvent {
+function setBackgroundEvent(imageID: string): SetBackgroundEvent {
   return new CustomEvent(
     'set-background',
     Object.assign(
@@ -87,13 +87,13 @@ function getSetBackgroundEvent(imageID: string): SetBackgroundEvent {
 
 export {
   toggleHistoryEvent,
-  openSearchEvent,
   fadeInEvent,
   togglePausedEvent,
   openInfoEvent,
+  openSettingsEvent,
   getDownloadEvent,
   getCloudSaveEvent,
-  getSetBackgroundEvent,
+  setBackgroundEvent,
 };
 
 export type { DownloadEvent, SaveToCloudEvent, SetBackgroundEvent };

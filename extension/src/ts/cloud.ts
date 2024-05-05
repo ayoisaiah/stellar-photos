@@ -6,7 +6,6 @@ import {
 import {
   saveToDropboxApi,
   getDropboxKey,
-  trackDownload,
   getOnedriveId,
   refreshOnedriveTokenApi,
   saveToOneDriveApi,
@@ -129,8 +128,6 @@ async function saveToOneDrive(imageId: string, url: string): Promise<void> {
       return;
     }
   }
-
-  await trackDownload(imageId);
 
   await saveToOneDriveApi(imageId, localData.onedrive.access_token, url);
 }

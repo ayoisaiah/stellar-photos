@@ -1,6 +1,6 @@
 module github.com/ayoisaiah/stellar-photos
 
-go 1.21
+go 1.22
 
 require github.com/joho/godotenv v1.3.0
 
@@ -15,12 +15,14 @@ require (
 )
 
 require (
+	github.com/VictoriaMetrics/metrics v1.31.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/charmbracelet/lipgloss v0.9.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
-	github.com/go-logr/logr v1.4.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-resty/resty/v2 v2.12.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
@@ -36,8 +38,11 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/veqryn/slog-context v0.4.0 // indirect
+	github.com/valyala/fastrand v1.1.0 // indirect
+	github.com/valyala/histogram v1.2.0 // indirect
+	github.com/veqryn/slog-context v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )

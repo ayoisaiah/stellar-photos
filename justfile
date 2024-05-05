@@ -1,27 +1,33 @@
 APP := "stellar-photos"
 SERVER := "server"
+EXT := "extension"
 
 test-server:
-	@go test  -C {{SERVER}} ./... --json -coverprofile=coverage.out -coverpkg .
+    @go test  -C {{ SERVER }} ./... --json -coverprofile=coverage.out -coverpkg .
 
 build-server:
-	@go build -C {{SERVER}} -o bin/{{APP}} ./cmd...
+    @go build -C {{ SERVER }} -o bin/{{ APP }} ./cmd...
 
-run-server:
-	@docker compose --project-directory {{SERVER}} -f docker-compose.yml -f docker-compose.dev.yml up -d
+dev-server:
+    cd {{ SERVER }} && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-kill-server
-	@docker compose --project-directory {{SERVER}} down
+kill-server:
+    cd {{ SERVER }} && docker compose down
 
-lint-server:
-	@golangci-lint run ./{{SERVER}}/...
+server-logs:
+    cd {{ SERVER }} && docker compose logs --follow
 
-pre-commit:
-	@pre-commit run
+chrome-prod:
+    cd {{ EXT }} && npm run chrome:prod
 
-clean-server:
-	@rm -r {{SERVER}}/bin
-	@go clean
+chrome-dev:
+    cd {{ EXT }} && npm run chrome:dev
 
-sloc:
-	tokei
+firefox-dev:
+    cd {{ EXT }} && npm run firefox:dev
+
+firefox-prod:
+    cd {{ EXT }} && npm run firefox:prod
+
+test-ext:
+    cd {{ EXT }} && npm run test

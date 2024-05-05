@@ -4,17 +4,20 @@ import esbuild from 'esbuild';
 import inlineImage from 'esbuild-plugin-inline-image';
 import inlineImportPlugin from 'esbuild-plugin-inline-import';
 import jsonMerge from 'esbuild-plugin-json-merge';
+import { replace } from 'esbuild-plugin-replace';
 import { sassPlugin } from 'esbuild-sass-plugin';
 import fs from 'node:fs';
 import util from 'node:util';
 import postcss from 'postcss';
 import postcssPresetEnv from 'postcss-preset-env';
 import { rimraf } from 'rimraf';
-import { replace } from 'esbuild-plugin-replace';
+import tailwindcss from 'tailwindcss';
 
 const isProd = process.env.NODE_ENV === 'production';
 const isDev = process.env.NODE_ENV === 'development';
 const browser = process.env.BROWSER;
+
+const tsConfig = isProd ? 'tsconfig.json' : 'tsconfig.dev.json';
 
 // TODO: minify CSS in production
 
@@ -26,7 +29,7 @@ const browser = process.env.BROWSER;
     minify: isProd,
     sourcemap: isDev,
     entryPoints: [
-      'src/ts/main.ts',
+      'src/ts/index.ts',
       'src/ts/popup.ts',
       'src/ts/tab.ts',
       'src/ts/background.ts',
@@ -40,14 +43,13 @@ const browser = process.env.BROWSER;
     assetNames: '[name]',
     metafile: true,
     plugins: [
-      replace({
-        NODE_ENV: process.env.NODE_ENV,
-      }),
+      // TODO: Figure out why using CSS doesn't work here
       inlineImportPlugin({
         filter: /^sass:/,
         transform: async (source, args) => {
           const { css } = await postcss([
             autoprefixer,
+            tailwindcss,
             postcssPresetEnv({ stage: 0 }),
           ]).process(source, { from: undefined });
           return css;
@@ -57,6 +59,7 @@ const browser = process.env.BROWSER;
         async transform(source, _resolveDir) {
           const { css } = await postcss([
             autoprefixer,
+            tailwindcss,
             postcssPresetEnv({ stage: 0 }),
           ]).process(source, { from: undefined });
           return css;
@@ -71,8 +74,12 @@ const browser = process.env.BROWSER;
       }),
       typecheckPlugin({
         omitStartLog: true,
+        configFile: tsConfig,
       }),
       inlineImage(),
+      // replace({
+      //   NODE_ENV: process.env.NODE_ENV,
+      // }),
     ],
     loader: {
       '.woff': 'copy',

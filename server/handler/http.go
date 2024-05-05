@@ -7,7 +7,9 @@ import (
 	"github.com/ayoisaiah/stellar-photos/app"
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/fetch"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 	"github.com/ayoisaiah/stellar-photos/requests"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 type Handler struct {
@@ -21,8 +23,8 @@ func NewHandler(application app.App) Handler {
 }
 
 // DownloadPhoto handles GET /unsplash/download
-// It increments the number of downloads for the specified photo and retrieves
-// the download link.
+// It increments the number of downloads for the specified photo
+// TODO: Update this route to only track the downloaded image
 func (h *Handler) DownloadPhoto(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -34,42 +36,21 @@ func (h *Handler) DownloadPhoto(
 		return err
 	}
 
-	ctx := r.Context()
+	ctx := slogctx.Append(r.Context(), "image_id", p.ID)
+
+	*r = *r.WithContext(ctx)
 
 	slog.InfoContext(
 		ctx,
 		"download request initiated",
-		slog.Any("parameters", p),
+		slog.Any("image_id", p.ID),
 	)
 
-	resp, err := h.app.GetDownloadLink(ctx, &p)
-	if err != nil {
-		return err
-	}
+	h.app.GetDownloadLink(ctx, &p)
 
-	return fetch.JSONResponse(ctx, w, resp)
-}
+	w.WriteHeader(http.StatusNoContent)
 
-// SearchUnsplash handles GET /unsplash/search
-// It retrieves a single page of photo results for a specific query.
-func (h *Handler) SearchPhotos(w http.ResponseWriter, r *http.Request) error {
-	var p requests.SearchUnsplash
-
-	err := p.Init(r)
-	if err != nil {
-		return err
-	}
-
-	ctx := r.Context()
-
-	slog.InfoContext(ctx, "search request initiated", slog.Any("parameters", p))
-
-	resp, err := h.app.SearchPhotos(ctx, &p)
-	if err != nil {
-		return err
-	}
-
-	return fetch.JSONResponse(ctx, w, resp)
+	return nil
 }
 
 // GetRandomPhoto handles GET /unsplash/random
@@ -82,6 +63,9 @@ func (h *Handler) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+
+	metrics.M.ResolutionCount.WithLabelValues(p.Resolution).Inc()
+	metrics.M.OrientationCount.WithLabelValues(p.Orientation).Inc()
 
 	ctx := r.Context()
 
@@ -206,6 +190,8 @@ func (h *Handler) SaveToGoogleDrive(
 		return err
 	}
 
+	metrics.M.CloudUploads.WithLabelValues("google_drive").Inc()
+
 	ctx := r.Context()
 
 	slog.InfoContext(
@@ -248,6 +234,8 @@ func (h *Handler) SaveToDropbox(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+
+	metrics.M.CloudUploads.WithLabelValues("dropbox").Inc()
 
 	ctx := r.Context()
 
@@ -335,12 +323,14 @@ func (h *Handler) SaveToOneDrive(
 		return err
 	}
 
+	metrics.M.CloudUploads.WithLabelValues("onedrive").Inc()
+
 	ctx := r.Context()
 
 	slog.InfoContext(
 		ctx,
 		"saving image to OneDrive",
-		slog.Any("parameters", p),
+		slog.Any("parameters", &p),
 	)
 
 	err = h.app.SaveToOneDrive(ctx, &p)

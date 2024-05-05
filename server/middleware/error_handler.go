@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/ayoisaiah/stellar-photos/apperror"
+	"github.com/ayoisaiah/stellar-photos/metrics"
 )
 
 type ErrorHandler func(w http.ResponseWriter, r *http.Request) error
@@ -17,6 +18,8 @@ func (fn ErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		return
 	}
+
+	metrics.M.ErrorCount.WithLabelValues(r.URL.Path).Inc()
 
 	sendErrorResponse(r.Context(), w, err)
 }

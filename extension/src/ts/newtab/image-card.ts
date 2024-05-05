@@ -1,12 +1,21 @@
-import { LitElement, html } from 'lit';
+import { LitElement, TemplateResult, html, nothing, unsafeCSS } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import tailwind from 'sass:../../sass/tailwind.global.scss';
 import { ChromeLocalStorage } from '../types';
 import { UnsplashImage } from '../types/unsplash';
 import {
   getCloudSaveEvent,
   getDownloadEvent,
-  getSetBackgroundEvent,
+  setBackgroundEvent,
 } from './custom-events';
+import {
+  dropboxIcon,
+  oneDriveIcon,
+  googleDriveIcon,
+  anchorIcon,
+  downloadIcon,
+  imageIcon,
+} from './icons';
 
 @customElement('image-card')
 class ImageCard extends LitElement {
@@ -16,15 +25,29 @@ class ImageCard extends LitElement {
     googledrive: 'Google Drive',
   };
 
-  override createRenderRoot(): this {
-    return this;
+  getCurrentCloud(): TemplateResult {
+    switch (this.cloudService) {
+      case 'dropbox':
+        return dropboxIcon;
+      case 'onedrive':
+        return oneDriveIcon;
+      case 'googledrive':
+        return googleDriveIcon;
+    }
+
+    return html``;
   }
+
+  static override styles = [unsafeCSS(tailwind)];
 
   @property({ type: String })
   cloudService: ChromeLocalStorage['cloudService'];
 
   @property({ type: Object })
   image!: UnsplashImage;
+
+  @property({ type: Boolean })
+  searchResult = false;
 
   override render() {
     const photo = this.image;
@@ -39,13 +62,15 @@ ${photo.user?.last_name || ''}`;
 
     return html`
       <li
-        class="s-photo"
+        class="relative h-[140px]"
         id="photo-${id}"
         style="background: url(${backgroundPhoto}) rgb(239, 239, 239)
       top center no-repeat; background-size: cover;"
       >
-        <div class="s-photo-actions">
-          <div class="top">
+        <div
+          class="items-between absolute bottom-0 left-0 right-0 top-0 flex w-full flex-col justify-between rounded bg-black/75 p-2 text-white opacity-0 hover:opacity-100"
+        >
+          <div class="flex w-full items-center justify-between">
             <a
               class="user"
               aria-label="View photographer profile"
@@ -54,67 +79,60 @@ ${photo.user?.last_name || ''}`;
               title="View photographer profile"
               href="${photographer}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
             >
-              <img class="user-dp" src="${photographerPicture}" />
-              <span class="username">${photographerName}</span>
+              <img class="mr-4 w-8 rounded-full" src="${photographerPicture}" />
+              ${this.searchResult
+                ? html`<span class="username">${photographerName}</span>`
+                : nothing}
             </a>
 
             <a
               href="${linkToPhoto}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit"
               data-imageid=${id}
               target="_blank"
-              rel="noopener"
-              aria-label="View photo on Unsplash.com"
-              title="View photo on Unsplash.com"
+              aria-label="View image on Unsplash.com"
+              title="View image on Unsplash.com"
             >
-              <svg class="icon icon--anchor" style="fill: #fafafa;">
-                <use xlink:href="#icon-anchor"></use>
-              </svg>
+              ${anchorIcon}
             </a>
           </div>
 
-          <div class="middle">
-            <button
-              class="control-button cloud-button ${this.cloudService}-button"
-              @click=${() =>
-                this.dispatchEvent(
-                  getCloudSaveEvent(id, photo.urls?.raw, this.cloudService)
-                )}
-              title="Save photo to ${this.#cloudServices[this.cloudService!]}"
-            >
-              <svg class="icon icon-cloud">
-                <use href="#icon-${this.cloudService}"></use>
-              </svg>
-            </button>
-          </div>
-
-          <div class="bottom">
-            <span class="s-photo-dimension">${width} x ${height}</span>
+          <div class="bottom flex items-center justify-between">
+            ${this.searchResult
+              ? html`<span class="s-photo-dimension"
+                  >${width} x ${height}</span
+                >`
+              : html`
+                  <button
+                    class="bg-transparent"
+                    title="Set as background image"
+                    @click=${() => this.dispatchEvent(setBackgroundEvent(id))}
+                  >
+                    ${imageIcon}
+                  </button>
+                `}
 
             <div>
               <button
+                class="mr-3"
+                id="${this.cloudService}-button"
+                @click=${() =>
+                  this.dispatchEvent(
+                    getCloudSaveEvent(id, photo.urls?.full, this.cloudService)
+                  )}
+                title="Save photo to ${this.#cloudServices[this.cloudService!]}"
+              >
+                ${this.getCurrentCloud()}
+              </button>
+              <button
                 class="control-button download-button"
                 data-imageid=${id}
-                data-downloadurl=${photo.urls?.full}
                 title="Download photo"
                 @click=${() =>
                   this.dispatchEvent(
                     getDownloadEvent(photo.id, photo.urls?.full)
                   )}
               >
-                <svg class="icon icon-download">
-                  <use href="#icon-download"></use>
-                </svg>
-              </button>
-
-              <button
-                class="control-button bg-button"
-                title="Set as background image"
-                data-imageid=${id}
-                @click=${() => this.dispatchEvent(getSetBackgroundEvent(id))}
-              >
-                <svg class="icon icon--image" style="fill: #fafafa;">
-                  <use xlink:href="#icon-image"></use>
-                </svg>
+                ${downloadIcon}
               </button>
             </div>
           </div>

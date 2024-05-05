@@ -1,5 +1,5 @@
-import { ChromeStorage } from './types';
 import { $ } from './helpers';
+import { ChromeStorage } from './types';
 
 function loadCSS(url: string) {
   return new Promise((resolve, reject) => {
@@ -59,8 +59,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    await loadCSS('main.css');
-    await loadJS('main.js');
+    await loadCSS('index.css');
+    await loadJS('index.js');
     await loadJS('events.js');
     chrome.runtime.sendMessage({ command: 'refresh' });
   } catch (err) {
