@@ -11,13 +11,14 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/go-resty/resty/v2"
+
 	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/metrics"
 	"github.com/ayoisaiah/stellar-photos/requests"
-	"github.com/go-resty/resty/v2"
 )
 
-// getBase64 retrieves the base64 representation of an Unsplash image
+// getBase64 retrieves the base64 representation of an Unsplash image.
 func getBase64(
 	ctx context.Context,
 	req *requests.RandomPhoto,

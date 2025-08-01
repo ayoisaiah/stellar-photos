@@ -6,7 +6,7 @@ import (
 
 	"github.com/segmentio/ksuid"
 
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 )
 
 const (
@@ -25,7 +25,7 @@ func CorrelationID(next http.Handler) http.Handler {
 			correlationID = ksuid.New().String()
 		}
 
-		ctx = logger.AppendCtx(
+		ctx = telemetry.AppendCtx(
 			ctx,
 			slog.String("correlation_id", correlationID),
 		)

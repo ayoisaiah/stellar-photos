@@ -5,3 +5,4 @@ bin
 .env
 cached_images
 tmp
+.vagrant

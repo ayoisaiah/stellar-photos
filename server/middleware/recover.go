@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 )
 
 // Recover logs a panic before exiting the program.
@@ -26,7 +26,7 @@ func Recover(next http.Handler) http.Handler {
 					http.StatusInternalServerError,
 				)
 
-				slog.Log(ctx, logger.LevelFatal, "panic in handler detected",
+				slog.Log(ctx, telemetry.LevelFatal, "panic in handler detected",
 					slog.String("stack", string(stack)),
 					slog.Any("error", err),
 				)

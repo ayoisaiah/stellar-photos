@@ -57,6 +57,8 @@ func (h *Handler) DownloadPhoto(
 // It retrives a random image from unsplash and responds with its Base64
 // representation.
 func (h *Handler) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
 	var p requests.RandomPhoto
 
 	err := p.Init(r)
@@ -66,8 +68,6 @@ func (h *Handler) GetRandomPhoto(w http.ResponseWriter, r *http.Request) error {
 
 	metrics.M.ResolutionCount.WithLabelValues(p.Resolution).Inc()
 	metrics.M.OrientationCount.WithLabelValues(p.Orientation).Inc()
-
-	ctx := r.Context()
 
 	slog.InfoContext(ctx, "fetching random photo", slog.Any("parameters", p))
 

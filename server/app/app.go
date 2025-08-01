@@ -14,11 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-resty/resty/v2"
+
 	"github.com/ayoisaiah/stellar-photos/apperror"
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/internal/models"
 	"github.com/ayoisaiah/stellar-photos/requests"
-	"github.com/go-resty/resty/v2"
 )
 
 type App struct{}

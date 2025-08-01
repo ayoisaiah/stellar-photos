@@ -13,7 +13,7 @@ import (
 	"github.com/ayoisaiah/stellar-photos/config"
 	"github.com/ayoisaiah/stellar-photos/handler"
 	"github.com/ayoisaiah/stellar-photos/health"
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 	"github.com/ayoisaiah/stellar-photos/metrics"
 	"github.com/ayoisaiah/stellar-photos/middleware"
 )
@@ -153,7 +153,7 @@ func NewHTTPServer() *http.Server {
 			"request timed out",
 		),
 		ReadTimeout: 5 * time.Second,
-		ErrorLog:    slog.NewLogLogger(logger.Handler, slog.LevelInfo),
+		ErrorLog:    slog.NewLogLogger(telemetry.SlogHandler, slog.LevelInfo),
 	}
 
 	return srv

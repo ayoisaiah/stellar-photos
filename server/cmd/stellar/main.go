@@ -8,7 +8,7 @@ import (
 
 	"github.com/ayoisaiah/stellar-photos"
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/internal/logger"
+	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 )
 
 func run() error {
@@ -16,7 +16,7 @@ func run() error {
 	// may be injected in some other way
 	_ = godotenv.Load()
 
-	l := logger.L()
+	l := telemetry.L()
 
 	slog.SetDefault(l)
 

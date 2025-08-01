@@ -9,7 +9,7 @@ build-server:
     @go build -C {{ SERVER }} -o bin/{{ APP }} ./cmd...
 
 dev-server:
-    cd {{ SERVER }} && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+    cd {{ SERVER }} && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
 kill-server:
     cd {{ SERVER }} && docker compose down

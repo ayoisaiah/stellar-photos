@@ -1,14 +1,14 @@
-FROM golang:1.22-alpine AS base
+FROM golang:1.24-alpine AS base
 
-FROM base as dev
+FROM base AS dev
 
-RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/air-verse/air@latest
 
 WORKDIR /stellar-photos
 
 CMD ["air"]
 
-FROM base as builder
+FROM base AS builder
 
 # Move to working directory /build
 WORKDIR /build
@@ -26,7 +26,7 @@ COPY . ./
 # Build the application
 RUN go build -o stellar ./cmd/stellar...
 
-FROM alpine:3.19.0 AS final
+FROM alpine:3.22.1 AS final
 
 WORKDIR /app
 
