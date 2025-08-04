@@ -1,8 +1,8 @@
 {
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
       "id": "stellar@stellarapp.photos",
-      "strict_min_version": "70.0"
+      "strict_min_version": "109.0"
     }
   }
 }

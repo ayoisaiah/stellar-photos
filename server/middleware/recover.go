@@ -1,12 +1,9 @@
 package middleware
 
 import (
-	"log/slog"
 	"net/http"
 	"os"
 	"runtime"
-
-	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 )
 
 // Recover logs a panic before exiting the program.
@@ -14,7 +11,6 @@ func Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				ctx := r.Context()
 				stackSize := 8096
 				stack := make([]byte, stackSize)
 				stack = stack[:runtime.Stack(stack, false)]
@@ -26,10 +22,6 @@ func Recover(next http.Handler) http.Handler {
 					http.StatusInternalServerError,
 				)
 
-				slog.Log(ctx, telemetry.LevelFatal, "panic in handler detected",
-					slog.String("stack", string(stack)),
-					slog.Any("error", err),
-				)
 				os.Exit(1)
 			}
 		}()

@@ -8,17 +8,12 @@ import (
 
 	"github.com/ayoisaiah/stellar-photos"
 	"github.com/ayoisaiah/stellar-photos/config"
-	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 )
 
 func run() error {
 	// Ignore error if `.env` file is not found since env variables
 	// may be injected in some other way
 	_ = godotenv.Load()
-
-	l := telemetry.L()
-
-	slog.SetDefault(l)
 
 	conf := config.Get()
 

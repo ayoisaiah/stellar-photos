@@ -1,12 +1,9 @@
 package middleware
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/segmentio/ksuid"
-
-	"github.com/ayoisaiah/stellar-photos/internal/telemetry"
 )
 
 const (
@@ -24,11 +21,6 @@ func CorrelationID(next http.Handler) http.Handler {
 		if correlationID == "" {
 			correlationID = ksuid.New().String()
 		}
-
-		ctx = telemetry.AppendCtx(
-			ctx,
-			slog.String("correlation_id", correlationID),
-		)
 
 		r = r.WithContext(ctx)
 
