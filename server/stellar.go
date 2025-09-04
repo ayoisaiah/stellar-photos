@@ -83,7 +83,6 @@ func NewHTTPServer() *http.Server {
 			middleware.ErrorHandler(s.h.SaveToGoogleDrive),
 		)
 	})
-
 	mux.Route("/dropbox", func(r chi.Router) {
 		r.Method(
 			http.MethodGet,

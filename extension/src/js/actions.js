@@ -3,9 +3,11 @@ import { endpointKeys } from "./settings.js";
 import Storage from "./storage.js";
 
 async function setNextImage() {
-	const endpoint = await Storage.getLocal(endpointKeys.GET_NEXT_IMAGE);
+	const { getNextImage: endpoint } = await Storage.getLocal(
+		endpointKeys.GET_NEXT_IMAGE,
+	);
 
-	const response = await api.getRandomPhoto(endpoint);
+	const response = await api.getRandomImage(endpoint);
 	const data = await response.json();
 
 	const nextImage = {

@@ -25,6 +25,10 @@ const endpointKeys = Object.freeze({
 	GET_NEXT_IMAGE: "getNextImage",
 });
 
+const actions = Object.freeze({
+	NEXT_IMAGE: "nextImage",
+});
+
 async function setDefaultExtensionSettings() {
 	const syncSettings = {
 		[syncSettingKeys.IMAGE_FREQUENCY]: imageFrequency.NEW_TAB,
@@ -40,4 +44,4 @@ async function setDefaultExtensionSettings() {
 	await Storage.setLocal(endpoints);
 }
 
-export { setDefaultExtensionSettings, syncSettingKeys, endpointKeys };
+export { setDefaultExtensionSettings, syncSettingKeys, endpointKeys, actions };

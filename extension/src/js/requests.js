@@ -14,12 +14,12 @@ class ApiClient {
 	}
 
 	async #getRequest(endpoint) {
-		const response = await fetch(`${this.#baseUrl}/${endpoint}`);
+		const response = await fetch(`${this.#baseUrl}${endpoint}`);
 		return this.#validateResponse(response);
 	}
 
 	async #postRequest(endpoint, body) {
-		const response = await fetch(`${this.#baseUrl}/${endpoint}`, {
+		const response = await fetch(`${this.#baseUrl}${endpoint}`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -29,41 +29,40 @@ class ApiClient {
 		return this.#validateResponse(response);
 	}
 
-	getRandomPhoto(endpoint) {
+	getRandomImage(endpoint) {
 		return this.#getRequest(endpoint);
 	}
 
-	searchPhotos(key, page) {
-		return this.#getRequest(`search-unsplash/?key=${key}&page=${page}`);
+	searchUnsplash(key, page) {
+    return this.#getRequest(`/unsplash/search?key=${key}&page=${page}`);
 	}
 
 	trackDownload(id) {
-		return this.#getRequest(`unsplash/download?id=${id}`);
+		return this.#getRequest(`/unsplash/download?id=${id}`);
 	}
 
 	dropbox = {
-		getKey: () => this.#getRequest("dropbox/key/"),
+		getKey: () => this.#getRequest("/dropbox/key/"),
 		save: (imageId, token, url) =>
-			this.#postRequest("dropbox/save", { image_id: imageId, token, url }),
+			this.#postRequest("/dropbox/save", { image_id: imageId, token, url }),
 	};
 
 	googleDrive = {
-		getKey: () => this.#getRequest("googledrive/key/"),
-		authorize: (code) => this.#postRequest("gdrive/auth", { code }),
+		getKey: () => this.#getRequest("/googledrive/key/"),
+		authorize: (code) => this.#postRequest("/gdrive/auth", { code }),
 		refreshToken: (token) =>
-			this.#postRequest("gdrive/refresh", { refresh_token: token }),
+			this.#postRequest("/gdrive/refresh", { refresh_token: token }),
 		save: (imageId, token, url) =>
-			this.#postRequest("gdrive/save", { image_id: imageId, token, url }),
+			this.#postRequest("/gdrive/save", { image_id: imageId, token, url }),
 	};
 
 	oneDrive = {
-		getId: () => this.#getRequest("onedrive/id"),
-		authorize: (code) => this.#postRequest("onedrive/auth", { code }),
-		refreshToken: (token) => this.#postRequest("onedrive/refresh", { token }),
+		getId: () => this.#getRequest("/onedrive/id"),
+		authorize: (code) => this.#postRequest("/onedrive/auth", { code }),
+		refreshToken: (token) => this.#postRequest("/onedrive/refresh", { token }),
 		save: (imageId, token, url) =>
-			this.#postRequest("onedrive/save", { image_id: imageId, token, url }),
+			this.#postRequest("/onedrive/save", { image_id: imageId, token, url }),
 	};
 }
 
 export const api = new ApiClient();
-
