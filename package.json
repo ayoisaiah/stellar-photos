@@ -8,24 +8,18 @@
 	"author": "Ayooluwa Isaiah <ayo@freshman.tech>",
 	"license": "MIT",
 	"scripts": {
-		"firefox:dev": "BROWSER=firefox nodemon build.js",
-		"chrome:dev": "BROWSER=chrome nodemon build.js",
-		"edge:dev": "BROWSER=edge nodemon build.js",
-		"firefox:prod": "BROWSER=firefox NODE_ENV=production node build.js",
-		"chrome:prod": "BROWSER=chrome NODE_ENV=production node build.js",
-		"edge:prod": "BROWSER=edge NODE_ENV=production node build.js",
+		"firefox:dev": "node --watch-path=src build.js",
+		"chrome:dev": "node --watch-path=src build.js",
+		"edge:dev": "node --watch-path=src build.js",
+		"firefox:prod": "node build.js",
+		"chrome:prod": "node build.js",
+		"edge:prod": "node build.js",
 		"test": "",
 		"lint": "",
-		"fmt": "",
-		"prepare": "husky install"
+		"fmt": ""
 	},
 	"devDependencies": {},
 	"dependencies": {},
-	"husky": {
-		"hooks": {
-			"pre-commit": "lint-staged"
-		}
-	},
 	"lint-staged": {
 		"*.js": [
 			""
