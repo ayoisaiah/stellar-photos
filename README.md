@@ -19,13 +19,9 @@ Chrome | Firefox | Edge
 ## Main features
 
 - Enjoy a new, carefully curated hi-res photo every time you open a new tab - [totally free](https://unsplash.com/license) for personal or commercial use with no attribution required.
-- Download your favourite images or sync them over to the cloud (Google Drive, Dropbox or Onedrive).
-- Change the frequency for loading new background images. Options include: every new tab, every 15 minutes, hourly or daily.
-- Pause the your favourite background images until further notice.
-- Search Unsplash's library of over 1 million hi-res photos.
-- View basic photo information such as ISO, Location, Camera Model, Shutter Speed e.t.c.
-- Load images from your favourite public [Unsplash collections](https://unsplash.com/collections).
-- See the images from the last 10 tabs you've opened and update the current background image to any one of them as you please.
+- Open new tabs instantly from a local image cache, including while offline.
+- Keep the 10 most recently downloaded photos ready for a future history interface.
+- Recover cleanly when Unsplash or the network is temporarily unavailable.
 
 ## Screenshots
 
@@ -39,7 +35,18 @@ Chrome | Firefox | Edge
 
 ## Supported Browsers
 
-Chrome (75+) and Firefox (70+) along with Microsoft Edge, Brave, Vivaldi, and all other Chromium-based desktop browsers that can install extensions through the Chrome web store.
+The current and previous stable desktop releases of Chrome/Chromium and Firefox.
+
+## Development
+
+The active extension is TypeScript and uses npm. Set `UNSPLASH_ACCESS_KEY` in
+your environment, then run `npm run chrome:prod` or `npm run firefox:prod`.
+Browser-specific unpacked extensions are written to `dist/chrome` and
+`dist/firefox`. Run `npm run typecheck` and `npm test` before submitting changes.
+
+The production key is deliberately embedded in the packaged extension. A future
+settings interface may provide a per-user override, which will be kept in local
+extension storage. The legacy `old/` directory is not part of the build.
 
 ## Contribute
 

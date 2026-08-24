@@ -3,26 +3,34 @@
 	"type": "module",
 	"version": "5.0.0",
 	"description": "Beautiful high-res photos in your browser tabs. Available for Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox",
-	"main": "src/js/index.js",
+	"main": "build.ts",
 	"repository": "git@github.com:ayoisaiah/stellar-photos.git",
 	"author": "Ayooluwa Isaiah <ayo@freshman.tech>",
 	"license": "MIT",
 	"scripts": {
-		"firefox:dev": "node --watch-path=src build.js",
-		"chrome:dev": "node --watch-path=src build.js",
-		"edge:dev": "node --watch-path=src build.js",
-		"firefox:prod": "node build.js",
-		"chrome:prod": "node build.js",
-		"edge:prod": "node build.js",
-		"test": "",
-		"lint": "",
-		"fmt": ""
+		"build": "node --import tsx build.ts",
+		"firefox:dev": "node --watch --import tsx build.ts --browser=firefox --dev",
+		"chrome:dev": "node --watch --import tsx build.ts --browser=chrome --dev",
+		"firefox:prod": "node --import tsx build.ts --browser=firefox",
+		"chrome:prod": "node --import tsx build.ts --browser=chrome",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"lint": "tsc --noEmit",
+		"fmt": "prettier --write src tests build.ts"
 	},
-	"devDependencies": {},
+	"devDependencies": {
+		"@types/chrome": "^0.1.1",
+		"@types/node": "^24.3.0",
+		"esbuild": "^0.25.9",
+		"prettier": "^3.6.2",
+		"tsx": "^4.20.5",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	},
 	"dependencies": {},
 	"lint-staged": {
-		"*.js": [
-			""
+		"*.ts": [
+			"prettier --write"
 		],
 		"*.css": [
 			"stylelint --fix"

@@ -1,12 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-        <link rel="shortcut icon" href="/icons/128.png">
-        <title>New Tab - Stellar Photos</title>
-    </head>
-    <body id="body"></body>
-  <script type="module" src="js/init.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="shortcut icon" href="icons/128.png" />
+    <link rel="stylesheet" href="css/new-tab.css" />
+    <title>New Tab - Stellar Photos</title>
+  </head>
+  <body id="body">
+    <main class="status-panel" aria-live="polite">
+      <p id="status">Finding a stellar photo…</p>
+      <button id="retry" type="button" hidden>Retry</button>
+    </main>
+  </body>
+  <script src="js/init.js"></script>
 </html>

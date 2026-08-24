@@ -4,23 +4,21 @@ Hello! Thanks for your interest in contributing to Stellar Photos. Before you op
 
 ## Build instructions
 
-Make sure you have [yarn](https://yarnpkg.com/en/docs/install) installed.
+Install a current Node.js release and npm. Create an Unsplash application and
+export its access key for local builds.
 
 ```bash
 $ git clone https://github.com/ayoisaiah/stellar-photos
 $ cd stellar-photos
-$ yarn # install dependencies
-# Option 1. Chrome development build
-$ yarn run build:chrome:dev
-# Option 2. Chrome production build
-$ yarn run build:chrome:prod
-# Option 3. Firefox development build
-$ yarn run build:firefox:dev
-# Option 4. Firefox production build
-$ yarn run build:firefox:prod
-# Option 5. Edge production build. Produces the same output as build:chrome:prod
-# except for a link to the Microsoft Edge store instead of the Chrome web store
-$ yarn run build:edge:prod
+$ npm install
+$ export UNSPLASH_ACCESS_KEY=your-access-key
+$ npm run typecheck
+$ npm test
+$ npm run chrome:prod
+$ npm run firefox:prod
 ```
 
-Grab the [server code here](https://github.com/ayoisaiah/stellar-photos-server) (written in Go) and follow the instructions in the README to build and run it.
+Load `dist/chrome` in Chrome/Chromium or `dist/firefox` in Firefox as an
+unpacked/temporary extension. Verify a fresh tab, repeated tabs, cached offline
+loading, and several rapidly opened tabs. Network requests are mocked in tests;
+the unpacked smoke test uses your configured Unsplash application.
