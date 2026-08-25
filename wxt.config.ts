@@ -6,7 +6,7 @@ import { defineConfig } from "wxt";
 
 export default defineConfig({
   manifestVersion: 3,
-  outDir: "dist",
+  outDir: process.env.STELLAR_OUT_DIR ?? "dist",
   outDirTemplate: "{{browser}}",
   publicDir: "src/icons",
   suppressWarnings: {

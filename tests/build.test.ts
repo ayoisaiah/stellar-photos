@@ -1,10 +1,26 @@
 import { spawnSync } from "node:child_process";
-import { readFile, rm, stat } from "node:fs/promises";
+import { mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+const TEST_OUT_DIR = ".wxt-test-dist";
+const DIST_SENTINEL = "dist/.build-test-sentinel";
+let distExisted = false;
+
+beforeAll(async () => {
+  distExisted = await stat("dist").then(
+    () => true,
+    () => false,
+  );
+  await mkdir("dist", { recursive: true });
+  await writeFile(DIST_SENTINEL, "preserve");
+});
 
 afterAll(async () => {
-  await rm("dist", { recursive: true, force: true });
+  await rm(TEST_OUT_DIR, { recursive: true, force: true });
+  await expect(readFile(DIST_SENTINEL, "utf8")).resolves.toBe("preserve");
+  await rm(DIST_SENTINEL);
+  if (!distExisted) await rmdir("dist");
 });
 
 describe("browser packages", () => {
@@ -22,13 +38,17 @@ describe("browser packages", () => {
         ],
         {
           cwd: process.cwd(),
-          env: { ...process.env, UNSPLASH_ACCESS_KEY: "test-sentinel-key" },
+          env: {
+            ...process.env,
+            STELLAR_OUT_DIR: TEST_OUT_DIR,
+            UNSPLASH_ACCESS_KEY: "test-sentinel-key",
+          },
           encoding: "utf8",
         },
       );
       expect(result.status).toBe(0);
       expect(result.stderr).not.toContain("ERROR");
-      const root = `dist/${browser}`;
+      const root = `${TEST_OUT_DIR}/${browser}`;
       await expect(stat(`${root}/init.js`)).resolves.toBeTruthy();
       await expect(stat(`${root}/background.js`)).resolves.toBeTruthy();
 
@@ -75,6 +95,7 @@ describe("browser packages", () => {
   it("refuses a production build without a key", () => {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
+      STELLAR_OUT_DIR: TEST_OUT_DIR,
       STELLAR_ENV_FILE: ".missing-test-env",
     };
     delete env.UNSPLASH_ACCESS_KEY;
@@ -100,13 +121,17 @@ describe("browser packages", () => {
       ],
       {
         cwd: process.cwd(),
-        env: { ...process.env, UNSPLASH_ACCESS_KEY: "test-sentinel-key" },
+        env: {
+          ...process.env,
+          STELLAR_OUT_DIR: TEST_OUT_DIR,
+          UNSPLASH_ACCESS_KEY: "test-sentinel-key",
+        },
         encoding: "utf8",
       },
     );
     expect(result.status).toBe(0);
 
-    const bundle = await readFile("dist/chrome/init.js", "utf8");
+    const bundle = await readFile(`${TEST_OUT_DIR}/chrome/init.js`, "utf8");
     expect(bundle).not.toContain("@customElement(");
 
     const encodedMap = bundle.match(
