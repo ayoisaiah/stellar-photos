@@ -147,6 +147,11 @@ async function acquireUnique(
 ): Promise<BackgroundAsset | null> {
   state ??= await readHistory();
   const source = selectedSource ?? (await getActiveImageSource());
+  const current = state.history[0];
+
+  if (current && source.shouldRotate && !(await source.shouldRotate(current))) {
+    return current;
+  }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const candidate = await source.getRandomAsset();

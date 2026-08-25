@@ -9,9 +9,16 @@ import {
 
 import type { ImageResolution } from "../types";
 
+export type PhotoFrequency =
+  | "newtab"
+  | "every15minutes"
+  | "everyhour"
+  | "everyday";
+
 export interface UnsplashSettings {
   version: 1;
   imageQuality: ImageResolution;
+  photoFrequency: PhotoFrequency;
 }
 
 interface UnsplashLocalSettings {
@@ -23,11 +30,17 @@ declare const __UNSPLASH_ACCESS_KEY__: string;
 
 const LEGACY_ACCESS_KEY_OVERRIDE_KEY = "unsplashAccessKey";
 const LEGACY_IMAGE_RESOLUTION_KEY = "imageResolution";
+const LEGACY_PHOTO_FREQUENCY_KEY = "photoFrequency";
+const LEGACY_IMAGE_FREQUENCY_KEY = "imageFrequency";
 
 export const STELLAR_COLLECTION = "998309";
 export const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
 export const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> =
-  Object.freeze({ version: 1, imageQuality: "standard" });
+  Object.freeze({
+    version: 1,
+    imageQuality: "standard",
+    photoFrequency: "newtab",
+  });
 
 export async function getImageQuality(): Promise<ImageResolution> {
   const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
@@ -46,6 +59,27 @@ export async function setImageQuality(
     [UNSPLASH_SETTINGS_KEY]: {
       ...(current ?? DEFAULT_UNSPLASH_SETTINGS),
       imageQuality,
+    } satisfies UnsplashSettings,
+  });
+}
+
+export async function getPhotoFrequency(): Promise<PhotoFrequency> {
+  const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
+  const settings = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
+
+  return settings?.photoFrequency ?? DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
+}
+
+export async function setPhotoFrequency(
+  photoFrequency: PhotoFrequency,
+): Promise<void> {
+  const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
+  const current = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
+
+  await setSync({
+    [UNSPLASH_SETTINGS_KEY]: {
+      ...(current ?? DEFAULT_UNSPLASH_SETTINGS),
+      photoFrequency,
     } satisfies UnsplashSettings,
   });
 }
@@ -71,6 +105,8 @@ export async function initializeUnsplashSettings(): Promise<void> {
   const syncValues = await getSync<Record<string, unknown>>([
     UNSPLASH_SETTINGS_KEY,
     LEGACY_IMAGE_RESOLUTION_KEY,
+    LEGACY_PHOTO_FREQUENCY_KEY,
+    LEGACY_IMAGE_FREQUENCY_KEY,
   ]);
   const current = parseUnsplashSettings(syncValues[UNSPLASH_SETTINGS_KEY]);
 
@@ -79,16 +115,27 @@ export async function initializeUnsplashSettings(): Promise<void> {
     const imageQuality = isImageResolution(legacyResolution)
       ? legacyResolution
       : DEFAULT_UNSPLASH_SETTINGS.imageQuality;
+    const legacyFrequency =
+      syncValues[LEGACY_PHOTO_FREQUENCY_KEY] ??
+      syncValues[LEGACY_IMAGE_FREQUENCY_KEY];
+    const photoFrequency = isPhotoFrequency(legacyFrequency)
+      ? legacyFrequency
+      : DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
 
     await setSync({
       [UNSPLASH_SETTINGS_KEY]: {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality,
+        photoFrequency,
       } satisfies UnsplashSettings,
     });
   }
 
-  await removeSync(LEGACY_IMAGE_RESOLUTION_KEY);
+  await removeSync([
+    LEGACY_IMAGE_RESOLUTION_KEY,
+    LEGACY_PHOTO_FREQUENCY_KEY,
+    LEGACY_IMAGE_FREQUENCY_KEY,
+  ]);
 
   const localValues = await getLocal<Record<string, unknown>>([
     UNSPLASH_SETTINGS_KEY,
@@ -129,7 +176,15 @@ function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
   if (settings.version !== 1 || !isImageResolution(settings.imageQuality))
     return null;
 
-  return settings as UnsplashSettings;
+  const photoFrequency = isPhotoFrequency(settings.photoFrequency)
+    ? settings.photoFrequency
+    : DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
+
+  return {
+    version: 1,
+    imageQuality: settings.imageQuality,
+    photoFrequency,
+  };
 }
 
 function parseUnsplashLocalSettings(
@@ -153,4 +208,13 @@ function parseUnsplashLocalSettings(
 
 function isImageResolution(value: unknown): value is ImageResolution {
   return value === "standard" || value === "high" || value === "max";
+}
+
+function isPhotoFrequency(value: unknown): value is PhotoFrequency {
+  return (
+    value === "newtab" ||
+    value === "every15minutes" ||
+    value === "everyhour" ||
+    value === "everyday"
+  );
 }

@@ -46,9 +46,11 @@ const {
 const {
   DEFAULT_UNSPLASH_SETTINGS,
   getImageQuality,
+  getPhotoFrequency,
   initializeUnsplashSettings,
   resolveAccessKey,
   setImageQuality,
+  setPhotoFrequency,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
 
@@ -67,7 +69,7 @@ describe("settings", () => {
   it("migrates legacy root settings into owned records", async () => {
     sync.imageSource = "official";
     sync.imageResolution = "high";
-    sync.imageFrequency = "newtab";
+    sync.photoFrequency = "everyhour";
     local.unsplashAccessKey = " user-key ";
 
     await initializeCoreSettings();
@@ -81,6 +83,7 @@ describe("settings", () => {
       [UNSPLASH_SETTINGS_KEY]: {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "high",
+        photoFrequency: "everyhour",
       },
     });
     expect(local).toEqual({
@@ -96,9 +99,14 @@ describe("settings", () => {
       version: 1,
       activeSourceId: "future-source",
     };
-    sync[UNSPLASH_SETTINGS_KEY] = { version: 1, imageQuality: "max" };
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "max",
+      photoFrequency: "everyday",
+    };
     sync.imageSource = "official";
     sync.imageResolution = "high";
+    sync.photoFrequency = "newtab";
     local[UNSPLASH_SETTINGS_KEY] = {
       version: 1,
       accessKeyOverride: "current-key",
@@ -113,7 +121,11 @@ describe("settings", () => {
         version: 1,
         activeSourceId: "future-source",
       },
-      [UNSPLASH_SETTINGS_KEY]: { version: 1, imageQuality: "max" },
+      [UNSPLASH_SETTINGS_KEY]: {
+        version: 1,
+        imageQuality: "max",
+        photoFrequency: "everyday",
+      },
     });
     expect(local).toEqual({
       [UNSPLASH_SETTINGS_KEY]: {
@@ -135,7 +147,11 @@ describe("settings", () => {
     });
 
     delete sync[CORE_SETTINGS_KEY];
-    sync[UNSPLASH_SETTINGS_KEY] = { version: 2, imageQuality: "future" };
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 2,
+      imageQuality: "future",
+      photoFrequency: "future",
+    };
 
     await expect(initializeUnsplashSettings()).rejects.toThrow(
       "Unsupported Unsplash settings version: 2",
@@ -143,20 +159,58 @@ describe("settings", () => {
     expect(sync[UNSPLASH_SETTINGS_KEY]).toEqual({
       version: 2,
       imageQuality: "future",
+      photoFrequency: "future",
     });
   });
 
   it("defaults invalid or missing image resolution to standard", async () => {
     expect(await getImageQuality()).toBe("standard");
-    sync[UNSPLASH_SETTINGS_KEY] = { version: 1, imageQuality: "high" };
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "high",
+      photoFrequency: "newtab",
+    };
     expect(await getImageQuality()).toBe("high");
-    sync[UNSPLASH_SETTINGS_KEY] = { version: 1, imageQuality: "max" };
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "max",
+      photoFrequency: "newtab",
+    };
     expect(await getImageQuality()).toBe("max");
     sync[UNSPLASH_SETTINGS_KEY] = {
       version: 1,
       imageQuality: "unexpected",
+      photoFrequency: "newtab",
     };
     expect(await getImageQuality()).toBe("standard");
+  });
+
+  it("defaults invalid or missing photo frequency to newtab", async () => {
+    expect(await getPhotoFrequency()).toBe("newtab");
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "standard",
+      photoFrequency: "every15minutes",
+    };
+    expect(await getPhotoFrequency()).toBe("every15minutes");
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "standard",
+      photoFrequency: "everyhour",
+    };
+    expect(await getPhotoFrequency()).toBe("everyhour");
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "standard",
+      photoFrequency: "everyday",
+    };
+    expect(await getPhotoFrequency()).toBe("everyday");
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "standard",
+      photoFrequency: "unexpected",
+    };
+    expect(await getPhotoFrequency()).toBe("newtab");
   });
 
   it("resolves the internal source selection and its legacy value", async () => {
@@ -172,6 +226,7 @@ describe("settings", () => {
 
   it("persists source-owned and application-owned settings", async () => {
     await setImageQuality("max");
+    await setPhotoFrequency("everyday");
     await setImageSourceId("unsplash");
 
     expect(sync).toEqual({
@@ -182,6 +237,7 @@ describe("settings", () => {
       [UNSPLASH_SETTINGS_KEY]: {
         version: 1,
         imageQuality: "max",
+        photoFrequency: "everyday",
       },
     });
   });

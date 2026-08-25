@@ -2,6 +2,7 @@
 import { readBoundedImage } from "../cache";
 import {
   getImageQuality,
+  getPhotoFrequency,
   initializeUnsplashSettings,
   resolveAccessKey,
   STELLAR_COLLECTION,
@@ -39,10 +40,30 @@ const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
   initializeSettings: initializeUnsplashSettings,
+  shouldRotate,
   getRandomAsset,
   downloadAsset,
   didDownload,
 };
+
+async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
+  if (current.sourceId !== unsplashSource.id) return true;
+
+  const frequency = await getPhotoFrequency();
+  const elapsed = Date.now() - current.createdAt;
+
+  switch (frequency) {
+    case "every15minutes":
+      return elapsed >= 15 * 60 * 1000;
+    case "everyhour":
+      return elapsed >= 60 * 60 * 1000;
+    case "everyday":
+      return elapsed >= 24 * 60 * 60 * 1000;
+    case "newtab":
+    default:
+      return true;
+  }
+}
 
 export function imageUrlForResolution(
   rawUrl: string,

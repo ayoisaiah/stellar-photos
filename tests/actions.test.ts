@@ -30,7 +30,9 @@ vi.mock("../src/ts/sources", () => ({
   getImageSource,
 }));
 
-const { commitSource, prepareSource } = await import("../src/ts/actions");
+const { commitSource, prepareSource, rotate } = await import(
+  "../src/ts/actions"
+);
 
 const candidate = {
   sourceId: "unsplash",
@@ -66,6 +68,7 @@ beforeEach(() => {
     downloadAsset: vi.fn().mockResolvedValue(new Response("image")),
   };
   getImageSource.mockReturnValue(source);
+  getActiveImageSource.mockResolvedValue(source);
   getImageSourceId.mockResolvedValue("unsplash");
   deleteCachedImage.mockResolvedValue(true);
   readCachedImage.mockResolvedValue(new Response("image"));
@@ -118,5 +121,25 @@ describe("source activation", () => {
     expect(source.downloadAsset).not.toHaveBeenCalled();
     expect(putCachedImage).not.toHaveBeenCalled();
     expect(setImageSourceId).not.toHaveBeenCalled();
+  });
+
+  it("skips rotation when the active source reports the current photo is fresh", async () => {
+    source.shouldRotate = vi.fn().mockResolvedValue(false);
+
+    await expect(rotate()).resolves.toEqual(current);
+
+    expect(source.shouldRotate).toHaveBeenCalledWith(current);
+    expect(source.getRandomAsset).not.toHaveBeenCalled();
+    expect(promoteImage).not.toHaveBeenCalled();
+  });
+
+  it("rotates when the active source allows it", async () => {
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+
+    await expect(rotate()).resolves.toEqual(prepared);
+
+    expect(source.shouldRotate).toHaveBeenCalledWith(current);
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
   });
 });

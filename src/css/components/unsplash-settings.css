@@ -10,6 +10,10 @@ fieldset {
   border: 0;
 }
 
+fieldset + fieldset {
+  margin-top: 1.5rem;
+}
+
 legend {
   padding: 0;
   font-size: 0.9rem;

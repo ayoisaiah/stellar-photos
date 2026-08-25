@@ -92,6 +92,83 @@ describe("Unsplash image resolution", () => {
     expect(await image.arrayBuffer()).toHaveProperty("byteLength", 3);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+
+  it("determines whether to rotate according to photo frequency setting and photo age", async () => {
+    const asset = {
+      sourceId: "unsplash",
+      sourceAssetId: "photo-1",
+      cacheKey: "cache-1",
+      width: 1920,
+      height: 1080,
+      color: null,
+      description: null,
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: Date.now() - 20 * 60 * 1000,
+    };
+
+    expect(
+      await unsplashSource.shouldRotate?.({ ...asset, sourceId: "other" }),
+    ).toBe(true);
+    expect(await unsplashSource.shouldRotate?.(asset)).toBe(true);
+
+    vi.stubGlobal("chrome", {
+      runtime: { lastError: undefined },
+      storage: {
+        local: {
+          get: (_keys: unknown, callback: (value: unknown) => void) =>
+            callback({}),
+        },
+        sync: {
+          get: (_keys: unknown, cb: (val: unknown) => void) =>
+            cb({
+              "sourceSettings:unsplash": {
+                version: 1,
+                imageQuality: "standard",
+                photoFrequency: "every15minutes",
+              },
+            }),
+        },
+      },
+    });
+
+    expect(await unsplashSource.shouldRotate?.(asset)).toBe(true);
+    expect(
+      await unsplashSource.shouldRotate?.({
+        ...asset,
+        createdAt: Date.now() - 10 * 60 * 1000,
+      }),
+    ).toBe(false);
+
+    vi.stubGlobal("chrome", {
+      runtime: { lastError: undefined },
+      storage: {
+        local: {
+          get: (_keys: unknown, callback: (value: unknown) => void) =>
+            callback({}),
+        },
+        sync: {
+          get: (_keys: unknown, cb: (val: unknown) => void) =>
+            cb({
+              "sourceSettings:unsplash": {
+                version: 1,
+                imageQuality: "standard",
+                photoFrequency: "everyhour",
+              },
+            }),
+        },
+      },
+    });
+
+    expect(await unsplashSource.shouldRotate?.(asset)).toBe(false);
+    expect(
+      await unsplashSource.shouldRotate?.({
+        ...asset,
+        createdAt: Date.now() - 70 * 60 * 1000,
+      }),
+    ).toBe(true);
+  });
 });
 
 function responseAt(
