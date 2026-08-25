@@ -1,5 +1,3 @@
-export const HISTORY_VERSION = 1 as const;
-export const HISTORY_LIMIT = 10;
 export type ImageResolution = "standard" | "high" | "max";
 
 export interface PhotoMetadata {
@@ -43,3 +41,6 @@ export interface UnsplashPhotoResponse {
   links: { html: string; download_location: string };
   user: { name: string; links: { html: string } };
 }
+
+export const HISTORY_VERSION = 1 as const;
+export const HISTORY_LIMIT = 10;

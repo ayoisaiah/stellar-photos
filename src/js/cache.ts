@@ -49,33 +49,42 @@ export async function ownedCacheNames(): Promise<string[]> {
 export async function readBoundedImage(response: Response): Promise<Response> {
   if (!response.ok)
     throw new Error(`Image request failed (${response.status})`);
+
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("image/"))
     throw new Error("Unsplash URL did not return an image");
+
   const declaredSize = Number(response.headers.get("content-length") ?? 0);
   if (Number.isFinite(declaredSize) && declaredSize > MAX_IMAGE_BYTES)
     throw new Error("Image exceeds 20 MiB limit");
+
   if (!response.body) throw new Error("Image response has no body");
 
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+
     total += value.byteLength;
     if (total > MAX_IMAGE_BYTES) {
       await reader.cancel();
       throw new Error("Image exceeds 20 MiB limit");
     }
+
     chunks.push(value);
   }
+
   const body = new Uint8Array(total);
   let offset = 0;
+
   for (const chunk of chunks) {
     body.set(chunk, offset);
     offset += chunk.byteLength;
   }
+
   return new Response(body, {
     status: response.status,
     statusText: response.statusText,

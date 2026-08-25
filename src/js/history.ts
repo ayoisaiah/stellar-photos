@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import {
   ACTIVE_CACHE_NAME,
   activeCache,
@@ -13,12 +14,12 @@ import {
   removeLocal,
   writeHistory,
 } from "./storage";
-import {
-  HISTORY_LIMIT,
-  HISTORY_VERSION,
-  type HistoryState,
-  type PhotoMetadata,
-  type UncachedPhotoMetadata,
+import { HISTORY_LIMIT, HISTORY_VERSION } from "./types";
+
+import type {
+  HistoryState,
+  PhotoMetadata,
+  UncachedPhotoMetadata,
 } from "./types";
 
 export class UnsupportedHistoryVersionError extends Error {}
@@ -27,30 +28,11 @@ export function emptyHistory(): HistoryState {
   return { version: HISTORY_VERSION, currentId: null, history: [] };
 }
 
-function isMetadata(value: unknown): value is PhotoMetadata {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Partial<PhotoMetadata>;
-  try {
-    return (
-      typeof item.id === "string" &&
-      item.cacheKey === photoCacheKey(item.id) &&
-      typeof item.width === "number" &&
-      typeof item.height === "number" &&
-      typeof item.photographerName === "string" &&
-      typeof item.photographerUrl === "string" &&
-      typeof item.unsplashUrl === "string" &&
-      typeof item.downloadLocation === "string" &&
-      typeof item.createdAt === "number"
-    );
-  } catch {
-    return false;
-  }
-}
-
 export function decodeHistory(raw: unknown): HistoryState | null {
   if (raw === undefined) return null;
   if (!raw || typeof raw !== "object")
     throw new Error("Malformed history state");
+
   const value = raw as Partial<HistoryState> & { version?: unknown };
   if (typeof value.version === "number" && value.version > HISTORY_VERSION) {
     throw new UnsupportedHistoryVersionError(
@@ -59,6 +41,7 @@ export function decodeHistory(raw: unknown): HistoryState | null {
   }
   if (value.version !== HISTORY_VERSION || !Array.isArray(value.history))
     throw new Error("Malformed history state");
+
   return value as HistoryState;
 }
 
@@ -74,10 +57,12 @@ export async function reconcileHistory(): Promise<HistoryState> {
     if (error instanceof UnsupportedHistoryVersionError) throw error;
     decoded = null;
   }
+
   const source = decoded ?? emptyHistory();
   const cache = await activeCache();
   const seen = new Set<string>();
   const repaired: PhotoMetadata[] = [];
+
   for (const item of source.history) {
     if (
       repaired.length >= HISTORY_LIMIT ||
@@ -89,23 +74,30 @@ export async function reconcileHistory(): Promise<HistoryState> {
     seen.add(item.id);
     repaired.push(item);
   }
+
   const state: HistoryState = {
     version: HISTORY_VERSION,
     currentId: repaired[0]?.id ?? null,
     history: repaired,
   };
+
   await writeHistory(state);
+
   const verified = decodeHistory(await readRawHistory());
   if (!verified) throw new Error("History verification failed");
 
   const referenced = new Set(verified.history.map((item) => item.cacheKey));
+
   for (const request of await cache.keys()) {
     if (!referenced.has(request.url)) await cache.delete(request);
   }
+
   for (const cacheName of await ownedCacheNames()) {
     if (cacheName !== ACTIVE_CACHE_NAME) await caches.delete(cacheName);
   }
+
   await removeLocal(LEGACY_IMAGE_KEY);
+
   return verified;
 }
 
@@ -115,6 +107,7 @@ export async function promoteImage(
 ): Promise<HistoryState> {
   const current = await readHistory();
   if (current.history.some((entry) => entry.id === metadata.id)) return current;
+
   const completed = { ...metadata, cacheKey: photoCacheKey(metadata.id) };
   let base = current;
 
@@ -126,7 +119,9 @@ export async function promoteImage(
       currentId: reservedEntries[0]?.id ?? null,
       history: reservedEntries,
     };
+
     await writeHistory(reserved);
+
     if (!(await deleteCachedImage(oldest.cacheKey))) {
       await writeHistory(current);
       throw new Error("Could not reserve image cache capacity");
@@ -135,12 +130,15 @@ export async function promoteImage(
   }
 
   const priorResponse = await readCachedImage(completed.cacheKey);
+
   await putCachedImage(completed.cacheKey, image);
+
   const next: HistoryState = {
     version: HISTORY_VERSION,
     currentId: completed.id,
     history: [completed, ...base.history].slice(0, HISTORY_LIMIT),
   };
+
   try {
     await writeHistory(next);
     return next;
@@ -148,5 +146,27 @@ export async function promoteImage(
     if (priorResponse) await putCachedImage(completed.cacheKey, priorResponse);
     else await deleteCachedImage(completed.cacheKey);
     throw error;
+  }
+}
+
+function isMetadata(value: unknown): value is PhotoMetadata {
+  if (!value || typeof value !== "object") return false;
+
+  const item = value as Partial<PhotoMetadata>;
+
+  try {
+    return (
+      typeof item.id === "string" &&
+      item.cacheKey === photoCacheKey(item.id) &&
+      typeof item.width === "number" &&
+      typeof item.height === "number" &&
+      typeof item.photographerName === "string" &&
+      typeof item.photographerUrl === "string" &&
+      typeof item.unsplashUrl === "string" &&
+      typeof item.downloadLocation === "string" &&
+      typeof item.createdAt === "number"
+    );
+  } catch {
+    return false;
   }
 }

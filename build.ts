@@ -1,5 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+
 import { build } from "esbuild";
+
 import { resolveBuildAccessKey } from "./build-config";
 
 type Browser = "chrome" | "firefox";

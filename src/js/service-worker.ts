@@ -1,9 +1,12 @@
 import { ensureCurrent, initializeSettingsAndHistory, rotate } from "./actions";
+
 import type { WorkerCommand, WorkerResult } from "./types";
 
 function isCommand(value: unknown): value is WorkerCommand {
   if (!value || typeof value !== "object") return false;
+
   const command = (value as { command?: unknown }).command;
+
   return command === "ensure-current" || command === "rotate";
 }
 
@@ -13,15 +16,18 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
       ok: false,
       error: { code: "INVALID_COMMAND", message: "Unknown command" },
     };
+
   try {
     const current =
       request.command === "ensure-current"
         ? await ensureCurrent()
         : await rotate();
+
     return { ok: true, current };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unexpected extension error";
+
     return { ok: false, error: { code: "OPERATION_FAILED", message } };
   }
 }

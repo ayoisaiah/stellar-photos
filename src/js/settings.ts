@@ -1,4 +1,5 @@
 import { ACCESS_KEY_OVERRIDE_KEY, getLocal, getSync, setSync } from "./storage";
+
 import type { ImageResolution } from "./types";
 
 declare const __UNSPLASH_ACCESS_KEY__: string;
@@ -16,15 +17,19 @@ export async function resolveAccessKey(): Promise<string> {
     ACCESS_KEY_OVERRIDE_KEY,
   );
   const override = values[ACCESS_KEY_OVERRIDE_KEY];
+
   if (typeof override === "string" && override.trim()) return override.trim();
   if (__UNSPLASH_ACCESS_KEY__.trim()) return __UNSPLASH_ACCESS_KEY__.trim();
+
   throw new Error("No Unsplash access key is configured");
 }
 
 export async function getImageResolution(): Promise<ImageResolution> {
   const values = await getSync<Record<string, unknown>>(IMAGE_RESOLUTION_KEY);
   const resolution = values[IMAGE_RESOLUTION_KEY];
+
   if (resolution === "high" || resolution === "max") return resolution;
+
   return "standard";
 }
 
@@ -37,5 +42,6 @@ export async function setDefaultExtensionSettings(): Promise<void> {
       ([key]) => existing[key] === undefined,
     ),
   );
+
   if (Object.keys(missing).length) await setSync(missing);
 }
