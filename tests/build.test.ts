@@ -25,6 +25,11 @@ describe("browser packages", () => {
       const root = `dist/${browser}`;
       await expect(stat(`${root}/js/init.js`)).resolves.toBeTruthy();
       await expect(stat(`${root}/js/service-worker.js`)).resolves.toBeTruthy();
+
+      const page = await readFile(`${root}/index.html`, "utf8");
+      expect(page).toContain('<script src="js/init.js"></script>');
+      expect(page).not.toMatch(/<script[^>]+(?:async|defer)/);
+
       const manifest = JSON.parse(
         await readFile(`${root}/manifest.json`, "utf8"),
       );

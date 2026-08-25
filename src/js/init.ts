@@ -56,6 +56,7 @@ async function decodeObjectUrl(url: string): Promise<void> {
 
 async function render(metadata: PhotoMetadata): Promise<boolean> {
   const response = await readCachedImage(metadata.cacheKey);
+
   if (!response) return false;
 
   const nextUrl = URL.createObjectURL(await response.blob());
@@ -68,12 +69,15 @@ async function render(metadata: PhotoMetadata): Promise<boolean> {
   }
 
   const previous = objectUrl;
+  const { body } = elements();
 
   objectUrl = nextUrl;
-  elements().body.style.backgroundImage = `url("${nextUrl}")`;
-  elements().body.classList.add("has-image");
+  body.style.backgroundImage = `url("${nextUrl}")`;
+  body.classList.add("has-image");
 
-  if (previous) URL.revokeObjectURL(previous);
+  if (previous) {
+    URL.revokeObjectURL(previous);
+  }
 
   return true;
 }
@@ -102,9 +106,12 @@ async function ensureAndRender(): Promise<void> {
 
   try {
     const result = await sendCommand({ command: "ensure-current" });
+
     if (!result.ok) throw new Error(result.error.message);
+
     if (!result.current || !(await render(result.current)))
       throw new Error("No usable image is available yet");
+
     status.textContent = "Photo ready";
   } catch {
     status.textContent =
@@ -134,12 +141,8 @@ window.addEventListener("beforeunload", () => {
   if (objectUrl) URL.revokeObjectURL(objectUrl);
 });
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
-    void start();
-  });
-} else {
+document.addEventListener("DOMContentLoaded", () => {
   void start();
-}
+});
 
 export { optimisticCurrent, render, sendCommand };
