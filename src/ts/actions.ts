@@ -81,12 +81,13 @@ async function acquireUnique(
 
     const image = await fetchPhotoImage(candidate.imageUrl);
     const promoted = await promoteImage(candidate.metadata, image);
+    const current = promoted.history[0];
 
-    void trackDownload(promoted.history[0].downloadLocation).catch(
-      () => undefined,
-    );
+    if (!current) throw new Error("Promoted image is missing from history");
 
-    return promoted.history[0];
+    void trackDownload(current.downloadLocation).catch(() => undefined);
+
+    return current;
   }
 
   return state.history[0] ?? null;

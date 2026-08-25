@@ -39,8 +39,9 @@ The current and previous stable desktop releases of Chrome/Chromium and Firefox.
 
 ## Development
 
-The active extension is TypeScript and uses npm. Set `UNSPLASH_ACCESS_KEY` in
-your environment, then run `npm run chrome:prod` or `npm run firefox:prod`.
+The active extension is TypeScript and uses WXT with npm. Set
+`UNSPLASH_ACCESS_KEY` in your environment, then run `npm run chrome:prod` or
+`npm run firefox:prod`.
 Browser-specific unpacked extensions are written to `dist/chrome` and
 `dist/firefox`. Run `npm run check`, `npm run typecheck`, and `npm test` before
 submitting changes. Use `npm run fmt` to apply Biome formatting.

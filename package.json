@@ -3,33 +3,32 @@
   "type": "module",
   "version": "5.0.0",
   "description": "Beautiful high-res photos in your browser tabs. Available for Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox",
-  "main": "build.ts",
   "repository": "git@github.com:ayoisaiah/stellar-photos.git",
   "author": "Ayooluwa Isaiah <ayo@freshman.tech>",
   "license": "MIT",
   "scripts": {
-    "build": "node --import tsx build.ts",
-    "firefox:dev": "node --watch --import tsx build.ts --browser=firefox --dev",
-    "chrome:dev": "node --watch --import tsx build.ts --browser=chrome --dev",
-    "firefox:prod": "node --import tsx build.ts --browser=firefox",
-    "chrome:prod": "node --import tsx build.ts --browser=chrome",
-    "typecheck": "tsc --noEmit",
+    "build": "npm run chrome:prod && npm run firefox:prod",
+    "firefox:dev": "wxt -b firefox --mv3",
+    "chrome:dev": "wxt -b chrome --mv3",
+    "firefox:prod": "wxt build -b firefox --mv3",
+    "chrome:prod": "wxt build -b chrome --mv3",
+    "typecheck": "wxt prepare && tsc --noEmit",
     "test": "vitest run",
     "lint": "biome lint .",
     "fmt": "biome format --write .",
     "check": "biome check .",
-    "prepare": "simple-git-hooks"
+    "prepare": "wxt prepare && simple-git-hooks"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.10",
     "@types/chrome": "^0.2.7",
     "@types/node": "^26.3.0",
-    "esbuild": "^0.28.2",
     "lint-staged": "^17.3.0",
     "simple-git-hooks": "^2.13.1",
-    "tsx": "^4.23.12",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "wxt": "^0.21.4"
   },
   "lint-staged": {
     "*.ts": "biome check --write --no-errors-on-unmatched"

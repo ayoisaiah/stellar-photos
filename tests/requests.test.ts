@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { imageUrlForResolution } from "../src/js/requests";
+import { imageUrlForResolution } from "../src/ts/requests";
 
 const raw = "https://images.unsplash.com/photo-example?ixid=example";
 

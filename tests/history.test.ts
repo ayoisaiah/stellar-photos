@@ -3,7 +3,7 @@ import {
   decodeHistory,
   emptyHistory,
   UnsupportedHistoryVersionError,
-} from "../src/js/history";
+} from "../src/ts/history";
 
 describe("history schema", () => {
   it("distinguishes absent and supported empty state", () => {

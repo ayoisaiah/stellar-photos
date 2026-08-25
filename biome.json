@@ -6,6 +6,7 @@
     "includes": [
       "**",
       "!old/**",
+      "!.wxt/**",
       "!dist/**",
       "!node_modules/**",
       "!coverage/**"

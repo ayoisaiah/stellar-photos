@@ -3,7 +3,7 @@ import {
   MAX_IMAGE_BYTES,
   photoCacheKey,
   readBoundedImage,
-} from "../src/js/cache";
+} from "../src/ts/cache";
 
 describe("image cache contract", () => {
   it("maps unusual valid IDs to distinct stable keys", () => {

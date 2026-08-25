@@ -1,4 +1,5 @@
 {
+  "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -9,6 +10,11 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["build.ts", "build-config.ts", "src/**/*.ts", "tests/**/*.ts"],
+  "include": [
+    "entrypoints/**/*.ts",
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "wxt.config.ts"
+  ],
   "exclude": ["old", "_src", "dist"]
 }

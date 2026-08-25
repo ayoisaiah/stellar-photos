@@ -157,6 +157,10 @@ class StellarApp extends LitElement {
   }
 }
 
+export function registerStellarApp(): void {
+  customElements.define("stellar-app", StellarApp);
+}
+
 function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(
@@ -196,8 +200,6 @@ async function decodeObjectUrl(url: string): Promise<void> {
     image.src = url;
   });
 }
-
-customElements.define("stellar-app", StellarApp);
 
 declare global {
   interface HTMLElementTagNameMap {

@@ -41,7 +41,7 @@ const {
   getImageResolution,
   resolveAccessKey,
   setDefaultExtensionSettings,
-} = await import("../src/js/settings");
+} = await import("../src/ts/settings");
 
 beforeEach(() => {
   for (const key of Object.keys(local)) delete local[key];

@@ -2,6 +2,26 @@ import { ensureCurrent, initializeSettingsAndHistory, rotate } from "./actions";
 
 import type { WorkerCommand, WorkerResult } from "./types";
 
+export function startServiceWorker(): void {
+  chrome.runtime.onInstalled.addListener(() => {
+    void initializeSettingsAndHistory().catch(() => undefined);
+  });
+
+  chrome.runtime.onMessage.addListener(
+    (
+      request: unknown,
+      _sender,
+      sendResponse: (response: WorkerResult) => void,
+    ) => {
+      void dispatch(request).then((result) => {
+        sendResponse(result);
+      });
+
+      return true;
+    },
+  );
+}
+
 function isCommand(value: unknown): value is WorkerCommand {
   if (!value || typeof value !== "object") return false;
 
@@ -31,22 +51,5 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
     return { ok: false, error: { code: "OPERATION_FAILED", message } };
   }
 }
-
-chrome.runtime.onInstalled.addListener(() => {
-  void initializeSettingsAndHistory().catch(() => undefined);
-});
-
-chrome.runtime.onMessage.addListener(
-  (
-    request: unknown,
-    _sender,
-    sendResponse: (response: WorkerResult) => void,
-  ) => {
-    void dispatch(request).then((result) => {
-      sendResponse(result);
-    });
-    return true;
-  },
-);
 
 export { dispatch };

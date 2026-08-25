@@ -208,7 +208,7 @@ stateDiagram-v2
 - **Duplicate random results:** Apply KTD6 and test bounded exhaustion.
 - **Object URL leaks:** Centralize background replacement and revoke URLs per KTD7.
 - **API or CDN contract drift:** Validate only documented fields needed by R4 and R12, and surface actionable errors without clearing current state.
-- **Dirty worktree overlap:** Preserve the existing edits in `src/js/requests.js` and `src/js/settings.js` when converting them; do not alter the existing `_src/` deletions or `old/` additions.
+- **Dirty worktree overlap:** Preserve the existing edits in `src/ts/requests.js` and `src/ts/settings.js` when converting them; do not alter the existing `_src/` deletions or `old/` additions.
 - **Cache-version drift:** Inspect only narrowly owned Stellar Photos cache names. Establish valid active state before deleting superseded owned versions.
 - **Untrusted remote URLs or oversized bodies:** Apply KTD11 before sending credentials, following redirects, allocating full bodies, or writing cache entries.
 
@@ -244,7 +244,7 @@ stateDiagram-v2
 - **Goal:** Define the trusted shapes and boundaries used by API, settings, metadata storage, and Cache Storage.
 - **Requirements:** R2-R5, R12, R14, R15.
 - **Dependencies:** U1.
-- **Files:** `src/js/types.ts`, `src/js/settings.ts`, `src/js/storage.ts`, `src/js/requests.ts`, `src/js/cache.ts`, `src/manifest.json`, `tests/settings.test.ts`, `tests/requests.test.ts`, `tests/cache.test.ts`.
+- **Files:** `src/ts/types.ts`, `src/ts/settings.ts`, `src/ts/storage.ts`, `src/ts/requests.ts`, `src/ts/cache.ts`, `src/manifest.json`, `tests/settings.test.ts`, `tests/requests.test.ts`, `tests/cache.test.ts`.
 - **Approach:**
   1. Define the minimal documented Unsplash response, retained photo metadata, history state, commands, and result/error types.
   2. Replace stored endpoint strings with code-owned endpoint construction and merge missing defaults without overwriting existing preferences.
@@ -253,7 +253,7 @@ stateDiagram-v2
   5. Apply KTD11 and add the same narrow Unsplash API and image CDN origins to code-owned allowlists and browser manifests.
   6. Keep a future user key in local extension storage, never synchronized storage, and prevent its value from entering logs, messages, source maps, or build artifacts.
 - **Execution note:** Start with contract tests for authentication, response validation, and cache lookup before replacing existing modules.
-- **Patterns to follow:** Retain the promise-based `Storage` wrapper pattern from `src/js/storage.js`, but use typed Promise overloads supported by current browser APIs.
+- **Patterns to follow:** Retain the promise-based `Storage` wrapper pattern from `src/ts/storage.js`, but use typed Promise overloads supported by current browser APIs.
 - **Test scenarios:**
   - The future override key takes precedence over the bundled key, while an absent override uses the bundle.
   - Missing credentials prevent API calls and return a typed failure.
@@ -272,7 +272,7 @@ stateDiagram-v2
 - **Goal:** Maintain one recoverable, newest-first history whose metadata and cached responses stay aligned.
 - **Requirements:** R4-R7, R10, R12, R13.
 - **Dependencies:** U2.
-- **Files:** `src/js/history.ts`, `src/js/actions.ts`, `tests/history.test.ts`, `tests/actions.test.ts`.
+- **Files:** `src/ts/history.ts`, `src/ts/actions.ts`, `tests/history.test.ts`, `tests/actions.test.ts`.
 - **Approach:**
   1. Centralize history reads, promotion, trimming, and current selection behind one service-worker-owned boundary.
   2. Apply KTD5 for promotion and rollback, retaining attribution and tracking metadata.
@@ -282,7 +282,7 @@ stateDiagram-v2
   6. Treat the active legacy single-image record as non-authoritative. Remove it only after a valid versioned history snapshot is established; do not read from or modify `old/`.
   7. Trigger download tracking after a successful promotion per KTD8.
 - **Execution note:** Implement mutation and reconciliation tests before wiring browser events because Cache Storage and extension storage do not share a transaction.
-- **Patterns to follow:** Keep `setNextImage`'s high-level fetch-and-store responsibility from `src/js/actions.js`, but replace its unawaited single-record write with the typed history boundary.
+- **Patterns to follow:** Keep `setNextImage`'s high-level fetch-and-store responsibility from `src/ts/actions.js`, but replace its unawaited single-record write with the typed history boundary.
 - **Test scenarios:**
   - Covers AE2. Promoting an eleventh unique image removes the oldest metadata and cached response and leaves ten aligned entries.
   - A duplicate ID is never inserted twice; a unique retry is promoted, and three duplicate results preserve state.
@@ -302,7 +302,7 @@ stateDiagram-v2
 - **Goal:** Make first-run, rotation, and recovery commands reliable under Manifest V3 lifetime and rapid-tab concurrency.
 - **Requirements:** R5-R10, R13.
 - **Dependencies:** U3.
-- **Files:** `src/js/service-worker.ts`, `src/js/actions.ts`, `src/js/types.ts`, `tests/service-worker.test.ts`.
+- **Files:** `src/ts/service-worker.ts`, `src/ts/actions.ts`, `src/ts/types.ts`, `tests/service-worker.test.ts`.
 - **Approach:**
   1. Replace dynamic unchecked dispatch with a typed command protocol for ensure-current and rotate.
   2. Run memoized initialization and every mutation through the KTD4 promise queue.
@@ -325,7 +325,7 @@ stateDiagram-v2
 - **Goal:** Render a full-page cached image on every viable new-tab opening and preserve it during background failures.
 - **Requirements:** R8-R12.
 - **Dependencies:** U2, U4.
-- **Files:** `src/js/init.ts`, `src/index.html`, `src/css/new-tab.css`, `tests/init.test.ts`.
+- **Files:** `src/ts/init.ts`, `src/index.html`, `src/css/new-tab.css`, `tests/init.test.ts`.
 - **Approach:**
   1. On established state, optimistically read current metadata and its cached response, render the snapshot, then request rotation for a later tab.
   2. Fall back to the worker's ensure-current command when the optimistic metadata or response is missing or malformed. Resolve the returned cache key from the page's own Cache Storage context.
@@ -402,7 +402,7 @@ External network calls must be mocked in automated tests. The unpacked-extension
 
 ### Sources and Research
 
-- `src/js/init.js`, `src/js/actions.js`, `src/js/service-worker.js`, `src/js/storage.js`, `src/js/settings.js`, and `src/js/requests.js` define the current active flow and migration surface.
+- `src/ts/init.js`, `src/ts/actions.js`, `src/ts/service-worker.js`, `src/ts/storage.js`, `src/ts/settings.js`, and `src/ts/requests.js` define the current active flow and migration surface.
 - `src/manifest.json`, `src/index.html`, `build.js`, `package.json`, and `justfile` define packaging and runtime entry points.
 - [Unsplash API documentation](https://unsplash.com/documentation) defines public authentication, random-photo responses, download tracking, attribution data, and image URLs.
 - [Chrome cross-origin request guidance](https://developer.chrome.com/docs/extensions/develop/concepts/network-requests) defines manifest host permissions for API and CDN requests.

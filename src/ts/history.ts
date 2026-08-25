@@ -112,7 +112,10 @@ export async function promoteImage(
   let base = current;
 
   if (current.history.length >= HISTORY_LIMIT) {
-    const oldest = current.history[current.history.length - 1];
+    const oldest = current.history.at(-1);
+
+    if (!oldest) throw new Error("History capacity invariant failed");
+
     const reservedEntries = current.history.slice(0, HISTORY_LIMIT - 1);
     const reserved: HistoryState = {
       version: HISTORY_VERSION,
