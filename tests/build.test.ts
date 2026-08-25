@@ -28,7 +28,11 @@ describe("browser packages", () => {
 
       const page = await readFile(`${root}/index.html`, "utf8");
       expect(page).toContain('<script src="js/init.js"></script>');
+      expect(page).toContain("<stellar-app></stellar-app>");
       expect(page).not.toMatch(/<script[^>]+(?:async|defer)/);
+
+      const initBundle = await readFile(`${root}/js/init.js`, "utf8");
+      expect(initBundle).toContain("stellar-app");
 
       const manifest = JSON.parse(
         await readFile(`${root}/manifest.json`, "utf8"),

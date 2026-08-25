@@ -1,18 +1,160 @@
+import { html, LitElement } from "lit";
+
 import { readCachedImage } from "./cache";
-import { decodeHistory } from "./history";
-import { readRawHistory } from "./storage";
+import { readHistory } from "./history";
 
 import type { PhotoMetadata, WorkerCommand, WorkerResult } from "./types";
 
-let objectUrl: string | null = null;
-let requestInFlight = false;
+type AppPhase = "loading" | "ready" | "error";
 
-function elements() {
-  return {
-    body: document.body,
-    status: document.getElementById("status") as HTMLParagraphElement,
-    retry: document.getElementById("retry") as HTMLButtonElement,
+const STATUS_MESSAGES: Record<AppPhase, string> = {
+  loading: "Finding a stellar photo…",
+  ready: "Photo ready",
+  error: "We couldn’t load a photo. Check your connection and try again.",
+};
+
+class StellarApp extends LitElement {
+  static override properties = {
+    phase: { state: true },
   };
+
+  private generation = 0;
+  private objectUrl: string | null = null;
+  private phase: AppPhase = "loading";
+  private requestInFlight = false;
+
+  override createRenderRoot(): this {
+    return this;
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+
+    const generation = ++this.generation;
+
+    void this.start(generation);
+  }
+
+  override disconnectedCallback(): void {
+    this.generation += 1;
+    this.requestInFlight = false;
+    this.releaseObjectUrl();
+    super.disconnectedCallback();
+  }
+
+  override render() {
+    return html`
+      <main class="status-panel" aria-live="polite">
+        <p>${STATUS_MESSAGES[this.phase]}</p>
+        <button type="button" ?hidden=${this.phase !== "error"} @click=${this.ensureAndRender}>
+          Retry
+        </button>
+      </main>
+    `;
+  }
+
+  private async renderPhoto(
+    metadata: PhotoMetadata,
+    generation: number,
+  ): Promise<boolean> {
+    const response = await readCachedImage(metadata.cacheKey);
+
+    if (!response || !this.isCurrent(generation)) return false;
+
+    const nextUrl = URL.createObjectURL(await response.blob());
+
+    try {
+      await decodeObjectUrl(nextUrl);
+    } catch {
+      URL.revokeObjectURL(nextUrl);
+      return false;
+    }
+
+    if (!this.isCurrent(generation)) {
+      URL.revokeObjectURL(nextUrl);
+      return false;
+    }
+
+    const previous = this.objectUrl;
+
+    this.objectUrl = nextUrl;
+    document.body.style.backgroundImage = `url("${nextUrl}")`;
+    document.body.classList.add("has-image");
+
+    if (previous) {
+      URL.revokeObjectURL(previous);
+    }
+
+    return true;
+  }
+
+  private async optimisticCurrent(
+    generation: number,
+  ): Promise<PhotoMetadata | null> {
+    try {
+      const state = await readHistory();
+      const current = state.history[0] ?? null;
+
+      if (!current || !this.isCurrent(generation)) return null;
+
+      return (await this.renderPhoto(current, generation)) ? current : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private ensureAndRender = async (): Promise<void> => {
+    if (this.requestInFlight) return;
+
+    const generation = this.generation;
+
+    this.requestInFlight = true;
+    this.phase = "loading";
+
+    try {
+      const result = await sendCommand({ command: "ensure-current" });
+
+      if (!this.isCurrent(generation)) return;
+      if (!result.ok) throw new Error(result.error.message);
+
+      const rendered =
+        result.current && (await this.renderPhoto(result.current, generation));
+
+      if (!this.isCurrent(generation)) return;
+      if (!rendered) throw new Error("No usable image is available yet");
+
+      this.phase = "ready";
+    } catch {
+      if (this.isCurrent(generation)) this.phase = "error";
+    } finally {
+      if (this.isCurrent(generation)) this.requestInFlight = false;
+    }
+  };
+
+  private async start(generation: number): Promise<void> {
+    const current = await this.optimisticCurrent(generation);
+
+    if (!this.isCurrent(generation)) return;
+
+    if (current) {
+      void sendCommand({ command: "rotate" });
+    } else {
+      await this.ensureAndRender();
+    }
+  }
+
+  private isCurrent(generation: number): boolean {
+    return this.isConnected && generation === this.generation;
+  }
+
+  private releaseObjectUrl(): void {
+    if (!this.objectUrl) return;
+
+    URL.revokeObjectURL(this.objectUrl);
+    this.objectUrl = null;
+    document.body.style.removeProperty("background-image");
+    document.body.classList.remove("has-image");
+  }
 }
 
 function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
@@ -47,6 +189,7 @@ function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
 async function decodeObjectUrl(url: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const image = new Image();
+
     image.onload = () => resolve();
     image.onerror = () =>
       reject(new Error("Cached image could not be decoded"));
@@ -54,95 +197,10 @@ async function decodeObjectUrl(url: string): Promise<void> {
   });
 }
 
-async function render(metadata: PhotoMetadata): Promise<boolean> {
-  const response = await readCachedImage(metadata.cacheKey);
+customElements.define("stellar-app", StellarApp);
 
-  if (!response) return false;
-
-  const nextUrl = URL.createObjectURL(await response.blob());
-
-  try {
-    await decodeObjectUrl(nextUrl);
-  } catch {
-    URL.revokeObjectURL(nextUrl);
-    return false;
-  }
-
-  const previous = objectUrl;
-  const { body } = elements();
-
-  objectUrl = nextUrl;
-  body.style.backgroundImage = `url("${nextUrl}")`;
-  body.classList.add("has-image");
-
-  if (previous) {
-    URL.revokeObjectURL(previous);
-  }
-
-  return true;
-}
-
-async function optimisticCurrent(): Promise<PhotoMetadata | null> {
-  try {
-    const state = decodeHistory(await readRawHistory());
-    const current = state?.history[0] ?? null;
-
-    return current && (await render(current)) ? current : null;
-  } catch {
-    return null;
+declare global {
+  interface HTMLElementTagNameMap {
+    "stellar-app": StellarApp;
   }
 }
-
-async function ensureAndRender(): Promise<void> {
-  if (requestInFlight) return;
-
-  requestInFlight = true;
-
-  const { status, retry } = elements();
-
-  status.textContent = "Finding a stellar photo…";
-  retry.hidden = true;
-  retry.disabled = true;
-
-  try {
-    const result = await sendCommand({ command: "ensure-current" });
-
-    if (!result.ok) throw new Error(result.error.message);
-
-    if (!result.current || !(await render(result.current)))
-      throw new Error("No usable image is available yet");
-
-    status.textContent = "Photo ready";
-  } catch {
-    status.textContent =
-      "We couldn’t load a photo. Check your connection and try again.";
-    retry.hidden = false;
-  } finally {
-    requestInFlight = false;
-    retry.disabled = false;
-  }
-}
-
-async function start(): Promise<void> {
-  elements().retry.addEventListener("click", () => {
-    void ensureAndRender();
-  });
-
-  const current = await optimisticCurrent();
-
-  if (current) {
-    void sendCommand({ command: "rotate" });
-  } else {
-    await ensureAndRender();
-  }
-}
-
-window.addEventListener("beforeunload", () => {
-  if (objectUrl) URL.revokeObjectURL(objectUrl);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  void start();
-});
-
-export { optimisticCurrent, render, sendCommand };

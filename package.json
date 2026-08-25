@@ -36,5 +36,8 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged && npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "lit": "^3.3.3"
   }
 }
