@@ -10,7 +10,7 @@ class EmptyState extends LitElement {
   static override styles = unsafeCSS(styles);
 
   @property({ reflect: true })
-  accessor phase: EmptyStatePhase = "loading";
+  accessor phase: EmptyStatePhase = "ready";
 
   override render() {
     const isError = this.phase === "error";

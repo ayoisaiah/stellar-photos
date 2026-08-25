@@ -37,14 +37,20 @@ vi.stubGlobal("chrome", {
 });
 
 const {
-  DEFAULT_PREFERENCES,
-  getImageResolution,
+  CORE_SETTINGS_KEY,
+  DEFAULT_CORE_SETTINGS,
   getImageSourceId,
-  setDefaultExtensionSettings,
+  initializeCoreSettings,
+  setImageSourceId,
 } = await import("../src/ts/settings");
-const { resolveAccessKey } = await import(
-  "../src/ts/sources/unsplash-settings"
-);
+const {
+  DEFAULT_UNSPLASH_SETTINGS,
+  getImageQuality,
+  initializeUnsplashSettings,
+  resolveAccessKey,
+  setImageQuality,
+  UNSPLASH_SETTINGS_KEY,
+} = await import("../src/ts/sources/unsplash-settings");
 
 beforeEach(() => {
   for (const key of Object.keys(local)) delete local[key];
@@ -58,28 +64,125 @@ describe("settings", () => {
     expect(await resolveAccessKey()).toBe("user-key");
   });
 
-  it("fills missing synchronized defaults without overwriting preferences", async () => {
+  it("migrates legacy root settings into owned records", async () => {
+    sync.imageSource = "official";
     sync.imageResolution = "high";
-    await setDefaultExtensionSettings();
-    expect(sync).toEqual({ ...DEFAULT_PREFERENCES, imageResolution: "high" });
-    expect(local).toEqual({});
+    sync.imageFrequency = "newtab";
+    local.unsplashAccessKey = " user-key ";
+
+    await initializeCoreSettings();
+    await initializeUnsplashSettings();
+
+    expect(sync).toEqual({
+      [CORE_SETTINGS_KEY]: {
+        ...DEFAULT_CORE_SETTINGS,
+        activeSourceId: "unsplash",
+      },
+      [UNSPLASH_SETTINGS_KEY]: {
+        ...DEFAULT_UNSPLASH_SETTINGS,
+        imageQuality: "high",
+      },
+    });
+    expect(local).toEqual({
+      [UNSPLASH_SETTINGS_KEY]: {
+        version: 1,
+        accessKeyOverride: "user-key",
+      },
+    });
+  });
+
+  it("preserves existing namespaced settings while removing legacy keys", async () => {
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceId: "future-source",
+    };
+    sync[UNSPLASH_SETTINGS_KEY] = { version: 1, imageQuality: "max" };
+    sync.imageSource = "official";
+    sync.imageResolution = "high";
+    local[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      accessKeyOverride: "current-key",
+    };
+    local.unsplashAccessKey = "legacy-key";
+
+    await initializeCoreSettings();
+    await initializeUnsplashSettings();
+
+    expect(sync).toEqual({
+      [CORE_SETTINGS_KEY]: {
+        version: 1,
+        activeSourceId: "future-source",
+      },
+      [UNSPLASH_SETTINGS_KEY]: { version: 1, imageQuality: "max" },
+    });
+    expect(local).toEqual({
+      [UNSPLASH_SETTINGS_KEY]: {
+        version: 1,
+        accessKeyOverride: "current-key",
+      },
+    });
+  });
+
+  it("does not overwrite settings written by a newer schema", async () => {
+    sync[CORE_SETTINGS_KEY] = { version: 2, activeSourceId: "future-source" };
+
+    await expect(initializeCoreSettings()).rejects.toThrow(
+      "Unsupported core settings version: 2",
+    );
+    expect(sync[CORE_SETTINGS_KEY]).toEqual({
+      version: 2,
+      activeSourceId: "future-source",
+    });
+
+    delete sync[CORE_SETTINGS_KEY];
+    sync[UNSPLASH_SETTINGS_KEY] = { version: 2, imageQuality: "future" };
+
+    await expect(initializeUnsplashSettings()).rejects.toThrow(
+      "Unsupported Unsplash settings version: 2",
+    );
+    expect(sync[UNSPLASH_SETTINGS_KEY]).toEqual({
+      version: 2,
+      imageQuality: "future",
+    });
   });
 
   it("defaults invalid or missing image resolution to standard", async () => {
-    expect(await getImageResolution()).toBe("standard");
-    sync.imageResolution = "high";
-    expect(await getImageResolution()).toBe("high");
-    sync.imageResolution = "max";
-    expect(await getImageResolution()).toBe("max");
-    sync.imageResolution = "unexpected";
-    expect(await getImageResolution()).toBe("standard");
+    expect(await getImageQuality()).toBe("standard");
+    sync[UNSPLASH_SETTINGS_KEY] = { version: 1, imageQuality: "high" };
+    expect(await getImageQuality()).toBe("high");
+    sync[UNSPLASH_SETTINGS_KEY] = { version: 1, imageQuality: "max" };
+    expect(await getImageQuality()).toBe("max");
+    sync[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      imageQuality: "unexpected",
+    };
+    expect(await getImageQuality()).toBe("standard");
   });
 
   it("resolves the internal source selection and its legacy value", async () => {
     expect(await getImageSourceId()).toBe("unsplash");
-    sync.imageSource = "official";
+    sync[CORE_SETTINGS_KEY] = { version: 1, activeSourceId: "official" };
     expect(await getImageSourceId()).toBe("unsplash");
-    sync.imageSource = "future-source";
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceId: "future-source",
+    };
     expect(await getImageSourceId()).toBe("future-source");
+  });
+
+  it("persists source-owned and application-owned settings", async () => {
+    await setImageQuality("max");
+    await setImageSourceId("unsplash");
+
+    expect(sync).toEqual({
+      [CORE_SETTINGS_KEY]: {
+        version: 1,
+        activeSourceId: "unsplash",
+      },
+      [UNSPLASH_SETTINGS_KEY]: {
+        version: 1,
+        imageQuality: "max",
+      },
+    });
   });
 });

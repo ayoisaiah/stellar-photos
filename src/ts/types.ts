@@ -29,7 +29,10 @@ export interface HistoryState {
 
 export type WorkerCommand =
   | { command: "ensure-current" }
-  | { command: "rotate" };
+  | { command: "rotate" }
+  | { command: "prepare-source"; sourceId: string }
+  | { command: "commit-source"; asset: BackgroundAsset }
+  | { command: "discard-source"; asset: BackgroundAsset };
 
 export type WorkerResult =
   | { ok: true; current: BackgroundAsset | null }
@@ -37,6 +40,8 @@ export type WorkerResult =
 
 export interface ImageSource {
   readonly id: string;
+  readonly name: string;
+  initializeSettings?(): Promise<void>;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
   didDownload?(asset: BackgroundAsset): Promise<void>;

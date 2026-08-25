@@ -1,7 +1,11 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { readBoundedImage } from "../cache";
-import { getImageResolution } from "../settings";
-import { resolveAccessKey, STELLAR_COLLECTION } from "./unsplash-settings";
+import {
+  getImageQuality,
+  initializeUnsplashSettings,
+  resolveAccessKey,
+  STELLAR_COLLECTION,
+} from "./unsplash-settings";
 
 import type {
   BackgroundAsset,
@@ -33,6 +37,8 @@ const WEB_ORIGINS = new Set(["https://unsplash.com"]);
 
 const unsplashSource: ImageSource = {
   id: "unsplash",
+  name: "Unsplash",
+  initializeSettings: initializeUnsplashSettings,
   getRandomAsset,
   downloadAsset,
   didDownload,
@@ -60,7 +66,7 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   const photo = parsePhoto(await (await authenticatedFetch(endpoint)).json());
   const rawImageUrl = trustedUrl(photo.urls.raw, IMAGE_ORIGINS);
   const imageUrl = trustedUrl(
-    imageUrlForResolution(rawImageUrl.href, await getImageResolution()),
+    imageUrlForResolution(rawImageUrl.href, await getImageQuality()),
     IMAGE_ORIGINS,
   );
 

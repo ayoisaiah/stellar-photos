@@ -1,4 +1,11 @@
-import { ensureCurrent, initializeSettingsAndHistory, rotate } from "./actions";
+import {
+  commitSource,
+  discardSource,
+  ensureCurrent,
+  initializeSettingsAndHistory,
+  prepareSource,
+  rotate,
+} from "./actions";
 
 import type { WorkerCommand, WorkerResult } from "./types";
 
@@ -27,7 +34,16 @@ function isCommand(value: unknown): value is WorkerCommand {
 
   const command = (value as { command?: unknown }).command;
 
-  return command === "ensure-current" || command === "rotate";
+  if (command === "ensure-current" || command === "rotate") return true;
+
+  if (command === "prepare-source")
+    return typeof (value as { sourceId?: unknown }).sourceId === "string";
+
+  return (
+    (command === "commit-source" || command === "discard-source") &&
+    !!(value as { asset?: unknown }).asset &&
+    typeof (value as { asset?: unknown }).asset === "object"
+  );
 }
 
 async function dispatch(request: unknown): Promise<WorkerResult> {
@@ -38,10 +54,21 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
     };
 
   try {
-    const current =
-      request.command === "ensure-current"
-        ? await ensureCurrent()
-        : await rotate();
+    let current;
+
+    if (request.command === "ensure-current") {
+      current = await ensureCurrent();
+    } else if (request.command === "prepare-source") {
+      current = await prepareSource(request.sourceId);
+    } else if (request.command === "commit-source") {
+      await commitSource(request.asset);
+      current = null;
+    } else if (request.command === "discard-source") {
+      await discardSource(request.asset);
+      current = null;
+    } else {
+      current = await rotate();
+    }
 
     return { ok: true, current };
   } catch (error) {

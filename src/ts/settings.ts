@@ -1,43 +1,85 @@
-import { getSync, setSync } from "./storage";
+import { getSync, removeSync, setSync } from "./storage";
 
-import type { ImageResolution } from "./types";
+export interface CoreSettings {
+  version: 1;
+  activeSourceId: string;
+}
 
-export const IMAGE_RESOLUTION_KEY = "imageResolution";
-export const IMAGE_SOURCE_KEY = "imageSource";
-export const DEFAULT_PREFERENCES = Object.freeze({
-  imageFrequency: "newtab",
-  imageResolution: "standard",
-  imageSource: "unsplash",
+const LEGACY_IMAGE_FREQUENCY_KEY = "imageFrequency";
+const LEGACY_IMAGE_SOURCE_KEY = "imageSource";
+
+export const CORE_SETTINGS_KEY = "coreSettings";
+export const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = Object.freeze({
+  version: 1,
+  activeSourceId: "unsplash",
 });
 
 export async function getImageSourceId(): Promise<string> {
-  const values = await getSync<Record<string, unknown>>(IMAGE_SOURCE_KEY);
-  const sourceId = values[IMAGE_SOURCE_KEY];
+  const values = await getSync<Record<string, unknown>>(CORE_SETTINGS_KEY);
+  const settings = parseCoreSettings(values[CORE_SETTINGS_KEY]);
+  const sourceId = settings?.activeSourceId;
 
   if (sourceId === "official") return "unsplash";
   if (typeof sourceId === "string" && sourceId) return sourceId;
 
-  return DEFAULT_PREFERENCES.imageSource;
+  return DEFAULT_CORE_SETTINGS.activeSourceId;
 }
 
-export async function getImageResolution(): Promise<ImageResolution> {
-  const values = await getSync<Record<string, unknown>>(IMAGE_RESOLUTION_KEY);
-  const resolution = values[IMAGE_RESOLUTION_KEY];
+export async function setImageSourceId(sourceId: string): Promise<void> {
+  const values = await getSync<Record<string, unknown>>(CORE_SETTINGS_KEY);
+  const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
 
-  if (resolution === "high" || resolution === "max") return resolution;
-
-  return "standard";
+  await setSync({
+    [CORE_SETTINGS_KEY]: {
+      ...(current ?? DEFAULT_CORE_SETTINGS),
+      activeSourceId: sourceId,
+    } satisfies CoreSettings,
+  });
 }
 
-export async function setDefaultExtensionSettings(): Promise<void> {
-  const existing = await getSync<Record<string, unknown>>(
-    Object.keys(DEFAULT_PREFERENCES),
-  );
-  const missing = Object.fromEntries(
-    Object.entries(DEFAULT_PREFERENCES).filter(
-      ([key]) => existing[key] === undefined,
-    ),
-  );
+export async function initializeCoreSettings(): Promise<void> {
+  const keys = [
+    CORE_SETTINGS_KEY,
+    LEGACY_IMAGE_SOURCE_KEY,
+    LEGACY_IMAGE_FREQUENCY_KEY,
+  ];
+  const values = await getSync<Record<string, unknown>>(keys);
+  const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
 
-  if (Object.keys(missing).length) await setSync(missing);
+  if (!current) {
+    const legacySourceId = values[LEGACY_IMAGE_SOURCE_KEY];
+    const activeSourceId =
+      legacySourceId === "official"
+        ? "unsplash"
+        : typeof legacySourceId === "string" && legacySourceId
+          ? legacySourceId
+          : DEFAULT_CORE_SETTINGS.activeSourceId;
+
+    await setSync({
+      [CORE_SETTINGS_KEY]: {
+        ...DEFAULT_CORE_SETTINGS,
+        activeSourceId,
+      } satisfies CoreSettings,
+    });
+  }
+
+  await removeSync([LEGACY_IMAGE_SOURCE_KEY, LEGACY_IMAGE_FREQUENCY_KEY]);
+}
+
+function parseCoreSettings(value: unknown): CoreSettings | null {
+  if (!value || typeof value !== "object") return null;
+
+  const settings = value as Partial<CoreSettings>;
+
+  if (typeof settings.version === "number" && settings.version > 1)
+    throw new Error(`Unsupported core settings version: ${settings.version}`);
+
+  if (
+    settings.version !== 1 ||
+    typeof settings.activeSourceId !== "string" ||
+    !settings.activeSourceId
+  )
+    return null;
+
+  return settings as CoreSettings;
 }

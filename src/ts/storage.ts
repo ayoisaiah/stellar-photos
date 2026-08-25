@@ -13,6 +13,10 @@ export function setSync(data: Record<string, unknown>): Promise<void> {
   return setIn("sync", data);
 }
 
+export function removeSync(keys: string | string[]): Promise<void> {
+  return removeFrom("sync", keys);
+}
+
 export function getLocal<T extends Record<string, unknown>>(
   keys: string | string[] | null,
 ): Promise<T> {
@@ -24,8 +28,15 @@ export function setLocal(data: Record<string, unknown>): Promise<void> {
 }
 
 export function removeLocal(keys: string | string[]): Promise<void> {
+  return removeFrom("local", keys);
+}
+
+function removeFrom(
+  area: "local" | "sync",
+  keys: string | string[],
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.remove(keys, () => {
+    chrome.storage[area].remove(keys, () => {
       const error = runtimeError();
       if (error) {
         reject(error);

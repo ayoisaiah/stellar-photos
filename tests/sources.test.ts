@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getActiveImageSource } from "../src/ts/sources";
+import {
+  getActiveImageSource,
+  getImageSource,
+  listImageSources,
+} from "../src/ts/sources";
 
 let selectedSource: unknown;
 
@@ -19,6 +23,17 @@ beforeEach(() => {
 describe("image source registry", () => {
   it("keeps the only bundled source internal and active", async () => {
     expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
+    expect(listImageSources()).toEqual([
+      expect.objectContaining({
+        id: "unsplash",
+        name: "Unsplash",
+      }),
+    ]);
+  });
+
+  it("resolves only compiled-in sources by id", () => {
+    expect(getImageSource("unsplash")).toMatchObject({ id: "unsplash" });
+    expect(getImageSource("future-source")).toBeNull();
   });
 
   it("maps the legacy official selection to Unsplash", async () => {
