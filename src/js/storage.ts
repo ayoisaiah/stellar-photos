@@ -28,8 +28,11 @@ export function removeLocal(keys: string | string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     chrome.storage.local.remove(keys, () => {
       const error = runtimeError();
-      if (error) reject(error);
-      else resolve();
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
     });
   });
 }
@@ -58,8 +61,11 @@ function getFrom<T extends Record<string, unknown>>(
     chrome.storage[area].get(keys, (result) => {
       const error = runtimeError();
 
-      if (error) reject(error);
-      else resolve(result as T);
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result as T);
+      }
     });
   });
 }
@@ -72,8 +78,11 @@ function setIn(
     chrome.storage[area].set(data, () => {
       const error = runtimeError();
 
-      if (error) reject(error);
-      else resolve();
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
     });
   });
 }

@@ -143,8 +143,12 @@ export async function promoteImage(
     await writeHistory(next);
     return next;
   } catch (error) {
-    if (priorResponse) await putCachedImage(completed.cacheKey, priorResponse);
-    else await deleteCachedImage(completed.cacheKey);
+    if (priorResponse) {
+      await putCachedImage(completed.cacheKey, priorResponse);
+    } else {
+      await deleteCachedImage(completed.cacheKey);
+    }
+
     throw error;
   }
 }

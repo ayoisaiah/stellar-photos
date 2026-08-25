@@ -8,6 +8,12 @@
 - Never use consecutive blank lines, and avoid blank lines immediately after `{` or before `}`.
 - Declare variables as close to their first point of use as possible.
 
+## Control Flow
+
+- Put a space before the opening brace of every block, such as `if (...) {`, `try {`, `catch (...) {`, and `else {`.
+- Always use braces for every branch in an `if`/`else` chain.
+- A single-statement `if` may omit braces only when it has no `else`, such as a guard clause that returns or throws.
+
 ## Git Hooks
 
 Pre-commit runs `biome check --write` on staged `.ts` files, `tsc --noEmit`, and the full test suite.

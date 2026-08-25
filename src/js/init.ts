@@ -28,7 +28,7 @@ function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
               message: chrome.runtime.lastError.message ?? "Runtime error",
             },
           });
-        } else
+        } else {
           resolve(
             response ?? {
               ok: false,
@@ -38,6 +38,7 @@ function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
               },
             },
           );
+        }
       },
     );
   });
@@ -122,17 +123,23 @@ async function start(): Promise<void> {
 
   const current = await optimisticCurrent();
 
-  if (current) void sendCommand({ command: "rotate" });
-  else await ensureAndRender();
+  if (current) {
+    void sendCommand({ command: "rotate" });
+  } else {
+    await ensureAndRender();
+  }
 }
 
 window.addEventListener("beforeunload", () => {
   if (objectUrl) URL.revokeObjectURL(objectUrl);
 });
-if (document.readyState === "loading")
+
+if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     void start();
   });
-else void start();
+} else {
+  void start();
+}
 
 export { optimisticCurrent, render, sendCommand };
