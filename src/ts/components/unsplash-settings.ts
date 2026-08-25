@@ -1,17 +1,20 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/unsplash-settings.css?inline";
 import {
   DEFAULT_UNSPLASH_SETTINGS,
-  getImageQuality,
-  getPhotoFrequency,
-  setImageQuality,
-  setPhotoFrequency,
+  getUnsplashSettings,
+  setUnsplashSettings,
 } from "../sources/unsplash-settings";
+import "./tag-input";
 
-import type { PhotoFrequency } from "../sources/unsplash-settings";
+import type {
+  ContentFilter,
+  PhotoFrequency,
+  PhotoOrientation,
+  UnsplashSettings as UnsplashSettingsData,
+} from "../sources/unsplash-settings";
 import type { ImageResolution } from "../types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -67,14 +70,29 @@ const RESOLUTIONS: readonly {
   },
 ];
 
+const ORIENTATIONS: readonly {
+  value: PhotoOrientation | "";
+  label: string;
+}[] = [
+  { value: "", label: "Any orientation" },
+  { value: "landscape", label: "Landscape" },
+  { value: "portrait", label: "Portrait" },
+  { value: "squarish", label: "Square" },
+];
+
+const CONTENT_FILTERS: readonly {
+  value: ContentFilter;
+  label: string;
+}[] = [
+  { value: "low", label: "Standard (low)" },
+  { value: "high", label: "Stricter filtering (high)" },
+];
+
 @customElement("stellar-unsplash-settings")
 class UnsplashSettings extends LitElement {
   static override styles = unsafeCSS(styles);
 
-  private confirmedFrequency: PhotoFrequency =
-    DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
-  private confirmedResolution: ImageResolution =
-    DEFAULT_UNSPLASH_SETTINGS.imageQuality;
+  private confirmedSettings: UnsplashSettingsData = DEFAULT_UNSPLASH_SETTINGS;
   private saveInFlight = false;
   private saveResetTimeout: number | undefined;
 
@@ -82,12 +100,7 @@ class UnsplashSettings extends LitElement {
   private accessor loaded = false;
 
   @state()
-  private accessor frequency: PhotoFrequency =
-    DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
-
-  @state()
-  private accessor resolution: ImageResolution =
-    DEFAULT_UNSPLASH_SETTINGS.imageQuality;
+  private accessor settings: UnsplashSettingsData = DEFAULT_UNSPLASH_SETTINGS;
 
   @state()
   private accessor saveState: SaveState = "idle";
@@ -115,7 +128,7 @@ class UnsplashSettings extends LitElement {
                   type="radio"
                   name="frequency"
                   value=${value}
-                  .checked=${this.frequency === value}
+                  .checked=${this.settings.photoFrequency === value}
                   ?disabled=${!this.loaded}
                   @change=${this.changeFrequency}
                 />
@@ -129,6 +142,107 @@ class UnsplashSettings extends LitElement {
           )}
         </div>
       </fieldset>
+
+      <fieldset>
+        <legend>Photo filters</legend>
+        <p class="hint">Filter the pool of random photos from Unsplash.</p>
+        <div class="filters-grid">
+          <div class="field">
+            <label for="filter-query">Search keyword</label>
+            <input
+              id="filter-query"
+              type="text"
+              class="text-input"
+              placeholder="e.g. nature, galaxy"
+              .value=${this.settings.query}
+              ?disabled=${!this.loaded}
+              @input=${(e: Event) => this.updateTextInput("query", e)}
+              @change=${(e: Event) => this.saveTextInput("query", e)}
+            />
+            <p class="field-help">Find photos matching a search term. Note: overrides collections and topics.</p>
+          </div>
+
+          <div class="field">
+            <label for="filter-collections">Collections</label>
+            <stellar-tag-input
+              id="filter-collections"
+              placeholder="e.g. 998309, 317099"
+              .value=${this.settings.collections}
+              ?disabled=${!this.loaded}
+              @change=${(e: CustomEvent<{ value: string }>) =>
+                this.saveTagInput("collections", e)}
+            ></stellar-tag-input>
+            <p class="field-help">Public collection IDs. Defaults to Stellar Photos.</p>
+          </div>
+
+          <div class="field">
+            <label for="filter-topics">Topics</label>
+            <stellar-tag-input
+              id="filter-topics"
+              placeholder="e.g. wallpapers, nature"
+              .value=${this.settings.topics}
+              ?disabled=${!this.loaded}
+              @change=${(e: CustomEvent<{ value: string }>) =>
+                this.saveTagInput("topics", e)}
+            ></stellar-tag-input>
+            <p class="field-help">Public topic IDs or slugs.</p>
+          </div>
+
+          <div class="field">
+            <label for="filter-username">Photographer</label>
+            <input
+              id="filter-username"
+              type="text"
+              class="text-input"
+              placeholder="e.g. nasa"
+              .value=${this.settings.username}
+              ?disabled=${!this.loaded}
+              @input=${(e: Event) => this.updateTextInput("username", e)}
+              @change=${(e: Event) => this.saveTextInput("username", e)}
+            />
+            <p class="field-help">Limit selection to photos by a single Unsplash username.</p>
+          </div>
+
+          <div class="field">
+            <label for="filter-orientation">Orientation</label>
+            <select
+              id="filter-orientation"
+              class="select-input"
+              .value=${this.settings.orientation}
+              ?disabled=${!this.loaded}
+              @change=${this.changeOrientation}
+            >
+              ${ORIENTATIONS.map(
+                ({ value, label }) => html`
+                  <option value=${value} .selected=${this.settings.orientation === value}>
+                    ${label}
+                  </option>
+                `,
+              )}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="filter-content-safety">Content safety</label>
+            <select
+              id="filter-content-safety"
+              class="select-input"
+              .value=${this.settings.contentFilter}
+              ?disabled=${!this.loaded}
+              @change=${this.changeContentFilter}
+            >
+              ${CONTENT_FILTERS.map(
+                ({ value, label }) => html`
+                  <option value=${value} .selected=${this.settings.contentFilter === value}>
+                    ${label}
+                  </option>
+                `,
+              )}
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
       <fieldset>
         <legend>Image quality</legend>
         <p class="hint">Applies to the next photograph that is downloaded.</p>
@@ -140,7 +254,7 @@ class UnsplashSettings extends LitElement {
                   type="radio"
                   name="resolution"
                   value=${value}
-                  .checked=${this.resolution === value}
+                  .checked=${this.settings.imageQuality === value}
                   ?disabled=${!this.loaded}
                   @change=${this.changeResolution}
                 />
@@ -160,16 +274,11 @@ class UnsplashSettings extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      const [frequency, resolution] = await Promise.all([
-        getPhotoFrequency(),
-        getImageQuality(),
-      ]);
+      const settings = await getUnsplashSettings();
 
       if (!this.saveInFlight) {
-        this.confirmedFrequency = frequency;
-        this.frequency = frequency;
-        this.confirmedResolution = resolution;
-        this.resolution = resolution;
+        this.confirmedSettings = settings;
+        this.settings = settings;
       }
     } catch {
       this.saveState = "error";
@@ -178,25 +287,20 @@ class UnsplashSettings extends LitElement {
     }
   }
 
-  private changeFrequency = async (event: Event): Promise<void> => {
-    const target = event.currentTarget as HTMLInputElement;
-    const nextFrequency = FREQUENCIES.find(
-      ({ value }) => value === target.value,
-    )?.value;
-
-    if (!nextFrequency || nextFrequency === this.frequency) return;
-
+  private persist = async (
+    partial: Partial<Omit<UnsplashSettingsData, "version">>,
+  ): Promise<void> => {
     if (this.saveInFlight) return;
 
     window.clearTimeout(this.saveResetTimeout);
     this.saveInFlight = true;
-    this.frequency = nextFrequency;
+    this.settings = { ...this.settings, ...partial };
     this.saveState = "saving";
 
     try {
-      await setPhotoFrequency(nextFrequency);
+      await setUnsplashSettings(partial);
 
-      this.confirmedFrequency = nextFrequency;
+      this.confirmedSettings = { ...this.confirmedSettings, ...partial };
       this.saveState = "saved";
       this.saveResetTimeout = window.setTimeout(() => {
         if (this.saveState === "saved") {
@@ -204,44 +308,89 @@ class UnsplashSettings extends LitElement {
         }
       }, SAVED_RESET_DELAY_MS);
     } catch {
-      this.frequency = this.confirmedFrequency;
+      this.settings = { ...this.confirmedSettings };
       this.saveState = "error";
     } finally {
       this.saveInFlight = false;
     }
   };
 
-  private changeResolution = async (event: Event): Promise<void> => {
+  private changeFrequency = (event: Event): void => {
+    const target = event.currentTarget as HTMLInputElement;
+    const nextFrequency = FREQUENCIES.find(
+      ({ value }) => value === target.value,
+    )?.value;
+
+    if (!nextFrequency || nextFrequency === this.settings.photoFrequency)
+      return;
+
+    void this.persist({ photoFrequency: nextFrequency });
+  };
+
+  private changeResolution = (event: Event): void => {
     const target = event.currentTarget as HTMLInputElement;
     const nextResolution = RESOLUTIONS.find(
       ({ value }) => value === target.value,
     )?.value;
 
-    if (!nextResolution || nextResolution === this.resolution) return;
+    if (!nextResolution || nextResolution === this.settings.imageQuality)
+      return;
 
-    if (this.saveInFlight) return;
+    void this.persist({ imageQuality: nextResolution });
+  };
 
-    window.clearTimeout(this.saveResetTimeout);
-    this.saveInFlight = true;
-    this.resolution = nextResolution;
-    this.saveState = "saving";
+  private changeOrientation = (event: Event): void => {
+    const target = event.currentTarget as HTMLSelectElement;
+    const nextOrientation = ORIENTATIONS.find(
+      ({ value }) => value === target.value,
+    )?.value;
 
-    try {
-      await setImageQuality(nextResolution);
+    if (
+      nextOrientation === undefined ||
+      nextOrientation === this.settings.orientation
+    )
+      return;
 
-      this.confirmedResolution = nextResolution;
-      this.saveState = "saved";
-      this.saveResetTimeout = window.setTimeout(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      }, SAVED_RESET_DELAY_MS);
-    } catch {
-      this.resolution = this.confirmedResolution;
-      this.saveState = "error";
-    } finally {
-      this.saveInFlight = false;
-    }
+    void this.persist({ orientation: nextOrientation });
+  };
+
+  private changeContentFilter = (event: Event): void => {
+    const target = event.currentTarget as HTMLSelectElement;
+    const nextFilter = CONTENT_FILTERS.find(
+      ({ value }) => value === target.value,
+    )?.value;
+
+    if (!nextFilter || nextFilter === this.settings.contentFilter) return;
+
+    void this.persist({ contentFilter: nextFilter });
+  };
+
+  private saveTagInput = (
+    field: "collections" | "topics",
+    event: CustomEvent<{ value: string }>,
+  ): void => {
+    const nextValue = event.detail.value;
+
+    if (nextValue === this.confirmedSettings[field]) return;
+
+    void this.persist({ [field]: nextValue });
+  };
+
+  private updateTextInput = (
+    field: "username" | "query",
+    event: Event,
+  ): void => {
+    const target = event.currentTarget as HTMLInputElement;
+    this.settings = { ...this.settings, [field]: target.value };
+  };
+
+  private saveTextInput = (field: "username" | "query", event: Event): void => {
+    const target = event.currentTarget as HTMLInputElement;
+    const trimmed = target.value.trim();
+
+    if (trimmed === this.confirmedSettings[field]) return;
+
+    void this.persist({ [field]: trimmed });
   };
 
   private statusMessage(): string {

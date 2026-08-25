@@ -3,6 +3,12 @@
   color: #f8fafc;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 fieldset {
   min-width: 0;
   margin: 0;
@@ -52,7 +58,7 @@ label:hover {
   background: rgb(255 255 255 / 6%);
 }
 
-input {
+input[type="radio"] {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -68,12 +74,12 @@ input {
   box-shadow: inset 0 0 0 3px #1a1d22;
 }
 
-input:checked + .control {
+input[type="radio"]:checked + .control {
   border-color: #eee7d8;
   background: #eee7d8;
 }
 
-input:focus-visible + .control {
+input[type="radio"]:focus-visible + .control {
   outline: 2px solid #eee7d8;
   outline-offset: 3px;
 }
@@ -92,6 +98,64 @@ small {
   margin-top: 0.2rem;
   color: #9ca3af;
   font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.filters-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field label {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: default;
+  font-size: 0.82rem;
+  font-weight: 550;
+  color: #e5e7eb;
+}
+
+.field label:hover {
+  border: 0;
+  background: transparent;
+}
+
+.text-input,
+.select-input {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.65rem;
+  background: #202329;
+  color: inherit;
+  font: inherit;
+  font-size: 0.84rem;
+  transition: border-color 150ms ease;
+}
+
+.text-input::placeholder {
+  color: #6b7280;
+}
+
+.text-input:focus-visible,
+.select-input:focus-visible {
+  border-color: #eee7d8;
+  outline: 2px solid #eee7d8;
+  outline-offset: 2px;
+}
+
+.field-help {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.73rem;
   line-height: 1.35;
 }
 

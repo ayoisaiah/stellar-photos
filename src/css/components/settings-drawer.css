@@ -4,11 +4,19 @@
   z-index: 20;
   visibility: hidden;
   pointer-events: none;
+  transition: visibility 280ms;
 }
 
 :host([open]) {
   visibility: visible;
   pointer-events: auto;
+  transition: visibility 0s;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 .backdrop {
@@ -31,7 +39,8 @@ aside {
   display: flex;
   width: min(25rem, 100vw);
   flex-direction: column;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border-left: 1px solid rgb(255 255 255 / 10%);
   background: rgb(20 22 27 / 96%);
   box-shadow: -1.5rem 0 4rem rgb(0 0 0 / 28%);
@@ -176,6 +185,7 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :host,
   .backdrop,
   aside {
     transition-duration: 1ms;

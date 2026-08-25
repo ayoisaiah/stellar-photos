@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.tag-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.65rem;
+  background: #202329;
+  color: inherit;
+  cursor: text;
+  transition: border-color 150ms ease;
+}
+
+.tag-input-container:focus-within {
+  border-color: #eee7d8;
+  outline: 2px solid #eee7d8;
+  outline-offset: 2px;
+}
+
+.tag-input-container.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.2rem 0.35rem 0.2rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.45rem;
+  background: rgb(255 255 255 / 9%);
+  color: #f3f4f6;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.tag-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.tag-remove:hover:not(:disabled) {
+  background: rgb(255 255 255 / 15%);
+  color: #f8fafc;
+}
+
+.tag-remove:disabled {
+  cursor: not-allowed;
+}
+
+stellar-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.native-input {
+  flex: 1 1 4rem;
+  min-width: 3.5rem;
+  padding: 0.2rem 0.3rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.native-input::placeholder {
+  color: #6b7280;
+}
+
+.native-input:disabled {
+  cursor: not-allowed;
+}

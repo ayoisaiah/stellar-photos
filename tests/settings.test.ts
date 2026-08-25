@@ -47,10 +47,12 @@ const {
   DEFAULT_UNSPLASH_SETTINGS,
   getImageQuality,
   getPhotoFrequency,
+  getUnsplashSettings,
   initializeUnsplashSettings,
   resolveAccessKey,
   setImageQuality,
   setPhotoFrequency,
+  setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
 
@@ -70,6 +72,7 @@ describe("settings", () => {
     sync.imageSource = "official";
     sync.imageResolution = "high";
     sync.photoFrequency = "everyhour";
+    sync.collections = "12345, 67890";
     local.unsplashAccessKey = " user-key ";
 
     await initializeCoreSettings();
@@ -84,6 +87,7 @@ describe("settings", () => {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "high",
         photoFrequency: "everyhour",
+        collections: "12345, 67890",
       },
     });
     expect(local).toEqual({
@@ -100,13 +104,15 @@ describe("settings", () => {
       activeSourceId: "future-source",
     };
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
+      ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "max",
       photoFrequency: "everyday",
+      query: "astronomy",
     };
     sync.imageSource = "official";
     sync.imageResolution = "high";
     sync.photoFrequency = "newtab";
+    sync.collections = "old-collection";
     local[UNSPLASH_SETTINGS_KEY] = {
       version: 1,
       accessKeyOverride: "current-key",
@@ -122,9 +128,10 @@ describe("settings", () => {
         activeSourceId: "future-source",
       },
       [UNSPLASH_SETTINGS_KEY]: {
-        version: 1,
+        ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "max",
         photoFrequency: "everyday",
+        query: "astronomy",
       },
     });
     expect(local).toEqual({
@@ -166,21 +173,18 @@ describe("settings", () => {
   it("defaults invalid or missing image resolution to standard", async () => {
     expect(await getImageQuality()).toBe("standard");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
+      ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "high",
-      photoFrequency: "newtab",
     };
     expect(await getImageQuality()).toBe("high");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
+      ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "max",
-      photoFrequency: "newtab",
     };
     expect(await getImageQuality()).toBe("max");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
+      ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "unexpected",
-      photoFrequency: "newtab",
     };
     expect(await getImageQuality()).toBe("standard");
   });
@@ -188,26 +192,22 @@ describe("settings", () => {
   it("defaults invalid or missing photo frequency to newtab", async () => {
     expect(await getPhotoFrequency()).toBe("newtab");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
-      imageQuality: "standard",
+      ...DEFAULT_UNSPLASH_SETTINGS,
       photoFrequency: "every15minutes",
     };
     expect(await getPhotoFrequency()).toBe("every15minutes");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
-      imageQuality: "standard",
+      ...DEFAULT_UNSPLASH_SETTINGS,
       photoFrequency: "everyhour",
     };
     expect(await getPhotoFrequency()).toBe("everyhour");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
-      imageQuality: "standard",
+      ...DEFAULT_UNSPLASH_SETTINGS,
       photoFrequency: "everyday",
     };
     expect(await getPhotoFrequency()).toBe("everyday");
     sync[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
-      imageQuality: "standard",
+      ...DEFAULT_UNSPLASH_SETTINGS,
       photoFrequency: "unexpected",
     };
     expect(await getPhotoFrequency()).toBe("newtab");
@@ -235,10 +235,28 @@ describe("settings", () => {
         activeSourceId: "unsplash",
       },
       [UNSPLASH_SETTINGS_KEY]: {
-        version: 1,
+        ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "max",
         photoFrequency: "everyday",
       },
+    });
+  });
+
+  it("persists and retrieves custom photo filters", async () => {
+    await setUnsplashSettings({
+      query: "galaxy",
+      topics: "nature,wallpapers",
+      username: "nasa",
+      orientation: "landscape",
+      contentFilter: "high",
+    });
+
+    expect(await getUnsplashSettings()).toMatchObject({
+      query: "galaxy",
+      topics: "nature,wallpapers",
+      username: "nasa",
+      orientation: "landscape",
+      contentFilter: "high",
     });
   });
 });

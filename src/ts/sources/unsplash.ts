@@ -1,13 +1,14 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { readBoundedImage } from "../cache";
 import {
-  getImageQuality,
   getPhotoFrequency,
+  getUnsplashSettings,
   initializeUnsplashSettings,
   resolveAccessKey,
   STELLAR_COLLECTION,
 } from "./unsplash-settings";
 
+import type { UnsplashSettings } from "./unsplash-settings";
 import type {
   BackgroundAsset,
   ImageResolution,
@@ -65,6 +66,49 @@ async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
   }
 }
 
+export function buildRandomPhotoUrl(
+  settings: Partial<UnsplashSettings> = {},
+): URL {
+  const url = new URL("https://api.unsplash.com/photos/random");
+  const query = settings.query?.trim() ?? "";
+  const topics = normalizeCsv(settings.topics);
+  const collections = normalizeCsv(settings.collections);
+  const username = settings.username?.trim() ?? "";
+  const orientation = settings.orientation;
+  const contentFilter = settings.contentFilter ?? "low";
+
+  if (query) {
+    url.searchParams.set("query", query);
+  } else {
+    if (topics) {
+      url.searchParams.set("topics", topics);
+    }
+    if (collections) {
+      url.searchParams.set("collections", collections);
+    } else if (!topics && !username) {
+      url.searchParams.set("collections", STELLAR_COLLECTION);
+    }
+  }
+
+  if (username) {
+    url.searchParams.set("username", username);
+  }
+
+  if (
+    orientation === "landscape" ||
+    orientation === "portrait" ||
+    orientation === "squarish"
+  ) {
+    url.searchParams.set("orientation", orientation);
+  }
+
+  if (contentFilter === "high" || contentFilter === "low") {
+    url.searchParams.set("content_filter", contentFilter);
+  }
+
+  return url;
+}
+
 export function imageUrlForResolution(
   rawUrl: string,
   resolution: ImageResolution,
@@ -80,14 +124,12 @@ export function imageUrlForResolution(
 }
 
 async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
-  const endpoint = trustedUrl(
-    `https://api.unsplash.com/photos/random?collections=${STELLAR_COLLECTION}`,
-    API_ORIGINS,
-  );
+  const settings = await getUnsplashSettings();
+  const endpoint = trustedUrl(buildRandomPhotoUrl(settings).href, API_ORIGINS);
   const photo = parsePhoto(await (await authenticatedFetch(endpoint)).json());
   const rawImageUrl = trustedUrl(photo.urls.raw, IMAGE_ORIGINS);
   const imageUrl = trustedUrl(
-    imageUrlForResolution(rawImageUrl.href, await getImageQuality()),
+    imageUrlForResolution(rawImageUrl.href, settings.imageQuality),
     IMAGE_ORIGINS,
   );
 
@@ -206,10 +248,21 @@ function parsePhoto(value: unknown): UnsplashPhotoResponse {
     typeof photo.user.name !== "string" ||
     !photo.user.links ||
     typeof photo.user.links.html !== "string"
-  )
+  ) {
     throw new Error("Malformed Unsplash response");
+  }
 
   return photo as UnsplashPhotoResponse;
+}
+
+function normalizeCsv(value?: string | null): string {
+  if (!value) return "";
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join(",");
 }
 
 export { unsplashSource };

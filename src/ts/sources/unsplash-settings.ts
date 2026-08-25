@@ -15,10 +15,20 @@ export type PhotoFrequency =
   | "everyhour"
   | "everyday";
 
+export type PhotoOrientation = "landscape" | "portrait" | "squarish";
+
+export type ContentFilter = "low" | "high";
+
 export interface UnsplashSettings {
   version: 1;
   imageQuality: ImageResolution;
   photoFrequency: PhotoFrequency;
+  collections: string;
+  topics: string;
+  username: string;
+  query: string;
+  orientation: PhotoOrientation | "";
+  contentFilter: ContentFilter;
 }
 
 interface UnsplashLocalSettings {
@@ -32,6 +42,7 @@ const LEGACY_ACCESS_KEY_OVERRIDE_KEY = "unsplashAccessKey";
 const LEGACY_IMAGE_RESOLUTION_KEY = "imageResolution";
 const LEGACY_PHOTO_FREQUENCY_KEY = "photoFrequency";
 const LEGACY_IMAGE_FREQUENCY_KEY = "imageFrequency";
+const LEGACY_COLLECTIONS_KEY = "collections";
 
 export const STELLAR_COLLECTION = "998309";
 export const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
@@ -40,48 +51,57 @@ export const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> =
     version: 1,
     imageQuality: "standard",
     photoFrequency: "newtab",
+    collections: STELLAR_COLLECTION,
+    topics: "",
+    username: "",
+    query: "",
+    orientation: "",
+    contentFilter: "low",
   });
 
-export async function getImageQuality(): Promise<ImageResolution> {
+export async function getUnsplashSettings(): Promise<UnsplashSettings> {
   const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
   const settings = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
 
-  return settings?.imageQuality ?? DEFAULT_UNSPLASH_SETTINGS.imageQuality;
+  return settings ?? DEFAULT_UNSPLASH_SETTINGS;
+}
+
+export async function setUnsplashSettings(
+  partial: Partial<Omit<UnsplashSettings, "version">>,
+): Promise<void> {
+  const current = await getUnsplashSettings();
+
+  await setSync({
+    [UNSPLASH_SETTINGS_KEY]: {
+      ...current,
+      ...partial,
+      version: 1,
+    } satisfies UnsplashSettings,
+  });
+}
+
+export async function getImageQuality(): Promise<ImageResolution> {
+  const settings = await getUnsplashSettings();
+
+  return settings.imageQuality;
 }
 
 export async function setImageQuality(
   imageQuality: ImageResolution,
 ): Promise<void> {
-  const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
-  const current = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
-
-  await setSync({
-    [UNSPLASH_SETTINGS_KEY]: {
-      ...(current ?? DEFAULT_UNSPLASH_SETTINGS),
-      imageQuality,
-    } satisfies UnsplashSettings,
-  });
+  await setUnsplashSettings({ imageQuality });
 }
 
 export async function getPhotoFrequency(): Promise<PhotoFrequency> {
-  const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
-  const settings = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
+  const settings = await getUnsplashSettings();
 
-  return settings?.photoFrequency ?? DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
+  return settings.photoFrequency;
 }
 
 export async function setPhotoFrequency(
   photoFrequency: PhotoFrequency,
 ): Promise<void> {
-  const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
-  const current = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
-
-  await setSync({
-    [UNSPLASH_SETTINGS_KEY]: {
-      ...(current ?? DEFAULT_UNSPLASH_SETTINGS),
-      photoFrequency,
-    } satisfies UnsplashSettings,
-  });
+  await setUnsplashSettings({ photoFrequency });
 }
 
 export async function resolveAccessKey(): Promise<string> {
@@ -107,6 +127,7 @@ export async function initializeUnsplashSettings(): Promise<void> {
     LEGACY_IMAGE_RESOLUTION_KEY,
     LEGACY_PHOTO_FREQUENCY_KEY,
     LEGACY_IMAGE_FREQUENCY_KEY,
+    LEGACY_COLLECTIONS_KEY,
   ]);
   const current = parseUnsplashSettings(syncValues[UNSPLASH_SETTINGS_KEY]);
 
@@ -121,12 +142,18 @@ export async function initializeUnsplashSettings(): Promise<void> {
     const photoFrequency = isPhotoFrequency(legacyFrequency)
       ? legacyFrequency
       : DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
+    const legacyCollections = syncValues[LEGACY_COLLECTIONS_KEY];
+    const collections =
+      typeof legacyCollections === "string" && legacyCollections.trim()
+        ? legacyCollections.trim()
+        : DEFAULT_UNSPLASH_SETTINGS.collections;
 
     await setSync({
       [UNSPLASH_SETTINGS_KEY]: {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality,
         photoFrequency,
+        collections,
       } satisfies UnsplashSettings,
     });
   }
@@ -135,6 +162,7 @@ export async function initializeUnsplashSettings(): Promise<void> {
     LEGACY_IMAGE_RESOLUTION_KEY,
     LEGACY_PHOTO_FREQUENCY_KEY,
     LEGACY_IMAGE_FREQUENCY_KEY,
+    LEGACY_COLLECTIONS_KEY,
   ]);
 
   const localValues = await getLocal<Record<string, unknown>>([
@@ -179,11 +207,39 @@ function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
   const photoFrequency = isPhotoFrequency(settings.photoFrequency)
     ? settings.photoFrequency
     : DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
+  const collections =
+    typeof settings.collections === "string"
+      ? settings.collections
+      : DEFAULT_UNSPLASH_SETTINGS.collections;
+  const topics =
+    typeof settings.topics === "string"
+      ? settings.topics
+      : DEFAULT_UNSPLASH_SETTINGS.topics;
+  const username =
+    typeof settings.username === "string"
+      ? settings.username
+      : DEFAULT_UNSPLASH_SETTINGS.username;
+  const query =
+    typeof settings.query === "string"
+      ? settings.query
+      : DEFAULT_UNSPLASH_SETTINGS.query;
+  const orientation = isPhotoOrientation(settings.orientation)
+    ? settings.orientation
+    : DEFAULT_UNSPLASH_SETTINGS.orientation;
+  const contentFilter = isContentFilter(settings.contentFilter)
+    ? settings.contentFilter
+    : DEFAULT_UNSPLASH_SETTINGS.contentFilter;
 
   return {
     version: 1,
     imageQuality: settings.imageQuality,
     photoFrequency,
+    collections,
+    topics,
+    username,
+    query,
+    orientation,
+    contentFilter,
   };
 }
 
@@ -217,4 +273,17 @@ function isPhotoFrequency(value: unknown): value is PhotoFrequency {
     value === "everyhour" ||
     value === "everyday"
   );
+}
+
+function isPhotoOrientation(value: unknown): value is PhotoOrientation | "" {
+  return (
+    value === "" ||
+    value === "landscape" ||
+    value === "portrait" ||
+    value === "squarish"
+  );
+}
+
+function isContentFilter(value: unknown): value is ContentFilter {
+  return value === "low" || value === "high";
 }
