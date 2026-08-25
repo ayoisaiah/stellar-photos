@@ -1,6 +1,6 @@
-import { afterAll, describe, expect, it } from "vitest";
-import { readFile, rm, stat } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import { readFile, rm, stat } from "node:fs/promises";
+import { afterAll, describe, expect, it } from "vitest";
 
 afterAll(async () => {
   await rm("dist", { recursive: true, force: true });

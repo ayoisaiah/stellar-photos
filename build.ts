@@ -15,7 +15,10 @@ if (browser !== "chrome" && browser !== "firefox") {
 let dotenvContent: string | undefined;
 if (!process.env.UNSPLASH_ACCESS_KEY?.trim()) {
   try {
-    dotenvContent = await readFile(process.env.STELLAR_ENV_FILE ?? ".env", "utf8");
+    dotenvContent = await readFile(
+      process.env.STELLAR_ENV_FILE ?? ".env",
+      "utf8",
+    );
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }

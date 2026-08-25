@@ -2,13 +2,15 @@ const CACHE_PREFIX = "stellar-photos-images-v";
 export const ACTIVE_CACHE_NAME = `${CACHE_PREFIX}1`;
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const CACHE_ORIGIN = "https://cache.stellar-photos.invalid";
+// biome-ignore lint/suspicious/noControlCharactersInRegex: IDs must reject ASCII control characters.
+const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
 
 export function validatePhotoId(id: string): string {
   if (
     typeof id !== "string" ||
     id.length < 1 ||
     id.length > 128 ||
-    /[\u0000-\u001f\u007f]/.test(id)
+    CONTROL_CHARACTER.test(id)
   ) {
     throw new Error("Invalid Unsplash photo ID");
   }

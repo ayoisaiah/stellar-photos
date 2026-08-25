@@ -13,10 +13,15 @@ $ cd stellar-photos
 $ npm install
 $ export UNSPLASH_ACCESS_KEY=your-access-key
 $ npm run typecheck
+$ npm run lint
 $ npm test
 $ npm run chrome:prod
 $ npm run firefox:prod
 ```
+
+Run `npm run fmt` to format supported files with Biome. Commits automatically
+run Biome on staged TypeScript files, followed by type checking and the full
+test suite.
 
 Load `dist/chrome` in Chrome/Chromium or `dist/firefox` in Firefox as an
 unpacked/temporary extension. Verify a fresh tab, repeated tabs, cached offline

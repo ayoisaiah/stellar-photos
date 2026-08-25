@@ -25,7 +25,8 @@ export interface HistoryState {
 }
 
 export type WorkerCommand =
-  { command: "ensure-current" } | { command: "rotate" };
+  | { command: "ensure-current" }
+  | { command: "rotate" };
 
 export type WorkerResult =
   | { ok: true; current: PhotoMetadata | null }

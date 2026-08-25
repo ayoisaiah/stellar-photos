@@ -11,7 +11,9 @@ describe("Unsplash image resolution", () => {
   });
 
   it("requests a 4000px high image", () => {
-    expect(new URL(imageUrlForResolution(raw, "high")).searchParams.get("w")).toBe("4000");
+    expect(
+      new URL(imageUrlForResolution(raw, "high")).searchParams.get("w"),
+    ).toBe("4000");
   });
 
   it("leaves the raw image unconstrained for max resolution", () => {

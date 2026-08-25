@@ -1,42 +1,40 @@
 {
-	"name": "stellar-photos",
-	"type": "module",
-	"version": "5.0.0",
-	"description": "Beautiful high-res photos in your browser tabs. Available for Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox",
-	"main": "build.ts",
-	"repository": "git@github.com:ayoisaiah/stellar-photos.git",
-	"author": "Ayooluwa Isaiah <ayo@freshman.tech>",
-	"license": "MIT",
-	"scripts": {
-		"build": "node --import tsx build.ts",
-		"firefox:dev": "node --watch --import tsx build.ts --browser=firefox --dev",
-		"chrome:dev": "node --watch --import tsx build.ts --browser=chrome --dev",
-		"firefox:prod": "node --import tsx build.ts --browser=firefox",
-		"chrome:prod": "node --import tsx build.ts --browser=chrome",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run",
-		"lint": "tsc --noEmit",
-		"fmt": "prettier --write src tests build.ts"
-	},
-	"devDependencies": {
-		"@types/chrome": "^0.1.1",
-		"@types/node": "^24.3.0",
-		"esbuild": "^0.25.9",
-		"prettier": "^3.6.2",
-		"tsx": "^4.20.5",
-		"typescript": "^5.9.2",
-		"vitest": "^3.2.4"
-	},
-	"dependencies": {},
-	"lint-staged": {
-		"*.ts": [
-			"prettier --write"
-		],
-		"*.css": [
-			"stylelint --fix"
-		],
-		"*.html": [
-			""
-		]
-	}
+  "name": "stellar-photos",
+  "type": "module",
+  "version": "5.0.0",
+  "description": "Beautiful high-res photos in your browser tabs. Available for Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox",
+  "main": "build.ts",
+  "repository": "git@github.com:ayoisaiah/stellar-photos.git",
+  "author": "Ayooluwa Isaiah <ayo@freshman.tech>",
+  "license": "MIT",
+  "scripts": {
+    "build": "node --import tsx build.ts",
+    "firefox:dev": "node --watch --import tsx build.ts --browser=firefox --dev",
+    "chrome:dev": "node --watch --import tsx build.ts --browser=chrome --dev",
+    "firefox:prod": "node --import tsx build.ts --browser=firefox",
+    "chrome:prod": "node --import tsx build.ts --browser=chrome",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "biome lint .",
+    "fmt": "biome format --write .",
+    "check": "biome check .",
+    "prepare": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.5",
+    "@types/chrome": "^0.1.1",
+    "@types/node": "^24.3.0",
+    "esbuild": "^0.25.9",
+    "lint-staged": "^17.2.0",
+    "simple-git-hooks": "^2.13.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "lint-staged": {
+    "*.ts": "biome check --write --no-errors-on-unmatched"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged && npm run typecheck && npm test"
+  }
 }

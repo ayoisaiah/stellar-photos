@@ -1,9 +1,9 @@
+import { promoteImage, readHistory, reconcileHistory } from "./history";
 import {
   fetchPhotoImage,
   fetchRandomPhotoMetadata,
   trackDownload,
 } from "./requests";
-import { promoteImage, readHistory, reconcileHistory } from "./history";
 import type { HistoryState, PhotoMetadata } from "./types";
 
 let queueTail: Promise<void> = Promise.resolve();
