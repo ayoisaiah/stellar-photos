@@ -21,15 +21,15 @@
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.5",
-    "@types/chrome": "^0.1.1",
-    "@types/node": "^24.3.0",
-    "esbuild": "^0.25.9",
-    "lint-staged": "^17.2.0",
+    "@biomejs/biome": "2.5.10",
+    "@types/chrome": "^0.2.7",
+    "@types/node": "^26.3.0",
+    "esbuild": "^0.28.2",
+    "lint-staged": "^17.3.0",
     "simple-git-hooks": "^2.13.1",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "lint-staged": {
     "*.ts": "biome check --write --no-errors-on-unmatched"
