@@ -1,22 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
+  assetCacheKey,
   MAX_IMAGE_BYTES,
-  photoCacheKey,
   readBoundedImage,
 } from "../src/ts/cache";
 
 describe("image cache contract", () => {
   it("maps unusual valid IDs to distinct stable keys", () => {
-    expect(photoCacheKey("a/b")).not.toBe(photoCacheKey("a%2Fb"));
-    expect(photoCacheKey("a/b")).toBe(
-      "https://cache.stellar-photos.invalid/photo/a%2Fb",
+    expect(assetCacheKey("source", "a/b")).not.toBe(
+      assetCacheKey("source", "a%2Fb"),
+    );
+    expect(assetCacheKey("source", "a/b")).toBe(
+      "https://cache.stellar-photos.invalid/asset/source/a%2Fb",
     );
   });
 
   it.each(["", "a".repeat(129), "bad\u0000id"])(
-    "rejects invalid ID %j",
+    "rejects invalid source and asset IDs %j",
     (id) => {
-      expect(() => photoCacheKey(id)).toThrow("Invalid Unsplash photo ID");
+      expect(() => assetCacheKey(id, "asset")).toThrow("Invalid source ID");
+      expect(() => assetCacheKey("source", id)).toThrow("Invalid asset ID");
     },
   );
 

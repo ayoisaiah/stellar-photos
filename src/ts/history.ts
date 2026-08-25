@@ -1,13 +1,16 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { assetIdentity } from "./assets";
 import {
   ACTIVE_CACHE_NAME,
   activeCache,
+  assetCacheKey,
   deleteCachedImage,
+  legacyPhotoCacheKey,
   ownedCacheNames,
-  photoCacheKey,
   putCachedImage,
   readCachedImage,
 } from "./cache";
+import { upgradeLegacyHistory } from "./history-migrations";
 import {
   LEGACY_IMAGE_KEY,
   readRawHistory,
@@ -17,15 +20,15 @@ import {
 import { HISTORY_LIMIT, HISTORY_VERSION } from "./types";
 
 import type {
+  BackgroundAsset,
   HistoryState,
-  PhotoMetadata,
-  UncachedPhotoMetadata,
+  UncachedBackgroundAsset,
 } from "./types";
 
 export class UnsupportedHistoryVersionError extends Error {}
 
 export function emptyHistory(): HistoryState {
-  return { version: HISTORY_VERSION, currentId: null, history: [] };
+  return { version: HISTORY_VERSION, history: [] };
 }
 
 export function decodeHistory(raw: unknown): HistoryState | null {
@@ -33,12 +36,13 @@ export function decodeHistory(raw: unknown): HistoryState | null {
   if (!raw || typeof raw !== "object")
     throw new Error("Malformed history state");
 
-  const value = raw as Partial<HistoryState> & { version?: unknown };
+  const value = raw as { version?: unknown; history?: unknown };
   if (typeof value.version === "number" && value.version > HISTORY_VERSION) {
     throw new UnsupportedHistoryVersionError(
       `Unsupported history version: ${value.version}`,
     );
   }
+  if (value.version === 1) return upgradeLegacyHistory(value);
   if (value.version !== HISTORY_VERSION || !Array.isArray(value.history))
     throw new Error("Malformed history state");
 
@@ -61,23 +65,38 @@ export async function reconcileHistory(): Promise<HistoryState> {
   const source = decoded ?? emptyHistory();
   const cache = await activeCache();
   const seen = new Set<string>();
-  const repaired: PhotoMetadata[] = [];
+  const repaired: BackgroundAsset[] = [];
 
   for (const item of source.history) {
     if (
       repaired.length >= HISTORY_LIMIT ||
       !isMetadata(item) ||
-      seen.has(item.id)
+      seen.has(assetIdentity(item))
     )
       continue;
-    if (!(await cache.match(item.cacheKey))) continue;
-    seen.add(item.id);
-    repaired.push(item);
+
+    const canonicalCacheKey = assetCacheKey(item.sourceId, item.sourceAssetId);
+    const cached = await cache.match(item.cacheKey);
+
+    if (!cached) continue;
+
+    let cacheKey = item.cacheKey;
+
+    if (item.cacheKey !== canonicalCacheKey) {
+      try {
+        await cache.put(canonicalCacheKey, cached);
+        cacheKey = canonicalCacheKey;
+      } catch {
+        cacheKey = item.cacheKey;
+      }
+    }
+
+    seen.add(assetIdentity(item));
+    repaired.push({ ...item, cacheKey });
   }
 
   const state: HistoryState = {
     version: HISTORY_VERSION,
-    currentId: repaired[0]?.id ?? null,
     history: repaired,
   };
 
@@ -102,13 +121,21 @@ export async function reconcileHistory(): Promise<HistoryState> {
 }
 
 export async function promoteImage(
-  metadata: UncachedPhotoMetadata,
+  metadata: UncachedBackgroundAsset,
   image: Response,
 ): Promise<HistoryState> {
   const current = await readHistory();
-  if (current.history.some((entry) => entry.id === metadata.id)) return current;
+  if (
+    current.history.some(
+      (entry) => assetIdentity(entry) === assetIdentity(metadata),
+    )
+  )
+    return current;
 
-  const completed = { ...metadata, cacheKey: photoCacheKey(metadata.id) };
+  const completed = {
+    ...metadata,
+    cacheKey: assetCacheKey(metadata.sourceId, metadata.sourceAssetId),
+  };
   let base = current;
 
   if (current.history.length >= HISTORY_LIMIT) {
@@ -119,7 +146,6 @@ export async function promoteImage(
     const reservedEntries = current.history.slice(0, HISTORY_LIMIT - 1);
     const reserved: HistoryState = {
       version: HISTORY_VERSION,
-      currentId: reservedEntries[0]?.id ?? null,
       history: reservedEntries,
     };
 
@@ -138,7 +164,6 @@ export async function promoteImage(
 
   const next: HistoryState = {
     version: HISTORY_VERSION,
-    currentId: completed.id,
     history: [completed, ...base.history].slice(0, HISTORY_LIMIT),
   };
 
@@ -156,24 +181,47 @@ export async function promoteImage(
   }
 }
 
-function isMetadata(value: unknown): value is PhotoMetadata {
+function isMetadata(value: unknown): value is BackgroundAsset {
   if (!value || typeof value !== "object") return false;
 
-  const item = value as Partial<PhotoMetadata>;
+  const item = value as Partial<BackgroundAsset>;
 
   try {
+    const canonicalCacheKey =
+      typeof item.sourceId === "string" &&
+      typeof item.sourceAssetId === "string"
+        ? assetCacheKey(item.sourceId, item.sourceAssetId)
+        : null;
+    const legacyCacheKey =
+      item.sourceId === "unsplash" && typeof item.sourceAssetId === "string"
+        ? legacyPhotoCacheKey(item.sourceAssetId)
+        : null;
+
     return (
-      typeof item.id === "string" &&
-      item.cacheKey === photoCacheKey(item.id) &&
+      typeof item.sourceId === "string" &&
+      typeof item.sourceAssetId === "string" &&
+      (item.cacheKey === canonicalCacheKey ||
+        item.cacheKey === legacyCacheKey) &&
       typeof item.width === "number" &&
       typeof item.height === "number" &&
-      typeof item.photographerName === "string" &&
-      typeof item.photographerUrl === "string" &&
-      typeof item.unsplashUrl === "string" &&
-      typeof item.downloadLocation === "string" &&
+      isAttribution(item.attribution) &&
+      typeof item.payloadVersion === "number" &&
       typeof item.createdAt === "number"
     );
   } catch {
     return false;
   }
+}
+
+function isAttribution(value: unknown): boolean {
+  if (value === null) return true;
+  if (!value || typeof value !== "object") return false;
+
+  const attribution = value as Record<string, unknown>;
+
+  return (
+    typeof attribution.name === "string" &&
+    typeof attribution.url === "string" &&
+    typeof attribution.sourceUrl === "string"
+  );
 }

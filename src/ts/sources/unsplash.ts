@@ -1,19 +1,42 @@
-import { readBoundedImage } from "./cache";
-import {
-  getImageResolution,
-  resolveAccessKey,
-  STELLAR_COLLECTION,
-} from "./settings";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { readBoundedImage } from "../cache";
+import { getImageResolution } from "../settings";
+import { resolveAccessKey, STELLAR_COLLECTION } from "./unsplash-settings";
 
 import type {
+  BackgroundAsset,
   ImageResolution,
-  UncachedPhotoMetadata,
-  UnsplashPhotoResponse,
-} from "./types";
+  ImageSource,
+  UncachedBackgroundAsset,
+} from "../types";
+
+interface UnsplashPayload {
+  downloadLocation: string;
+  imageUrl?: string;
+}
+
+interface UnsplashPhotoResponse {
+  id: string;
+  width: number;
+  height: number;
+  color: string | null;
+  description: string | null;
+  alt_description: string | null;
+  urls: { raw: string };
+  links: { html: string; download_location: string };
+  user: { name: string; links: { html: string } };
+}
 
 const API_ORIGINS = new Set(["https://api.unsplash.com"]);
 const IMAGE_ORIGINS = new Set(["https://images.unsplash.com"]);
 const WEB_ORIGINS = new Set(["https://unsplash.com"]);
+
+const unsplashSource: ImageSource = {
+  id: "unsplash",
+  getRandomAsset,
+  downloadAsset,
+  didDownload,
+};
 
 export function imageUrlForResolution(
   rawUrl: string,
@@ -29,10 +52,7 @@ export function imageUrlForResolution(
   return url.href;
 }
 
-export async function fetchRandomPhotoMetadata(): Promise<{
-  metadata: UncachedPhotoMetadata;
-  imageUrl: string;
-}> {
+async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   const endpoint = trustedUrl(
     `https://api.unsplash.com/photos/random?collections=${STELLAR_COLLECTION}`,
     API_ORIGINS,
@@ -45,25 +65,35 @@ export async function fetchRandomPhotoMetadata(): Promise<{
   );
 
   return {
-    metadata: {
-      id: photo.id,
-      width: photo.width,
-      height: photo.height,
-      color: typeof photo.color === "string" ? photo.color : null,
-      description: photo.description ?? photo.alt_description ?? null,
-      photographerName: photo.user.name,
-      photographerUrl: trustedUrl(photo.user.links.html, WEB_ORIGINS).href,
-      unsplashUrl: trustedUrl(photo.links.html, WEB_ORIGINS).href,
+    sourceId: unsplashSource.id,
+    sourceAssetId: photo.id,
+    width: photo.width,
+    height: photo.height,
+    color: typeof photo.color === "string" ? photo.color : null,
+    description: photo.description ?? photo.alt_description ?? null,
+    attribution: {
+      name: photo.user.name,
+      url: trustedUrl(photo.user.links.html, WEB_ORIGINS).href,
+      sourceUrl: trustedUrl(photo.links.html, WEB_ORIGINS).href,
+    },
+    payloadVersion: 1,
+    sourcePayload: {
       downloadLocation: trustedUrl(photo.links.download_location, API_ORIGINS)
         .href,
-      createdAt: Date.now(),
-    },
-    imageUrl: imageUrl.href,
+      imageUrl: imageUrl.href,
+    } satisfies UnsplashPayload,
+    createdAt: Date.now(),
   };
 }
 
-export async function fetchPhotoImage(location: string): Promise<Response> {
-  const imageUrl = trustedUrl(location, IMAGE_ORIGINS);
+async function downloadAsset(
+  asset: UncachedBackgroundAsset,
+): Promise<Response> {
+  const payload = parsePayload(asset);
+  if (typeof payload.imageUrl !== "string")
+    throw new Error("Unsplash asset payload has no image URL");
+
+  const imageUrl = trustedUrl(payload.imageUrl, IMAGE_ORIGINS);
   const response = await fetch(imageUrl, { redirect: "follow" });
 
   trustedUrl(response.url, IMAGE_ORIGINS);
@@ -71,8 +101,29 @@ export async function fetchPhotoImage(location: string): Promise<Response> {
   return readBoundedImage(response);
 }
 
-export async function trackDownload(location: string): Promise<void> {
-  await authenticatedFetch(trustedUrl(location, API_ORIGINS));
+async function didDownload(asset: BackgroundAsset): Promise<void> {
+  const payload = parsePayload(asset);
+
+  await authenticatedFetch(trustedUrl(payload.downloadLocation, API_ORIGINS));
+}
+
+function parsePayload(asset: UncachedBackgroundAsset): UnsplashPayload {
+  if (
+    asset.sourceId !== unsplashSource.id ||
+    asset.payloadVersion !== 1 ||
+    !asset.sourcePayload ||
+    typeof asset.sourcePayload !== "object"
+  ) {
+    throw new Error("Unsupported Unsplash asset payload");
+  }
+
+  const payload = asset.sourcePayload as Partial<UnsplashPayload>;
+
+  if (typeof payload.downloadLocation !== "string") {
+    throw new Error("Malformed Unsplash asset payload");
+  }
+
+  return payload as UnsplashPayload;
 }
 
 function trustedUrl(value: string, origins: Set<string>): URL {
@@ -133,3 +184,5 @@ function parsePhoto(value: unknown): UnsplashPhotoResponse {
 
   return photo as UnsplashPhotoResponse;
 }
+
+export { unsplashSource };

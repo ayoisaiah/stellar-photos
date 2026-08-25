@@ -1,7 +1,6 @@
 import type { HistoryState } from "./types";
 
 export const HISTORY_STORAGE_KEY = "stellarHistory";
-export const ACCESS_KEY_OVERRIDE_KEY = "unsplashAccessKey";
 export const LEGACY_IMAGE_KEY = "nextImage";
 
 export function getSync<T extends Record<string, unknown>>(

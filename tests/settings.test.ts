@@ -39,9 +39,12 @@ vi.stubGlobal("chrome", {
 const {
   DEFAULT_PREFERENCES,
   getImageResolution,
-  resolveAccessKey,
+  getImageSourceId,
   setDefaultExtensionSettings,
 } = await import("../src/ts/settings");
+const { resolveAccessKey } = await import(
+  "../src/ts/sources/unsplash-settings"
+);
 
 beforeEach(() => {
   for (const key of Object.keys(local)) delete local[key];
@@ -70,5 +73,13 @@ describe("settings", () => {
     expect(await getImageResolution()).toBe("max");
     sync.imageResolution = "unexpected";
     expect(await getImageResolution()).toBe("standard");
+  });
+
+  it("resolves the internal source selection and its legacy value", async () => {
+    expect(await getImageSourceId()).toBe("unsplash");
+    sync.imageSource = "official";
+    expect(await getImageSourceId()).toBe("unsplash");
+    sync.imageSource = "future-source";
+    expect(await getImageSourceId()).toBe("future-source");
   });
 });

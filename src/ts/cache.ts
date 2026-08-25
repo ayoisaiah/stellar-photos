@@ -5,20 +5,17 @@ const CACHE_ORIGIN = "https://cache.stellar-photos.invalid";
 // biome-ignore lint/suspicious/noControlCharactersInRegex: IDs must reject ASCII control characters.
 const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
 
-export function validatePhotoId(id: string): string {
-  if (
-    typeof id !== "string" ||
-    id.length < 1 ||
-    id.length > 128 ||
-    CONTROL_CHARACTER.test(id)
-  ) {
-    throw new Error("Invalid Unsplash photo ID");
-  }
-  return id;
+export function assetCacheKey(sourceId: string, sourceAssetId: string): string {
+  const source = encodeURIComponent(validateIdentifier(sourceId, "source"));
+  const asset = encodeURIComponent(validateIdentifier(sourceAssetId, "asset"));
+
+  return `${CACHE_ORIGIN}/asset/${source}/${asset}`;
 }
 
-export function photoCacheKey(id: string): string {
-  return `${CACHE_ORIGIN}/photo/${encodeURIComponent(validatePhotoId(id))}`;
+export function legacyPhotoCacheKey(sourceAssetId: string): string {
+  const asset = encodeURIComponent(validateIdentifier(sourceAssetId, "asset"));
+
+  return `${CACHE_ORIGIN}/photo/${asset}`;
 }
 
 export async function activeCache(): Promise<Cache> {
@@ -52,7 +49,7 @@ export async function readBoundedImage(response: Response): Promise<Response> {
 
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("image/"))
-    throw new Error("Unsplash URL did not return an image");
+    throw new Error("Remote URL did not return an image");
 
   const declaredSize = Number(response.headers.get("content-length") ?? 0);
   if (Number.isFinite(declaredSize) && declaredSize > MAX_IMAGE_BYTES)
@@ -90,4 +87,17 @@ export async function readBoundedImage(response: Response): Promise<Response> {
     statusText: response.statusText,
     headers: response.headers,
   });
+}
+
+function validateIdentifier(id: string, label: string): string {
+  if (
+    typeof id !== "string" ||
+    id.length < 1 ||
+    id.length > 128 ||
+    CONTROL_CHARACTER.test(id)
+  ) {
+    throw new Error(`Invalid ${label} ID`);
+  }
+
+  return id;
 }

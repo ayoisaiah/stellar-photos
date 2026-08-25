@@ -5,7 +5,7 @@ import { readCachedImage } from "../cache";
 import { readHistory } from "../history";
 import "./empty-state";
 
-import type { PhotoMetadata, WorkerCommand, WorkerResult } from "../types";
+import type { BackgroundAsset, WorkerCommand, WorkerResult } from "../types";
 import type { EmptyStatePhase } from "./empty-state";
 
 @customElement("stellar-app")
@@ -44,7 +44,7 @@ class StellarApp extends LitElement {
   }
 
   private async renderPhoto(
-    metadata: PhotoMetadata,
+    metadata: BackgroundAsset,
     generation: number,
   ): Promise<boolean> {
     const response = await readCachedImage(metadata.cacheKey);
@@ -79,7 +79,7 @@ class StellarApp extends LitElement {
 
   private async optimisticCurrent(
     generation: number,
-  ): Promise<PhotoMetadata | null> {
+  ): Promise<BackgroundAsset | null> {
     try {
       const state = await readHistory();
       const current = state.history[0] ?? null;
