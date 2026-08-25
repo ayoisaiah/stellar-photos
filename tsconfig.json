@@ -6,6 +6,7 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "WebWorker"],
     "types": ["chrome", "node", "vitest/globals"],
+    "experimentalDecorators": true,
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true

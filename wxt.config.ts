@@ -53,7 +53,11 @@ export default defineConfig({
 
     return {
       build: {
+        sourcemap: mode === "development" ? "inline" : false,
         target: browser === "chrome" ? "chrome150" : "firefox153",
+      },
+      css: {
+        devSourcemap: mode === "development",
       },
       define: {
         __UNSPLASH_ACCESS_KEY__: JSON.stringify(

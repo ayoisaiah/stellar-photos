@@ -1,36 +1,28 @@
 import { html, LitElement } from "lit";
+import { customElement, state } from "lit/decorators.js";
 
-import { readCachedImage } from "./cache";
-import { readHistory } from "./history";
+import { readCachedImage } from "../cache";
+import { readHistory } from "../history";
+import "./empty-state";
 
-import type { PhotoMetadata, WorkerCommand, WorkerResult } from "./types";
+import type { PhotoMetadata, WorkerCommand, WorkerResult } from "../types";
+import type { EmptyStatePhase } from "./empty-state";
 
-type AppPhase = "loading" | "ready" | "error";
-
-const STATUS_MESSAGES: Record<AppPhase, string> = {
-  loading: "Finding a stellar photo…",
-  ready: "Photo ready",
-  error: "We couldn’t load a photo. Check your connection and try again.",
-};
-
+@customElement("stellar-app")
 class StellarApp extends LitElement {
-  static override properties = {
-    phase: { state: true },
-  };
-
   private generation = 0;
   private objectUrl: string | null = null;
-  private phase: AppPhase = "loading";
   private requestInFlight = false;
 
-  override createRenderRoot(): this {
-    return this;
-  }
+  @state()
+  private accessor phase: EmptyStatePhase = "loading";
 
   override connectedCallback(): void {
     super.connectedCallback();
 
     const generation = ++this.generation;
+
+    this.phase = "loading";
 
     void this.start(generation);
   }
@@ -44,12 +36,10 @@ class StellarApp extends LitElement {
 
   override render() {
     return html`
-      <main class="status-panel" aria-live="polite">
-        <p>${STATUS_MESSAGES[this.phase]}</p>
-        <button type="button" ?hidden=${this.phase !== "error"} @click=${this.ensureAndRender}>
-          Retry
-        </button>
-      </main>
+      <stellar-empty-state
+        .phase=${this.phase}
+        @retry=${this.ensureAndRender}
+      ></stellar-empty-state>
     `;
   }
 
@@ -79,7 +69,6 @@ class StellarApp extends LitElement {
 
     this.objectUrl = nextUrl;
     document.body.style.backgroundImage = `url("${nextUrl}")`;
-    document.body.classList.add("has-image");
 
     if (previous) {
       URL.revokeObjectURL(previous);
@@ -137,6 +126,7 @@ class StellarApp extends LitElement {
     if (!this.isCurrent(generation)) return;
 
     if (current) {
+      this.phase = "ready";
       void sendCommand({ command: "rotate" });
     } else {
       await this.ensureAndRender();
@@ -153,12 +143,7 @@ class StellarApp extends LitElement {
     URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null;
     document.body.style.removeProperty("background-image");
-    document.body.classList.remove("has-image");
   }
-}
-
-export function registerStellarApp(): void {
-  customElements.define("stellar-app", StellarApp);
 }
 
 function sendCommand(command: WorkerCommand): Promise<WorkerResult> {

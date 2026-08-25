@@ -1,0 +1,201 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgb(100 116 139 / 14%),
+      transparent 30rem
+    ),
+    radial-gradient(circle at 75% 15%, rgb(202 138 4 / 6%), transparent 24rem),
+    #111318;
+  color: #f7f7f5;
+  opacity: 1;
+  transition: opacity 900ms ease;
+}
+
+:host::before {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.2'/%3E%3C/svg%3E");
+  content: "";
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+:host([phase="ready"]) {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 900ms ease,
+    visibility 0s linear 900ms;
+}
+
+:host([phase="ready"]) .spark::after,
+:host([phase="ready"]) .progress::after {
+  animation: none;
+}
+
+main {
+  display: grid;
+  position: relative;
+  width: min(90vw, 42rem);
+  justify-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.mark {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 2rem;
+}
+
+.mark::before,
+.mark::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 2px;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    transparent,
+    #eee7d8 45%,
+    #eee7d8 55%,
+    transparent
+  );
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.mark::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.spark {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #f5ead1;
+  box-shadow: 0 0 2.5rem 0.7rem rgb(240 216 168 / 30%);
+  transform: translate(-50%, -50%);
+}
+
+.spark::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(240 216 168 / 36%), transparent 68%);
+  content: "";
+  transform: translate(-50%, -50%) scale(0.8);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+h1 {
+  max-width: 14ch;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 5vw, 4.25rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+
+p {
+  max-width: 30rem;
+  margin: 1.25rem 0 0;
+  color: #a9abb1;
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+  line-height: 1.6;
+}
+
+.progress {
+  width: 7rem;
+  height: 2px;
+  margin-top: 2.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 10%);
+}
+
+.progress::after {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: #e9e2d5;
+  content: "";
+  animation: travel 1.6s ease-in-out infinite alternate;
+}
+
+button {
+  margin-top: 2rem;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 9%);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+button:hover {
+  border-color: rgb(255 255 255 / 32%);
+  background: rgb(255 255 255 / 14%);
+}
+
+button:focus-visible {
+  outline: 2px solid #f5ead1;
+  outline-offset: 4px;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+@keyframes travel {
+  from {
+    transform: translateX(-15%);
+  }
+
+  to {
+    transform: translateX(135%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host {
+    transition-duration: 1ms;
+  }
+
+  .spark::after,
+  .progress::after {
+    animation: none;
+  }
+
+  .progress::after {
+    transform: translateX(60%);
+  }
+}

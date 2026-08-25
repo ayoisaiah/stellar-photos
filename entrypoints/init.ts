@@ -1,7 +1,5 @@
 import { defineUnlistedScript } from "wxt/utils/define-unlisted-script";
 
-import { registerStellarApp } from "../src/ts/init";
+import "../src/ts/components/stellar-app";
 
-export default defineUnlistedScript(() => {
-  registerStellarApp();
-});
+export default defineUnlistedScript(() => undefined);

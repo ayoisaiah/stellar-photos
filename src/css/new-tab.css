@@ -12,26 +12,6 @@ body {
   margin: 0;
 }
 body {
-  display: grid;
-  place-items: center;
   background: #16181d center / cover no-repeat;
   color: #fff;
-  transition: background-image 180ms ease-in;
-}
-body.has-image .status-panel {
-  opacity: 0;
-  pointer-events: none;
-}
-.status-panel {
-  padding: 1rem 1.25rem;
-  text-align: center;
-  border-radius: 0.75rem;
-  background: rgb(0 0 0 / 45%);
-}
-button {
-  padding: 0.55rem 0.9rem;
-  border: 0;
-  border-radius: 0.4rem;
-  cursor: pointer;
-  font: inherit;
 }

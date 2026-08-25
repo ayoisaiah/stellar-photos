@@ -44,6 +44,8 @@ describe("browser packages", () => {
 
       const initBundle = await readFile(`${root}/init.js`, "utf8");
       expect(initBundle).toContain("stellar-app");
+      expect(initBundle).toContain("stellar-empty-state");
+      expect(initBundle).toContain("Your first photo is on its way.");
 
       const manifest = JSON.parse(
         await readFile(`${root}/manifest.json`, "utf8"),
@@ -82,5 +84,44 @@ describe("browser packages", () => {
       { env, encoding: "utf8" },
     );
     expect(result.status).not.toBe(0);
+  });
+
+  it("maps development bundles to their TypeScript and CSS sources", async () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "node_modules/wxt/bin/wxt.mjs",
+        "build",
+        "--browser",
+        "chrome",
+        "--mv3",
+        "--mode",
+        "development",
+      ],
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, UNSPLASH_ACCESS_KEY: "test-sentinel-key" },
+        encoding: "utf8",
+      },
+    );
+    expect(result.status).toBe(0);
+
+    const bundle = await readFile("dist/chrome/init.js", "utf8");
+    expect(bundle).not.toContain("@customElement(");
+
+    const encodedMap = bundle.match(
+      /sourceMappingURL=data:application\/json[^,]*;base64,([^\n]+)/,
+    )?.[1];
+    expect(encodedMap).toBeDefined();
+
+    const sourceMap = JSON.parse(
+      Buffer.from(encodedMap ?? "", "base64").toString("utf8"),
+    ) as { sources: string[] };
+    expect(sourceMap.sources).toEqual(
+      expect.arrayContaining([
+        "../../src/ts/components/empty-state.ts",
+        "../../src/css/components/empty-state.css?inline",
+      ]),
+    );
   });
 });
