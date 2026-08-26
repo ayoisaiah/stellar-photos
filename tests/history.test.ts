@@ -87,4 +87,33 @@ describe("history schema", () => {
     expect(state?.history).toHaveLength(1);
     expect(state?.history[0]?.sourceAssetId).toBe("photo-1");
   });
+
+  it("handles history states with up to 10 entries", () => {
+    const historyEntries = Array.from({ length: 10 }, (_, i) => ({
+      sourceId: "unsplash",
+      sourceAssetId: `photo-${i}`,
+      cacheKey: `https://cache.stellar-photos.invalid/photo/photo-${i}`,
+      width: 1920,
+      height: 1080,
+      color: "#000000",
+      description: `Photo ${i}`,
+      attribution: {
+        name: `Photographer ${i}`,
+        url: `https://unsplash.com/@photographer${i}`,
+        sourceUrl: `https://unsplash.com/photos/photo-${i}`,
+      },
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: Date.now(),
+    }));
+
+    const state = decodeHistory({
+      version: 2,
+      history: historyEntries,
+    });
+
+    expect(state?.history).toHaveLength(10);
+    expect(state?.history[0]?.sourceAssetId).toBe("photo-0");
+    expect(state?.history[9]?.sourceAssetId).toBe("photo-9");
+  });
 });

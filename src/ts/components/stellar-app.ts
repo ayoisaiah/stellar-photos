@@ -1,4 +1,4 @@
-import { Camera, Download, Info, Settings } from "@lucide/icons";
+import { Camera, Download, History, Info, Settings } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
@@ -15,6 +15,7 @@ import {
 import { getImageSource } from "../sources";
 import { getUnsplashPhotoInfo } from "../sources/unsplash";
 import "./empty-state";
+import "./history-panel";
 import "./lucide-icon";
 import "./photo-info";
 import "./settings-drawer";
@@ -48,6 +49,9 @@ class StellarApp extends LitElement {
   private accessor downloading = false;
 
   @state()
+  private accessor historyOpen = false;
+
+  @state()
   private accessor infoOpen = false;
 
   @state()
@@ -68,6 +72,9 @@ class StellarApp extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
 
+    window.addEventListener("wheel", this.handleWheel, { passive: true });
+    window.addEventListener("keydown", this.handleKeydown);
+
     const generation = ++this.generation;
 
     void this.loadDisplaySettings(generation);
@@ -78,6 +85,8 @@ class StellarApp extends LitElement {
   override disconnectedCallback(): void {
     this.generation += 1;
     this.requestInFlight = false;
+    window.removeEventListener("wheel", this.handleWheel);
+    window.removeEventListener("keydown", this.handleKeydown);
     this.releaseObjectUrl();
     super.disconnectedCallback();
   }
@@ -88,131 +97,155 @@ class StellarApp extends LitElement {
     const paused = this.settingsOpen || this.infoOpen;
 
     return html`
-      ${
-        this.objectUrl
-          ? keyed(
-              this.objectUrl,
-              html`
-                <div
-                  class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
-                  aria-hidden="true"
-                >
-                  ${
-                    effectiveMode === "contain-blur"
-                      ? html`<div
-                          class="photo-backdrop"
-                          style="background-image: url('${this.objectUrl}')"
-                        ></div>`
-                      : null
-                  }
+      <div
+        class="app-viewport ${this.historyOpen ? "history-open" : ""}"
+        @click=${this.handleViewportClick}
+      >
+        ${
+          this.objectUrl
+            ? keyed(
+                this.objectUrl,
+                html`
                   <div
-                    class="photo-main"
-                    style="background-image: url('${this.objectUrl}')"
-                  ></div>
-                </div>
-              `,
-            )
-          : null
-      }
-      <stellar-empty-state
-        .phase=${this.phase}
-        @retry=${this.ensureAndRender}
-      ></stellar-empty-state>
-      ${
-        this.currentAsset?.attribution && this.objectUrl
-          ? (
-              () => {
-                const info = getUnsplashPhotoInfo(this.currentAsset);
-                const photographerName =
-                  info?.user?.name ?? this.currentAsset.attribution.name;
-                const photographerUrl =
-                  info?.user?.link || this.currentAsset.attribution.url;
-                const photographerImage = info?.user?.profileImage;
-                const sourceUrl = this.currentAsset.attribution.sourceUrl;
-
-                return html`
-                <div class="bottom-credit">
-                  <div class="photographer-card">
+                    class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
+                    aria-hidden="true"
+                  >
                     ${
-                      photographerImage
-                        ? html`<img
-                            class="photographer-avatar"
-                            src="${photographerImage}"
-                            alt="${photographerName}"
-                          />`
-                        : html`<div class="photographer-avatar-placeholder">
-                            <stellar-icon .icon=${Camera}></stellar-icon>
-                          </div>`
+                      effectiveMode === "contain-blur"
+                        ? html`<div
+                            class="photo-backdrop"
+                            style="background-image: url('${this.objectUrl}')"
+                          ></div>`
+                        : null
                     }
-                    <div class="photographer-details">
-                      <a
-                        class="photographer-name"
-                        href="${this.appendUtm(photographerUrl)}"
-                        target="_blank"
-                        rel="noopener"
-                      >
-                        ${photographerName}
-                      </a>
-                      <span class="photographer-meta">
-                        Photo on
+                    <div
+                      class="photo-main"
+                      style="background-image: url('${this.objectUrl}')"
+                    ></div>
+                  </div>
+                `,
+              )
+            : null
+        }
+        <stellar-empty-state
+          .phase=${this.phase}
+          @retry=${this.ensureAndRender}
+        ></stellar-empty-state>
+        ${
+          this.currentAsset?.attribution && this.objectUrl
+            ? (
+                () => {
+                  const info = getUnsplashPhotoInfo(this.currentAsset);
+                  const photographerName =
+                    info?.user?.name ?? this.currentAsset.attribution.name;
+                  const photographerUrl =
+                    info?.user?.link || this.currentAsset.attribution.url;
+                  const photographerImage = info?.user?.profileImage;
+                  const sourceUrl = this.currentAsset.attribution.sourceUrl;
+
+                  return html`
+                  <div class="bottom-credit">
+                    <div class="photographer-card">
+                      ${
+                        photographerImage
+                          ? html`<img
+                              class="photographer-avatar"
+                              src="${photographerImage}"
+                              alt="${photographerName}"
+                            />`
+                          : html`<div class="photographer-avatar-placeholder">
+                              <stellar-icon .icon=${Camera}></stellar-icon>
+                            </div>`
+                      }
+                      <div class="photographer-details">
                         <a
-                          href="${this.appendUtm(sourceUrl)}"
+                          class="photographer-name"
+                          href="${this.appendUtm(photographerUrl)}"
                           target="_blank"
                           rel="noopener"
                         >
-                          Unsplash
+                          ${photographerName}
                         </a>
-                      </span>
+                        <span class="photographer-meta">
+                          Photo on
+                          <a
+                            href="${this.appendUtm(sourceUrl)}"
+                            target="_blank"
+                            rel="noopener"
+                          >
+                            Unsplash
+                          </a>
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              `;
-              }
-            )()
-          : null
-      }
-      <div class="bottom-actions">
-        ${
-          this.isInfoAvailable
-            ? html`
-              <button
-                class="action-button info-button"
-                type="button"
-                aria-label=${this.infoOpen ? "Close photo info" : "Photo info"}
-                aria-expanded=${this.infoOpen}
-                title="Photo info"
-                @click=${this.toggleInfo}
-              >
-                <stellar-icon .icon=${Info}></stellar-icon>
-              </button>
-            `
+                `;
+                }
+              )()
             : null
         }
-        ${
-          this.isDownloadable
-            ? html`
-              <button
-                class="action-button download-button"
-                type="button"
-                aria-label="Download photo"
-                title="Download photo"
-                ?disabled=${this.downloading}
-                @click=${this.downloadPhoto}
-              >
-                <stellar-icon .icon=${Download}></stellar-icon>
-              </button>
-            `
-            : null
-        }
-        <button
-          class="action-button settings-toggle"
-          type="button"
-          aria-label=${this.settingsOpen ? "Close settings" : "Open settings"}
-          aria-expanded=${this.settingsOpen}
-          @click=${this.toggleSettings}
-        >
-          <stellar-icon .icon=${Settings}></stellar-icon>
-        </button>
+        <div class="bottom-actions">
+          ${
+            this.isInfoAvailable
+              ? html`
+                <button
+                  class="action-button info-button"
+                  type="button"
+                  aria-label=${this.infoOpen ? "Close photo info" : "Photo info"}
+                  aria-expanded=${this.infoOpen}
+                  title="Photo info"
+                  @click=${this.toggleInfo}
+                >
+                  <stellar-icon .icon=${Info}></stellar-icon>
+                </button>
+              `
+              : null
+          }
+          ${
+            this.isDownloadable
+              ? html`
+                <button
+                  class="action-button download-button"
+                  type="button"
+                  aria-label="Download photo"
+                  title="Download photo"
+                  ?disabled=${this.downloading}
+                  @click=${this.downloadPhoto}
+                >
+                  <stellar-icon .icon=${Download}></stellar-icon>
+                </button>
+              `
+              : null
+          }
+          <button
+            class="action-button history-toggle ${this.historyOpen ? "active" : ""}"
+            type="button"
+            aria-label=${this.historyOpen ? "Close history" : "Photo history"}
+            aria-expanded=${this.historyOpen}
+            title="Photo history"
+            @click=${this.toggleHistory}
+          >
+            <stellar-icon .icon=${History}></stellar-icon>
+          </button>
+          <button
+            class="action-button settings-toggle"
+            type="button"
+            aria-label=${this.settingsOpen ? "Close settings" : "Open settings"}
+            aria-expanded=${this.settingsOpen}
+            @click=${this.toggleSettings}
+          >
+            <stellar-icon .icon=${Settings}></stellar-icon>
+          </button>
+        </div>
+        <stellar-history-panel
+          class="history-panel"
+          .open=${this.historyOpen}
+          .ready=${Boolean(this.objectUrl)}
+          .activeAsset=${this.currentAsset}
+          @select-photo=${this.handleSelectHistoryPhoto}
+          @download-photo=${this.handleDownloadHistoryPhoto}
+          @close-history=${this.closeHistory}
+        ></stellar-history-panel>
       </div>
       ${
         this.infoOpen && this.currentAsset
@@ -265,6 +298,10 @@ class StellarApp extends LitElement {
   }
 
   private toggleInfo = (): void => {
+    if (!this.infoOpen) {
+      this.historyOpen = false;
+    }
+
     this.infoOpen = !this.infoOpen;
   };
 
@@ -438,25 +475,25 @@ class StellarApp extends LitElement {
     }
   }
 
-  private downloadPhoto = async (): Promise<void> => {
-    if (!this.currentAsset || this.downloading) return;
+  private downloadAsset = async (asset: BackgroundAsset): Promise<void> => {
+    if (this.downloading) return;
 
-    const source = getImageSource(this.currentAsset.sourceId);
+    const source = getImageSource(asset.sourceId);
     if (!source?.supportsDownload) return;
 
     this.downloading = true;
 
     try {
       const response = source.downloadFullAsset
-        ? await source.downloadFullAsset(this.currentAsset)
-        : await readCachedImage(this.currentAsset.cacheKey);
+        ? await source.downloadFullAsset(asset)
+        : await readCachedImage(asset.cacheKey);
       const blob = response ? await response.blob() : null;
 
       if (!blob) throw new Error("Image data is not available");
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const filename = `stellar-photos-${this.currentAsset.sourceAssetId}.jpg`;
+      const filename = `stellar-photos-${asset.sourceAssetId}.jpg`;
 
       link.href = url;
       link.download = filename;
@@ -468,7 +505,7 @@ class StellarApp extends LitElement {
 
       void sendCommand({
         command: "track-download",
-        asset: this.currentAsset,
+        asset,
       });
     } catch {
       // Graceful fallback
@@ -477,8 +514,99 @@ class StellarApp extends LitElement {
     }
   };
 
+  private downloadPhoto = async (): Promise<void> => {
+    if (!this.currentAsset) return;
+
+    await this.downloadAsset(this.currentAsset);
+  };
+
+  private toggleHistory = (): void => {
+    if (this.historyOpen) {
+      this.closeHistory();
+    } else {
+      this.openHistory();
+    }
+  };
+
+  private openHistory = (): void => {
+    this.historyOpen = true;
+    this.infoOpen = false;
+    this.settingsOpen = false;
+  };
+
+  private closeHistory = (): void => {
+    this.historyOpen = false;
+  };
+
+  private handleSelectHistoryPhoto = async (
+    event: CustomEvent<{ asset: BackgroundAsset }>,
+  ): Promise<void> => {
+    const asset = event.detail.asset;
+    const generation = this.generation;
+    const photoGeneration = ++this.photoGeneration;
+
+    const prepared = await this.preparePhoto(
+      asset,
+      generation,
+      photoGeneration,
+    );
+
+    if (!prepared || !this.isPhotoCurrent(generation, photoGeneration)) return;
+
+    this.applyPhoto(prepared.url, prepared.asset);
+  };
+
+  private handleDownloadHistoryPhoto = async (
+    event: CustomEvent<{ asset: BackgroundAsset }>,
+  ): Promise<void> => {
+    await this.downloadAsset(event.detail.asset);
+  };
+
+  private handleWheel = (event: WheelEvent): void => {
+    if (this.settingsOpen || this.infoOpen) return;
+
+    const path = event.composedPath();
+    const isInsideHistory = path.some(
+      (el) =>
+        el instanceof HTMLElement &&
+        el.tagName.toLowerCase() === "stellar-history-panel",
+    );
+
+    if (isInsideHistory) return;
+
+    if (event.deltaY < 0 && !this.historyOpen) {
+      this.openHistory();
+    } else if (event.deltaY > 0 && this.historyOpen) {
+      this.closeHistory();
+    }
+  };
+
+  private handleKeydown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      if (this.historyOpen) this.closeHistory();
+      if (this.infoOpen) this.closeInfo();
+    }
+  };
+
+  private handleViewportClick = (event: MouseEvent): void => {
+    if (!this.historyOpen) return;
+
+    const path = event.composedPath();
+    const isInsideHistory = path.some(
+      (el) =>
+        el instanceof HTMLElement &&
+        (el.tagName.toLowerCase() === "stellar-history-panel" ||
+          el.classList.contains("history-toggle")),
+    );
+
+    if (!isInsideHistory) {
+      this.closeHistory();
+    }
+  };
+
   private toggleSettings = (): void => {
     if (!this.settingsOpen) {
+      this.historyOpen = false;
       this.settingsMounted = true;
       void this.loadSourceId(this.generation);
     }
