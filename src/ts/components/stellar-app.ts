@@ -50,12 +50,16 @@ const UTM_PARAMS =
 class StellarApp extends LitElement {
   static override styles = unsafeCSS(styles);
 
+  private controlsTimer: number | null = null;
   private generation = 0;
   private objectUrl: string | null = null;
   private photoGeneration = 0;
   private requestInFlight = false;
   private sourceLoadGeneration = 0;
   private sourceSwitchInFlight = false;
+
+  @state()
+  private accessor controlsVisible = false;
 
   @state()
   private accessor currentAsset: BackgroundAsset | null = null;
@@ -116,6 +120,12 @@ class StellarApp extends LitElement {
     window.addEventListener("wheel", this.handleWheel, { passive: true });
     window.addEventListener("keydown", this.handleKeydown);
     window.addEventListener("click", this.handleViewportClick);
+    window.addEventListener("mousemove", this.handleMouseMove, {
+      passive: true,
+    });
+    window.addEventListener("mouseleave", this.handleMouseLeave, {
+      passive: true,
+    });
 
     if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
       chrome.storage.onChanged.addListener(this.handleStorageChange);
@@ -134,6 +144,13 @@ class StellarApp extends LitElement {
     window.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("keydown", this.handleKeydown);
     window.removeEventListener("click", this.handleViewportClick);
+    window.removeEventListener("mousemove", this.handleMouseMove);
+    window.removeEventListener("mouseleave", this.handleMouseLeave);
+
+    if (this.controlsTimer !== null) {
+      window.clearTimeout(this.controlsTimer);
+      this.controlsTimer = null;
+    }
 
     if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
       chrome.storage.onChanged.removeListener(this.handleStorageChange);
@@ -147,11 +164,17 @@ class StellarApp extends LitElement {
     const effectiveMode = this.effectiveDisplayMode;
     const motionEnabled = this.displaySettings.motion;
     const paused = this.settingsOpen || this.infoOpen;
+    const controlsShown =
+      this.controlsVisible ||
+      this.historyOpen ||
+      this.settingsOpen ||
+      this.infoOpen;
 
     return html`
       <div
-        class="app-viewport ${this.historyOpen ? "history-open" : ""}"
+        class="app-viewport ${this.historyOpen ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
         @click=${this.handleViewportClick}
+        @mousemove=${this.handleMouseMove}
       >
         ${
           this.objectUrl
@@ -400,6 +423,7 @@ class StellarApp extends LitElement {
 
   private closeInfo = (): void => {
     this.infoOpen = false;
+    this.showControls();
   };
 
   private get effectiveDisplayMode(): PhotoDisplayMode {
@@ -747,6 +771,7 @@ class StellarApp extends LitElement {
 
   private closeHistory = (): void => {
     this.historyOpen = false;
+    this.showControls();
   };
 
   private handleSelectHistoryPhoto = async (
@@ -800,16 +825,19 @@ class StellarApp extends LitElement {
     if (event.key === "ArrowLeft") {
       if (!this.settingsOpen && !this.infoOpen) {
         event.preventDefault();
+        this.showControls();
         void this.handlePrevPhoto();
       }
     } else if (event.key === "ArrowRight") {
       if (!this.settingsOpen && !this.infoOpen) {
         event.preventDefault();
+        this.showControls();
         void this.handleNextPhoto();
       }
     } else if (event.key === "p" || event.key === "P" || event.key === " ") {
       if (!this.settingsOpen && !this.infoOpen) {
         event.preventDefault();
+        this.showControls();
         void this.togglePause();
       }
     }
@@ -831,6 +859,40 @@ class StellarApp extends LitElement {
     }
   };
 
+  private handleMouseMove = (): void => {
+    this.showControls();
+  };
+
+  private handleMouseLeave = (): void => {
+    if (!this.historyOpen && !this.settingsOpen && !this.infoOpen) {
+      this.hideControls();
+    }
+  };
+
+  private showControls(): void {
+    if (this.controlsTimer !== null) {
+      window.clearTimeout(this.controlsTimer);
+    }
+
+    this.controlsVisible = true;
+
+    if (!this.historyOpen && !this.settingsOpen && !this.infoOpen) {
+      this.controlsTimer = window.setTimeout(() => {
+        this.controlsVisible = false;
+        this.controlsTimer = null;
+      }, 2500);
+    }
+  }
+
+  private hideControls(): void {
+    if (this.controlsTimer !== null) {
+      window.clearTimeout(this.controlsTimer);
+      this.controlsTimer = null;
+    }
+
+    this.controlsVisible = false;
+  }
+
   private toggleSettings = (): void => {
     if (!this.settingsOpen) {
       this.historyOpen = false;
@@ -845,6 +907,7 @@ class StellarApp extends LitElement {
   private closeSettings = (): void => {
     this.settingsOpen = false;
     if (!this.sourceSwitchInFlight) this.sourceChange = { status: "idle" };
+    this.showControls();
 
     void this.updateComplete.then(() => {
       this.renderRoot

@@ -8,7 +8,7 @@
   inset: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: none;
+  pointer-events: auto;
   transition: transform 350ms cubic-bezier(0.28, 0.83, 0.67, 1);
   will-change: transform;
 }
@@ -114,8 +114,12 @@
   box-shadow: 0 0.5rem 1.75rem rgb(0 0 0 / 28%);
   backdrop-filter: blur(16px);
   color: #fff;
-  pointer-events: auto;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
   transition:
+    opacity 300ms ease,
+    transform 300ms ease,
     background-color 160ms ease,
     border-color 160ms ease;
 }
@@ -123,6 +127,15 @@
 .bottom-credit:hover {
   background: rgb(18 21 27 / 72%);
   border-color: rgb(255 255 255 / 24%);
+}
+
+.bottom-credit:hover,
+.bottom-credit:focus-within,
+.app-viewport.controls-visible .bottom-credit,
+.app-viewport.history-open .bottom-credit {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .photographer-card {
@@ -211,7 +224,21 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.bottom-actions:hover,
+.bottom-actions:focus-within,
+.app-viewport.controls-visible .bottom-actions,
+.app-viewport.history-open .bottom-actions {
+  opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
 .action-button {
@@ -286,10 +313,10 @@
   color: #fff;
   cursor: pointer;
   opacity: 0;
-  pointer-events: auto;
+  pointer-events: none;
   transform: translateY(-50%) scale(0.96);
   transition:
-    opacity 200ms ease,
+    opacity 300ms ease,
     background-color 160ms ease,
     border-color 160ms ease,
     transform 160ms cubic-bezier(0.2, 0, 0, 1),
@@ -305,9 +332,11 @@
   right: 1.5rem;
 }
 
-.app-viewport:hover .nav-button,
+.app-viewport.controls-visible .nav-button,
+.app-viewport.history-open .nav-button,
 .nav-button:focus-visible {
   opacity: 0.75;
+  pointer-events: auto;
   transform: translateY(-50%) scale(1);
 }
 
