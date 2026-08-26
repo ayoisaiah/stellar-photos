@@ -39,10 +39,12 @@ describe("image source registry", () => {
     expect(getImageSource("unsplash")).toMatchObject({
       id: "unsplash",
       supportsDownload: true,
+      supportsInfo: true,
     });
     expect(getImageSource("local")).toMatchObject({
       id: "local",
       supportsDownload: false,
+      supportsInfo: false,
     });
     expect(getImageSource("future-source")).toBeNull();
   });

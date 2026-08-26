@@ -16,10 +16,41 @@ import type {
   UncachedBackgroundAsset,
 } from "../types";
 
-interface UnsplashPayload {
+export interface UnsplashUser {
+  name: string;
+  username: string | null;
+  profileImage: string | null;
+  link: string;
+}
+
+export interface UnsplashExif {
+  make: string | null;
+  model: string | null;
+  exposureTime: string | null;
+  aperture: string | null;
+  focalLength: string | null;
+  iso: number | null;
+}
+
+export interface UnsplashLocation {
+  name: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+export interface UnsplashInfoData {
+  user: UnsplashUser | null;
+  location: UnsplashLocation | null;
+  exif: UnsplashExif | null;
+  views: number | null;
+  description: string | null;
+}
+
+export interface UnsplashPayload {
   downloadLocation: string;
   imageUrl?: string;
   fullImageUrl?: string;
+  info?: UnsplashInfoData;
 }
 
 interface UnsplashPhotoResponse {
@@ -31,7 +62,32 @@ interface UnsplashPhotoResponse {
   alt_description: string | null;
   urls: { raw: string; full?: string };
   links: { html: string; download_location: string };
-  user: { name: string; links: { html: string } };
+  user: {
+    name: string;
+    username?: string;
+    links: { html: string };
+    profile_image?: {
+      small?: string;
+      medium?: string;
+      large?: string;
+    };
+  };
+  likes?: number;
+  downloads?: number;
+  views?: number;
+  location?: {
+    name?: string | null;
+    city?: string | null;
+    country?: string | null;
+  };
+  exif?: {
+    make?: string | null;
+    model?: string | null;
+    exposure_time?: string | null;
+    aperture?: string | null;
+    focal_length?: string | number | null;
+    iso?: number | null;
+  };
 }
 
 const API_ORIGINS = new Set(["https://api.unsplash.com"]);
@@ -42,6 +98,7 @@ const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
   supportsDownload: true,
+  supportsInfo: true,
   initializeSettings: initializeUnsplashSettings,
   shouldRotate,
   getRandomAsset,
@@ -168,6 +225,7 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
         .href,
       imageUrl: imageUrl.href,
       fullImageUrl: fullImageUrl.href,
+      info: extractPhotoInfo(photo),
     } satisfies UnsplashPayload,
     createdAt: Date.now(),
   };
@@ -289,6 +347,114 @@ function parsePhoto(value: unknown): UnsplashPhotoResponse {
   }
 
   return photo as UnsplashPhotoResponse;
+}
+
+function extractPhotoInfo(photo: UnsplashPhotoResponse): UnsplashInfoData {
+  const location: UnsplashLocation | null =
+    photo.location && typeof photo.location === "object"
+      ? {
+          name:
+            typeof photo.location.name === "string"
+              ? photo.location.name
+              : null,
+          city:
+            typeof photo.location.city === "string"
+              ? photo.location.city
+              : null,
+          country:
+            typeof photo.location.country === "string"
+              ? photo.location.country
+              : null,
+        }
+      : null;
+
+  const exif: UnsplashExif | null =
+    photo.exif && typeof photo.exif === "object"
+      ? {
+          make: typeof photo.exif.make === "string" ? photo.exif.make : null,
+          model: typeof photo.exif.model === "string" ? photo.exif.model : null,
+          exposureTime:
+            typeof photo.exif.exposure_time === "string"
+              ? photo.exif.exposure_time
+              : null,
+          aperture:
+            typeof photo.exif.aperture === "string"
+              ? photo.exif.aperture
+              : null,
+          focalLength:
+            typeof photo.exif.focal_length === "string"
+              ? photo.exif.focal_length
+              : typeof photo.exif.focal_length === "number"
+                ? String(photo.exif.focal_length)
+                : null,
+          iso: typeof photo.exif.iso === "number" ? photo.exif.iso : null,
+        }
+      : null;
+
+  const user: UnsplashUser | null =
+    photo.user && typeof photo.user === "object"
+      ? {
+          name: photo.user.name,
+          username:
+            typeof photo.user.username === "string"
+              ? photo.user.username
+              : null,
+          profileImage:
+            photo.user.profile_image &&
+            typeof photo.user.profile_image === "object" &&
+            typeof photo.user.profile_image.medium === "string"
+              ? photo.user.profile_image.medium
+              : photo.user.profile_image &&
+                  typeof photo.user.profile_image.small === "string"
+                ? photo.user.profile_image.small
+                : null,
+          link:
+            photo.user.links && typeof photo.user.links.html === "string"
+              ? photo.user.links.html
+              : "",
+        }
+      : null;
+
+  return {
+    user,
+    location,
+    exif,
+    views: typeof photo.views === "number" ? photo.views : null,
+    description: photo.description ?? photo.alt_description ?? null,
+  };
+}
+
+export function getUnsplashPhotoInfo(
+  asset: BackgroundAsset | null,
+): UnsplashInfoData | null {
+  if (!asset || asset.sourceId !== unsplashSource.id) return null;
+  if (!asset.sourcePayload || typeof asset.sourcePayload !== "object")
+    return null;
+
+  const payload = asset.sourcePayload as Partial<UnsplashPayload>;
+
+  return payload.info ?? null;
+}
+
+export async function fetchUnsplashPhotoDetails(
+  asset: BackgroundAsset,
+): Promise<UnsplashInfoData | null> {
+  if (asset.sourceId !== unsplashSource.id) return null;
+
+  try {
+    const url = trustedUrl(
+      `https://api.unsplash.com/photos/${encodeURIComponent(asset.sourceAssetId)}`,
+      API_ORIGINS,
+    );
+    const response = await authenticatedFetch(url);
+    if (!response.ok) return null;
+
+    const data = parsePhoto(await response.json());
+
+    return extractPhotoInfo(data);
+  } catch {
+    return null;
+  }
 }
 
 function normalizeCsv(value?: string | null): string {

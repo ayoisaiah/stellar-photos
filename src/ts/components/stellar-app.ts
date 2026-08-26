@@ -1,4 +1,4 @@
-import { Download, Settings } from "@lucide/icons";
+import { Download, Info, Settings } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
@@ -14,6 +14,7 @@ import {
 import { getImageSource } from "../sources";
 import "./empty-state";
 import "./lucide-icon";
+import "./photo-info";
 import "./settings-drawer";
 
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
@@ -40,6 +41,9 @@ class StellarApp extends LitElement {
 
   @state()
   private accessor downloading = false;
+
+  @state()
+  private accessor infoOpen = false;
 
   @state()
   private accessor phase: EmptyStatePhase = "ready";
@@ -106,6 +110,22 @@ class StellarApp extends LitElement {
       ></stellar-empty-state>
       <div class="bottom-actions">
         ${
+          this.isInfoAvailable
+            ? html`
+              <button
+                class="action-button info-button"
+                type="button"
+                aria-label=${this.infoOpen ? "Close photo info" : "Photo info"}
+                aria-expanded=${this.infoOpen}
+                title="Photo info"
+                @click=${this.toggleInfo}
+              >
+                <stellar-icon .icon=${Info}></stellar-icon>
+              </button>
+            `
+            : null
+        }
+        ${
           this.isDownloadable
             ? html`
               <button
@@ -132,6 +152,16 @@ class StellarApp extends LitElement {
         </button>
       </div>
       ${
+        this.infoOpen && this.currentAsset
+          ? html`
+            <stellar-photo-info
+              .asset=${this.currentAsset}
+              @close-info=${this.closeInfo}
+            ></stellar-photo-info>
+          `
+          : null
+      }
+      ${
         this.settingsMounted
           ? html`
             <stellar-settings-drawer
@@ -149,6 +179,14 @@ class StellarApp extends LitElement {
     `;
   }
 
+  private get isInfoAvailable(): boolean {
+    if (!this.currentAsset || !this.objectUrl) return false;
+
+    const source = getImageSource(this.currentAsset.sourceId);
+
+    return Boolean(source?.supportsInfo);
+  }
+
   private get isDownloadable(): boolean {
     if (!this.currentAsset || !this.objectUrl) return false;
 
@@ -156,6 +194,14 @@ class StellarApp extends LitElement {
 
     return Boolean(source?.supportsDownload);
   }
+
+  private toggleInfo = (): void => {
+    this.infoOpen = !this.infoOpen;
+  };
+
+  private closeInfo = (): void => {
+    this.infoOpen = false;
+  };
 
   private get effectiveDisplayMode(): PhotoDisplayMode {
     const isPortrait =

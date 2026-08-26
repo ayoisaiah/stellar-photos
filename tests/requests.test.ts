@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildRandomPhotoUrl,
   fullResolutionImageUrl,
+  getUnsplashPhotoInfo,
   imageUrlForResolution,
   unsplashSource,
 } from "../src/ts/sources/unsplash";
@@ -121,6 +122,17 @@ describe("Unsplash image resolution", () => {
           download_location: "https://api.unsplash.com/photos/photo-1/download",
         },
         user: { name: "Ada", links: { html: "https://unsplash.com/@ada" } },
+        likes: 42,
+        downloads: 100,
+        location: { name: "Mount Rainier", city: "Seattle", country: "USA" },
+        exif: {
+          make: "Canon",
+          model: "EOS R5",
+          exposure_time: "1/250",
+          aperture: "2.8",
+          focal_length: 50,
+          iso: 100,
+        },
       }),
       { "content-type": "application/json" },
     );
@@ -161,6 +173,25 @@ describe("Unsplash image resolution", () => {
       description: "A mountain",
       attribution: { name: "Ada" },
       payloadVersion: 1,
+    });
+    expect(getUnsplashPhotoInfo({ ...asset, cacheKey: "cache-key" })).toEqual({
+      user: {
+        name: "Ada",
+        username: null,
+        profileImage: null,
+        link: "https://unsplash.com/@ada",
+      },
+      location: { name: "Mount Rainier", city: "Seattle", country: "USA" },
+      exif: {
+        make: "Canon",
+        model: "EOS R5",
+        exposureTime: "1/250",
+        aperture: "2.8",
+        focalLength: "50",
+        iso: 100,
+      },
+      views: null,
+      description: "A mountain",
     });
     expect(await image.arrayBuffer()).toHaveProperty("byteLength", 3);
     expect(await fullImage?.arrayBuffer()).toHaveProperty("byteLength", 5);

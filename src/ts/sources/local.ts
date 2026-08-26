@@ -22,6 +22,7 @@ const localSource: ImageSource = {
   id: "local",
   name: "Local folder",
   supportsDownload: false,
+  supportsInfo: false,
   initializeSettings: initializeLocalSettings,
   shouldRotate: shouldRotateLocal,
   getRandomAsset: getRandomLocalAsset,

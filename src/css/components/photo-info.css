@@ -1,0 +1,245 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  border: none;
+  background: rgb(0 0 0 / 55%);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  animation: fade-in 180ms ease-out forwards;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 28rem);
+  max-height: min(88vh, 36rem);
+  flex-direction: column;
+  padding: 1.5rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 1.125rem;
+  background: rgb(18 20 26 / 94%);
+  box-shadow:
+    0 1.5rem 3.5rem rgb(0 0 0 / 55%),
+    0 0 0 1px rgb(255 255 255 / 6%);
+  color: #fff;
+  overflow-y: auto;
+  backdrop-filter: blur(28px);
+  animation: popover-in 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #fff;
+}
+
+.close-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: rgb(255 255 255 / 60%);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.close-button:hover {
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+}
+
+.close-button:focus-visible {
+  outline: 2px solid #eee7d8;
+  outline-offset: 2px;
+}
+
+.close-button stellar-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.photographer-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 15%);
+  object-fit: cover;
+  background: rgb(255 255 255 / 10%);
+}
+
+.photographer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.photographer-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.photographer-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.photographer-credit {
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 55%);
+}
+
+.photographer-credit a {
+  color: #eee7d8;
+  text-decoration: underline;
+  text-decoration-color: rgb(238 231 216 / 35%);
+  text-underline-offset: 2px;
+}
+
+.photographer-credit a:hover {
+  text-decoration-color: #eee7d8;
+}
+
+.description {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 75%);
+}
+
+.location-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  font-size: 0.825rem;
+  color: rgb(255 255 255 / 80%);
+}
+
+.location-badge stellar-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: rgb(255 255 255 / 50%);
+  flex-shrink: 0;
+}
+
+.divider {
+  height: 1px;
+  margin: 0.5rem 0 1.25rem;
+  background: rgb(255 255 255 / 10%);
+}
+
+.camera-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.camera-header stellar-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: rgb(255 255 255 / 60%);
+}
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 0.75rem;
+}
+
+.spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.spec-label {
+  font-size: 0.725rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(255 255 255 / 45%);
+}
+
+.spec-value {
+  margin: 0;
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 90%);
+  overflow-wrap: anywhere;
+}
+
+.loading-text {
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+  color: rgb(255 255 255 / 50%);
+  text-align: center;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (max-width: 28rem) {
+  .specs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
