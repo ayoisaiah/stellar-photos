@@ -21,18 +21,23 @@ beforeEach(() => {
 });
 
 describe("image source registry", () => {
-  it("keeps the only bundled source internal and active", async () => {
+  it("lists all bundled sources and defaults to unsplash", async () => {
     expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
     expect(listImageSources()).toEqual([
       expect.objectContaining({
         id: "unsplash",
         name: "Unsplash",
       }),
+      expect.objectContaining({
+        id: "local",
+        name: "Local folder",
+      }),
     ]);
   });
 
-  it("resolves only compiled-in sources by id", () => {
+  it("resolves compiled-in sources by id", () => {
     expect(getImageSource("unsplash")).toMatchObject({ id: "unsplash" });
+    expect(getImageSource("local")).toMatchObject({ id: "local" });
     expect(getImageSource("future-source")).toBeNull();
   });
 

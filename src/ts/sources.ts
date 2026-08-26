@@ -1,9 +1,13 @@
 import { getImageSourceId } from "./settings";
+import { localSource } from "./sources/local";
 import { unsplashSource } from "./sources/unsplash";
 
 import type { ImageSource } from "./types";
 
-const bundledImageSources: readonly ImageSource[] = [unsplashSource];
+const bundledImageSources: readonly ImageSource[] = [
+  unsplashSource,
+  localSource,
+];
 const imageSources: ReadonlyMap<string, ImageSource> = new Map(
   bundledImageSources.map((source) => [source.id, source] as const),
 );
