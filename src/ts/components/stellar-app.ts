@@ -1,6 +1,7 @@
 import { Camera, Download, Info, Settings } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
 import { readCachedImage } from "../cache";
@@ -83,29 +84,34 @@ class StellarApp extends LitElement {
 
   override render() {
     const effectiveMode = this.effectiveDisplayMode;
+    const motionEnabled = this.displaySettings.motion;
+    const paused = this.settingsOpen || this.infoOpen;
 
     return html`
       ${
         this.objectUrl
-          ? html`
-            <div
-              class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"}"
-              aria-hidden="true"
-            >
-              ${
-                effectiveMode === "contain-blur"
-                  ? html`<div
-                      class="photo-backdrop"
-                      style="background-image: url('${this.objectUrl}')"
-                    ></div>`
-                  : null
-              }
-              <div
-                class="photo-main"
-                style="background-image: url('${this.objectUrl}')"
-              ></div>
-            </div>
-          `
+          ? keyed(
+              this.objectUrl,
+              html`
+                <div
+                  class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
+                  aria-hidden="true"
+                >
+                  ${
+                    effectiveMode === "contain-blur"
+                      ? html`<div
+                          class="photo-backdrop"
+                          style="background-image: url('${this.objectUrl}')"
+                        ></div>`
+                      : null
+                  }
+                  <div
+                    class="photo-main"
+                    style="background-image: url('${this.objectUrl}')"
+                  ></div>
+                </div>
+              `,
+            )
           : null
       }
       <stellar-empty-state

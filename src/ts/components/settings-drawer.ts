@@ -1,5 +1,5 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
-import { X } from "@lucide/icons";
+import { Check, X } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
@@ -201,6 +201,27 @@ class SettingsDrawer extends LitElement {
                 </label>
               </div>
             </fieldset>
+
+            <fieldset>
+              <legend>Motion</legend>
+              <div class="options">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="motion"
+                    .checked=${this.localDisplaySettings.motion}
+                    @change=${this.toggleMotion}
+                  />
+                  <span class="checkbox-control" aria-hidden="true">
+                    <stellar-icon .icon=${Check}></stellar-icon>
+                  </span>
+                  <span>
+                    <strong>Subtle motion</strong>
+                    <small>Starts zoomed in and slowly zooms out</small>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
           </section>
         </div>
       </aside>
@@ -274,6 +295,26 @@ class SettingsDrawer extends LitElement {
     };
 
     await setDisplaySettings({ portraitMode: mode });
+
+    this.dispatchEvent(
+      new CustomEvent("display-settings-changed", {
+        detail: { displaySettings: this.localDisplaySettings },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
+  private toggleMotion = async (event: Event): Promise<void> => {
+    const target = event.currentTarget as HTMLInputElement;
+    const motion = target.checked;
+
+    this.localDisplaySettings = {
+      ...this.localDisplaySettings,
+      motion,
+    };
+
+    await setDisplaySettings({ motion });
 
     this.dispatchEvent(
       new CustomEvent("display-settings-changed", {

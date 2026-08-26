@@ -280,11 +280,30 @@ describe("settings", () => {
       version: 1,
       landscapeMode: "contain-blur",
       portraitMode: "cover",
+      motion: false,
     });
     expect(sync[DISPLAY_SETTINGS_KEY]).toEqual({
       version: 1,
       landscapeMode: "contain-blur",
       portraitMode: "cover",
+      motion: false,
+    });
+
+    await setDisplaySettings({
+      motion: true,
+    });
+
+    expect(await getDisplaySettings()).toEqual({
+      version: 1,
+      landscapeMode: "contain-blur",
+      portraitMode: "cover",
+      motion: true,
+    });
+    expect(sync[DISPLAY_SETTINGS_KEY]).toEqual({
+      version: 1,
+      landscapeMode: "contain-blur",
+      portraitMode: "cover",
+      motion: true,
     });
   });
 });

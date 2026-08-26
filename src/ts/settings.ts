@@ -11,6 +11,7 @@ export interface DisplaySettings {
   version: 1;
   landscapeMode: PhotoDisplayMode;
   portraitMode: PhotoDisplayMode;
+  motion: boolean;
 }
 
 const LEGACY_IMAGE_FREQUENCY_KEY = "imageFrequency";
@@ -28,6 +29,7 @@ export const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> =
     version: 1,
     landscapeMode: "cover",
     portraitMode: "contain-blur",
+    motion: false,
   });
 
 export async function getImageSourceId(): Promise<string> {
@@ -154,10 +156,16 @@ function parseDisplaySettings(value: unknown): DisplaySettings | null {
     ? settings.portraitMode
     : DEFAULT_DISPLAY_SETTINGS.portraitMode;
 
+  const motion =
+    typeof settings.motion === "boolean"
+      ? settings.motion
+      : DEFAULT_DISPLAY_SETTINGS.motion;
+
   return {
     version: 1,
     landscapeMode,
     portraitMode,
+    motion,
   };
 }
 

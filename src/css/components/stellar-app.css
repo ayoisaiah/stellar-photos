@@ -36,6 +36,53 @@
   filter: drop-shadow(0 0 35px rgb(0 0 0 / 40%));
 }
 
+.motion-enabled.mode-cover .photo-main {
+  animation: photo-zoom-out-cover 25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  will-change: transform;
+}
+
+.motion-enabled.mode-contain-blur .photo-main {
+  animation: photo-zoom-out-contain 25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  will-change: transform;
+}
+
+.motion-enabled.mode-contain-blur .photo-backdrop {
+  animation: photo-backdrop-zoom-out 25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  will-change: transform;
+}
+
+.stage-paused .photo-main,
+.stage-paused .photo-backdrop {
+  animation-play-state: paused;
+}
+
+@keyframes photo-zoom-out-cover {
+  0% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes photo-zoom-out-contain {
+  0% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes photo-backdrop-zoom-out {
+  0% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+
 .bottom-credit {
   position: fixed;
   left: 1.25rem;
@@ -207,5 +254,15 @@
 @media (prefers-reduced-motion: reduce) {
   .action-button {
     transition-duration: 1ms;
+  }
+
+  .motion-enabled .photo-main,
+  .motion-enabled .photo-backdrop {
+    animation: none;
+    transform: none;
+  }
+
+  .mode-contain-blur .photo-backdrop {
+    transform: scale(1.08);
   }
 }
