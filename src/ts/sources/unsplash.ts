@@ -29,7 +29,7 @@ interface UnsplashPhotoResponse {
   color: string | null;
   description: string | null;
   alt_description: string | null;
-  urls: { raw: string };
+  urls: { raw: string; full?: string };
   links: { html: string; download_location: string };
   user: { name: string; links: { html: string } };
 }
@@ -112,6 +112,16 @@ export function buildRandomPhotoUrl(
   return url;
 }
 
+export function fullResolutionImageUrl(rawUrl: string): string {
+  const url = new URL(rawUrl);
+
+  url.searchParams.delete("w");
+  url.searchParams.delete("h");
+  url.searchParams.delete("fit");
+
+  return url.href;
+}
+
 export function imageUrlForResolution(
   rawUrl: string,
   resolution: ImageResolution,
@@ -131,6 +141,10 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   const endpoint = trustedUrl(buildRandomPhotoUrl(settings).href, API_ORIGINS);
   const photo = parsePhoto(await (await authenticatedFetch(endpoint)).json());
   const rawImageUrl = trustedUrl(photo.urls.raw, IMAGE_ORIGINS);
+  const fullImageUrl = trustedUrl(
+    fullResolutionImageUrl(photo.urls.full ?? photo.urls.raw),
+    IMAGE_ORIGINS,
+  );
   const imageUrl = trustedUrl(
     imageUrlForResolution(rawImageUrl.href, settings.imageQuality),
     IMAGE_ORIGINS,
@@ -153,7 +167,7 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
       downloadLocation: trustedUrl(photo.links.download_location, API_ORIGINS)
         .href,
       imageUrl: imageUrl.href,
-      fullImageUrl: rawImageUrl.href,
+      fullImageUrl: fullImageUrl.href,
     } satisfies UnsplashPayload,
     createdAt: Date.now(),
   };
@@ -176,15 +190,20 @@ async function downloadAsset(
 
 async function downloadFullAsset(asset: BackgroundAsset): Promise<Response> {
   const payload = parsePayload(asset);
-  const fullUrl = payload.fullImageUrl ?? payload.imageUrl;
-  if (!fullUrl) throw new Error("Unsplash asset payload has no image URL");
+  const baseOrFullUrl = payload.fullImageUrl ?? payload.imageUrl;
+  if (!baseOrFullUrl)
+    throw new Error("Unsplash asset payload has no image URL");
 
+  const fullUrl = fullResolutionImageUrl(baseOrFullUrl);
   const imageUrl = trustedUrl(fullUrl, IMAGE_ORIGINS);
   const response = await fetch(imageUrl, { redirect: "follow" });
 
   trustedUrl(response.url, IMAGE_ORIGINS);
 
-  return readBoundedImage(response);
+  if (!response.ok)
+    throw new Error(`Image request failed (${response.status})`);
+
+  return response;
 }
 
 async function didDownload(asset: BackgroundAsset): Promise<void> {

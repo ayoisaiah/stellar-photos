@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildRandomPhotoUrl,
+  fullResolutionImageUrl,
   imageUrlForResolution,
   unsplashSource,
 } from "../src/ts/sources/unsplash";
@@ -94,6 +95,14 @@ describe("Unsplash image resolution", () => {
 
   it("leaves the raw image unconstrained for max resolution", () => {
     expect(imageUrlForResolution(raw, "max")).toBe(raw);
+  });
+
+  it("strips sizing constraints from image URLs for full-resolution downloads", () => {
+    const sized =
+      "https://images.unsplash.com/photo-example?w=2000&fit=max&h=1000";
+    expect(fullResolutionImageUrl(sized)).toBe(
+      "https://images.unsplash.com/photo-example",
+    );
   });
 
   it("owns its metadata payload, image download, and tracking lifecycle", async () => {
