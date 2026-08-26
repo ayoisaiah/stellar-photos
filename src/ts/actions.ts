@@ -12,6 +12,7 @@ import {
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
+import { readPaused } from "./storage";
 
 import type { BackgroundAsset, HistoryState, ImageSource } from "./types";
 
@@ -36,7 +37,7 @@ export async function ensureCurrent(): Promise<BackgroundAsset | null> {
   });
 }
 
-export function rotate(): Promise<BackgroundAsset | null> {
+export function rotate(force = false): Promise<BackgroundAsset | null> {
   if (activeRotation) {
     pendingRotation = true;
     return activeRotation;
@@ -45,10 +46,12 @@ export function rotate(): Promise<BackgroundAsset | null> {
   activeRotation = (async () => {
     await initialize();
 
-    let current = await enqueue(acquireUnique);
+    const acquire = () => acquireUnique(undefined, undefined, force);
+    let current = await enqueue(acquire);
+
     if (pendingRotation) {
       pendingRotation = false;
-      current = await enqueue(acquireUnique);
+      current = await enqueue(acquire);
     }
 
     return current;
@@ -158,13 +161,25 @@ function enqueue<T>(operation: () => Promise<T>): Promise<T> {
 async function acquireUnique(
   state?: HistoryState,
   selectedSource?: ImageSource,
+  force = false,
 ): Promise<BackgroundAsset | null> {
   state ??= await readHistory();
   const source = selectedSource ?? (await getActiveImageSource());
   const current = state.history[0];
 
-  if (current && source.shouldRotate && !(await source.shouldRotate(current))) {
-    return current;
+  if (!force) {
+    const isPaused = await readPaused();
+    if (isPaused && current) {
+      return current;
+    }
+
+    if (
+      current &&
+      source.shouldRotate &&
+      !(await source.shouldRotate(current))
+    ) {
+      return current;
+    }
   }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {

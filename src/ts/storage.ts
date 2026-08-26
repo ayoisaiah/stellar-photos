@@ -1,7 +1,9 @@
 import type { HistoryState } from "./types";
 
 export const HISTORY_STORAGE_KEY = "stellarHistory";
+export const PAUSED_STORAGE_KEY = "stellarPaused";
 export const LEGACY_IMAGE_KEY = "nextImage";
+export const LEGACY_IMAGE_PAUSED_KEY = "imagePaused";
 
 export function getSync<T extends Record<string, unknown>>(
   keys: string | string[] | null,
@@ -55,6 +57,27 @@ export async function readRawHistory(): Promise<unknown> {
 
 export async function writeHistory(state: HistoryState): Promise<void> {
   await setLocal({ [HISTORY_STORAGE_KEY]: state });
+}
+
+export async function readPaused(): Promise<boolean> {
+  const result = await getLocal<Record<string, unknown>>([
+    PAUSED_STORAGE_KEY,
+    LEGACY_IMAGE_PAUSED_KEY,
+  ]);
+
+  if (typeof result[PAUSED_STORAGE_KEY] === "boolean") {
+    return Boolean(result[PAUSED_STORAGE_KEY]);
+  }
+
+  if (typeof result[LEGACY_IMAGE_PAUSED_KEY] === "boolean") {
+    return Boolean(result[LEGACY_IMAGE_PAUSED_KEY]);
+  }
+
+  return false;
+}
+
+export async function writePaused(paused: boolean): Promise<void> {
+  await setLocal({ [PAUSED_STORAGE_KEY]: paused });
 }
 
 function runtimeError(): Error | null {

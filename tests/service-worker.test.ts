@@ -67,4 +67,13 @@ describe("service worker commands", () => {
     ).resolves.toEqual({ ok: true, current: null });
     expect(trackDownload).toHaveBeenCalledWith(current);
   });
+
+  it("handles rotate commands with force parameter", async () => {
+    rotate.mockResolvedValue(current);
+
+    await expect(dispatch({ command: "rotate", force: true })).resolves.toEqual(
+      { ok: true, current },
+    );
+    expect(rotate).toHaveBeenCalledWith(true);
+  });
 });

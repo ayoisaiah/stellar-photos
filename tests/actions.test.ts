@@ -12,6 +12,7 @@ const readHistory = vi.fn();
 const reconcileHistory = vi.fn();
 const getActiveImageSource = vi.fn();
 const getImageSource = vi.fn();
+const readPaused = vi.fn();
 
 vi.mock("../src/ts/settings", () => ({ getImageSourceId, setImageSourceId }));
 vi.mock("../src/ts/cache", async (importOriginal) => ({
@@ -28,6 +29,9 @@ vi.mock("../src/ts/history", () => ({
 vi.mock("../src/ts/sources", () => ({
   getActiveImageSource,
   getImageSource,
+}));
+vi.mock("../src/ts/storage", () => ({
+  readPaused,
 }));
 
 const { commitSource, prepareSource, rotate, trackDownload } = await import(
@@ -74,6 +78,7 @@ beforeEach(() => {
   readCachedImage.mockResolvedValue(new Response("image"));
   reconcileHistory.mockResolvedValue({ version: 2, history: [current] });
   readHistory.mockResolvedValue({ version: 2, history: [current] });
+  readPaused.mockResolvedValue(false);
   promoteImage.mockResolvedValue({ version: 2, history: [prepared, current] });
 });
 
@@ -133,12 +138,32 @@ describe("source activation", () => {
     expect(promoteImage).not.toHaveBeenCalled();
   });
 
+  it("skips rotation when rotation is paused", async () => {
+    readPaused.mockResolvedValue(true);
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+
+    await expect(rotate()).resolves.toEqual(current);
+
+    expect(source.getRandomAsset).not.toHaveBeenCalled();
+    expect(promoteImage).not.toHaveBeenCalled();
+  });
+
   it("rotates when the active source allows it", async () => {
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
     await expect(rotate()).resolves.toEqual(prepared);
 
     expect(source.shouldRotate).toHaveBeenCalledWith(current);
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
+  });
+
+  it("forces rotation even when rotation is paused", async () => {
+    readPaused.mockResolvedValue(true);
+    source.shouldRotate = vi.fn().mockResolvedValue(false);
+
+    await expect(rotate(true)).resolves.toEqual(prepared);
+
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
     expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
   });

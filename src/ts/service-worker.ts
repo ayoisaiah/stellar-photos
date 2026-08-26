@@ -73,7 +73,7 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
       await trackDownload(request.asset);
       current = null;
     } else {
-      current = await rotate();
+      current = await rotate(Boolean(request.force));
     }
 
     return { ok: true, current };

@@ -29,7 +29,7 @@ export interface HistoryState {
 
 export type WorkerCommand =
   | { command: "ensure-current" }
-  | { command: "rotate" }
+  | { command: "rotate"; force?: boolean }
   | { command: "prepare-source"; sourceId: string }
   | { command: "commit-source"; asset: BackgroundAsset }
   | { command: "discard-source"; asset: BackgroundAsset }

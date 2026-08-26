@@ -1,9 +1,20 @@
-import { Camera, Download, History, Info, Settings } from "@lucide/icons";
+import {
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  History,
+  Info,
+  Pause,
+  Play,
+  Settings,
+} from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
+import { assetIdentity } from "../assets";
 import { readCachedImage } from "../cache";
 import { readHistory } from "../history";
 import {
@@ -14,6 +25,13 @@ import {
 } from "../settings";
 import { getImageSource } from "../sources";
 import { getUnsplashPhotoInfo } from "../sources/unsplash";
+import {
+  HISTORY_STORAGE_KEY,
+  LEGACY_IMAGE_PAUSED_KEY,
+  PAUSED_STORAGE_KEY,
+  readPaused,
+  writePaused,
+} from "../storage";
 import "./empty-state";
 import "./history-panel";
 import "./lucide-icon";
@@ -49,10 +67,19 @@ class StellarApp extends LitElement {
   private accessor downloading = false;
 
   @state()
+  private accessor historyAssets: BackgroundAsset[] = [];
+
+  @state()
   private accessor historyOpen = false;
 
   @state()
   private accessor infoOpen = false;
+
+  @state()
+  private accessor isPaused = false;
+
+  @state()
+  private accessor loadingNext = false;
 
   @state()
   private accessor phase: EmptyStatePhase = "ready";
@@ -69,11 +96,30 @@ class StellarApp extends LitElement {
   @state()
   private accessor sourceChange: SourceChangeState = { status: "idle" };
 
+  private get currentIndex(): number {
+    if (!this.currentAsset || this.historyAssets.length === 0) return 0;
+
+    const index = this.historyAssets.findIndex(
+      (asset) => assetIdentity(asset) === assetIdentity(this.currentAsset!),
+    );
+
+    return index === -1 ? 0 : index;
+  }
+
+  private get hasPrevious(): boolean {
+    return this.currentIndex < this.historyAssets.length - 1;
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
 
     window.addEventListener("wheel", this.handleWheel, { passive: true });
     window.addEventListener("keydown", this.handleKeydown);
+    window.addEventListener("click", this.handleViewportClick);
+
+    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+      chrome.storage.onChanged.addListener(this.handleStorageChange);
+    }
 
     const generation = ++this.generation;
 
@@ -87,6 +133,12 @@ class StellarApp extends LitElement {
     this.requestInFlight = false;
     window.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("keydown", this.handleKeydown);
+    window.removeEventListener("click", this.handleViewportClick);
+
+    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+      chrome.storage.onChanged.removeListener(this.handleStorageChange);
+    }
+
     this.releaseObjectUrl();
     super.disconnectedCallback();
   }
@@ -184,7 +236,48 @@ class StellarApp extends LitElement {
               )()
             : null
         }
+        ${
+          this.phase === "ready" && this.currentAsset
+            ? html`
+              ${
+                this.hasPrevious
+                  ? html`
+                    <button
+                      class="nav-button prev-button"
+                      type="button"
+                      aria-label="Previous photo"
+                      title="Previous photo (Left arrow)"
+                      @click=${this.handlePrevPhoto}
+                    >
+                      <stellar-icon .icon=${ChevronLeft}></stellar-icon>
+                    </button>
+                  `
+                  : null
+              }
+              <button
+                class="nav-button next-button ${this.loadingNext ? "loading" : ""}"
+                type="button"
+                aria-label="Next photo"
+                title="Next photo (Right arrow)"
+                ?disabled=${this.loadingNext}
+                @click=${this.handleNextPhoto}
+              >
+                <stellar-icon .icon=${ChevronRight}></stellar-icon>
+              </button>
+            `
+            : null
+        }
         <div class="bottom-actions">
+          <button
+            class="action-button pause-toggle ${this.isPaused ? "active" : ""}"
+            type="button"
+            aria-label=${this.isPaused ? "Resume photo rotation" : "Pause photo rotation"}
+            aria-pressed=${this.isPaused}
+            title=${this.isPaused ? "Resume photo rotation (P)" : "Pause photo rotation (P)"}
+            @click=${this.togglePause}
+          >
+            <stellar-icon .icon=${this.isPaused ? Play : Pause}></stellar-icon>
+          </button>
           ${
             this.isInfoAvailable
               ? html`
@@ -427,6 +520,9 @@ class StellarApp extends LitElement {
   };
 
   private async start(generation: number): Promise<void> {
+    await this.loadPausedState();
+    await this.loadHistoryAssets();
+
     const photoGeneration = ++this.photoGeneration;
     const current = await this.optimisticCurrent(generation, photoGeneration);
 
@@ -434,11 +530,126 @@ class StellarApp extends LitElement {
 
     if (current) {
       this.phase = "ready";
-      void sendCommand({ command: "rotate" });
+      if (!this.isPaused) {
+        void sendCommand({ command: "rotate" });
+      }
     } else {
       await this.ensureAndRender();
+      await this.loadHistoryAssets();
     }
   }
+
+  private handleStorageChange = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    area: string,
+  ): void => {
+    if (area === "local") {
+      if (PAUSED_STORAGE_KEY in changes || LEGACY_IMAGE_PAUSED_KEY in changes) {
+        void this.loadPausedState();
+      }
+
+      if (HISTORY_STORAGE_KEY in changes || "history" in changes) {
+        void this.loadHistoryAssets();
+      }
+    }
+  };
+
+  private async loadPausedState(): Promise<void> {
+    try {
+      this.isPaused = await readPaused();
+    } catch {
+      // Graceful fallback
+    }
+  }
+
+  private async loadHistoryAssets(): Promise<void> {
+    try {
+      const state = await readHistory();
+      this.historyAssets = state.history;
+    } catch {
+      // Graceful fallback
+    }
+  }
+
+  private togglePause = async (): Promise<void> => {
+    await this.setPausedState(!this.isPaused);
+  };
+
+  private setPausedState = async (paused: boolean): Promise<void> => {
+    this.isPaused = paused;
+
+    try {
+      await writePaused(paused);
+    } catch {
+      // Ignore storage error
+    }
+  };
+
+  private displayHistoryAsset = async (
+    asset: BackgroundAsset,
+  ): Promise<void> => {
+    const generation = this.generation;
+    const photoGeneration = ++this.photoGeneration;
+    const prepared = await this.preparePhoto(
+      asset,
+      generation,
+      photoGeneration,
+    );
+
+    if (!prepared || !this.isPhotoCurrent(generation, photoGeneration)) return;
+
+    this.applyPhoto(prepared.url, prepared.asset);
+  };
+
+  private handlePrevPhoto = async (): Promise<void> => {
+    if (!this.hasPrevious || this.loadingNext) return;
+
+    const nextIndex = this.currentIndex + 1;
+    const targetAsset = this.historyAssets[nextIndex];
+    if (!targetAsset) return;
+
+    await this.setPausedState(true);
+    await this.displayHistoryAsset(targetAsset);
+  };
+
+  private handleNextPhoto = async (): Promise<void> => {
+    if (this.loadingNext) return;
+
+    if (this.currentIndex > 0) {
+      const nextIndex = this.currentIndex - 1;
+      const targetAsset = this.historyAssets[nextIndex];
+      if (!targetAsset) return;
+
+      await this.displayHistoryAsset(targetAsset);
+      return;
+    }
+
+    this.loadingNext = true;
+
+    try {
+      const result = await sendCommand({ command: "rotate", force: true });
+      if (!result.ok) throw new Error(result.error.message);
+
+      if (result.current) {
+        const generation = this.generation;
+        const photoGeneration = ++this.photoGeneration;
+        const prepared = await this.preparePhoto(
+          result.current,
+          generation,
+          photoGeneration,
+        );
+
+        if (prepared && this.isPhotoCurrent(generation, photoGeneration)) {
+          this.applyPhoto(prepared.url, prepared.asset);
+          await this.loadHistoryAssets();
+        }
+      }
+    } catch {
+      // Graceful fallback
+    } finally {
+      this.loadingNext = false;
+    }
+  };
 
   private async loadDisplaySettings(generation: number): Promise<void> {
     try {
@@ -541,19 +752,8 @@ class StellarApp extends LitElement {
   private handleSelectHistoryPhoto = async (
     event: CustomEvent<{ asset: BackgroundAsset }>,
   ): Promise<void> => {
-    const asset = event.detail.asset;
-    const generation = this.generation;
-    const photoGeneration = ++this.photoGeneration;
-
-    const prepared = await this.preparePhoto(
-      asset,
-      generation,
-      photoGeneration,
-    );
-
-    if (!prepared || !this.isPhotoCurrent(generation, photoGeneration)) return;
-
-    this.applyPhoto(prepared.url, prepared.asset);
+    await this.setPausedState(true);
+    await this.displayHistoryAsset(event.detail.asset);
   };
 
   private handleDownloadHistoryPhoto = async (
@@ -585,6 +785,33 @@ class StellarApp extends LitElement {
     if (event.key === "Escape") {
       if (this.historyOpen) this.closeHistory();
       if (this.infoOpen) this.closeInfo();
+      return;
+    }
+
+    const target = event.target;
+    const isTyping =
+      target instanceof HTMLElement &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable);
+
+    if (isTyping) return;
+
+    if (event.key === "ArrowLeft") {
+      if (!this.settingsOpen && !this.infoOpen) {
+        event.preventDefault();
+        void this.handlePrevPhoto();
+      }
+    } else if (event.key === "ArrowRight") {
+      if (!this.settingsOpen && !this.infoOpen) {
+        event.preventDefault();
+        void this.handleNextPhoto();
+      }
+    } else if (event.key === "p" || event.key === "P" || event.key === " ") {
+      if (!this.settingsOpen && !this.infoOpen) {
+        event.preventDefault();
+        void this.togglePause();
+      }
     }
   };
 

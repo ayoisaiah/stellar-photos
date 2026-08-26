@@ -60,6 +60,9 @@ const {
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
+const { PAUSED_STORAGE_KEY, readPaused, writePaused } = await import(
+  "../src/ts/storage"
+);
 
 beforeEach(() => {
   for (const key of Object.keys(local)) delete local[key];
@@ -305,5 +308,21 @@ describe("settings", () => {
       portraitMode: "cover",
       motion: true,
     });
+  });
+
+  it("reads and writes the paused rotation state with legacy fallback", async () => {
+    expect(await readPaused()).toBe(false);
+
+    await writePaused(true);
+    expect(await readPaused()).toBe(true);
+    expect(local[PAUSED_STORAGE_KEY]).toBe(true);
+
+    await writePaused(false);
+    expect(await readPaused()).toBe(false);
+    expect(local[PAUSED_STORAGE_KEY]).toBe(false);
+
+    delete local[PAUSED_STORAGE_KEY];
+    local.imagePaused = true;
+    expect(await readPaused()).toBe(true);
   });
 });
