@@ -39,8 +39,13 @@ vi.stubGlobal("chrome", {
 const {
   CORE_SETTINGS_KEY,
   DEFAULT_CORE_SETTINGS,
+  DEFAULT_DISPLAY_SETTINGS,
+  DISPLAY_SETTINGS_KEY,
+  getDisplaySettings,
   getImageSourceId,
   initializeCoreSettings,
+  initializeDisplaySettings,
+  setDisplaySettings,
   setImageSourceId,
 } = await import("../src/ts/settings");
 const {
@@ -83,6 +88,7 @@ describe("settings", () => {
         ...DEFAULT_CORE_SETTINGS,
         activeSourceId: "unsplash",
       },
+      [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
       [UNSPLASH_SETTINGS_KEY]: {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "high",
@@ -127,6 +133,7 @@ describe("settings", () => {
         version: 1,
         activeSourceId: "future-source",
       },
+      [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
       [UNSPLASH_SETTINGS_KEY]: {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "max",
@@ -257,6 +264,27 @@ describe("settings", () => {
       username: "nasa",
       orientation: "landscape",
       contentFilter: "high",
+    });
+  });
+
+  it("initializes and updates display customization settings", async () => {
+    await initializeDisplaySettings();
+    expect(await getDisplaySettings()).toEqual(DEFAULT_DISPLAY_SETTINGS);
+
+    await setDisplaySettings({
+      landscapeMode: "contain-blur",
+      portraitMode: "cover",
+    });
+
+    expect(await getDisplaySettings()).toEqual({
+      version: 1,
+      landscapeMode: "contain-blur",
+      portraitMode: "cover",
+    });
+    expect(sync[DISPLAY_SETTINGS_KEY]).toEqual({
+      version: 1,
+      landscapeMode: "contain-blur",
+      portraitMode: "cover",
     });
   });
 });

@@ -12,6 +12,7 @@ body {
   margin: 0;
 }
 body {
-  background: #16181d center / cover no-repeat;
+  background-color: #16181d;
   color: #fff;
+  overflow: hidden;
 }

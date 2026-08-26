@@ -5,11 +5,17 @@ import { customElement, state } from "lit/decorators.js";
 import styles from "../../css/components/stellar-app.css?inline";
 import { readCachedImage } from "../cache";
 import { readHistory } from "../history";
-import { DEFAULT_CORE_SETTINGS, getImageSourceId } from "../settings";
+import {
+  DEFAULT_CORE_SETTINGS,
+  DEFAULT_DISPLAY_SETTINGS,
+  getDisplaySettings,
+  getImageSourceId,
+} from "../settings";
 import "./empty-state";
 import "./lucide-icon";
 import "./settings-drawer";
 
+import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import type { BackgroundAsset, WorkerCommand, WorkerResult } from "../types";
 import type { EmptyStatePhase } from "./empty-state";
 import type { SourceChangeState } from "./settings-drawer";
@@ -24,6 +30,12 @@ class StellarApp extends LitElement {
   private requestInFlight = false;
   private sourceLoadGeneration = 0;
   private sourceSwitchInFlight = false;
+
+  @state()
+  private accessor currentAsset: BackgroundAsset | null = null;
+
+  @state()
+  private accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
 
   @state()
   private accessor phase: EmptyStatePhase = "ready";
@@ -45,6 +57,7 @@ class StellarApp extends LitElement {
 
     const generation = ++this.generation;
 
+    void this.loadDisplaySettings(generation);
     void this.loadSourceId(generation);
     void this.start(generation);
   }
@@ -57,7 +70,32 @@ class StellarApp extends LitElement {
   }
 
   override render() {
+    const effectiveMode = this.effectiveDisplayMode;
+
     return html`
+      ${
+        this.objectUrl
+          ? html`
+            <div
+              class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"}"
+              aria-hidden="true"
+            >
+              ${
+                effectiveMode === "contain-blur"
+                  ? html`<div
+                      class="photo-backdrop"
+                      style="background-image: url('${this.objectUrl}')"
+                    ></div>`
+                  : null
+              }
+              <div
+                class="photo-main"
+                style="background-image: url('${this.objectUrl}')"
+              ></div>
+            </div>
+          `
+          : null
+      }
       <stellar-empty-state
         .phase=${this.phase}
         @retry=${this.ensureAndRender}
@@ -78,8 +116,10 @@ class StellarApp extends LitElement {
               .open=${this.settingsOpen}
               .sourceId=${this.sourceId}
               .sourceChange=${this.sourceChange}
+              .displaySettings=${this.displaySettings}
               @close-settings=${this.closeSettings}
               @select-source=${this.selectSource}
+              @display-settings-changed=${this.handleDisplaySettingsChanged}
             ></stellar-settings-drawer>
           `
           : null
@@ -87,20 +127,33 @@ class StellarApp extends LitElement {
     `;
   }
 
+  private get effectiveDisplayMode(): PhotoDisplayMode {
+    const isPortrait =
+      this.currentAsset !== null &&
+      this.currentAsset.height > 0 &&
+      this.currentAsset.width > 0 &&
+      this.currentAsset.height > this.currentAsset.width;
+
+    return isPortrait
+      ? this.displaySettings.portraitMode
+      : this.displaySettings.landscapeMode;
+  }
+
   private async preparePhoto(
     metadata: BackgroundAsset,
     generation: number,
     photoGeneration: number,
-  ): Promise<string | null> {
+  ): Promise<{ url: string; asset: BackgroundAsset } | null> {
     const response = await readCachedImage(metadata.cacheKey);
 
     if (!response || !this.isPhotoCurrent(generation, photoGeneration))
       return null;
 
     const nextUrl = URL.createObjectURL(await response.blob());
+    let dims = { width: metadata.width, height: metadata.height };
 
     try {
-      await decodeObjectUrl(nextUrl);
+      dims = await decodeObjectUrl(nextUrl);
     } catch {
       URL.revokeObjectURL(nextUrl);
       return null;
@@ -111,14 +164,21 @@ class StellarApp extends LitElement {
       return null;
     }
 
-    return nextUrl;
+    const resolvedAsset: BackgroundAsset =
+      metadata.width === 0 &&
+      metadata.height === 0 &&
+      (dims.width > 0 || dims.height > 0)
+        ? { ...metadata, width: dims.width, height: dims.height }
+        : metadata;
+
+    return { url: nextUrl, asset: resolvedAsset };
   }
 
-  private applyPhoto(nextUrl: string): void {
+  private applyPhoto(nextUrl: string, asset: BackgroundAsset | null): void {
     const previous = this.objectUrl;
 
     this.objectUrl = nextUrl;
-    document.body.style.backgroundImage = `url("${nextUrl}")`;
+    this.currentAsset = asset;
 
     if (previous) {
       URL.revokeObjectURL(previous);
@@ -136,17 +196,17 @@ class StellarApp extends LitElement {
       if (!current || !this.isPhotoCurrent(generation, photoGeneration))
         return null;
 
-      const nextUrl = await this.preparePhoto(
+      const prepared = await this.preparePhoto(
         current,
         generation,
         photoGeneration,
       );
 
-      if (!nextUrl) return null;
+      if (!prepared) return null;
 
-      this.applyPhoto(nextUrl);
+      this.applyPhoto(prepared.url, prepared.asset);
 
-      return current;
+      return prepared.asset;
     } catch {
       return null;
     }
@@ -167,14 +227,14 @@ class StellarApp extends LitElement {
       if (!this.isCurrent(generation)) return;
       if (!result.ok) throw new Error(result.error.message);
 
-      const nextUrl =
+      const prepared =
         result.current &&
         (await this.preparePhoto(result.current, generation, photoGeneration));
 
       if (!this.isPhotoCurrent(generation, photoGeneration)) return;
-      if (!nextUrl) throw new Error("No usable image is available yet");
+      if (!prepared) throw new Error("No usable image is available yet");
 
-      this.applyPhoto(nextUrl);
+      this.applyPhoto(prepared.url, prepared.asset);
 
       this.phase = "ready";
     } catch {
@@ -197,6 +257,24 @@ class StellarApp extends LitElement {
       await this.ensureAndRender();
     }
   }
+
+  private async loadDisplaySettings(generation: number): Promise<void> {
+    try {
+      const displaySettings = await getDisplaySettings();
+
+      if (!this.isCurrent(generation)) return;
+
+      this.displaySettings = displaySettings;
+    } catch {
+      return;
+    }
+  }
+
+  private handleDisplaySettingsChanged = (
+    event: CustomEvent<{ displaySettings: DisplaySettings }>,
+  ): void => {
+    this.displaySettings = event.detail.displaySettings;
+  };
 
   private async loadSourceId(generation: number): Promise<void> {
     const sourceLoadGeneration = ++this.sourceLoadGeneration;
@@ -262,14 +340,16 @@ class StellarApp extends LitElement {
 
       if (!this.isPhotoCurrent(generation, photoGeneration)) return;
 
-      preparedUrl = await this.preparePhoto(
+      const preparedResult = await this.preparePhoto(
         prepared,
         generation,
         photoGeneration,
       );
 
-      if (!preparedUrl)
+      if (!preparedResult)
         throw new Error("The photograph could not be displayed");
+
+      preparedUrl = preparedResult.url;
 
       const commitResult = await sendCommand({
         command: "commit-source",
@@ -280,7 +360,7 @@ class StellarApp extends LitElement {
       if (!commitResult.ok) throw new Error(commitResult.error.message);
 
       committed = true;
-      this.applyPhoto(preparedUrl);
+      this.applyPhoto(preparedUrl, preparedResult.asset);
       preparedUrl = null;
       this.sourceId = event.detail.sourceId;
       this.phase = "ready";
@@ -326,7 +406,7 @@ class StellarApp extends LitElement {
 
     URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null;
-    document.body.style.removeProperty("background-image");
+    this.currentAsset = null;
   }
 }
 
@@ -359,11 +439,15 @@ function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
   });
 }
 
-async function decodeObjectUrl(url: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
+async function decodeObjectUrl(
+  url: string,
+): Promise<{ width: number; height: number }> {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
     const image = new Image();
 
-    image.onload = () => resolve();
+    image.onload = () => {
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    };
     image.onerror = () =>
       reject(new Error("Cached image could not be decoded"));
     image.src = url;

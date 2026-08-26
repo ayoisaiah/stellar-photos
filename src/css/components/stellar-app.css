@@ -2,6 +2,40 @@
   display: contents;
 }
 
+.photo-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.photo-backdrop {
+  position: absolute;
+  inset: -32px;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(32px) brightness(0.65);
+  transform: scale(1.08);
+}
+
+.photo-main {
+  position: absolute;
+  inset: 0;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.mode-cover .photo-main {
+  background-size: cover;
+}
+
+.mode-contain-blur .photo-main {
+  background-size: contain;
+  filter: drop-shadow(0 0 35px rgb(0 0 0 / 40%));
+}
+
 .settings-toggle {
   position: fixed;
   right: 1.25rem;
