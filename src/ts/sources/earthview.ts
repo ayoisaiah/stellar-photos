@@ -1,4 +1,6 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { readBoundedImage } from "../cache";
+import { fetchWithTimeout } from "../requests";
 import earthViewCatalog from "./earthview-data.json";
 import {
   getEarthViewPhotoFrequency,
@@ -26,9 +28,10 @@ export interface EarthViewPayload {
   imageUrl: string;
 }
 
+const GSTATIC_ORIGIN = new Set(["https://www.gstatic.com"]);
 const catalog: readonly EarthViewPhotoEntry[] = earthViewCatalog;
 
-const earthviewSource: ImageSource = {
+export const earthviewSource: ImageSource = {
   id: "earthview",
   name: "Google Earth View",
   supportsDownload: true,
@@ -45,7 +48,23 @@ export function getEarthViewCatalog(): readonly EarthViewPhotoEntry[] {
 }
 
 export function buildEarthViewImageUrl(id: number | string): string {
-  return `https://www.gstatic.com/prettyearth/assets/full/${id}.jpg`;
+  return `https://www.gstatic.com/prettyearth/assets/full/${encodeURIComponent(String(id))}.jpg`;
+}
+
+function trustedEarthViewUrl(value: string): URL {
+  const url = new URL(value);
+
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.port ||
+    !GSTATIC_ORIGIN.has(url.origin)
+  ) {
+    throw new Error("Earth View returned an untrusted URL");
+  }
+
+  return url;
 }
 
 async function shouldRotateEarthView(
@@ -108,31 +127,29 @@ async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
 async function downloadEarthViewAsset(
   asset: UncachedBackgroundAsset,
 ): Promise<Response> {
-  const imageUrl = buildEarthViewImageUrl(asset.sourceAssetId);
-  const response = await fetch(imageUrl);
+  const imageUrl = trustedEarthViewUrl(
+    buildEarthViewImageUrl(asset.sourceAssetId),
+  );
+  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to download Earth View photo: ${response.status} ${response.statusText}`,
-    );
+  if (response.url) {
+    trustedEarthViewUrl(response.url);
   }
 
-  return response;
+  return readBoundedImage(response);
 }
 
 async function downloadFullEarthViewAsset(
   asset: BackgroundAsset,
 ): Promise<Response> {
-  const imageUrl = buildEarthViewImageUrl(asset.sourceAssetId);
-  const response = await fetch(imageUrl);
+  const imageUrl = trustedEarthViewUrl(
+    buildEarthViewImageUrl(asset.sourceAssetId),
+  );
+  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to download full resolution Earth View photo: ${response.status} ${response.statusText}`,
-    );
+  if (response.url) {
+    trustedEarthViewUrl(response.url);
   }
 
-  return response;
+  return readBoundedImage(response);
 }
-
-export { earthviewSource };

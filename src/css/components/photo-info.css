@@ -5,6 +5,15 @@
   display: grid;
   place-items: center;
   padding: 1rem;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 200ms;
+}
+
+:host([open]) {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s;
 }
 
 .backdrop {
@@ -14,7 +23,12 @@
   background: rgb(0 0 0 / 55%);
   cursor: pointer;
   backdrop-filter: blur(8px);
-  animation: fade-in 180ms ease-out forwards;
+  opacity: 0;
+  transition: opacity 180ms ease-in-out;
+}
+
+:host([open]) .backdrop {
+  opacity: 1;
 }
 
 .card {
@@ -34,7 +48,16 @@
   color: #fff;
   overflow-y: auto;
   backdrop-filter: blur(28px);
-  animation: popover-in 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  transform: scale(0.96) translateY(6px);
+  transition:
+    opacity 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:host([open]) .card {
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 
 header {
@@ -216,26 +239,6 @@ header h2 {
   font-size: 0.85rem;
   color: rgb(255 255 255 / 50%);
   text-align: center;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes popover-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 @media (max-width: 28rem) {

@@ -5,16 +5,23 @@ import {
   putCachedImage,
   readCachedImage,
 } from "./cache";
-import { promoteImage, readHistory, reconcileHistory } from "./history";
+import {
+  promoteImage,
+  purgeFolderFromHistory,
+  readHistory,
+  reconcileHistory,
+} from "./history";
 import { getImageSourceId, setImageSourceId } from "./settings";
 import {
   getActiveImageSource,
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
-import { readPaused } from "./storage";
+import { addStagedKey, readPaused, removeStagedKey } from "./storage";
 
 import type { BackgroundAsset, HistoryState, ImageSource } from "./types";
+
+const LOCK_NAME = "stellar_actions_lock";
 
 let queueTail: Promise<void> = Promise.resolve();
 let initialization: Promise<HistoryState> | null = null;
@@ -44,18 +51,20 @@ export function rotate(force = false): Promise<BackgroundAsset | null> {
   }
 
   activeRotation = (async () => {
+    pendingRotation = false;
     await initialize();
 
     const acquire = () => acquireUnique(undefined, undefined, force);
     let current = await enqueue(acquire);
 
-    if (pendingRotation) {
+    while (pendingRotation) {
       pendingRotation = false;
       current = await enqueue(acquire);
     }
 
     return current;
   })().finally(() => {
+    pendingRotation = false;
     activeRotation = null;
   });
 
@@ -100,8 +109,7 @@ export async function commitSource(asset: BackgroundAsset): Promise<void> {
       const current = promoted.history[0];
 
       if (!current) throw new Error("Promoted image is missing from history");
-
-      void source.didDownload?.(current).catch(() => undefined);
+      await removeStagedKey(asset.cacheKey);
     } catch (error) {
       await setImageSourceId(previousSourceId);
       throw error;
@@ -115,12 +123,19 @@ export async function discardSource(asset: BackgroundAsset): Promise<void> {
   if (asset.cacheKey !== canonicalKey) return;
 
   await enqueue(async () => {
+    await removeStagedKey(asset.cacheKey);
     const state = await readHistory();
 
     if (state.history.some((item) => item.cacheKey === asset.cacheKey)) return;
 
     await deleteCachedImage(asset.cacheKey);
   });
+}
+
+export async function purgeFolder(folderId: string): Promise<void> {
+  await initialize();
+
+  await enqueue(() => purgeFolderFromHistory(folderId));
 }
 
 export async function trackDownload(asset: BackgroundAsset): Promise<void> {
@@ -148,7 +163,14 @@ export async function initializeSettingsAndHistory(): Promise<void> {
 }
 
 function enqueue<T>(operation: () => Promise<T>): Promise<T> {
-  const result = queueTail.then(operation, operation);
+  const run = async () => {
+    if (typeof navigator !== "undefined" && navigator.locks?.request) {
+      return navigator.locks.request(LOCK_NAME, operation);
+    }
+    return operation();
+  };
+
+  const result = queueTail.then(run, run);
 
   queueTail = result.then(
     () => undefined,
@@ -198,8 +220,6 @@ async function acquireUnique(
     if (!promotedCurrent)
       throw new Error("Promoted image is missing from history");
 
-    void source.didDownload?.(promotedCurrent).catch(() => undefined);
-
     return promotedCurrent;
   }
 
@@ -233,6 +253,7 @@ async function prepareUnique(
     };
 
     await putCachedImage(prepared.cacheKey, image);
+    await addStagedKey(prepared.cacheKey);
 
     return prepared;
   }

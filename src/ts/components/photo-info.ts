@@ -19,6 +19,9 @@ const UTM_PARAMS =
 class PhotoInfo extends LitElement {
   static override styles = unsafeCSS(styles);
 
+  @property({ type: Boolean, reflect: true })
+  accessor open = false;
+
   @property({ attribute: false })
   accessor asset: BackgroundAsset | null = null;
 
@@ -28,21 +31,42 @@ class PhotoInfo extends LitElement {
   @state()
   private accessor loadingDetails = false;
 
+  private detailsGeneration = 0;
+
   override connectedCallback(): void {
     super.connectedCallback();
+    this.detailsGeneration += 1;
     window.addEventListener("keydown", this.handleKeyDown);
-    void this.loadDetailsIfNeeded();
+
+    if (this.open) {
+      void this.loadDetailsIfNeeded();
+    }
   }
 
   override disconnectedCallback(): void {
+    this.detailsGeneration += 1;
     window.removeEventListener("keydown", this.handleKeyDown);
     super.disconnectedCallback();
   }
 
   override updated(changedProperties: Map<string, unknown>): void {
     if (changedProperties.has("asset")) {
+      this.detailsGeneration += 1;
       this.fetchedInfo = null;
+
+      if (this.open) {
+        void this.loadDetailsIfNeeded();
+      }
+    }
+
+    if (changedProperties.has("open") && this.open) {
       void this.loadDetailsIfNeeded();
+
+      void this.updateComplete.then(() => {
+        this.renderRoot
+          .querySelector<HTMLButtonElement>(".close-button")
+          ?.focus();
+      });
     }
   }
 
@@ -205,15 +229,26 @@ class PhotoInfo extends LitElement {
     const existing = getUnsplashPhotoInfo(this.asset);
     if (existing?.exif) return;
 
+    const generation = this.detailsGeneration;
+    const currentAsset = this.asset;
+
     this.loadingDetails = true;
 
     try {
-      const details = await fetchUnsplashPhotoDetails(this.asset);
-      if (details) {
-        this.fetchedInfo = details;
+      const details = await fetchUnsplashPhotoDetails(currentAsset);
+      if (
+        this.isConnected &&
+        this.detailsGeneration === generation &&
+        this.asset === currentAsset
+      ) {
+        if (details) {
+          this.fetchedInfo = details;
+        }
       }
     } finally {
-      this.loadingDetails = false;
+      if (this.detailsGeneration === generation) {
+        this.loadingDetails = false;
+      }
     }
   }
 
@@ -222,7 +257,7 @@ class PhotoInfo extends LitElement {
   };
 
   private handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === "Escape") {
+    if (event.key === "Escape" && this.open) {
       this.close();
     }
   };

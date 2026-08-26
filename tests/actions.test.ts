@@ -13,6 +13,9 @@ const reconcileHistory = vi.fn();
 const getActiveImageSource = vi.fn();
 const getImageSource = vi.fn();
 const readPaused = vi.fn();
+const readStagedKeys = vi.fn().mockResolvedValue([]);
+const addStagedKey = vi.fn().mockResolvedValue(undefined);
+const removeStagedKey = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../src/ts/settings", () => ({ getImageSourceId, setImageSourceId }));
 vi.mock("../src/ts/cache", async (importOriginal) => ({
@@ -32,6 +35,9 @@ vi.mock("../src/ts/sources", () => ({
 }));
 vi.mock("../src/ts/storage", () => ({
   readPaused,
+  readStagedKeys,
+  addStagedKey,
+  removeStagedKey,
 }));
 
 const { commitSource, prepareSource, rotate, trackDownload } = await import(

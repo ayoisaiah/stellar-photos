@@ -76,4 +76,18 @@ describe("service worker commands", () => {
     );
     expect(rotate).toHaveBeenCalledWith(true);
   });
+
+  it("returns NEEDS_PAGE_CONTEXT error code when local permission is required", async () => {
+    const error = new Error("Failed to execute 'getFileHandle'");
+    error.name = "LocalPermissionError";
+    rotate.mockRejectedValue(error);
+
+    await expect(dispatch({ command: "rotate" })).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "NEEDS_PAGE_CONTEXT",
+        message: "Failed to execute 'getFileHandle'",
+      },
+    });
+  });
 });

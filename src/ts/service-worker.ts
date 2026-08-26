@@ -10,9 +10,20 @@ import {
 
 import type { WorkerCommand, WorkerResult } from "./types";
 
+let initPromise: Promise<void> | null = null;
+
+export function initializeSettingsAndHistoryMemoized(): Promise<void> {
+  initPromise ??= initializeSettingsAndHistory().catch((error) => {
+    initPromise = null;
+    throw error;
+  });
+
+  return initPromise;
+}
+
 export function startServiceWorker(): void {
   chrome.runtime.onInstalled.addListener(() => {
-    void initializeSettingsAndHistory().catch(() => undefined);
+    void initializeSettingsAndHistoryMemoized().catch(() => undefined);
   });
 
   chrome.runtime.onMessage.addListener(
@@ -30,26 +41,7 @@ export function startServiceWorker(): void {
   );
 }
 
-function isCommand(value: unknown): value is WorkerCommand {
-  if (!value || typeof value !== "object") return false;
-
-  const command = (value as { command?: unknown }).command;
-
-  if (command === "ensure-current" || command === "rotate") return true;
-
-  if (command === "prepare-source")
-    return typeof (value as { sourceId?: unknown }).sourceId === "string";
-
-  return (
-    (command === "commit-source" ||
-      command === "discard-source" ||
-      command === "track-download") &&
-    !!(value as { asset?: unknown }).asset &&
-    typeof (value as { asset?: unknown }).asset === "object"
-  );
-}
-
-async function dispatch(request: unknown): Promise<WorkerResult> {
+export async function dispatch(request: unknown): Promise<WorkerResult> {
   if (!isCommand(request))
     return {
       ok: false,
@@ -78,11 +70,41 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
 
     return { ok: true, current };
   } catch (error) {
+    const isPageContextError =
+      (error as { code?: string })?.code === "NEEDS_PAGE_CONTEXT" ||
+      (error instanceof Error &&
+        (error.name === "LocalPermissionError" ||
+          error.message.includes("getFileHandle") ||
+          error.message.includes("not allowed")));
+
     const message =
       error instanceof Error ? error.message : "Unexpected extension error";
 
-    return { ok: false, error: { code: "OPERATION_FAILED", message } };
+    return {
+      ok: false,
+      error: {
+        code: isPageContextError ? "NEEDS_PAGE_CONTEXT" : "OPERATION_FAILED",
+        message,
+      },
+    };
   }
 }
 
-export { dispatch };
+function isCommand(value: unknown): value is WorkerCommand {
+  if (!value || typeof value !== "object") return false;
+
+  const command = (value as { command?: unknown }).command;
+
+  if (command === "ensure-current" || command === "rotate") return true;
+
+  if (command === "prepare-source")
+    return typeof (value as { sourceId?: unknown }).sourceId === "string";
+
+  return (
+    (command === "commit-source" ||
+      command === "discard-source" ||
+      command === "track-download") &&
+    !!(value as { asset?: unknown }).asset &&
+    typeof (value as { asset?: unknown }).asset === "object"
+  );
+}

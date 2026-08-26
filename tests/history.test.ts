@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import {
   decodeHistory,
   emptyHistory,
@@ -196,5 +197,84 @@ describe("promoteImage", () => {
     expect(res3.history).toHaveLength(2);
     expect(res3.history[0]?.sourceAssetId).toBe("photo-1");
     expect(res3.history[1]?.sourceAssetId).toBe("photo-2");
+  });
+
+  it("purges all photos matching folderId from history", async () => {
+    const { purgeFolderFromHistory } = await import("../src/ts/history");
+    const localStore: Record<string, unknown> = {};
+
+    vi.stubGlobal("chrome", {
+      runtime: { lastError: undefined },
+      storage: {
+        local: {
+          get: (
+            keys: string | string[] | null,
+            cb: (res: Record<string, unknown>) => void,
+          ) => {
+            const keyList = Array.isArray(keys) ? keys : [keys as string];
+            const res: Record<string, unknown> = {};
+            for (const k of keyList) {
+              if (k in localStore) res[k] = localStore[k];
+            }
+            cb(res);
+          },
+          set: (data: Record<string, unknown>, cb: () => void) => {
+            Object.assign(localStore, data);
+            cb();
+          },
+        },
+      },
+    });
+
+    const cacheMock = {
+      match: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(true),
+    };
+    vi.stubGlobal("caches", {
+      open: vi.fn().mockResolvedValue(cacheMock),
+      keys: vi.fn().mockResolvedValue([]),
+    });
+
+    const { promoteImage } = await import("../src/ts/history");
+
+    await promoteImage(
+      {
+        sourceId: "local",
+        sourceAssetId: "f1_photo1",
+        width: 100,
+        height: 100,
+        color: null,
+        description: "Photo 1",
+        attribution: null,
+        payloadVersion: 1,
+        sourcePayload: { folderId: "folder-1" },
+        createdAt: 1,
+      },
+      new Response("img1"),
+    );
+
+    await promoteImage(
+      {
+        sourceId: "local",
+        sourceAssetId: "f2_photo2",
+        width: 100,
+        height: 100,
+        color: null,
+        description: "Photo 2",
+        attribution: null,
+        payloadVersion: 1,
+        sourcePayload: { folderId: "folder-2" },
+        createdAt: 2,
+      },
+      new Response("img2"),
+    );
+
+    await purgeFolderFromHistory("folder-1");
+
+    const state = await (await import("../src/ts/history")).readHistory();
+    expect(state.history).toHaveLength(1);
+    expect(state.history[0]?.sourceAssetId).toBe("f2_photo2");
+    expect(cacheMock.delete).toHaveBeenCalled();
   });
 });

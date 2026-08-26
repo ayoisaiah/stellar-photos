@@ -47,14 +47,49 @@ const IMAGE_EXTENSIONS = new Set([
   "svg",
 ]);
 
+export class LocalPermissionError extends Error {
+  code = "NEEDS_PAGE_CONTEXT";
+
+  constructor(
+    message = "Folder access needs to be re-authorized. Please re-select or rescan the folder in Settings.",
+  ) {
+    super(message);
+    this.name = "LocalPermissionError";
+  }
+}
+
 export function isImageFileName(name: string): boolean {
   const ext = name.split(".").pop()?.toLowerCase();
 
   return ext ? IMAGE_EXTENSIONS.has(ext) : false;
 }
 
+export async function withLocalDb<T>(
+  callback: (db: IDBDatabase) => Promise<T>,
+): Promise<T> {
+  const db = await openLocalDb();
+
+  try {
+    return await callback(db);
+  } finally {
+    if (typeof db?.close === "function") {
+      db.close();
+    }
+  }
+}
+
 export function openLocalDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    timeoutId = setTimeout(() => {
+      reject(new Error("IndexedDB open timed out"));
+    }, 5000);
+
     let request: IDBOpenDBRequest;
 
     try {
@@ -85,15 +120,34 @@ export function openLocalDb(): Promise<IDBDatabase> {
     };
 
     request.onblocked = () => {
-      // Avoid hanging if an existing database connection is open
+      cleanup();
+      reject(new Error("IndexedDB upgrade blocked by an open connection"));
     };
 
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      cleanup();
+      const db = request.result;
+      if (db) {
+        db.onversionchange = () => {
+          if (typeof db.close === "function") db.close();
+        };
+      }
+      resolve(db);
+    };
 
     request.onerror = () => {
+      cleanup();
       if (request.error?.name === "VersionError") {
         const fallbackRequest = indexedDB.open(DB_NAME);
-        fallbackRequest.onsuccess = () => resolve(fallbackRequest.result);
+        fallbackRequest.onsuccess = () => {
+          const db = fallbackRequest.result;
+          if (db) {
+            db.onversionchange = () => {
+              if (typeof db.close === "function") db.close();
+            };
+          }
+          resolve(db);
+        };
         fallbackRequest.onerror = () => reject(fallbackRequest.error);
         return;
       }
@@ -184,7 +238,10 @@ export async function getFileHandleByPath(
     throw new Error("Invalid file path");
   }
 
-  await verifyHandlePermission(rootHandle, "read");
+  const hasPermission = await verifyHandlePermission(rootHandle, "read");
+  if (!hasPermission) {
+    throw new LocalPermissionError();
+  }
 
   let currentDir = rootHandle;
 
@@ -204,7 +261,19 @@ export async function addDirectoryHandle(
     throw new Error("No image files found in the selected folder");
   }
 
-  const db = await openLocalDb();
+  const existingRecords = await listStoredFolderRecords();
+  for (const existing of existingRecords) {
+    if (typeof handle.isSameEntry === "function") {
+      try {
+        if (await handle.isSameEntry(existing.handle)) {
+          return rescanFolderRecord({ ...existing, handle });
+        }
+      } catch {
+        // Fallback
+      }
+    }
+  }
+
   const now = Date.now();
   const id = `folder_${now}_${Math.random().toString(36).slice(2, 8)}`;
   const record: LocalFolderRecord = {
@@ -218,34 +287,37 @@ export async function addDirectoryHandle(
     updatedAt: now,
   };
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, "readwrite");
-    const store = tx.objectStore(HANDLES_STORE);
-    store.put(record);
+  return withLocalDb((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(HANDLES_STORE, "readwrite");
+      const store = tx.objectStore(HANDLES_STORE);
+      store.put(record);
 
-    tx.oncomplete = () => resolve(record);
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => resolve(record);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
   });
 }
 
 export async function updateFolderRecord(
   record: LocalFolderRecord,
 ): Promise<void> {
-  const db = await openLocalDb();
   const normalizedRecord = {
     ...record,
     key: record.key || record.id,
   };
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, "readwrite");
-    const store = tx.objectStore(HANDLES_STORE);
-    store.put(normalizedRecord);
+  return withLocalDb((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(HANDLES_STORE, "readwrite");
+      const store = tx.objectStore(HANDLES_STORE);
+      store.put(normalizedRecord);
 
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
   });
 }
 
@@ -283,32 +355,32 @@ export async function rescanAllFolders(): Promise<LocalFolderRecord[]> {
 }
 
 export async function removeDirectoryHandle(id: string): Promise<void> {
-  const db = await openLocalDb();
+  return withLocalDb((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(HANDLES_STORE, "readwrite");
+      const store = tx.objectStore(HANDLES_STORE);
+      store.delete(id);
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, "readwrite");
-    const store = tx.objectStore(HANDLES_STORE);
-    store.delete(id);
-
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
   });
 }
 
 export async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
-  const db = await openLocalDb();
+  return withLocalDb((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(HANDLES_STORE, "readonly");
+      const store = tx.objectStore(HANDLES_STORE);
+      const request = store.getAll();
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HANDLES_STORE, "readonly");
-    const store = tx.objectStore(HANDLES_STORE);
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      const records = (request.result as LocalFolderRecord[]) || [];
-      resolve(records);
-    };
-    request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const records = (request.result as LocalFolderRecord[]) || [];
+        resolve(records);
+      };
+      request.onerror = () => reject(request.error);
+    });
   });
 }
 
@@ -338,55 +410,68 @@ export async function getRandomDirectoryImage(
 
   if (records.length === 0) return null;
 
-  const candidates: {
-    folderId: string;
-    folderName: string;
-    rootHandle: FileSystemDirectoryHandle;
-    relativePath: string;
-    name: string;
-  }[] = [];
+  const excludedSet = new Set(excludePaths);
 
-  for (const record of records) {
-    const paths =
-      record.imagePaths && record.imagePaths.length > 0
-        ? record.imagePaths
-        : await listDirectoryImagePaths(record.handle);
+  if (excludedSet.size === 0) {
+    let total = 0;
+    for (const r of records) {
+      total += r.imagePaths?.length || 0;
+    }
 
-    for (const relPath of paths) {
-      const name = relPath.split("/").pop() || relPath;
-      candidates.push({
-        folderId: record.id,
-        folderName: record.folderName,
-        rootHandle: record.handle,
-        relativePath: relPath,
-        name,
-      });
+    if (total === 0) return null;
+
+    let targetIndex = Math.floor(Math.random() * total);
+
+    for (const record of records) {
+      const count = record.imagePaths?.length || 0;
+      if (targetIndex < count) {
+        const relPath = record.imagePaths[targetIndex]!;
+        const name = relPath.split("/").pop() || relPath;
+        const fileHandle = await getFileHandleByPath(record.handle, relPath);
+
+        return {
+          handle: fileHandle,
+          name,
+          relativePath: relPath,
+          folderId: record.id,
+          folderName: record.folderName,
+        };
+      }
+      targetIndex -= count;
     }
   }
 
-  if (candidates.length === 0) return null;
+  let chosenRecord: LocalFolderRecord | null = null;
+  let chosenPath: string | null = null;
+  let matches = 0;
 
-  const excludedSet = new Set(excludePaths);
-  const unselected = candidates.filter(
-    (c) => !excludedSet.has(c.relativePath) && !excludedSet.has(c.name),
-  );
-  const pool = unselected.length > 0 ? unselected : candidates;
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  const chosen = pool[randomIndex];
+  for (const record of records) {
+    const paths = record.imagePaths || [];
+    for (const relPath of paths) {
+      const name = relPath.split("/").pop() || relPath;
+      if (!excludedSet.has(relPath) && !excludedSet.has(name)) {
+        matches += 1;
+        if (Math.random() < 1 / matches) {
+          chosenRecord = record;
+          chosenPath = relPath;
+        }
+      }
+    }
+  }
 
-  if (!chosen) return null;
+  if (!chosenRecord || !chosenPath) {
+    return getRandomDirectoryImage([]);
+  }
 
-  const fileHandle = await getFileHandleByPath(
-    chosen.rootHandle,
-    chosen.relativePath,
-  );
+  const name = chosenPath.split("/").pop() || chosenPath;
+  const fileHandle = await getFileHandleByPath(chosenRecord.handle, chosenPath);
 
   return {
     handle: fileHandle,
-    name: chosen.name,
-    relativePath: chosen.relativePath,
-    folderId: chosen.folderId,
-    folderName: chosen.folderName,
+    name,
+    relativePath: chosenPath,
+    folderId: chosenRecord.id,
+    folderName: chosenRecord.folderName,
   };
 }
 
@@ -403,11 +488,11 @@ export async function readDirectoryFile(
   }
 
   const folderRecord = folderId
-    ? records.find((r) => r.id === folderId) || records[0]
+    ? records.find((r) => r.id === folderId)
     : records[0];
 
   if (!folderRecord) {
-    throw new Error("Target folder handle not found.");
+    throw new Error("Target folder not found.");
   }
 
   const fileHandle = await getFileHandleByPath(
@@ -455,15 +540,15 @@ export async function listDirectoryImageNames(
 }
 
 export async function clearLocalDb(): Promise<void> {
-  const db = await openLocalDb();
+  return withLocalDb((db) => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([HANDLES_STORE, META_STORE], "readwrite");
+      tx.objectStore(HANDLES_STORE).clear();
+      tx.objectStore(META_STORE).clear();
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([HANDLES_STORE, META_STORE], "readwrite");
-    tx.objectStore(HANDLES_STORE).clear();
-    tx.objectStore(META_STORE).clear();
-
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
   });
 }

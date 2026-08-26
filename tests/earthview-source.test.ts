@@ -103,14 +103,21 @@ describe("earthview source retrieval and rotation", () => {
   });
 
   it("downloads asset from gstatic", async () => {
-    const mockFetch = vi.fn().mockResolvedValue(new Response("image-bytes"));
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response("image-bytes", {
+        headers: { "content-type": "image/jpeg" },
+      }),
+    );
     vi.stubGlobal("fetch", mockFetch);
 
     const asset = await earthviewSource.getRandomAsset();
     const response = await earthviewSource.downloadAsset(asset);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      `https://www.gstatic.com/prettyearth/assets/full/${asset.sourceAssetId}.jpg`,
+      new URL(
+        `https://www.gstatic.com/prettyearth/assets/full/${asset.sourceAssetId}.jpg`,
+      ),
+      expect.objectContaining({ redirect: "follow" }),
     );
     expect(await response.text()).toBe("image-bytes");
   });

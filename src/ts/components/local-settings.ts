@@ -3,6 +3,7 @@ import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/local-settings.css?inline";
+import { purgeFolder } from "../actions";
 import {
   addDirectoryHandle,
   listStoredFolderRecords,
@@ -326,6 +327,7 @@ class LocalSettingsComponent extends LitElement {
 
     try {
       await removeDirectoryHandle(id);
+      await purgeFolder(id);
       const updatedFolders = await listStoredFolderRecords();
       const folderNames = updatedFolders.map((f) => f.folderName).join(", ");
       await setLocalSettings({ folderName: folderNames });
@@ -347,29 +349,34 @@ class LocalSettingsComponent extends LitElement {
 
     if (!nextFrequency || nextFrequency === this.frequency) return;
 
+    this.frequency = nextFrequency;
+
     if (this.saveInFlight) return;
 
     window.clearTimeout(this.saveResetTimeout);
     this.saveInFlight = true;
-    this.frequency = nextFrequency;
     this.saveState = "saving";
 
-    try {
-      await setLocalPhotoFrequency(nextFrequency);
-
-      this.confirmedFrequency = nextFrequency;
-      this.saveState = "saved";
-      this.saveResetTimeout = window.setTimeout(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      }, SAVED_RESET_DELAY_MS);
-    } catch {
-      this.frequency = this.confirmedFrequency;
-      this.saveState = "error";
-    } finally {
-      this.saveInFlight = false;
+    while (this.frequency !== this.confirmedFrequency) {
+      const targetFrequency = this.frequency;
+      try {
+        await setLocalPhotoFrequency(targetFrequency);
+        this.confirmedFrequency = targetFrequency;
+      } catch {
+        this.frequency = this.confirmedFrequency;
+        this.saveState = "error";
+        this.saveInFlight = false;
+        return;
+      }
     }
+
+    this.saveState = "saved";
+    this.saveResetTimeout = window.setTimeout(() => {
+      if (this.saveState === "saved") {
+        this.saveState = "idle";
+      }
+    }, SAVED_RESET_DELAY_MS);
+    this.saveInFlight = false;
   };
 
   private statusMessage(): string {

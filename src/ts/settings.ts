@@ -62,18 +62,30 @@ export async function getDisplaySettings(): Promise<DisplaySettings> {
   return settings ?? DEFAULT_DISPLAY_SETTINGS;
 }
 
+let displaySettingsQueue: Promise<void> = Promise.resolve();
+
 export async function setDisplaySettings(
   partial: Partial<Omit<DisplaySettings, "version">>,
 ): Promise<void> {
-  const current = await getDisplaySettings();
+  const op = async () => {
+    const current = await getDisplaySettings();
 
-  await setSync({
-    [DISPLAY_SETTINGS_KEY]: {
-      ...current,
-      ...partial,
-      version: 1,
-    } satisfies DisplaySettings,
-  });
+    await setSync({
+      [DISPLAY_SETTINGS_KEY]: {
+        ...current,
+        ...partial,
+        version: 1,
+      } satisfies DisplaySettings,
+    });
+  };
+
+  const next = displaySettingsQueue.then(op, op);
+  displaySettingsQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return next;
 }
 
 export async function initializeDisplaySettings(): Promise<void> {

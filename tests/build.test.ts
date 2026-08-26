@@ -89,6 +89,8 @@ describe("browser packages", () => {
       const bundle = await readFile(`${root}/background.js`, "utf8");
       expect(bundle).not.toContain('from "');
       expect(bundle).not.toContain("old/");
+      expect(bundle).toContain("test-sentinel-key");
+      expect(bundle).not.toContain("__UNSPLASH_ACCESS_KEY__");
     },
   );
 
@@ -102,9 +104,12 @@ describe("browser packages", () => {
     const result = spawnSync(
       process.execPath,
       ["node_modules/wxt/bin/wxt.mjs", "build", "--browser", "chrome", "--mv3"],
-      { env, encoding: "utf8" },
+      { cwd: process.cwd(), env, encoding: "utf8" },
     );
     expect(result.status).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "UNSPLASH_ACCESS_KEY is required for a production build",
+    );
   });
 
   it("maps development bundles to their TypeScript and CSS sources", async () => {

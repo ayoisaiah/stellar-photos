@@ -83,6 +83,9 @@ class StellarApp extends LitElement {
   private accessor infoOpen = false;
 
   @state()
+  private accessor infoMounted = false;
+
+  @state()
   private accessor isPaused = false;
 
   @state()
@@ -374,9 +377,10 @@ class StellarApp extends LitElement {
         ></stellar-history-panel>
       </div>
       ${
-        this.infoOpen && this.currentAsset
+        this.infoMounted && this.currentAsset
           ? html`
             <stellar-photo-info
+              .open=${this.infoOpen}
               .asset=${this.currentAsset}
               @close-info=${this.closeInfo}
             ></stellar-photo-info>
@@ -431,6 +435,7 @@ class StellarApp extends LitElement {
   private toggleInfo = (): void => {
     if (!this.infoOpen) {
       this.historyOpen = false;
+      this.infoMounted = true;
     }
 
     this.infoOpen = !this.infoOpen;
@@ -439,6 +444,10 @@ class StellarApp extends LitElement {
   private closeInfo = (): void => {
     this.infoOpen = false;
     this.showControls();
+
+    void this.updateComplete.then(() => {
+      this.renderRoot.querySelector<HTMLButtonElement>(".info-button")?.focus();
+    });
   };
 
   private get effectiveDisplayMode(): PhotoDisplayMode {
@@ -1061,12 +1070,21 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
       command,
       (response: WorkerResult | undefined) => {
         if (chrome.runtime.lastError) {
-          void dispatch(command).then(resolve);
+          if (command.command === "ensure-current") {
+            void dispatch(command).then(resolve);
+          } else {
+            resolve({
+              ok: false,
+              error: {
+                code: "RUNTIME_ERROR",
+                message: chrome.runtime.lastError.message ?? "Runtime error",
+              },
+            });
+          }
         } else if (
           response &&
           !response.ok &&
-          (response.error.message.includes("getFileHandle") ||
-            response.error.message.includes("not allowed"))
+          response.error.code === "NEEDS_PAGE_CONTEXT"
         ) {
           void dispatch(command).then(resolve);
         } else {

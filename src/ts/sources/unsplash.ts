@@ -1,5 +1,6 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { readBoundedImage } from "../cache";
+import { fetchWithTimeout } from "../requests";
 import {
   getPhotoFrequency,
   getUnsplashSettings,
@@ -90,11 +91,11 @@ interface UnsplashPhotoResponse {
   };
 }
 
-const API_ORIGINS = new Set(["https://api.unsplash.com"]);
-const IMAGE_ORIGINS = new Set(["https://images.unsplash.com"]);
-const WEB_ORIGINS = new Set(["https://unsplash.com"]);
+export const API_ORIGINS = new Set(["https://api.unsplash.com"]);
+export const IMAGE_ORIGINS = new Set(["https://images.unsplash.com"]);
+export const WEB_ORIGINS = new Set(["https://unsplash.com"]);
 
-const unsplashSource: ImageSource = {
+export const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
   supportsDownload: true,
@@ -107,22 +108,36 @@ const unsplashSource: ImageSource = {
   didDownload,
 };
 
-async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
-  if (current.sourceId !== unsplashSource.id) return true;
+export function getUnsplashPhotoInfo(
+  asset: BackgroundAsset | null,
+): UnsplashInfoData | null {
+  if (!asset || asset.sourceId !== unsplashSource.id) return null;
+  if (!asset.sourcePayload || typeof asset.sourcePayload !== "object")
+    return null;
 
-  const frequency = await getPhotoFrequency();
-  const elapsed = Date.now() - current.createdAt;
+  const payload = asset.sourcePayload as Partial<UnsplashPayload>;
 
-  switch (frequency) {
-    case "every15minutes":
-      return elapsed >= 15 * 60 * 1000;
-    case "everyhour":
-      return elapsed >= 60 * 60 * 1000;
-    case "everyday":
-      return elapsed >= 24 * 60 * 60 * 1000;
-    case "newtab":
-    default:
-      return true;
+  return payload.info ?? null;
+}
+
+export async function fetchUnsplashPhotoDetails(
+  asset: BackgroundAsset,
+): Promise<UnsplashInfoData | null> {
+  if (asset.sourceId !== unsplashSource.id) return null;
+
+  try {
+    const url = trustedUrl(
+      `https://api.unsplash.com/photos/${encodeURIComponent(asset.sourceAssetId)}`,
+      API_ORIGINS,
+    );
+    const response = await authenticatedFetch(url);
+    if (!response.ok) return null;
+
+    const data = parsePhoto(await response.json());
+
+    return extractPhotoInfo(data);
+  } catch {
+    return null;
   }
 }
 
@@ -167,6 +182,25 @@ export function buildRandomPhotoUrl(
   }
 
   return url;
+}
+
+async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
+  if (current.sourceId !== unsplashSource.id) return true;
+
+  const frequency = await getPhotoFrequency();
+  const elapsed = Date.now() - current.createdAt;
+
+  switch (frequency) {
+    case "every15minutes":
+      return elapsed >= 15 * 60 * 1000;
+    case "everyhour":
+      return elapsed >= 60 * 60 * 1000;
+    case "everyday":
+      return elapsed >= 24 * 60 * 60 * 1000;
+    case "newtab":
+    default:
+      return true;
+  }
 }
 
 export function fullResolutionImageUrl(rawUrl: string): string {
@@ -239,9 +273,11 @@ async function downloadAsset(
     throw new Error("Unsplash asset payload has no image URL");
 
   const imageUrl = trustedUrl(payload.imageUrl, IMAGE_ORIGINS);
-  const response = await fetch(imageUrl, { redirect: "follow" });
+  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 
-  trustedUrl(response.url, IMAGE_ORIGINS);
+  if (response.url) {
+    trustedUrl(response.url, IMAGE_ORIGINS);
+  }
 
   return readBoundedImage(response);
 }
@@ -254,14 +290,16 @@ async function downloadFullAsset(asset: BackgroundAsset): Promise<Response> {
 
   const fullUrl = fullResolutionImageUrl(baseOrFullUrl);
   const imageUrl = trustedUrl(fullUrl, IMAGE_ORIGINS);
-  const response = await fetch(imageUrl, { redirect: "follow" });
+  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 
-  trustedUrl(response.url, IMAGE_ORIGINS);
+  if (response.url) {
+    trustedUrl(response.url, IMAGE_ORIGINS);
+  }
 
   if (!response.ok)
     throw new Error(`Image request failed (${response.status})`);
 
-  return response;
+  return readBoundedImage(response);
 }
 
 async function didDownload(asset: BackgroundAsset): Promise<void> {
@@ -310,12 +348,14 @@ function authHeaders(key: string): HeadersInit {
 }
 
 async function authenticatedFetch(url: URL): Promise<Response> {
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     headers: authHeaders(await resolveAccessKey()),
     redirect: "follow",
   });
 
-  trustedUrl(response.url, API_ORIGINS);
+  if (response.url) {
+    trustedUrl(response.url, API_ORIGINS);
+  }
 
   if (!response.ok)
     throw new Error(`Unsplash request failed (${response.status})`);
@@ -391,29 +431,45 @@ function extractPhotoInfo(photo: UnsplashPhotoResponse): UnsplashInfoData {
         }
       : null;
 
-  const user: UnsplashUser | null =
-    photo.user && typeof photo.user === "object"
-      ? {
-          name: photo.user.name,
-          username:
-            typeof photo.user.username === "string"
-              ? photo.user.username
-              : null,
-          profileImage:
-            photo.user.profile_image &&
-            typeof photo.user.profile_image === "object" &&
-            typeof photo.user.profile_image.medium === "string"
-              ? photo.user.profile_image.medium
-              : photo.user.profile_image &&
-                  typeof photo.user.profile_image.small === "string"
-                ? photo.user.profile_image.small
-                : null,
-          link:
-            photo.user.links && typeof photo.user.links.html === "string"
-              ? photo.user.links.html
-              : "",
-        }
-      : null;
+  let profileImage: string | null = null;
+  if (
+    photo.user?.profile_image &&
+    typeof photo.user.profile_image === "object"
+  ) {
+    const candidate =
+      typeof photo.user.profile_image.medium === "string"
+        ? photo.user.profile_image.medium
+        : typeof photo.user.profile_image.small === "string"
+          ? photo.user.profile_image.small
+          : null;
+
+    if (candidate) {
+      try {
+        profileImage = trustedUrl(candidate, IMAGE_ORIGINS).toString();
+      } catch {
+        profileImage = null;
+      }
+    }
+  }
+
+  let userLink = "";
+  if (photo.user?.links && typeof photo.user.links.html === "string") {
+    try {
+      userLink = trustedUrl(photo.user.links.html, WEB_ORIGINS).toString();
+    } catch {
+      userLink = "";
+    }
+  }
+
+  const user: UnsplashUser | null = photo.user
+    ? {
+        name: photo.user.name,
+        username:
+          typeof photo.user.username === "string" ? photo.user.username : null,
+        profileImage,
+        link: userLink,
+      }
+    : null;
 
   return {
     user,
@@ -422,39 +478,6 @@ function extractPhotoInfo(photo: UnsplashPhotoResponse): UnsplashInfoData {
     views: typeof photo.views === "number" ? photo.views : null,
     description: photo.description ?? photo.alt_description ?? null,
   };
-}
-
-export function getUnsplashPhotoInfo(
-  asset: BackgroundAsset | null,
-): UnsplashInfoData | null {
-  if (!asset || asset.sourceId !== unsplashSource.id) return null;
-  if (!asset.sourcePayload || typeof asset.sourcePayload !== "object")
-    return null;
-
-  const payload = asset.sourcePayload as Partial<UnsplashPayload>;
-
-  return payload.info ?? null;
-}
-
-export async function fetchUnsplashPhotoDetails(
-  asset: BackgroundAsset,
-): Promise<UnsplashInfoData | null> {
-  if (asset.sourceId !== unsplashSource.id) return null;
-
-  try {
-    const url = trustedUrl(
-      `https://api.unsplash.com/photos/${encodeURIComponent(asset.sourceAssetId)}`,
-      API_ORIGINS,
-    );
-    const response = await authenticatedFetch(url);
-    if (!response.ok) return null;
-
-    const data = parsePhoto(await response.json());
-
-    return extractPhotoInfo(data);
-  } catch {
-    return null;
-  }
 }
 
 function normalizeCsv(value?: string | null): string {
@@ -466,5 +489,3 @@ function normalizeCsv(value?: string | null): string {
     .filter(Boolean)
     .join(",");
 }
-
-export { unsplashSource };

@@ -14,6 +14,7 @@ import { upgradeLegacyHistory } from "./history-migrations";
 import {
   LEGACY_IMAGE_KEY,
   readRawHistory,
+  readStagedKeys,
   removeLocal,
   writeHistory,
 } from "./storage";
@@ -106,6 +107,11 @@ export async function reconcileHistory(): Promise<HistoryState> {
   if (!verified) throw new Error("History verification failed");
 
   const referenced = new Set(verified.history.map((item) => item.cacheKey));
+  const stagedKeys = await readStagedKeys();
+
+  for (const key of stagedKeys) {
+    referenced.add(key);
+  }
 
   for (const request of await cache.keys()) {
     if (!referenced.has(request.url)) await cache.delete(request);
@@ -118,6 +124,37 @@ export async function reconcileHistory(): Promise<HistoryState> {
   await removeLocal(LEGACY_IMAGE_KEY);
 
   return verified;
+}
+
+export async function purgeFolderFromHistory(
+  folderId: string,
+): Promise<HistoryState> {
+  const current = await readHistory();
+  const toDelete: string[] = [];
+  const remaining = current.history.filter((item) => {
+    if (item.sourceId === "local") {
+      const payload = item.sourcePayload as { folderId?: string } | undefined;
+      if (payload?.folderId === folderId) {
+        toDelete.push(item.cacheKey);
+        return false;
+      }
+    }
+    return true;
+  });
+
+  if (toDelete.length > 0) {
+    for (const key of toDelete) {
+      await deleteCachedImage(key);
+    }
+    const next: HistoryState = {
+      version: current.version,
+      history: remaining,
+    };
+    await writeHistory(next);
+    return next;
+  }
+
+  return current;
 }
 
 export async function promoteImage(
@@ -159,11 +196,7 @@ export async function promoteImage(
     };
 
     await writeHistory(reserved);
-
-    if (!(await deleteCachedImage(oldest.cacheKey))) {
-      await writeHistory(current);
-      throw new Error("Could not reserve image cache capacity");
-    }
+    await deleteCachedImage(oldest.cacheKey);
     base = reserved;
   }
 

@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { fetchWithTimeout } from "../src/ts/requests";
 import {
   buildRandomPhotoUrl,
   fullResolutionImageUrl,
@@ -273,6 +275,27 @@ describe("Unsplash image resolution", () => {
         createdAt: Date.now() - 70 * 60 * 1000,
       }),
     ).toBe(true);
+  });
+
+  it("times out fetch requests when deadline exceeds timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      const mockFetch = vi.fn().mockImplementation((_url, init) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new Error("aborted"));
+          });
+        });
+      });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const promise = fetchWithTimeout("https://images.unsplash.com/test");
+      vi.advanceTimersByTime(60000);
+
+      await expect(promise).rejects.toThrow("aborted");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

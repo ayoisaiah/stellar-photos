@@ -127,21 +127,28 @@ class EarthViewSettingsComponent extends LitElement {
     this.saveState = "saving";
     window.clearTimeout(this.saveResetTimeout);
 
-    try {
-      await setEarthViewSettings(this.settings);
-      this.confirmedSettings = this.settings;
-      this.saveState = "saved";
-      this.saveResetTimeout = window.setTimeout(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      }, SAVED_RESET_DELAY_MS);
-    } catch {
-      this.saveState = "error";
-      this.settings = this.confirmedSettings;
-    } finally {
-      this.saveInFlight = false;
+    while (
+      this.settings.photoFrequency !== this.confirmedSettings.photoFrequency
+    ) {
+      const targetSettings = { ...this.settings };
+      try {
+        await setEarthViewSettings(targetSettings);
+        this.confirmedSettings = targetSettings;
+      } catch {
+        this.saveState = "error";
+        this.settings = this.confirmedSettings;
+        this.saveInFlight = false;
+        return;
+      }
     }
+
+    this.saveState = "saved";
+    this.saveResetTimeout = window.setTimeout(() => {
+      if (this.saveState === "saved") {
+        this.saveState = "idle";
+      }
+    }, SAVED_RESET_DELAY_MS);
+    this.saveInFlight = false;
   }
 
   private statusMessage(): string {

@@ -51,6 +51,38 @@ async function shouldRotateLocal(current: BackgroundAsset): Promise<boolean> {
   }
 }
 
+export async function computeLocalAssetId(
+  folderId = "folder",
+  relativePath = "photo",
+): Promise<string> {
+  const raw = `${folderId}:${relativePath}`;
+
+  if (typeof crypto !== "undefined" && crypto.subtle?.digest) {
+    try {
+      const buffer = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(raw),
+      );
+      const hashArray = Array.from(new Uint8Array(buffer));
+      const hex = hashArray
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .slice(0, 32);
+      return `${encodeURIComponent(folderId)}_${hex}`;
+    } catch {
+      // Fallback below
+    }
+  }
+
+  let hash = 0;
+  for (let i = 0; i < raw.length; i += 1) {
+    hash = (hash << 5) - hash + raw.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return `${encodeURIComponent(folderId)}_${Math.abs(hash).toString(36)}`;
+}
+
 async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
   const photo = await getRandomDirectoryImage();
 
@@ -61,28 +93,16 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
   }
 
   const file = await photo.handle.getFile();
-  const sanitizedPath = (photo.relativePath || photo.name)
-    .replace(/[^\w./-]/g, "_")
-    .slice(0, 120);
-  let width = 0;
-  let height = 0;
-
-  if (typeof createImageBitmap === "function") {
-    try {
-      const bitmap = await createImageBitmap(file);
-      width = bitmap.width;
-      height = bitmap.height;
-      bitmap.close();
-    } catch {
-      // Fallback if bitmap decoding is unavailable
-    }
-  }
+  const sourceAssetId = await computeLocalAssetId(
+    photo.folderId,
+    photo.relativePath || photo.name,
+  );
 
   return {
     sourceId: localSource.id,
-    sourceAssetId: encodeURIComponent(sanitizedPath || "photo"),
-    width,
-    height,
+    sourceAssetId,
+    width: 0,
+    height: 0,
     color: null,
     description: photo.name,
     attribution: null,
@@ -104,10 +124,11 @@ async function downloadLocalAsset(
   asset: UncachedBackgroundAsset,
 ): Promise<Response> {
   const payload = asset.sourcePayload as LocalPayload | undefined;
-  const path =
-    payload?.relativePath ||
-    payload?.name ||
-    decodeURIComponent(asset.sourceAssetId);
+  const path = payload?.relativePath || payload?.name;
+  if (!path) {
+    throw new Error("Local asset has no file path");
+  }
+
   const file = await readDirectoryFile(path, payload?.folderId);
 
   return new Response(file, {

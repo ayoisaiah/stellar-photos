@@ -15,7 +15,7 @@ import {
   rescanAllFolders,
   saveDirectoryHandle,
 } from "../src/ts/sources/local-db";
-import { localSource } from "../src/ts/sources/local";
+import { computeLocalAssetId, localSource } from "../src/ts/sources/local";
 import {
   DEFAULT_LOCAL_SETTINGS,
   getLocalPhotoFrequency,
@@ -387,8 +387,8 @@ describe("local source image rotation and retrieval", () => {
     expect(asset).toMatchObject({
       sourceId: "local",
       description: "stars.jpg",
-      width: 1920,
-      height: 1080,
+      width: 0,
+      height: 0,
       payloadVersion: 1,
     });
 
@@ -428,5 +428,24 @@ describe("local source image rotation and retrieval", () => {
         createdAt: Date.now() - 70 * 60 * 1000,
       }),
     ).toBe(true);
+  });
+
+  it("computes distinct deterministic asset IDs across folders with identical file names", async () => {
+    const id1 = await computeLocalAssetId("folder-1", "wallpaper.jpg");
+    const id2 = await computeLocalAssetId("folder-2", "wallpaper.jpg");
+    const id1Duplicate = await computeLocalAssetId("folder-1", "wallpaper.jpg");
+
+    expect(id1).not.toBe(id2);
+    expect(id1).toBe(id1Duplicate);
+    expect(id1.length).toBeLessThanOrEqual(60);
+  });
+
+  it("throws when readDirectoryFile targets a missing folderId", async () => {
+    const handle = createMockDirHandle("FolderA", { "a.jpg": "content" });
+    await addDirectoryHandle(handle);
+
+    await expect(
+      readDirectoryFile("a.jpg", "non-existent-folder-id"),
+    ).rejects.toThrow("Target folder not found.");
   });
 });

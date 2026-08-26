@@ -36,6 +36,9 @@ class HistoryPanel extends LitElement {
 
   private loadGeneration = 0;
 
+  private idleHandle: number | null = null;
+  private timeoutHandle: number | null = null;
+
   override connectedCallback(): void {
     super.connectedCallback();
 
@@ -43,10 +46,8 @@ class HistoryPanel extends LitElement {
       chrome.storage.onChanged.addListener(this.handleStorageChange);
     }
 
-    if (this.open) {
+    if (this.open || this.ready) {
       void this.loadHistory();
-    } else if (this.ready) {
-      this.scheduleDeferredLoad();
     }
   }
 
@@ -55,18 +56,24 @@ class HistoryPanel extends LitElement {
       chrome.storage.onChanged.removeListener(this.handleStorageChange);
     }
 
+    this.cancelScheduledLoad();
+    this.loadGeneration += 1;
     this.cleanupThumbnailUrls();
     super.disconnectedCallback();
   }
 
   override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
-    if (changedProperties.has("open") && this.open) {
-      void this.loadHistory();
+    if (changedProperties.has("open")) {
+      if (this.open && this.historyAssets.length === 0) {
+        void this.loadHistory();
+      }
     } else if (
-      (changedProperties.has("ready") && this.ready) ||
-      (this.ready && changedProperties.has("activeAsset"))
+      changedProperties.has("ready") ||
+      changedProperties.has("activeAsset")
     ) {
-      this.scheduleDeferredLoad();
+      if (this.ready || this.open) {
+        void this.loadHistory();
+      }
     }
   }
 
@@ -112,8 +119,8 @@ class HistoryPanel extends LitElement {
                 class="card-thumb"
                 src="${thumbnailUrl}"
                 alt="${description}"
-                loading="lazy"
-                decoding="async"
+                loading="eager"
+                decoding="sync"
               />`
             : html`<div class="card-thumb-placeholder">
                 <stellar-icon .icon=${Image}></stellar-icon>
@@ -168,12 +175,29 @@ class HistoryPanel extends LitElement {
     `;
   }
 
+  private cancelScheduledLoad(): void {
+    if (
+      this.idleHandle !== null &&
+      typeof window !== "undefined" &&
+      "cancelIdleCallback" in window
+    ) {
+      window.cancelIdleCallback(this.idleHandle);
+      this.idleHandle = null;
+    }
+    if (this.timeoutHandle !== null) {
+      clearTimeout(this.timeoutHandle);
+      this.timeoutHandle = null;
+    }
+  }
+
   private async loadHistory(): Promise<void> {
     const generation = ++this.loadGeneration;
 
     try {
       const state = await readHistory();
-      if (generation !== this.loadGeneration) return;
+      if (generation !== this.loadGeneration || !this.isConnected) {
+        return;
+      }
 
       const rawAssets =
         state.history.length > 0
@@ -182,31 +206,40 @@ class HistoryPanel extends LitElement {
             ? [this.activeAsset]
             : [];
 
-      const nextUrls = new Map<string, string>();
-
-      for (const asset of rawAssets) {
-        const existing = this.thumbnailUrls.get(asset.cacheKey);
-        if (existing) {
-          nextUrls.set(asset.cacheKey, existing);
-          continue;
-        }
-
-        const response = await readCachedImage(asset.cacheKey);
-        if (generation !== this.loadGeneration) return;
-
-        if (response) {
-          const blob = await response.blob();
-          if (generation !== this.loadGeneration) return;
-
-          nextUrls.set(asset.cacheKey, URL.createObjectURL(blob));
-        } else {
-          const payload = asset.sourcePayload as
-            | { imageUrl?: string; fullImageUrl?: string }
-            | undefined;
-
-          if (payload?.imageUrl) {
-            nextUrls.set(asset.cacheKey, payload.imageUrl);
+      const results = await Promise.all(
+        rawAssets.map(async (asset) => {
+          const existing = this.thumbnailUrls.get(asset.cacheKey);
+          if (existing) {
+            return { key: asset.cacheKey, url: existing, isNew: false };
           }
+
+          const response = await readCachedImage(asset.cacheKey);
+          if (response) {
+            const blob = await response.blob();
+            return {
+              key: asset.cacheKey,
+              url: URL.createObjectURL(blob),
+              isNew: true,
+            };
+          }
+
+          return null;
+        }),
+      );
+
+      if (generation !== this.loadGeneration || !this.isConnected) {
+        for (const item of results) {
+          if (item?.isNew && item.url.startsWith("blob:")) {
+            URL.revokeObjectURL(item.url);
+          }
+        }
+        return;
+      }
+
+      const nextUrls = new Map<string, string>();
+      for (const item of results) {
+        if (item) {
+          nextUrls.set(item.key, item.url);
         }
       }
 
@@ -219,17 +252,7 @@ class HistoryPanel extends LitElement {
       this.thumbnailUrls = nextUrls;
       this.historyAssets = rawAssets;
     } catch {
-      // Graceful fallback
-    }
-  }
-
-  private scheduleDeferredLoad(): void {
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(() => void this.loadHistory(), {
-        timeout: 1000,
-      });
-    } else {
-      setTimeout(() => void this.loadHistory(), 100);
+      // Abort gracefully
     }
   }
 
@@ -241,11 +264,7 @@ class HistoryPanel extends LitElement {
       area === "local" &&
       (HISTORY_STORAGE_KEY in changes || "history" in changes)
     ) {
-      if (this.open) {
-        void this.loadHistory();
-      } else if (this.ready) {
-        this.scheduleDeferredLoad();
-      }
+      void this.loadHistory();
     }
   };
 

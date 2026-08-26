@@ -290,29 +290,36 @@ class UnsplashSettings extends LitElement {
   private persist = async (
     partial: Partial<Omit<UnsplashSettingsData, "version">>,
   ): Promise<void> => {
+    this.settings = { ...this.settings, ...partial };
+
     if (this.saveInFlight) return;
 
     window.clearTimeout(this.saveResetTimeout);
     this.saveInFlight = true;
-    this.settings = { ...this.settings, ...partial };
     this.saveState = "saving";
 
-    try {
-      await setUnsplashSettings(partial);
-
-      this.confirmedSettings = { ...this.confirmedSettings, ...partial };
-      this.saveState = "saved";
-      this.saveResetTimeout = window.setTimeout(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      }, SAVED_RESET_DELAY_MS);
-    } catch {
-      this.settings = { ...this.confirmedSettings };
-      this.saveState = "error";
-    } finally {
-      this.saveInFlight = false;
+    while (
+      JSON.stringify(this.settings) !== JSON.stringify(this.confirmedSettings)
+    ) {
+      const target = { ...this.settings };
+      try {
+        await setUnsplashSettings(target);
+        this.confirmedSettings = target;
+      } catch {
+        this.settings = { ...this.confirmedSettings };
+        this.saveState = "error";
+        this.saveInFlight = false;
+        return;
+      }
     }
+
+    this.saveState = "saved";
+    this.saveResetTimeout = window.setTimeout(() => {
+      if (this.saveState === "saved") {
+        this.saveState = "idle";
+      }
+    }, SAVED_RESET_DELAY_MS);
+    this.saveInFlight = false;
   };
 
   private changeFrequency = (event: Event): void => {
