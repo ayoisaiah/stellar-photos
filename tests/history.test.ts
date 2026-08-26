@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   decodeHistory,
   emptyHistory,
@@ -115,5 +115,86 @@ describe("history schema", () => {
     expect(state?.history).toHaveLength(10);
     expect(state?.history[0]?.sourceAssetId).toBe("photo-0");
     expect(state?.history[9]?.sourceAssetId).toBe("photo-9");
+  });
+});
+
+describe("promoteImage", () => {
+  it("promotes an existing history item to index 0 and avoids duplicate entries", async () => {
+    const { promoteImage } = await import("../src/ts/history");
+    const localStore: Record<string, unknown> = {};
+
+    vi.stubGlobal("chrome", {
+      runtime: { lastError: undefined },
+      storage: {
+        local: {
+          get: (
+            keys: string | string[] | null,
+            cb: (res: Record<string, unknown>) => void,
+          ) => {
+            const keyList = Array.isArray(keys) ? keys : [keys as string];
+            const res: Record<string, unknown> = {};
+            for (const k of keyList) {
+              if (k in localStore) res[k] = localStore[k];
+            }
+            cb(res);
+          },
+          set: (data: Record<string, unknown>, cb: () => void) => {
+            Object.assign(localStore, data);
+            cb();
+          },
+        },
+      },
+    });
+
+    const cacheMock = {
+      match: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(true),
+    };
+    vi.stubGlobal("caches", {
+      open: vi.fn().mockResolvedValue(cacheMock),
+      keys: vi.fn().mockResolvedValue([]),
+    });
+
+    const asset1 = {
+      sourceId: "local",
+      sourceAssetId: "photo-1",
+      width: 100,
+      height: 100,
+      color: null,
+      description: "Photo 1",
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: 1,
+    };
+
+    const asset2 = {
+      sourceId: "local",
+      sourceAssetId: "photo-2",
+      width: 100,
+      height: 100,
+      color: null,
+      description: "Photo 2",
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: 2,
+    };
+
+    const res1 = await promoteImage(asset1, new Response("img1"));
+    expect(res1.history).toHaveLength(1);
+    expect(res1.history[0]?.sourceAssetId).toBe("photo-1");
+
+    const res2 = await promoteImage(asset2, new Response("img2"));
+    expect(res2.history).toHaveLength(2);
+    expect(res2.history[0]?.sourceAssetId).toBe("photo-2");
+    expect(res2.history[1]?.sourceAssetId).toBe("photo-1");
+
+    // Promoting asset1 again should move it to index 0 without duplicating it in history
+    const res3 = await promoteImage(asset1, new Response("img1"));
+    expect(res3.history).toHaveLength(2);
+    expect(res3.history[0]?.sourceAssetId).toBe("photo-1");
+    expect(res3.history[1]?.sourceAssetId).toBe("photo-2");
   });
 });

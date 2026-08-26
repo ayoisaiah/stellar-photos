@@ -12,6 +12,9 @@ import type {
 } from "../types";
 
 export interface LocalPayload {
+  folderId?: string;
+  folderName?: string;
+  relativePath?: string;
   name: string;
   size: number;
   type: string;
@@ -58,7 +61,9 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
   }
 
   const file = await photo.handle.getFile();
-  const sanitizedName = photo.name.replace(/[^\w.-]/g, "_").slice(0, 80);
+  const sanitizedPath = (photo.relativePath || photo.name)
+    .replace(/[^\w./-]/g, "_")
+    .slice(0, 120);
   let width = 0;
   let height = 0;
 
@@ -75,7 +80,7 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
 
   return {
     sourceId: localSource.id,
-    sourceAssetId: encodeURIComponent(sanitizedName || "photo"),
+    sourceAssetId: encodeURIComponent(sanitizedPath || "photo"),
     width,
     height,
     color: null,
@@ -83,6 +88,9 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
     attribution: null,
     payloadVersion: 1,
     sourcePayload: {
+      folderId: photo.folderId,
+      folderName: photo.folderName,
+      relativePath: photo.relativePath,
       name: photo.name,
       size: file.size,
       type: file.type,
@@ -96,8 +104,11 @@ async function downloadLocalAsset(
   asset: UncachedBackgroundAsset,
 ): Promise<Response> {
   const payload = asset.sourcePayload as LocalPayload | undefined;
-  const fileName = payload?.name || decodeURIComponent(asset.sourceAssetId);
-  const file = await readDirectoryFile(fileName);
+  const path =
+    payload?.relativePath ||
+    payload?.name ||
+    decodeURIComponent(asset.sourceAssetId);
+  const file = await readDirectoryFile(path, payload?.folderId);
 
   return new Response(file, {
     headers: {

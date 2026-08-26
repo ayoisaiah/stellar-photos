@@ -182,48 +182,49 @@ async function acquireUnique(
     }
   }
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     const candidate = await source.getRandomAsset();
     if (candidate.sourceId !== source.id)
       throw new Error("Image source returned an asset for another source");
 
-    if (
-      state.history.some(
-        (item) => assetIdentity(item) === assetIdentity(candidate),
-      )
-    )
+    if (current && assetIdentity(current) === assetIdentity(candidate)) {
       continue;
+    }
 
     const image = await source.downloadAsset(candidate);
     const promoted = await promoteImage(candidate, image);
-    const current = promoted.history[0];
+    const promotedCurrent = promoted.history[0];
 
-    if (!current) throw new Error("Promoted image is missing from history");
+    if (!promotedCurrent)
+      throw new Error("Promoted image is missing from history");
 
-    void source.didDownload?.(current).catch(() => undefined);
+    void source.didDownload?.(promotedCurrent).catch(() => undefined);
 
-    return current;
+    return promotedCurrent;
   }
 
-  return state.history[0] ?? null;
+  const fallbackCandidate = await source.getRandomAsset();
+  const fallbackImage = await source.downloadAsset(fallbackCandidate);
+  const fallbackPromoted = await promoteImage(fallbackCandidate, fallbackImage);
+
+  return fallbackPromoted.history[0] ?? state.history[0] ?? null;
 }
 
 async function prepareUnique(
   state: HistoryState,
   source: ImageSource,
 ): Promise<BackgroundAsset> {
+  const current = state.history[0];
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const candidate = await source.getRandomAsset();
 
     if (candidate.sourceId !== source.id)
       throw new Error("Image source returned an asset for another source");
 
-    if (
-      state.history.some(
-        (item) => assetIdentity(item) === assetIdentity(candidate),
-      )
-    )
+    if (current && assetIdentity(current) === assetIdentity(candidate)) {
       continue;
+    }
 
     const image = await source.downloadAsset(candidate);
     const prepared = {

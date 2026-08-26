@@ -1,9 +1,14 @@
-import { Folder, FolderOpen } from "@lucide/icons";
+import { Folder, FolderOpen, Plus, RefreshCw, Trash2 } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/local-settings.css?inline";
-import { getLocalMeta, saveDirectoryHandle } from "../sources/local-db";
+import {
+  addDirectoryHandle,
+  listStoredFolderRecords,
+  removeDirectoryHandle,
+  rescanAllFolders,
+} from "../sources/local-db";
 import {
   DEFAULT_LOCAL_SETTINGS,
   getLocalPhotoFrequency,
@@ -12,6 +17,7 @@ import {
 } from "../sources/local-settings";
 import "./lucide-icon";
 
+import type { LocalFolderRecord } from "../sources/local-db";
 import type { PhotoFrequency } from "../sources/unsplash-settings";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -62,16 +68,13 @@ class LocalSettingsComponent extends LitElement {
   private saveResetTimeout: number | undefined;
 
   @state()
-  private accessor loaded = false;
-
-  @state()
   private accessor loading = false;
 
   @state()
-  private accessor folderName = "";
+  private accessor scanning = false;
 
   @state()
-  private accessor photoCount = 0;
+  private accessor folders: LocalFolderRecord[] = [];
 
   @state()
   private accessor frequency: PhotoFrequency =
@@ -94,44 +97,101 @@ class LocalSettingsComponent extends LitElement {
   }
 
   override render() {
-    const hasFolder = Boolean(this.folderName && this.photoCount > 0);
+    const totalPhotos = this.folders.reduce(
+      (sum, f) => sum + (f.photoCount || 0),
+      0,
+    );
 
     return html`
       <fieldset>
-        <legend>Folder</legend>
+        <legend>Folders</legend>
         <p class="hint">
-          Select a folder on your computer containing photos to display.
+          Select one or more folders containing photos. Subdirectories are included automatically.
         </p>
-        <div class="folder-card">
-          <div class="folder-info">
-            <div class="folder-icon-wrap">
-              <stellar-icon
-                .icon=${hasFolder ? FolderOpen : Folder}
-              ></stellar-icon>
-            </div>
-            <div class="folder-details">
-              <p class="folder-name">
-                ${hasFolder ? this.folderName : "No folder selected"}
-              </p>
-              <p class="folder-count">
-                ${
-                  hasFolder
-                    ? `${this.photoCount} photo${this.photoCount === 1 ? "" : "s"} found`
-                    : "Choose a folder with image files"
-                }
-              </p>
-            </div>
-          </div>
+
+        ${
+          this.folders.length > 0
+            ? html`
+              <div class="folders-list">
+                ${this.folders.map(
+                  (folder) => html`
+                    <div class="folder-card">
+                      <div class="folder-info">
+                        <div class="folder-icon-wrap">
+                          <stellar-icon .icon=${FolderOpen}></stellar-icon>
+                        </div>
+                        <div class="folder-details">
+                          <p class="folder-name">${folder.folderName}</p>
+                          <p class="folder-count">
+                            ${folder.photoCount} photo${folder.photoCount === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        class="btn-icon btn-remove"
+                        aria-label="Remove ${folder.folderName}"
+                        title="Remove folder"
+                        ?disabled=${this.loading || this.scanning}
+                        @click=${() => this.removeFolder(folder.id)}
+                      >
+                        <stellar-icon .icon=${Trash2}></stellar-icon>
+                      </button>
+                    </div>
+                  `,
+                )}
+              </div>
+            `
+            : html`
+              <div class="folder-card empty-state">
+                <div class="folder-info">
+                  <div class="folder-icon-wrap">
+                    <stellar-icon .icon=${Folder}></stellar-icon>
+                  </div>
+                  <div class="folder-details">
+                    <p class="folder-name">No folders selected</p>
+                    <p class="folder-count">
+                      Add a folder with image files to get started
+                    </p>
+                  </div>
+                </div>
+              </div>
+            `
+        }
+
+        <div class="folder-actions">
           <button
             type="button"
             class="btn-select"
-            ?disabled=${!this.loaded || this.loading}
-            @click=${this.selectFolder}
+            ?disabled=${this.loading || this.scanning}
+            @click=${this.addFolder}
           >
-            <stellar-icon .icon=${FolderOpen}></stellar-icon>
-            ${hasFolder ? "Change folder" : "Select folder"}
+            <stellar-icon .icon=${Plus}></stellar-icon>
+            ${this.folders.length > 0 ? "Add another folder" : "Select folder"}
           </button>
+          ${
+            this.folders.length > 0
+              ? html`
+                <button
+                  type="button"
+                  class="btn-select btn-rescan"
+                  ?disabled=${this.loading || this.scanning}
+                  @click=${this.rescanFolders}
+                >
+                  <stellar-icon
+                    .icon=${RefreshCw}
+                    class=${this.scanning ? "spinning" : ""}
+                  ></stellar-icon>
+                  ${this.scanning ? "Rescanning..." : "Rescan folders"}
+                </button>
+                <span class="total-summary">
+                  Total: ${totalPhotos} photo${totalPhotos === 1 ? "" : "s"} across ${this.folders.length} folder${this.folders.length === 1 ? "" : "s"}
+                </span>
+              `
+              : null
+          }
         </div>
+
         ${
           this.errorMessage
             ? html`<p class="error-message" role="alert">${this.errorMessage}</p>`
@@ -151,7 +211,7 @@ class LocalSettingsComponent extends LitElement {
                   name="frequency"
                   value=${value}
                   .checked=${this.frequency === value}
-                  ?disabled=${!this.loaded || this.loading}
+                  ?disabled=${this.loading}
                   @change=${this.changeFrequency}
                 />
                 <span class="control" aria-hidden="true"></span>
@@ -171,26 +231,44 @@ class LocalSettingsComponent extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      const [meta, frequency] = await Promise.all([
-        getLocalMeta(),
+      const [folders, frequency] = await Promise.all([
+        listStoredFolderRecords(),
         getLocalPhotoFrequency(),
       ]);
 
-      if (meta) {
-        this.folderName = meta.folderName;
-        this.photoCount = meta.photoCount;
-      }
-
+      this.folders = folders;
       this.confirmedFrequency = frequency;
       this.frequency = frequency;
     } catch {
       this.saveState = "error";
-    } finally {
-      this.loaded = true;
     }
   }
 
-  private selectFolder = async (): Promise<void> => {
+  private rescanFolders = async (): Promise<void> => {
+    if (this.scanning || this.folders.length === 0) return;
+
+    this.scanning = true;
+    this.errorMessage = "";
+
+    try {
+      const updated = await rescanAllFolders();
+      this.folders = updated;
+      this.saveState = "saved";
+
+      window.clearTimeout(this.saveResetTimeout);
+      this.saveResetTimeout = window.setTimeout(() => {
+        if (this.saveState === "saved") {
+          this.saveState = "idle";
+        }
+      }, SAVED_RESET_DELAY_MS);
+    } catch (err: unknown) {
+      this.errorMessage = (err as Error).message || "Failed to rescan folders";
+    } finally {
+      this.scanning = false;
+    }
+  };
+
+  private addFolder = async (): Promise<void> => {
     const win = window as unknown as DirectoryPickerWindow;
 
     if (typeof win.showDirectoryPicker !== "function") {
@@ -209,11 +287,12 @@ class LocalSettingsComponent extends LitElement {
       this.errorMessage = "";
       this.saveState = "saving";
 
-      const count = await saveDirectoryHandle(dirHandle);
-      await setLocalSettings({ folderName: dirHandle.name });
+      await addDirectoryHandle(dirHandle);
+      const updatedFolders = await listStoredFolderRecords();
+      const folderNames = updatedFolders.map((f) => f.folderName).join(", ");
+      await setLocalSettings({ folderName: folderNames });
 
-      this.folderName = dirHandle.name;
-      this.photoCount = count;
+      this.folders = updatedFolders;
       this.saveState = "saved";
 
       this.dispatchEvent(
@@ -236,6 +315,25 @@ class LocalSettingsComponent extends LitElement {
       this.errorMessage =
         (err as Error).message || "Failed to access the selected folder";
       this.saveState = "error";
+    } finally {
+      this.loading = false;
+    }
+  };
+
+  private removeFolder = async (id: string): Promise<void> => {
+    this.loading = true;
+    this.errorMessage = "";
+
+    try {
+      await removeDirectoryHandle(id);
+      const updatedFolders = await listStoredFolderRecords();
+      const folderNames = updatedFolders.map((f) => f.folderName).join(", ");
+      await setLocalSettings({ folderName: folderNames });
+
+      this.folders = updatedFolders;
+    } catch (err: unknown) {
+      this.errorMessage =
+        (err as Error).message || "Failed to remove the folder";
     } finally {
       this.loading = false;
     }

@@ -33,15 +33,28 @@ legend {
   line-height: 1.5;
 }
 
+.folders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
 .folder-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem;
+  padding: 0.85rem 1rem;
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 0.75rem;
   background: rgb(255 255 255 / 4%);
+}
+
+.folder-card.empty-state {
+  border-style: dashed;
+  background: transparent;
+  margin-bottom: 0.85rem;
 }
 
 .folder-info {
@@ -84,6 +97,50 @@ legend {
   margin: 0.2rem 0 0;
   color: #9ca3af;
   font-size: 0.76rem;
+}
+
+.folder-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.total-summary {
+  color: #9ca3af;
+  font-size: 0.78rem;
+}
+
+.btn-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.btn-icon:hover:not(:disabled) {
+  color: #f87171;
+  background: rgb(239 68 68 / 12%);
+  border-color: rgb(239 68 68 / 20%);
+}
+
+.btn-icon:focus-visible {
+  outline: 2px solid #eee7d8;
+  outline-offset: 2px;
+}
+
+.btn-icon stellar-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .btn-select {
@@ -213,4 +270,17 @@ small {
   margin: 0.7rem 0 0;
   color: #a7b0be;
   font-size: 0.75rem;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

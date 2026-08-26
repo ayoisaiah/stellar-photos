@@ -125,25 +125,34 @@ export async function promoteImage(
   image: Response,
 ): Promise<HistoryState> {
   const current = await readHistory();
+
   if (
-    current.history.some(
-      (entry) => assetIdentity(entry) === assetIdentity(metadata),
-    )
-  )
+    current.history.length > 0 &&
+    assetIdentity(current.history[0]!) === assetIdentity(metadata)
+  ) {
     return current;
+  }
 
   const completed = {
     ...metadata,
     cacheKey: assetCacheKey(metadata.sourceId, metadata.sourceAssetId),
   };
-  let base = current;
 
-  if (current.history.length >= HISTORY_LIMIT) {
-    const oldest = current.history.at(-1);
+  const filteredHistory = current.history.filter(
+    (entry) => assetIdentity(entry) !== assetIdentity(metadata),
+  );
+
+  let base: HistoryState = {
+    version: HISTORY_VERSION,
+    history: filteredHistory,
+  };
+
+  if (filteredHistory.length >= HISTORY_LIMIT) {
+    const oldest = filteredHistory.at(-1);
 
     if (!oldest) throw new Error("History capacity invariant failed");
 
-    const reservedEntries = current.history.slice(0, HISTORY_LIMIT - 1);
+    const reservedEntries = filteredHistory.slice(0, HISTORY_LIMIT - 1);
     const reserved: HistoryState = {
       version: HISTORY_VERSION,
       history: reservedEntries,
