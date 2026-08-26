@@ -5,6 +5,7 @@ import {
   initializeSettingsAndHistory,
   prepareSource,
   rotate,
+  trackDownload,
 } from "./actions";
 
 import type { WorkerCommand, WorkerResult } from "./types";
@@ -40,7 +41,9 @@ function isCommand(value: unknown): value is WorkerCommand {
     return typeof (value as { sourceId?: unknown }).sourceId === "string";
 
   return (
-    (command === "commit-source" || command === "discard-source") &&
+    (command === "commit-source" ||
+      command === "discard-source" ||
+      command === "track-download") &&
     !!(value as { asset?: unknown }).asset &&
     typeof (value as { asset?: unknown }).asset === "object"
   );
@@ -65,6 +68,9 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
       current = null;
     } else if (request.command === "discard-source") {
       await discardSource(request.asset);
+      current = null;
+    } else if (request.command === "track-download") {
+      await trackDownload(request.asset);
       current = null;
     } else {
       current = await rotate();

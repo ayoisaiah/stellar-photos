@@ -21,6 +21,7 @@ export interface LocalPayload {
 const localSource: ImageSource = {
   id: "local",
   name: "Local folder",
+  supportsDownload: false,
   initializeSettings: initializeLocalSettings,
   shouldRotate: shouldRotateLocal,
   getRandomAsset: getRandomLocalAsset,

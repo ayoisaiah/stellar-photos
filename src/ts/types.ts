@@ -32,7 +32,8 @@ export type WorkerCommand =
   | { command: "rotate" }
   | { command: "prepare-source"; sourceId: string }
   | { command: "commit-source"; asset: BackgroundAsset }
-  | { command: "discard-source"; asset: BackgroundAsset };
+  | { command: "discard-source"; asset: BackgroundAsset }
+  | { command: "track-download"; asset: BackgroundAsset };
 
 export type WorkerResult =
   | { ok: true; current: BackgroundAsset | null }
@@ -41,10 +42,12 @@ export type WorkerResult =
 export interface ImageSource {
   readonly id: string;
   readonly name: string;
+  readonly supportsDownload?: boolean;
   initializeSettings?(): Promise<void>;
   shouldRotate?(current: BackgroundAsset): Promise<boolean>;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
+  downloadFullAsset?(asset: BackgroundAsset): Promise<Response>;
   didDownload?(asset: BackgroundAsset): Promise<void>;
 }
 

@@ -36,8 +36,14 @@ describe("image source registry", () => {
   });
 
   it("resolves compiled-in sources by id", () => {
-    expect(getImageSource("unsplash")).toMatchObject({ id: "unsplash" });
-    expect(getImageSource("local")).toMatchObject({ id: "local" });
+    expect(getImageSource("unsplash")).toMatchObject({
+      id: "unsplash",
+      supportsDownload: true,
+    });
+    expect(getImageSource("local")).toMatchObject({
+      id: "local",
+      supportsDownload: false,
+    });
     expect(getImageSource("future-source")).toBeNull();
   });
 

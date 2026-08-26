@@ -1,4 +1,4 @@
-import { Settings } from "@lucide/icons";
+import { Download, Settings } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
@@ -11,6 +11,7 @@ import {
   getDisplaySettings,
   getImageSourceId,
 } from "../settings";
+import { getImageSource } from "../sources";
 import "./empty-state";
 import "./lucide-icon";
 import "./settings-drawer";
@@ -36,6 +37,9 @@ class StellarApp extends LitElement {
 
   @state()
   private accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
+
+  @state()
+  private accessor downloading = false;
 
   @state()
   private accessor phase: EmptyStatePhase = "ready";
@@ -100,15 +104,33 @@ class StellarApp extends LitElement {
         .phase=${this.phase}
         @retry=${this.ensureAndRender}
       ></stellar-empty-state>
-      <button
-        class="settings-toggle"
-        type="button"
-        aria-label=${this.settingsOpen ? "Close settings" : "Open settings"}
-        aria-expanded=${this.settingsOpen}
-        @click=${this.toggleSettings}
-      >
-        <stellar-icon .icon=${Settings}></stellar-icon>
-      </button>
+      <div class="bottom-actions">
+        ${
+          this.isDownloadable
+            ? html`
+              <button
+                class="action-button download-button"
+                type="button"
+                aria-label="Download photo"
+                title="Download photo"
+                ?disabled=${this.downloading}
+                @click=${this.downloadPhoto}
+              >
+                <stellar-icon .icon=${Download}></stellar-icon>
+              </button>
+            `
+            : null
+        }
+        <button
+          class="action-button settings-toggle"
+          type="button"
+          aria-label=${this.settingsOpen ? "Close settings" : "Open settings"}
+          aria-expanded=${this.settingsOpen}
+          @click=${this.toggleSettings}
+        >
+          <stellar-icon .icon=${Settings}></stellar-icon>
+        </button>
+      </div>
       ${
         this.settingsMounted
           ? html`
@@ -125,6 +147,14 @@ class StellarApp extends LitElement {
           : null
       }
     `;
+  }
+
+  private get isDownloadable(): boolean {
+    if (!this.currentAsset || !this.objectUrl) return false;
+
+    const source = getImageSource(this.currentAsset.sourceId);
+
+    return Boolean(source?.supportsDownload);
   }
 
   private get effectiveDisplayMode(): PhotoDisplayMode {
@@ -293,8 +323,50 @@ class StellarApp extends LitElement {
     }
   }
 
+  private downloadPhoto = async (): Promise<void> => {
+    if (!this.currentAsset || this.downloading) return;
+
+    const source = getImageSource(this.currentAsset.sourceId);
+    if (!source?.supportsDownload) return;
+
+    this.downloading = true;
+
+    try {
+      const response = source.downloadFullAsset
+        ? await source.downloadFullAsset(this.currentAsset)
+        : await readCachedImage(this.currentAsset.cacheKey);
+      const blob = response ? await response.blob() : null;
+
+      if (!blob) throw new Error("Image data is not available");
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const filename = `stellar-photos-${this.currentAsset.sourceAssetId}.jpg`;
+
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      void sendCommand({
+        command: "track-download",
+        asset: this.currentAsset,
+      });
+    } catch {
+      // Graceful fallback
+    } finally {
+      this.downloading = false;
+    }
+  };
+
   private toggleSettings = (): void => {
-    if (!this.settingsOpen) this.settingsMounted = true;
+    if (!this.settingsOpen) {
+      this.settingsMounted = true;
+      void this.loadSourceId(this.generation);
+    }
 
     this.settingsOpen = !this.settingsOpen;
     if (!this.sourceSwitchInFlight) this.sourceChange = { status: "idle" };

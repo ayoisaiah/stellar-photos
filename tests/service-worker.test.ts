@@ -6,6 +6,7 @@ const ensureCurrent = vi.fn();
 const initializeSettingsAndHistory = vi.fn();
 const prepareSource = vi.fn();
 const rotate = vi.fn();
+const trackDownload = vi.fn();
 const current = { sourceId: "unsplash", sourceAssetId: "photo-1" };
 
 vi.mock("../src/ts/actions", () => ({
@@ -15,6 +16,7 @@ vi.mock("../src/ts/actions", () => ({
   initializeSettingsAndHistory,
   prepareSource,
   rotate,
+  trackDownload,
 }));
 
 const { dispatch } = await import("../src/ts/service-worker");
@@ -57,5 +59,12 @@ describe("service worker commands", () => {
       ok: false,
       error: { code: "OPERATION_FAILED", message: "Unknown image source" },
     });
+  });
+
+  it("handles track-download commands", async () => {
+    await expect(
+      dispatch({ command: "track-download", asset: current }),
+    ).resolves.toEqual({ ok: true, current: null });
+    expect(trackDownload).toHaveBeenCalledWith(current);
   });
 });

@@ -19,6 +19,7 @@ import type {
 interface UnsplashPayload {
   downloadLocation: string;
   imageUrl?: string;
+  fullImageUrl?: string;
 }
 
 interface UnsplashPhotoResponse {
@@ -40,10 +41,12 @@ const WEB_ORIGINS = new Set(["https://unsplash.com"]);
 const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
+  supportsDownload: true,
   initializeSettings: initializeUnsplashSettings,
   shouldRotate,
   getRandomAsset,
   downloadAsset,
+  downloadFullAsset,
   didDownload,
 };
 
@@ -150,6 +153,7 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
       downloadLocation: trustedUrl(photo.links.download_location, API_ORIGINS)
         .href,
       imageUrl: imageUrl.href,
+      fullImageUrl: rawImageUrl.href,
     } satisfies UnsplashPayload,
     createdAt: Date.now(),
   };
@@ -163,6 +167,19 @@ async function downloadAsset(
     throw new Error("Unsplash asset payload has no image URL");
 
   const imageUrl = trustedUrl(payload.imageUrl, IMAGE_ORIGINS);
+  const response = await fetch(imageUrl, { redirect: "follow" });
+
+  trustedUrl(response.url, IMAGE_ORIGINS);
+
+  return readBoundedImage(response);
+}
+
+async function downloadFullAsset(asset: BackgroundAsset): Promise<Response> {
+  const payload = parsePayload(asset);
+  const fullUrl = payload.fullImageUrl ?? payload.imageUrl;
+  if (!fullUrl) throw new Error("Unsplash asset payload has no image URL");
+
+  const imageUrl = trustedUrl(fullUrl, IMAGE_ORIGINS);
   const response = await fetch(imageUrl, { redirect: "follow" });
 
   trustedUrl(response.url, IMAGE_ORIGINS);

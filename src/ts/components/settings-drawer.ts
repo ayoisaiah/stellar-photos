@@ -43,7 +43,11 @@ class SettingsDrawer extends LitElement {
     DEFAULT_DISPLAY_SETTINGS;
 
   override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
-    if (changedProperties.has("sourceId") && !this.selectedSourceId) {
+    if (changedProperties.has("sourceId")) {
+      this.selectedSourceId = this.sourceId;
+    }
+
+    if (changedProperties.has("open") && this.open) {
       this.selectedSourceId = this.sourceId;
     }
 
@@ -103,7 +107,8 @@ class SettingsDrawer extends LitElement {
                 @change=${this.selectSource}
               >
                 ${imageSources.map(
-                  ({ id, name }) => html`<option value=${id}>${name}</option>`,
+                  ({ id, name }) =>
+                    html`<option value=${id} ?selected=${id === currentSourceId}>${name}</option>`,
                 )}
               </select>
             </div>

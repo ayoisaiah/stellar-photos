@@ -125,16 +125,24 @@ describe("Unsplash image resolution", () => {
       "{}",
       { "content-type": "application/json" },
     );
+    const fullImageResponse = responseAt(raw, new Uint8Array([1, 2, 3, 4, 5]), {
+      "content-type": "image/jpeg",
+    });
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(apiResponse)
       .mockResolvedValueOnce(imageResponse)
+      .mockResolvedValueOnce(fullImageResponse)
       .mockResolvedValueOnce(trackingResponse);
 
     vi.stubGlobal("fetch", fetchMock);
 
     const asset = await unsplashSource.getRandomAsset();
     const image = await unsplashSource.downloadAsset(asset);
+    const fullImage = await unsplashSource.downloadFullAsset?.({
+      ...asset,
+      cacheKey: "cache-key",
+    });
 
     await unsplashSource.didDownload?.({ ...asset, cacheKey: "cache-key" });
 
@@ -146,7 +154,8 @@ describe("Unsplash image resolution", () => {
       payloadVersion: 1,
     });
     expect(await image.arrayBuffer()).toHaveProperty("byteLength", 3);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(await fullImage?.arrayBuffer()).toHaveProperty("byteLength", 5);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it("determines whether to rotate according to photo frequency setting and photo age", async () => {

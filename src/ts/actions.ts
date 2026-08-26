@@ -120,6 +120,20 @@ export async function discardSource(asset: BackgroundAsset): Promise<void> {
   });
 }
 
+export async function trackDownload(asset: BackgroundAsset): Promise<void> {
+  const source = getImageSource(asset.sourceId);
+
+  if (!source || !source.supportsDownload) return;
+
+  await enqueue(async () => {
+    try {
+      await source.didDownload?.(asset);
+    } catch {
+      // Ignore tracking errors
+    }
+  });
+}
+
 export async function initializeSettingsAndHistory(): Promise<void> {
   const { initializeCoreSettings } = await import("./settings");
 

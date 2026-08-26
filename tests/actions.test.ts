@@ -30,7 +30,7 @@ vi.mock("../src/ts/sources", () => ({
   getImageSource,
 }));
 
-const { commitSource, prepareSource, rotate } = await import(
+const { commitSource, prepareSource, rotate, trackDownload } = await import(
   "../src/ts/actions"
 );
 
@@ -141,5 +141,31 @@ describe("source activation", () => {
     expect(source.shouldRotate).toHaveBeenCalledWith(current);
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
     expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
+  });
+
+  it("notifies the source when tracking a user download for a supported source", async () => {
+    const didDownload = vi.fn().mockResolvedValue(undefined);
+    getImageSource.mockReturnValue({
+      ...source,
+      supportsDownload: true,
+      didDownload,
+    });
+
+    await trackDownload(current);
+
+    expect(didDownload).toHaveBeenCalledWith(current);
+  });
+
+  it("ignores download tracking when source does not support downloads", async () => {
+    const didDownload = vi.fn().mockResolvedValue(undefined);
+    getImageSource.mockReturnValue({
+      ...source,
+      supportsDownload: false,
+      didDownload,
+    });
+
+    await trackDownload(current);
+
+    expect(didDownload).not.toHaveBeenCalled();
   });
 });
