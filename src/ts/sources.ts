@@ -1,4 +1,5 @@
 import { getImageSourceId } from "./settings";
+import { earthviewSource } from "./sources/earthview";
 import { localSource } from "./sources/local";
 import { unsplashSource } from "./sources/unsplash";
 
@@ -6,6 +7,7 @@ import type { ImageSource } from "./types";
 
 const bundledImageSources: readonly ImageSource[] = [
   unsplashSource,
+  earthviewSource,
   localSource,
 ];
 const imageSources: ReadonlyMap<string, ImageSource> = new Map(

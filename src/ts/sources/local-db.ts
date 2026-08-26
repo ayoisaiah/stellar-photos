@@ -35,7 +35,6 @@ const DB_NAME = "stellar-photos-local";
 const DB_VERSION = 3;
 const HANDLES_STORE = "handles";
 const META_STORE = "meta";
-export const RESCAN_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 const IMAGE_EXTENSIONS = new Set([
   "jpg",
@@ -137,6 +136,43 @@ export async function listDirectoryImagePaths(
   return imagePaths;
 }
 
+interface FileSystemHandleWithPermissions {
+  queryPermission?: (descriptor?: {
+    mode?: "read" | "readwrite";
+  }) => Promise<PermissionState>;
+  requestPermission?: (descriptor?: {
+    mode?: "read" | "readwrite";
+  }) => Promise<PermissionState>;
+}
+
+export async function verifyHandlePermission(
+  handle: FileSystemHandle,
+  mode: "read" | "readwrite" = "read",
+): Promise<boolean> {
+  try {
+    const handleWithPerms =
+      handle as unknown as FileSystemHandleWithPermissions;
+
+    if (typeof handleWithPerms.queryPermission !== "function") {
+      return true;
+    }
+
+    const currentStatus = await handleWithPerms.queryPermission({ mode });
+    if (currentStatus === "granted") {
+      return true;
+    }
+
+    if (typeof handleWithPerms.requestPermission === "function") {
+      const requestedStatus = await handleWithPerms.requestPermission({ mode });
+      return requestedStatus === "granted";
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
 export async function getFileHandleByPath(
   rootHandle: FileSystemDirectoryHandle,
   relativePath: string,
@@ -147,6 +183,8 @@ export async function getFileHandleByPath(
   if (!fileName) {
     throw new Error("Invalid file path");
   }
+
+  await verifyHandlePermission(rootHandle, "read");
 
   let currentDir = rootHandle;
 
@@ -308,16 +346,7 @@ export async function getRandomDirectoryImage(
     name: string;
   }[] = [];
 
-  const now = Date.now();
-
   for (const record of records) {
-    // Check if 24 hours have passed since last scan; if so, trigger background rescan
-    if (now - (record.lastScannedAt || 0) > RESCAN_INTERVAL_MS) {
-      void rescanFolderRecord(record).catch(() => {
-        // Silently ignore background rescan failures
-      });
-    }
-
     const paths =
       record.imagePaths && record.imagePaths.length > 0
         ? record.imagePaths

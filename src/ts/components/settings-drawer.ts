@@ -6,7 +6,11 @@ import { customElement, property, state } from "lit/decorators.js";
 import styles from "../../css/components/settings-drawer.css?inline";
 import { DEFAULT_DISPLAY_SETTINGS, setDisplaySettings } from "../settings";
 import { getImageSource, listImageSources } from "../sources";
-import { getLocalPhotoCount } from "../sources/local-db";
+import {
+  getLocalPhotoCount,
+  listStoredFolderRecords,
+  verifyHandlePermission,
+} from "../sources/local-db";
 import "./lucide-icon";
 import { renderSourceSettings } from "./source-settings";
 
@@ -254,8 +258,12 @@ class SettingsDrawer extends LitElement {
     if (sourceId === this.sourceId) return;
 
     if (sourceId === "local") {
-      const count = await getLocalPhotoCount().catch(() => 0);
-      if (count === 0) return;
+      const records = await listStoredFolderRecords().catch(() => []);
+      if (records.length === 0) return;
+
+      for (const record of records) {
+        await verifyHandlePermission(record.handle, "read");
+      }
     }
 
     this.dispatchEvent(

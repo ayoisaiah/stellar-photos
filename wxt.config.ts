@@ -26,6 +26,7 @@ export default defineConfig({
     host_permissions: [
       "https://api.unsplash.com/*",
       "https://images.unsplash.com/*",
+      "https://www.gstatic.com/prettyearth/*",
     ],
     minimum_chrome_version: browser === "chrome" ? "150" : undefined,
     browser_specific_settings:

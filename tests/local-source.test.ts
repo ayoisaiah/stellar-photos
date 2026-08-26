@@ -13,7 +13,6 @@ import {
   readDirectoryFile,
   removeDirectoryHandle,
   rescanAllFolders,
-  RESCAN_INTERVAL_MS,
   saveDirectoryHandle,
 } from "../src/ts/sources/local-db";
 import { localSource } from "../src/ts/sources/local";
@@ -78,6 +77,12 @@ function createMockDirHandle(
       }
 
       return createMockDirHandle(dirName, val);
+    },
+    async queryPermission() {
+      return "granted";
+    },
+    async requestPermission() {
+      return "granted";
     },
   } as unknown as FileSystemDirectoryHandle;
 }

@@ -29,6 +29,10 @@ describe("image source registry", () => {
         name: "Unsplash",
       }),
       expect.objectContaining({
+        id: "earthview",
+        name: "Google Earth View",
+      }),
+      expect.objectContaining({
         id: "local",
         name: "Local folder",
       }),
@@ -40,6 +44,11 @@ describe("image source registry", () => {
       id: "unsplash",
       supportsDownload: true,
       supportsInfo: true,
+    });
+    expect(getImageSource("earthview")).toMatchObject({
+      id: "earthview",
+      supportsDownload: true,
+      supportsInfo: false,
     });
     expect(getImageSource("local")).toMatchObject({
       id: "local",

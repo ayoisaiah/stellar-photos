@@ -1,3 +1,4 @@
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import {
   Camera,
   ChevronLeft,
@@ -5,6 +6,7 @@ import {
   Download,
   History,
   Info,
+  MapPin,
   Pause,
   Play,
   Settings,
@@ -25,6 +27,7 @@ import {
 } from "../settings";
 import { getImageSource } from "../sources";
 import { getUnsplashPhotoInfo } from "../sources/unsplash";
+import { dispatch } from "../service-worker";
 import {
   HISTORY_STORAGE_KEY,
   LEGACY_IMAGE_PAUSED_KEY,
@@ -210,13 +213,20 @@ class StellarApp extends LitElement {
           this.currentAsset?.attribution && this.objectUrl
             ? (
                 () => {
-                  const info = getUnsplashPhotoInfo(this.currentAsset);
+                  const isEarthView =
+                    this.currentAsset.sourceId === "earthview";
+                  const info = isEarthView
+                    ? null
+                    : getUnsplashPhotoInfo(this.currentAsset);
                   const photographerName =
                     info?.user?.name ?? this.currentAsset.attribution.name;
                   const photographerUrl =
                     info?.user?.link || this.currentAsset.attribution.url;
                   const photographerImage = info?.user?.profileImage;
                   const sourceUrl = this.currentAsset.attribution.sourceUrl;
+                  const sourceDisplayName = isEarthView
+                    ? "Google Earth"
+                    : "Unsplash";
 
                   return html`
                   <div class="bottom-credit">
@@ -229,7 +239,7 @@ class StellarApp extends LitElement {
                               alt="${photographerName}"
                             />`
                           : html`<div class="photographer-avatar-placeholder">
-                              <stellar-icon .icon=${Camera}></stellar-icon>
+                              <stellar-icon .icon=${isEarthView ? MapPin : Camera}></stellar-icon>
                             </div>`
                       }
                       <div class="photographer-details">
@@ -248,7 +258,7 @@ class StellarApp extends LitElement {
                             target="_blank"
                             rel="noopener"
                           >
-                            Unsplash
+                            ${sourceDisplayName}
                           </a>
                         </span>
                       </div>
@@ -408,6 +418,11 @@ class StellarApp extends LitElement {
   }
 
   private appendUtm(rawUrl: string): string {
+    if (!rawUrl) return "";
+    if (this.currentAsset?.sourceId !== "unsplash") {
+      return rawUrl;
+    }
+
     const separator = rawUrl.includes("?") ? "&" : "?";
 
     return `${rawUrl}${separator}${UTM_PARAMS}`;
@@ -536,6 +551,9 @@ class StellarApp extends LitElement {
       this.applyPhoto(prepared.url, prepared.asset);
 
       this.phase = "ready";
+      if (!this.isPaused) {
+        void sendCommand({ command: "rotate" });
+      }
     } catch {
       if (this.isCurrent(generation) && !this.objectUrl) this.phase = "error";
     } finally {
@@ -969,6 +987,11 @@ class StellarApp extends LitElement {
       preparedUrl = null;
       this.sourceId = event.detail.sourceId;
       this.phase = "ready";
+      await this.loadHistoryAssets();
+
+      if (!this.isPaused) {
+        void sendCommand({ command: "rotate" });
+      }
     } catch (error) {
       if (this.isCurrent(generation)) {
         this.sourceChange = {
@@ -1015,19 +1038,37 @@ class StellarApp extends LitElement {
   }
 }
 
-function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
+async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
+  if (
+    (command.command === "prepare-source" && command.sourceId === "local") ||
+    (command.command === "commit-source" &&
+      command.asset.sourceId === "local") ||
+    (command.command === "discard-source" && command.asset.sourceId === "local")
+  ) {
+    return dispatch(command);
+  }
+
+  const activeSourceId = await getImageSourceId();
+  if (
+    activeSourceId === "local" &&
+    (command.command === "rotate" || command.command === "ensure-current")
+  ) {
+    return dispatch(command);
+  }
+
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(
       command,
       (response: WorkerResult | undefined) => {
         if (chrome.runtime.lastError) {
-          resolve({
-            ok: false,
-            error: {
-              code: "RUNTIME_ERROR",
-              message: chrome.runtime.lastError.message ?? "Runtime error",
-            },
-          });
+          void dispatch(command).then(resolve);
+        } else if (
+          response &&
+          !response.ok &&
+          (response.error.message.includes("getFileHandle") ||
+            response.error.message.includes("not allowed"))
+        ) {
+          void dispatch(command).then(resolve);
         } else {
           resolve(
             response ?? {
