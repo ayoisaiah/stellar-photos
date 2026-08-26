@@ -1,4 +1,4 @@
-import { Download, Info, Settings } from "@lucide/icons";
+import { Camera, Download, Info, Settings } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
@@ -12,6 +12,7 @@ import {
   getImageSourceId,
 } from "../settings";
 import { getImageSource } from "../sources";
+import { getUnsplashPhotoInfo } from "../sources/unsplash";
 import "./empty-state";
 import "./lucide-icon";
 import "./photo-info";
@@ -21,6 +22,9 @@ import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import type { BackgroundAsset, WorkerCommand, WorkerResult } from "../types";
 import type { EmptyStatePhase } from "./empty-state";
 import type { SourceChangeState } from "./settings-drawer";
+
+const UTM_PARAMS =
+  "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
 
 @customElement("stellar-app")
 class StellarApp extends LitElement {
@@ -108,6 +112,59 @@ class StellarApp extends LitElement {
         .phase=${this.phase}
         @retry=${this.ensureAndRender}
       ></stellar-empty-state>
+      ${
+        this.currentAsset?.attribution && this.objectUrl
+          ? (
+              () => {
+                const info = getUnsplashPhotoInfo(this.currentAsset);
+                const photographerName =
+                  info?.user?.name ?? this.currentAsset.attribution.name;
+                const photographerUrl =
+                  info?.user?.link || this.currentAsset.attribution.url;
+                const photographerImage = info?.user?.profileImage;
+                const sourceUrl = this.currentAsset.attribution.sourceUrl;
+
+                return html`
+                <div class="bottom-credit">
+                  <div class="photographer-card">
+                    ${
+                      photographerImage
+                        ? html`<img
+                            class="photographer-avatar"
+                            src="${photographerImage}"
+                            alt="${photographerName}"
+                          />`
+                        : html`<div class="photographer-avatar-placeholder">
+                            <stellar-icon .icon=${Camera}></stellar-icon>
+                          </div>`
+                    }
+                    <div class="photographer-details">
+                      <a
+                        class="photographer-name"
+                        href="${this.appendUtm(photographerUrl)}"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        ${photographerName}
+                      </a>
+                      <span class="photographer-meta">
+                        Photo on
+                        <a
+                          href="${this.appendUtm(sourceUrl)}"
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          Unsplash
+                        </a>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              `;
+              }
+            )()
+          : null
+      }
       <div class="bottom-actions">
         ${
           this.isInfoAvailable
@@ -193,6 +250,12 @@ class StellarApp extends LitElement {
     const source = getImageSource(this.currentAsset.sourceId);
 
     return Boolean(source?.supportsDownload);
+  }
+
+  private appendUtm(rawUrl: string): string {
+    const separator = rawUrl.includes("?") ? "&" : "?";
+
+    return `${rawUrl}${separator}${UTM_PARAMS}`;
   }
 
   private toggleInfo = (): void => {
