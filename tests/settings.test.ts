@@ -67,9 +67,9 @@ const {
   HISTORY_STORAGE_KEY,
   PINNED_STORAGE_KEY,
   readHistory,
-  readPinned,
+  readPinnedAsset,
   writeHistory,
-  writePinned,
+  writePinnedAsset,
 } = await import("../src/ts/storage");
 
 beforeEach(() => {
@@ -283,16 +283,30 @@ describe("settings", () => {
     });
   });
 
-  it("reads and writes the pinned rotation state", async () => {
-    expect(await readPinned()).toBe(false);
+  it("reads and writes the pinned asset", async () => {
+    const pinnedAsset = {
+      sourceId: "unsplash",
+      sourceAssetId: "pinned-photo",
+      cacheKey: "pinned-cache",
+      width: 100,
+      height: 100,
+      color: null,
+      description: null,
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: 1,
+    };
 
-    await writePinned(true);
-    expect(await readPinned()).toBe(true);
-    expect(local[PINNED_STORAGE_KEY]).toBe(true);
+    expect(await readPinnedAsset()).toBeNull();
 
-    await writePinned(false);
-    expect(await readPinned()).toBe(false);
-    expect(local[PINNED_STORAGE_KEY]).toBe(false);
+    await writePinnedAsset(pinnedAsset);
+    expect(await readPinnedAsset()).toEqual(pinnedAsset);
+    expect(local[PINNED_STORAGE_KEY]).toEqual(pinnedAsset);
+
+    await writePinnedAsset(null);
+    expect(await readPinnedAsset()).toBeNull();
+    expect(local[PINNED_STORAGE_KEY]).toBeNull();
   });
 
   it("safely reads history with boundary validation and length caps", async () => {

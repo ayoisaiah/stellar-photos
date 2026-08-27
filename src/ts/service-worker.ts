@@ -9,7 +9,7 @@ import type { BackgroundAsset } from "./assets";
 
 type WorkerCommand =
   | { command: "ensure-current" }
-  | { command: "rotate"; force?: boolean }
+  | { command: "rotate" }
   | { command: "switch-source"; sourceId: string }
   | { command: "track-download"; asset: BackgroundAsset };
 
@@ -69,7 +69,7 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
       await trackDownload(request.asset);
       current = null;
     } else {
-      current = await rotate(Boolean(request.force));
+      current = await rotate();
     }
 
     return { ok: true, current };

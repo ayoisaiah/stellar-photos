@@ -9,13 +9,12 @@ import {
   putCachedThumbnail,
 } from "./cache";
 import { setImageSourceId } from "./settings";
-import type { ImageSource } from "./sources";
 import {
   getActiveImageSource,
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
-import { readHistory, readPinned, writeHistory } from "./storage";
+import { readHistory, readPinnedAsset, writeHistory } from "./storage";
 
 const LOCK_NAME = "stellar_actions_lock";
 
@@ -25,13 +24,16 @@ let pendingRotation = false;
 
 async function ensureCurrent(): Promise<BackgroundAsset | null> {
   return enqueue(async () => {
+    const pinned = await readPinnedAsset();
+    if (pinned) return pinned;
+
     const state = await readHistory();
 
     return state.history[0] ?? acquireAsset(state);
   });
 }
 
-function rotate(force = false): Promise<BackgroundAsset | null> {
+function rotate(): Promise<BackgroundAsset | null> {
   if (activeRotation) {
     pendingRotation = true;
     return activeRotation;
@@ -40,7 +42,7 @@ function rotate(force = false): Promise<BackgroundAsset | null> {
   activeRotation = (async () => {
     pendingRotation = false;
 
-    const acquire = () => acquireAsset(undefined, undefined, force);
+    const acquire = () => acquireAsset();
     let current = await enqueue(acquire);
 
     while (pendingRotation) {
@@ -63,12 +65,24 @@ async function switchSource(sourceId: string): Promise<BackgroundAsset> {
   if (!source) throw new Error("Unknown image source");
 
   return enqueue(async () => {
+    const pinned = await readPinnedAsset();
+    if (pinned) {
+      await setImageSourceId(source.id);
+      return pinned;
+    }
+
     const candidate = await source.getRandomAsset();
 
     if (candidate.sourceId !== source.id)
       throw new Error("Image source returned an asset for another source");
 
     const image = await source.downloadAsset(candidate);
+    const newlyPinned = await readPinnedAsset();
+    if (newlyPinned) {
+      await setImageSourceId(source.id);
+      return newlyPinned;
+    }
+
     const asset = {
       ...candidate,
       cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
@@ -173,26 +187,16 @@ async function cacheAndRecordImage(
 
 async function acquireAsset(
   state?: HistoryState,
-  selectedSource?: ImageSource,
-  force = false,
 ): Promise<BackgroundAsset | null> {
   state ??= await readHistory();
-  const source = selectedSource ?? (await getActiveImageSource());
+  const source = await getActiveImageSource();
   const current = state.history[0];
+  const pinned = await readPinnedAsset();
 
-  if (!force) {
-    const isPinned = await readPinned();
-    if (isPinned && current) {
-      return current;
-    }
+  if (pinned) return pinned;
 
-    if (
-      current &&
-      source.shouldRotate &&
-      !(await source.shouldRotate(current))
-    ) {
-      return current;
-    }
+  if (current && source.shouldRotate && !(await source.shouldRotate(current))) {
+    return current;
   }
 
   const candidate = await source.getRandomAsset();
@@ -200,6 +204,9 @@ async function acquireAsset(
     throw new Error("Image source returned an asset for another source");
 
   const image = await source.downloadAsset(candidate);
+  const newlyPinned = await readPinnedAsset();
+  if (newlyPinned) return newlyPinned;
+
   const asset: BackgroundAsset = {
     ...candidate,
     cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),

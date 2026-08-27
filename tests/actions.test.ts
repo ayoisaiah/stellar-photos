@@ -11,7 +11,7 @@ const readHistory = vi.fn();
 const writeHistory = vi.fn();
 const getActiveImageSource = vi.fn();
 const getImageSource = vi.fn();
-const readPinned = vi.fn();
+const readPinnedAsset = vi.fn();
 const deleteCachedThumbnail = vi.fn();
 const putCachedThumbnail = vi.fn();
 const createThumbnail = vi.fn().mockResolvedValue(null);
@@ -34,7 +34,7 @@ vi.mock("../src/ts/storage", () => ({
   HISTORY_LIMIT: 10,
   readHistory,
   writeHistory,
-  readPinned,
+  readPinnedAsset,
 }));
 
 const { rotate, switchSource, trackDownload } = await import(
@@ -80,7 +80,7 @@ beforeEach(() => {
   readCachedImage.mockResolvedValue(new Response("image"));
   readHistory.mockResolvedValue({ history: [current] });
   writeHistory.mockResolvedValue(undefined);
-  readPinned.mockResolvedValue(false);
+  readPinnedAsset.mockResolvedValue(null);
 });
 
 describe("source activation", () => {
@@ -117,6 +117,16 @@ describe("source activation", () => {
     expect(setImageSourceId).not.toHaveBeenCalled();
   });
 
+  it("changes the preferred source without loading while pinned", async () => {
+    readPinnedAsset.mockResolvedValue(current);
+
+    await expect(switchSource("unsplash")).resolves.toEqual(current);
+
+    expect(setImageSourceId).toHaveBeenCalledWith("unsplash");
+    expect(source.getRandomAsset).not.toHaveBeenCalled();
+    expect(writeHistory).not.toHaveBeenCalled();
+  });
+
   it("skips rotation when the active source reports the current photo is fresh", async () => {
     source.shouldRotate = vi.fn().mockResolvedValue(false);
 
@@ -128,7 +138,7 @@ describe("source activation", () => {
   });
 
   it("skips rotation when rotation is pinned", async () => {
-    readPinned.mockResolvedValue(true);
+    readPinnedAsset.mockResolvedValue(current);
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
     await expect(rotate()).resolves.toEqual(current);
@@ -149,16 +159,14 @@ describe("source activation", () => {
     });
   });
 
-  it("forces rotation even when rotation is pinned", async () => {
-    readPinned.mockResolvedValue(true);
-    source.shouldRotate = vi.fn().mockResolvedValue(false);
+  it("does not ingest a download when an asset becomes pinned", async () => {
+    readPinnedAsset.mockResolvedValueOnce(null).mockResolvedValueOnce(current);
 
-    await expect(rotate(true)).resolves.toEqual(prepared);
+    await expect(rotate()).resolves.toEqual(current);
 
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
-    expect(writeHistory).toHaveBeenCalledWith({
-      history: [prepared, current],
-    });
+    expect(source.downloadAsset).toHaveBeenCalledWith(candidate);
+    expect(putCachedImage).not.toHaveBeenCalled();
+    expect(writeHistory).not.toHaveBeenCalled();
   });
 
   it("notifies the source when tracking a user download for a supported source", async () => {
@@ -190,7 +198,7 @@ describe("source activation", () => {
   it("coalesces concurrent rotate requests and drains pending rotation", async () => {
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
-    const [first, second] = await Promise.all([rotate(true), rotate(true)]);
+    const [first, second] = await Promise.all([rotate(), rotate()]);
 
     expect(first).toEqual(prepared);
     expect(second).toEqual(prepared);
@@ -202,7 +210,7 @@ describe("source activation", () => {
     createThumbnail.mockResolvedValueOnce(fakeThumbBlob);
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
-    await expect(rotate(true)).resolves.toEqual(prepared);
+    await expect(rotate()).resolves.toEqual(prepared);
 
     expect(createThumbnail).toHaveBeenCalled();
     expect(putCachedThumbnail).toHaveBeenCalledWith(
@@ -221,7 +229,7 @@ describe("source activation", () => {
     readHistory.mockResolvedValue({ history: tenItems });
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
-    await expect(rotate(true)).resolves.toEqual(prepared);
+    await expect(rotate()).resolves.toEqual(prepared);
 
     expect(deleteCachedImage).toHaveBeenCalledWith("cache-old-9");
     expect(deleteCachedThumbnail).toHaveBeenCalledWith("cache-old-9");
@@ -240,7 +248,7 @@ describe("source activation", () => {
     readHistory.mockResolvedValue({ history: tenItems });
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
-    await expect(rotate(true)).resolves.toEqual(prepared);
+    await expect(rotate()).resolves.toEqual(prepared);
 
     expect(deleteCachedImage).not.toHaveBeenCalledWith("shared-cache-key");
     expect(deleteCachedThumbnail).not.toHaveBeenCalledWith("shared-cache-key");

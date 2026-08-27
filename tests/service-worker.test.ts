@@ -57,13 +57,14 @@ describe("service worker commands", () => {
     expect(trackDownload).toHaveBeenCalledWith(current);
   });
 
-  it("handles rotate commands with force parameter", async () => {
+  it("handles rotate commands", async () => {
     rotate.mockResolvedValue(current);
 
-    await expect(dispatch({ command: "rotate", force: true })).resolves.toEqual(
-      { ok: true, current },
-    );
-    expect(rotate).toHaveBeenCalledWith(true);
+    await expect(dispatch({ command: "rotate" })).resolves.toEqual({
+      ok: true,
+      current,
+    });
+    expect(rotate).toHaveBeenCalledWith();
   });
 
   it("returns NEEDS_PAGE_CONTEXT error code when local permission is required", async () => {

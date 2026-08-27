@@ -44,18 +44,15 @@ async function writeHistory(state: HistoryState): Promise<void> {
   await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: state });
 }
 
-async function readPinned(): Promise<boolean> {
+async function readPinnedAsset(): Promise<BackgroundAsset | null> {
   const result = await chrome.storage.local.get(PINNED_STORAGE_KEY);
+  const pinned = result[PINNED_STORAGE_KEY];
 
-  if (typeof result[PINNED_STORAGE_KEY] === "boolean") {
-    return Boolean(result[PINNED_STORAGE_KEY]);
-  }
-
-  return false;
+  return isBackgroundAsset(pinned) ? pinned : null;
 }
 
-async function writePinned(pinned: boolean): Promise<void> {
-  await chrome.storage.local.set({ [PINNED_STORAGE_KEY]: pinned });
+async function writePinnedAsset(asset: BackgroundAsset | null): Promise<void> {
+  await chrome.storage.local.set({ [PINNED_STORAGE_KEY]: asset });
 }
 
 export {
@@ -63,8 +60,8 @@ export {
   isBackgroundAsset,
   PINNED_STORAGE_KEY,
   readHistory,
-  readPinned,
+  readPinnedAsset,
   validateHistoryState,
   writeHistory,
-  writePinned,
+  writePinnedAsset,
 };

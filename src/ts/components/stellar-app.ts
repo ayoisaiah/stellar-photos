@@ -29,11 +29,12 @@ import { getImageSource } from "../sources";
 import { getUnsplashPhotoInfo } from "../sources/unsplash";
 import {
   HISTORY_STORAGE_KEY,
+  isBackgroundAsset,
   PINNED_STORAGE_KEY,
   readHistory,
-  readPinned,
+  readPinnedAsset,
   validateHistoryState,
-  writePinned,
+  writePinnedAsset,
 } from "../storage";
 import "./empty-state";
 import "./history-panel";
@@ -65,8 +66,8 @@ class StellarApp extends LitElement {
 
     new KeyboardShortcutsController(this, {
       isLocked: () => this.settingsOpen || this.infoOpen,
-      onPrev: () => void this.handlePrevPhoto(),
-      onNext: () => void this.handleNextPhoto(),
+      onPrev: () => void this.navigateHistory(1),
+      onNext: () => void this.navigateHistory(-1),
       onTogglePin: () => void this.togglePin(),
       onEscape: () => {
         if (this.historyOpen) {
@@ -104,7 +105,7 @@ class StellarApp extends LitElement {
   private accessor infoOpen = false;
 
   @state()
-  private accessor isPinned = false;
+  private accessor pinnedAsset: BackgroundAsset | null = null;
 
   @state()
   private accessor phase: EmptyStatePhase = "ready";
@@ -138,6 +139,10 @@ class StellarApp extends LitElement {
 
   private get controlsLocked(): boolean {
     return this.historyOpen || this.settingsOpen || this.infoOpen;
+  }
+
+  private get isPinned(): boolean {
+    return this.pinnedAsset !== null;
   }
 
   override connectedCallback(): void {
@@ -211,7 +216,7 @@ class StellarApp extends LitElement {
                       type="button"
                       aria-label="Previous photo"
                       title="Previous photo (Left arrow)"
-                      @click=${this.handlePrevPhoto}
+                      @click=${() => void this.navigateHistory(1)}
                     >
                       <stellar-icon .icon=${ChevronLeft}></stellar-icon>
                     </button>
@@ -226,7 +231,7 @@ class StellarApp extends LitElement {
                       type="button"
                       aria-label="Next photo"
                       title="Next photo (Right arrow)"
-                      @click=${this.handleNextPhoto}
+                      @click=${() => void this.navigateHistory(-1)}
                     >
                       <stellar-icon .icon=${ChevronRight}></stellar-icon>
                     </button>
@@ -240,9 +245,9 @@ class StellarApp extends LitElement {
           <button
             class="action-button pin-toggle ${this.isPinned ? "active" : ""}"
             type="button"
-            aria-label=${this.isPinned ? "Unpin photo" : "Pin photo"}
+            aria-label=${this.isPinned ? "Resume new photos" : "Keep this photo"}
             aria-pressed=${this.isPinned}
-            title=${this.isPinned ? "Unpin photo (P)" : "Pin photo (P)"}
+            title=${this.isPinned ? "Resume new photos (P)" : "Keep this photo (P)"}
             @click=${this.togglePin}
           >
             <stellar-icon .icon=${this.isPinned ? PinOff : Pin}></stellar-icon>
@@ -307,8 +312,8 @@ class StellarApp extends LitElement {
           .historyAssets=${this.historyAssets}
           @select-photo=${this.handleSelectHistoryPhoto}
           @download-photo=${this.handleDownloadHistoryPhoto}
-          @nav-next=${this.handleNextPhoto}
-          @nav-prev=${this.handlePrevPhoto}
+          @nav-next=${() => void this.navigateHistory(-1)}
+          @nav-prev=${() => void this.navigateHistory(1)}
           @close-history=${this.closeHistory}
         ></stellar-history-panel>
       </div>
@@ -540,7 +545,7 @@ class StellarApp extends LitElement {
         await Promise.all([
           getDisplaySettings().catch(() => DEFAULT_DISPLAY_SETTINGS),
           getImageSourceId().catch(() => DEFAULT_CORE_SETTINGS.activeSourceId),
-          readPinned().catch(() => false),
+          readPinnedAsset().catch(() => null),
           readHistory().catch(() => ({ history: [] })),
         ]);
 
@@ -548,10 +553,10 @@ class StellarApp extends LitElement {
 
       this.displaySettings = displaySettings;
       this.sourceId = sourceId;
-      this.isPinned = pinned;
+      this.pinnedAsset = pinned;
       this.historyAssets = historyState.history;
 
-      const current = historyState.history[0] ?? null;
+      const current = pinned ?? historyState.history[0] ?? null;
       let rendered = false;
 
       if (current) {
@@ -584,7 +589,8 @@ class StellarApp extends LitElement {
   ): void => {
     if (area === "local") {
       if (PINNED_STORAGE_KEY in changes) {
-        void this.loadPinnedState();
+        const pinned = changes[PINNED_STORAGE_KEY]?.newValue;
+        this.pinnedAsset = isBackgroundAsset(pinned) ? pinned : null;
       }
 
       if (HISTORY_STORAGE_KEY in changes) {
@@ -599,14 +605,6 @@ class StellarApp extends LitElement {
       }
     }
   };
-
-  private async loadPinnedState(): Promise<void> {
-    try {
-      this.isPinned = await readPinned();
-    } catch {
-      // Graceful fallback
-    }
-  }
 
   private reconcileHistoryIndex(): void {
     if (!this.currentAsset) {
@@ -635,17 +633,14 @@ class StellarApp extends LitElement {
   }
 
   private togglePin = async (): Promise<void> => {
-    await this.setPinnedState(!this.isPinned);
+    await this.setPinnedState(this.pinnedAsset ? null : this.currentAsset);
   };
 
-  private setPinnedState = async (pinned: boolean): Promise<void> => {
-    this.isPinned = pinned;
-
-    try {
-      await writePinned(pinned);
-    } catch {
-      // Ignore storage error
-    }
+  private setPinnedState = async (
+    asset: BackgroundAsset | null,
+  ): Promise<void> => {
+    await writePinnedAsset(asset);
+    this.pinnedAsset = asset;
   };
 
   private displayHistoryAsset = async (
@@ -656,17 +651,22 @@ class StellarApp extends LitElement {
     if (!prepared) return false;
 
     this.applyPhoto(prepared.url, prepared.asset);
+    if (this.isPinned) {
+      await this.setPinnedState(prepared.asset);
+    }
+
     return true;
   };
 
-  private handlePrevPhoto = async (): Promise<void> => {
+  private navigateHistory = async (step: -1 | 1): Promise<void> => {
     if (this.historyAssets.length === 0) {
       await this.loadHistoryAssets();
     }
-    if (!this.hasPrevious) return;
+    if (step === 1 ? !this.hasPrevious : !this.hasNext) return;
 
-    let targetIndex = this.historyIndex + 1;
-    while (targetIndex < this.historyAssets.length) {
+    let targetIndex =
+      this.historyIndex === -1 && step === -1 ? 0 : this.historyIndex + step;
+    while (targetIndex >= 0 && targetIndex < this.historyAssets.length) {
       const targetAsset = this.historyAssets[targetIndex];
       if (!targetAsset) break;
 
@@ -675,27 +675,7 @@ class StellarApp extends LitElement {
         return;
       }
 
-      targetIndex += 1;
-    }
-  };
-
-  private handleNextPhoto = async (): Promise<void> => {
-    if (this.historyAssets.length === 0) {
-      await this.loadHistoryAssets();
-    }
-    if (!this.hasNext) return;
-
-    let targetIndex = this.historyIndex === -1 ? 0 : this.historyIndex - 1;
-    while (targetIndex >= 0) {
-      const targetAsset = this.historyAssets[targetIndex];
-      if (!targetAsset) break;
-
-      if (await this.displayHistoryAsset(targetAsset)) {
-        this.historyIndex = targetIndex;
-        return;
-      }
-
-      targetIndex -= 1;
+      targetIndex += step;
     }
   };
 
@@ -769,7 +749,9 @@ class StellarApp extends LitElement {
       } else {
         this.reconcileHistoryIndex();
       }
-      await this.setPinnedState(true);
+      if (!this.isPinned) {
+        await this.setPinnedState(selectedAsset);
+      }
     }
   };
 
@@ -794,10 +776,10 @@ class StellarApp extends LitElement {
       if (now - this.lastWheelTime > 200) {
         if (event.deltaX > 15 || event.deltaY > 15) {
           this.lastWheelTime = now;
-          void this.handleNextPhoto();
+          void this.navigateHistory(-1);
         } else if (event.deltaX < -15 || event.deltaY < -15) {
           this.lastWheelTime = now;
-          void this.handlePrevPhoto();
+          void this.navigateHistory(1);
         }
       }
       return;
@@ -895,6 +877,9 @@ class StellarApp extends LitElement {
 
       if (!this.isConnected) return;
 
+      this.sourceId = event.detail.sourceId;
+      if (this.isPinned) return;
+
       const preparedResult = await this.preparePhoto(result.current);
 
       if (!preparedResult)
@@ -904,7 +889,6 @@ class StellarApp extends LitElement {
 
       this.applyPhoto(preparedUrl, preparedResult.asset);
       preparedUrl = null;
-      this.sourceId = event.detail.sourceId;
       this.phase = "ready";
       this.historyIndex = 0;
       await this.loadHistoryAssets();
