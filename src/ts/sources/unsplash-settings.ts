@@ -7,19 +7,15 @@ import {
   setSync,
 } from "../storage";
 
-import type { ImageResolution } from "../types";
+type ImageResolution = "standard" | "high" | "max";
 
-export type PhotoFrequency =
-  | "newtab"
-  | "every15minutes"
-  | "everyhour"
-  | "everyday";
+type PhotoFrequency = "newtab" | "every15minutes" | "everyhour" | "everyday";
 
-export type PhotoOrientation = "landscape" | "portrait" | "squarish";
+type PhotoOrientation = "landscape" | "portrait" | "squarish";
 
-export type ContentFilter = "low" | "high";
+type ContentFilter = "low" | "high";
 
-export interface UnsplashSettings {
+interface UnsplashSettings {
   version: 1;
   imageQuality: ImageResolution;
   photoFrequency: PhotoFrequency;
@@ -38,35 +34,28 @@ interface UnsplashLocalSettings {
 
 declare const __UNSPLASH_ACCESS_KEY__: string;
 
-const LEGACY_ACCESS_KEY_OVERRIDE_KEY = "unsplashAccessKey";
-const LEGACY_IMAGE_RESOLUTION_KEY = "imageResolution";
-const LEGACY_PHOTO_FREQUENCY_KEY = "photoFrequency";
-const LEGACY_IMAGE_FREQUENCY_KEY = "imageFrequency";
-const LEGACY_COLLECTIONS_KEY = "collections";
+const STELLAR_COLLECTION = "998309";
+const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
+const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = Object.freeze({
+  version: 1,
+  imageQuality: "standard",
+  photoFrequency: "newtab",
+  collections: STELLAR_COLLECTION,
+  topics: "",
+  username: "",
+  query: "",
+  orientation: "",
+  contentFilter: "low",
+});
 
-export const STELLAR_COLLECTION = "998309";
-export const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
-export const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> =
-  Object.freeze({
-    version: 1,
-    imageQuality: "standard",
-    photoFrequency: "newtab",
-    collections: STELLAR_COLLECTION,
-    topics: "",
-    username: "",
-    query: "",
-    orientation: "",
-    contentFilter: "low",
-  });
-
-export async function getUnsplashSettings(): Promise<UnsplashSettings> {
+async function getUnsplashSettings(): Promise<UnsplashSettings> {
   const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
   const settings = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_UNSPLASH_SETTINGS;
 }
 
-export async function setUnsplashSettings(
+async function setUnsplashSettings(
   partial: Partial<Omit<UnsplashSettings, "version">>,
 ): Promise<void> {
   const current = await getUnsplashSettings();
@@ -80,40 +69,34 @@ export async function setUnsplashSettings(
   });
 }
 
-export async function getImageQuality(): Promise<ImageResolution> {
+async function getImageQuality(): Promise<ImageResolution> {
   const settings = await getUnsplashSettings();
 
   return settings.imageQuality;
 }
 
-export async function setImageQuality(
-  imageQuality: ImageResolution,
-): Promise<void> {
+async function setImageQuality(imageQuality: ImageResolution): Promise<void> {
   await setUnsplashSettings({ imageQuality });
 }
 
-export async function getPhotoFrequency(): Promise<PhotoFrequency> {
+async function getPhotoFrequency(): Promise<PhotoFrequency> {
   const settings = await getUnsplashSettings();
 
   return settings.photoFrequency;
 }
 
-export async function setPhotoFrequency(
+async function setPhotoFrequency(
   photoFrequency: PhotoFrequency,
 ): Promise<void> {
   await setUnsplashSettings({ photoFrequency });
 }
 
-export async function resolveAccessKey(): Promise<string> {
-  const values = await getLocal<Record<string, unknown>>([
+async function resolveAccessKey(): Promise<string> {
+  const values = await getLocal<{ [UNSPLASH_SETTINGS_KEY]?: unknown }>(
     UNSPLASH_SETTINGS_KEY,
-    LEGACY_ACCESS_KEY_OVERRIDE_KEY,
-  ]);
+  );
   const settings = parseUnsplashLocalSettings(values[UNSPLASH_SETTINGS_KEY]);
-  const legacyOverride = values[LEGACY_ACCESS_KEY_OVERRIDE_KEY];
-  const override =
-    settings?.accessKeyOverride ??
-    (typeof legacyOverride === "string" ? legacyOverride : "");
+  const override = settings?.accessKeyOverride;
 
   if (typeof override === "string" && override.trim()) return override.trim();
   if (__UNSPLASH_ACCESS_KEY__.trim()) return __UNSPLASH_ACCESS_KEY__.trim();
@@ -121,73 +104,17 @@ export async function resolveAccessKey(): Promise<string> {
   throw new Error("No Unsplash access key is configured");
 }
 
-export async function initializeUnsplashSettings(): Promise<void> {
-  const syncValues = await getSync<Record<string, unknown>>([
+async function initializeUnsplashSettings(): Promise<void> {
+  const syncValues = await getSync<{ [UNSPLASH_SETTINGS_KEY]?: unknown }>(
     UNSPLASH_SETTINGS_KEY,
-    LEGACY_IMAGE_RESOLUTION_KEY,
-    LEGACY_PHOTO_FREQUENCY_KEY,
-    LEGACY_IMAGE_FREQUENCY_KEY,
-    LEGACY_COLLECTIONS_KEY,
-  ]);
+  );
   const current = parseUnsplashSettings(syncValues[UNSPLASH_SETTINGS_KEY]);
 
   if (!current) {
-    const legacyResolution = syncValues[LEGACY_IMAGE_RESOLUTION_KEY];
-    const imageQuality = isImageResolution(legacyResolution)
-      ? legacyResolution
-      : DEFAULT_UNSPLASH_SETTINGS.imageQuality;
-    const legacyFrequency =
-      syncValues[LEGACY_PHOTO_FREQUENCY_KEY] ??
-      syncValues[LEGACY_IMAGE_FREQUENCY_KEY];
-    const photoFrequency = isPhotoFrequency(legacyFrequency)
-      ? legacyFrequency
-      : DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
-    const legacyCollections = syncValues[LEGACY_COLLECTIONS_KEY];
-    const collections =
-      typeof legacyCollections === "string" && legacyCollections.trim()
-        ? legacyCollections.trim()
-        : DEFAULT_UNSPLASH_SETTINGS.collections;
-
     await setSync({
-      [UNSPLASH_SETTINGS_KEY]: {
-        ...DEFAULT_UNSPLASH_SETTINGS,
-        imageQuality,
-        photoFrequency,
-        collections,
-      } satisfies UnsplashSettings,
+      [UNSPLASH_SETTINGS_KEY]: DEFAULT_UNSPLASH_SETTINGS,
     });
   }
-
-  await removeSync([
-    LEGACY_IMAGE_RESOLUTION_KEY,
-    LEGACY_PHOTO_FREQUENCY_KEY,
-    LEGACY_IMAGE_FREQUENCY_KEY,
-    LEGACY_COLLECTIONS_KEY,
-  ]);
-
-  const localValues = await getLocal<Record<string, unknown>>([
-    UNSPLASH_SETTINGS_KEY,
-    LEGACY_ACCESS_KEY_OVERRIDE_KEY,
-  ]);
-  const localSettings = parseUnsplashLocalSettings(
-    localValues[UNSPLASH_SETTINGS_KEY],
-  );
-  const legacyOverride = localValues[LEGACY_ACCESS_KEY_OVERRIDE_KEY];
-
-  if (
-    !localSettings &&
-    typeof legacyOverride === "string" &&
-    legacyOverride.trim()
-  ) {
-    await setLocal({
-      [UNSPLASH_SETTINGS_KEY]: {
-        version: 1,
-        accessKeyOverride: legacyOverride.trim(),
-      } satisfies UnsplashLocalSettings,
-    });
-  }
-
-  await removeLocal(LEGACY_ACCESS_KEY_OVERRIDE_KEY);
 }
 
 function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
@@ -287,3 +214,24 @@ function isPhotoOrientation(value: unknown): value is PhotoOrientation | "" {
 function isContentFilter(value: unknown): value is ContentFilter {
   return value === "low" || value === "high";
 }
+
+export type {
+  ContentFilter,
+  ImageResolution,
+  PhotoFrequency,
+  PhotoOrientation,
+  UnsplashSettings,
+};
+export {
+  DEFAULT_UNSPLASH_SETTINGS,
+  getImageQuality,
+  getPhotoFrequency,
+  getUnsplashSettings,
+  initializeUnsplashSettings,
+  resolveAccessKey,
+  STELLAR_COLLECTION,
+  setImageQuality,
+  setPhotoFrequency,
+  setUnsplashSettings,
+  UNSPLASH_SETTINGS_KEY,
+};

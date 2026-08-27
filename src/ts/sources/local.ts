@@ -1,17 +1,12 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+import type { ImageSource } from "../sources";
 import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
 import {
   getLocalPhotoFrequency,
   initializeLocalSettings,
 } from "./local-settings";
 
-import type {
-  BackgroundAsset,
-  ImageSource,
-  UncachedBackgroundAsset,
-} from "../types";
-
-export interface LocalPayload {
+interface LocalPayload {
   folderId?: string;
   folderName?: string;
   relativePath?: string;
@@ -84,40 +79,56 @@ export async function computeLocalAssetId(
 }
 
 async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
-  const photo = await getRandomDirectoryImage();
+  const triedPaths: string[] = [];
 
-  if (!photo) {
-    throw new Error(
-      "No folder selected or no photos found in the selected folder. Please choose a folder first.",
-    );
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const photo = await getRandomDirectoryImage(triedPaths);
+
+    if (!photo) {
+      throw new Error(
+        "No folder selected or no photos found in the selected folder. Please choose a folder first.",
+      );
+    }
+
+    try {
+      const file = await photo.handle.getFile();
+      const sourceAssetId = await computeLocalAssetId(
+        photo.folderId,
+        photo.relativePath || photo.name,
+      );
+
+      return {
+        sourceId: localSource.id,
+        sourceAssetId,
+        width: 0,
+        height: 0,
+        color: null,
+        description: photo.name,
+        attribution: null,
+        payloadVersion: 1,
+        sourcePayload: {
+          folderId: photo.folderId,
+          folderName: photo.folderName,
+          relativePath: photo.relativePath,
+          name: photo.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+        } satisfies LocalPayload,
+        createdAt: Date.now(),
+      };
+    } catch (error) {
+      if (
+        (error as { name?: string })?.name === "LocalPermissionError" ||
+        (error as { code?: string })?.code === "NEEDS_PAGE_CONTEXT"
+      ) {
+        throw error;
+      }
+      triedPaths.push(photo.relativePath || photo.name);
+    }
   }
 
-  const file = await photo.handle.getFile();
-  const sourceAssetId = await computeLocalAssetId(
-    photo.folderId,
-    photo.relativePath || photo.name,
-  );
-
-  return {
-    sourceId: localSource.id,
-    sourceAssetId,
-    width: 0,
-    height: 0,
-    color: null,
-    description: photo.name,
-    attribution: null,
-    payloadVersion: 1,
-    sourcePayload: {
-      folderId: photo.folderId,
-      folderName: photo.folderName,
-      relativePath: photo.relativePath,
-      name: photo.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified,
-    } satisfies LocalPayload,
-    createdAt: Date.now(),
-  };
+  throw new Error("No readable photos found in the selected folder.");
 }
 
 async function downloadLocalAsset(
@@ -139,4 +150,5 @@ async function downloadLocalAsset(
   });
 }
 
+export type { LocalPayload };
 export { localSource };

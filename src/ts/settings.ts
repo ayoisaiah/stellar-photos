@@ -14,9 +14,6 @@ export interface DisplaySettings {
   motion: boolean;
 }
 
-const LEGACY_IMAGE_FREQUENCY_KEY = "imageFrequency";
-const LEGACY_IMAGE_SOURCE_KEY = "imageSource";
-
 export const CORE_SETTINGS_KEY = "coreSettings";
 export const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = Object.freeze({
   version: 1,
@@ -100,32 +97,17 @@ export async function initializeDisplaySettings(): Promise<void> {
 }
 
 export async function initializeCoreSettings(): Promise<void> {
-  const keys = [
+  const values = await getSync<{ [CORE_SETTINGS_KEY]?: unknown }>(
     CORE_SETTINGS_KEY,
-    LEGACY_IMAGE_SOURCE_KEY,
-    LEGACY_IMAGE_FREQUENCY_KEY,
-  ];
-  const values = await getSync<Record<string, unknown>>(keys);
+  );
   const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
 
   if (!current) {
-    const legacySourceId = values[LEGACY_IMAGE_SOURCE_KEY];
-    const activeSourceId =
-      legacySourceId === "official"
-        ? "unsplash"
-        : typeof legacySourceId === "string" && legacySourceId
-          ? legacySourceId
-          : DEFAULT_CORE_SETTINGS.activeSourceId;
-
     await setSync({
-      [CORE_SETTINGS_KEY]: {
-        ...DEFAULT_CORE_SETTINGS,
-        activeSourceId,
-      } satisfies CoreSettings,
+      [CORE_SETTINGS_KEY]: DEFAULT_CORE_SETTINGS,
     });
   }
 
-  await removeSync([LEGACY_IMAGE_SOURCE_KEY, LEGACY_IMAGE_FREQUENCY_KEY]);
   await initializeDisplaySettings();
 }
 

@@ -1,9 +1,21 @@
+import type { BackgroundAsset, UncachedBackgroundAsset } from "./assets";
 import { getImageSourceId } from "./settings";
 import { earthviewSource } from "./sources/earthview";
 import { localSource } from "./sources/local";
 import { unsplashSource } from "./sources/unsplash";
 
-import type { ImageSource } from "./types";
+interface ImageSource {
+  readonly id: string;
+  readonly name: string;
+  readonly supportsDownload?: boolean;
+  readonly supportsInfo?: boolean;
+  initializeSettings?(): Promise<void>;
+  shouldRotate?(current: BackgroundAsset): Promise<boolean>;
+  getRandomAsset(): Promise<UncachedBackgroundAsset>;
+  downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
+  downloadFullAsset?(asset: BackgroundAsset): Promise<Response>;
+  didDownload?(asset: BackgroundAsset): Promise<void>;
+}
 
 const bundledImageSources: readonly ImageSource[] = [
   unsplashSource,
@@ -15,22 +27,30 @@ const imageSources: ReadonlyMap<string, ImageSource> = new Map(
 );
 const defaultImageSource = unsplashSource;
 
-export function listImageSources(): readonly ImageSource[] {
+function listImageSources(): readonly ImageSource[] {
   return bundledImageSources;
 }
 
-export function getImageSource(sourceId: string): ImageSource | null {
+function getImageSource(sourceId: string): ImageSource | null {
   return imageSources.get(sourceId) ?? null;
 }
 
-export async function initializeImageSourceSettings(): Promise<void> {
+async function initializeImageSourceSettings(): Promise<void> {
   await Promise.all(
     bundledImageSources.map((source) => source.initializeSettings?.()),
   );
 }
 
-export async function getActiveImageSource(): Promise<ImageSource> {
+async function getActiveImageSource(): Promise<ImageSource> {
   const sourceId = await getImageSourceId();
 
   return getImageSource(sourceId) ?? defaultImageSource;
 }
+
+export type { ImageSource };
+export {
+  getActiveImageSource,
+  getImageSource,
+  initializeImageSourceSettings,
+  listImageSources,
+};

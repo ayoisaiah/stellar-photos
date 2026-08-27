@@ -26,7 +26,7 @@ import {
   setLocalSettings,
 } from "../src/ts/sources/local-settings";
 
-import type { BackgroundAsset } from "../src/ts/types";
+import type { BackgroundAsset } from "../src/ts/assets";
 
 const sync: Record<string, unknown> = {};
 
@@ -447,5 +447,30 @@ describe("local source image rotation and retrieval", () => {
     await expect(
       readDirectoryFile("a.jpg", "non-existent-folder-id"),
     ).rejects.toThrow("Target folder not found.");
+  });
+
+  it("gracefully falls back to other photos if one file on disk is deleted or unreadable", async () => {
+    const handle = createMockDirHandle("TestFolder", {
+      "deleted.jpg": "data",
+      "valid.jpg": "valid content",
+    });
+
+    // Make deleted.jpg throw when getFile() is called
+    const origGetFileHandle = handle.getFileHandle.bind(handle);
+    handle.getFileHandle = async (name: string) => {
+      if (name === "deleted.jpg") {
+        throw new Error("NotFoundError: The file was deleted");
+      }
+      return origGetFileHandle(name);
+    };
+
+    await addDirectoryHandle(handle);
+
+    const random = await getRandomDirectoryImage();
+    expect(random).not.toBeNull();
+    expect(random?.name).toBe("valid.jpg");
+
+    const asset = await localSource.getRandomAsset();
+    expect(asset.description).toBe("valid.jpg");
   });
 });

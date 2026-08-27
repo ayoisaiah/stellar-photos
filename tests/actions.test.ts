@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BackgroundAsset, ImageSource } from "../src/ts/types";
+import type { BackgroundAsset } from "../src/ts/assets";
+import type { ImageSource } from "../src/ts/sources";
 
 const setImageSourceId = vi.fn();
 const getImageSourceId = vi.fn();
 const deleteCachedImage = vi.fn();
 const putCachedImage = vi.fn();
 const readCachedImage = vi.fn();
-const promoteImage = vi.fn();
 const readHistory = vi.fn();
-const reconcileHistory = vi.fn();
+const writeHistory = vi.fn();
 const getActiveImageSource = vi.fn();
 const getImageSource = vi.fn();
-const readPaused = vi.fn();
+const readPinned = vi.fn();
 const readStagedKeys = vi.fn().mockResolvedValue([]);
 const addStagedKey = vi.fn().mockResolvedValue(undefined);
 const removeStagedKey = vi.fn().mockResolvedValue(undefined);
@@ -24,25 +24,22 @@ vi.mock("../src/ts/cache", async (importOriginal) => ({
   putCachedImage,
   readCachedImage,
 }));
-vi.mock("../src/ts/history", () => ({
-  promoteImage,
-  readHistory,
-  reconcileHistory,
-}));
 vi.mock("../src/ts/sources", () => ({
   getActiveImageSource,
   getImageSource,
 }));
 vi.mock("../src/ts/storage", () => ({
-  readPaused,
+  HISTORY_LIMIT: 10,
+  readHistory,
+  writeHistory,
+  readPinned,
   readStagedKeys,
   addStagedKey,
   removeStagedKey,
 }));
 
-const { commitSource, prepareSource, rotate, trackDownload } = await import(
-  "../src/ts/actions"
-);
+const { commitSource, prepareSource, purgeFolder, rotate, trackDownload } =
+  await import("../src/ts/actions");
 
 const candidate = {
   sourceId: "unsplash",
@@ -82,10 +79,9 @@ beforeEach(() => {
   getImageSourceId.mockResolvedValue("unsplash");
   deleteCachedImage.mockResolvedValue(true);
   readCachedImage.mockResolvedValue(new Response("image"));
-  reconcileHistory.mockResolvedValue({ version: 2, history: [current] });
-  readHistory.mockResolvedValue({ version: 2, history: [current] });
-  readPaused.mockResolvedValue(false);
-  promoteImage.mockResolvedValue({ version: 2, history: [prepared, current] });
+  readHistory.mockResolvedValue({ history: [current] });
+  writeHistory.mockResolvedValue(undefined);
+  readPinned.mockResolvedValue(false);
 });
 
 describe("source activation", () => {
@@ -98,7 +94,7 @@ describe("source activation", () => {
       prepared.cacheKey,
       expect.any(Response),
     );
-    expect(promoteImage).not.toHaveBeenCalled();
+    expect(writeHistory).not.toHaveBeenCalled();
     expect(setImageSourceId).not.toHaveBeenCalled();
   });
 
@@ -106,7 +102,9 @@ describe("source activation", () => {
     await commitSource(prepared);
 
     expect(setImageSourceId).toHaveBeenCalledWith("unsplash");
-    expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
+    expect(writeHistory).toHaveBeenCalledWith({
+      history: [prepared, current],
+    });
   });
 
   it("rejects an unavailable source without doing work", async () => {
@@ -119,21 +117,6 @@ describe("source activation", () => {
     expect(setImageSourceId).not.toHaveBeenCalled();
   });
 
-  it("does not fall back to the previous source after duplicate exhaustion", async () => {
-    source.getRandomAsset = vi.fn().mockResolvedValue({
-      ...candidate,
-      sourceAssetId: current.sourceAssetId,
-    });
-
-    await expect(prepareSource("unsplash")).rejects.toThrow(
-      "Image source did not return a new photograph",
-    );
-    expect(source.getRandomAsset).toHaveBeenCalledTimes(3);
-    expect(source.downloadAsset).not.toHaveBeenCalled();
-    expect(putCachedImage).not.toHaveBeenCalled();
-    expect(setImageSourceId).not.toHaveBeenCalled();
-  });
-
   it("skips rotation when the active source reports the current photo is fresh", async () => {
     source.shouldRotate = vi.fn().mockResolvedValue(false);
 
@@ -141,17 +124,17 @@ describe("source activation", () => {
 
     expect(source.shouldRotate).toHaveBeenCalledWith(current);
     expect(source.getRandomAsset).not.toHaveBeenCalled();
-    expect(promoteImage).not.toHaveBeenCalled();
+    expect(writeHistory).not.toHaveBeenCalled();
   });
 
-  it("skips rotation when rotation is paused", async () => {
-    readPaused.mockResolvedValue(true);
+  it("skips rotation when rotation is pinned", async () => {
+    readPinned.mockResolvedValue(true);
     source.shouldRotate = vi.fn().mockResolvedValue(true);
 
     await expect(rotate()).resolves.toEqual(current);
 
     expect(source.getRandomAsset).not.toHaveBeenCalled();
-    expect(promoteImage).not.toHaveBeenCalled();
+    expect(writeHistory).not.toHaveBeenCalled();
   });
 
   it("rotates when the active source allows it", async () => {
@@ -161,17 +144,21 @@ describe("source activation", () => {
 
     expect(source.shouldRotate).toHaveBeenCalledWith(current);
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
-    expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
+    expect(writeHistory).toHaveBeenCalledWith({
+      history: [prepared, current],
+    });
   });
 
-  it("forces rotation even when rotation is paused", async () => {
-    readPaused.mockResolvedValue(true);
+  it("forces rotation even when rotation is pinned", async () => {
+    readPinned.mockResolvedValue(true);
     source.shouldRotate = vi.fn().mockResolvedValue(false);
 
     await expect(rotate(true)).resolves.toEqual(prepared);
 
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
-    expect(promoteImage).toHaveBeenCalledWith(candidate, expect.any(Response));
+    expect(writeHistory).toHaveBeenCalledWith({
+      history: [prepared, current],
+    });
   });
 
   it("notifies the source when tracking a user download for a supported source", async () => {
@@ -198,5 +185,31 @@ describe("source activation", () => {
     await trackDownload(current);
 
     expect(didDownload).not.toHaveBeenCalled();
+  });
+
+  it("coalesces concurrent rotate requests and drains pending rotation", async () => {
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+
+    const [first, second] = await Promise.all([rotate(true), rotate(true)]);
+
+    expect(first).toEqual(prepared);
+    expect(second).toEqual(prepared);
+    expect(source.getRandomAsset).toHaveBeenCalledTimes(2);
+  });
+
+  it("purges folder assets from history and cache", async () => {
+    const localAsset: BackgroundAsset = {
+      ...candidate,
+      sourceId: "local",
+      sourceAssetId: "photo-local",
+      cacheKey: "cache-local",
+      sourcePayload: { folderId: "folder-1" },
+    };
+    readHistory.mockResolvedValue({ history: [localAsset, current] });
+
+    await purgeFolder("folder-1");
+
+    expect(writeHistory).toHaveBeenCalledWith({ history: [current] });
+    expect(deleteCachedImage).toHaveBeenCalledWith("cache-local");
   });
 });

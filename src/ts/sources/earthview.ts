@@ -1,26 +1,21 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
+import type { ImageSource } from "../sources";
 import earthViewCatalog from "./earthview-data.json";
 import {
   getEarthViewPhotoFrequency,
   initializeEarthViewSettings,
 } from "./earthview-settings";
 
-import type {
-  BackgroundAsset,
-  ImageSource,
-  UncachedBackgroundAsset,
-} from "../types";
-
-export interface EarthViewPhotoEntry {
+interface EarthViewPhotoEntry {
   id: number;
   country: string;
   region: string;
   map: string;
 }
 
-export interface EarthViewPayload {
+interface EarthViewPayload {
   id: number;
   country: string;
   region: string;
@@ -31,7 +26,7 @@ export interface EarthViewPayload {
 const GSTATIC_ORIGIN = new Set(["https://www.gstatic.com"]);
 const catalog: readonly EarthViewPhotoEntry[] = earthViewCatalog;
 
-export const earthviewSource: ImageSource = {
+const earthviewSource: ImageSource = {
   id: "earthview",
   name: "Google Earth View",
   supportsDownload: true,
@@ -43,11 +38,11 @@ export const earthviewSource: ImageSource = {
   downloadFullAsset: downloadFullEarthViewAsset,
 };
 
-export function getEarthViewCatalog(): readonly EarthViewPhotoEntry[] {
+function getEarthViewCatalog(): readonly EarthViewPhotoEntry[] {
   return catalog;
 }
 
-export function buildEarthViewImageUrl(id: number | string): string {
+function buildEarthViewImageUrl(id: number | string): string {
   return `https://www.gstatic.com/prettyearth/assets/full/${encodeURIComponent(String(id))}.jpg`;
 }
 
@@ -153,3 +148,6 @@ async function downloadFullEarthViewAsset(
 
   return readBoundedImage(response);
 }
+
+export type { EarthViewPayload, EarthViewPhotoEntry };
+export { buildEarthViewImageUrl, earthviewSource, getEarthViewCatalog };

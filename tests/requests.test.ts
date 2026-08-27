@@ -81,6 +81,15 @@ describe("Unsplash random photo URL filters", () => {
     expect(urlTopic.searchParams.get("topics")).toBe("nature");
     expect(urlTopic.searchParams.get("collections")).toBeNull();
   });
+
+  it("extracts slugs and IDs when full Unsplash URLs are passed as topics or collections", () => {
+    const url = buildRandomPhotoUrl({
+      topics: "https://unsplash.com/t/wallpapers, nature",
+      collections: "https://unsplash.com/collections/12345/featured, 67890",
+    });
+    expect(url.searchParams.get("topics")).toBe("wallpapers,nature");
+    expect(url.searchParams.get("collections")).toBe("12345,67890");
+  });
 });
 
 describe("Unsplash image resolution", () => {

@@ -60,7 +60,7 @@ const {
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
-const { PAUSED_STORAGE_KEY, readPaused, writePaused } = await import(
+const { PINNED_STORAGE_KEY, readPinned, writePinned } = await import(
   "../src/ts/storage"
 );
 
@@ -72,45 +72,28 @@ beforeEach(() => {
 describe("settings", () => {
   it("prefers a local user key and otherwise uses the bundled key", async () => {
     expect(await resolveAccessKey()).toBe("bundled-key");
-    local.unsplashAccessKey = " user-key ";
+    local[UNSPLASH_SETTINGS_KEY] = {
+      version: 1,
+      accessKeyOverride: "user-key",
+    };
     expect(await resolveAccessKey()).toBe("user-key");
   });
 
-  it("migrates legacy root settings into owned records", async () => {
-    sync.imageSource = "official";
-    sync.imageResolution = "high";
-    sync.photoFrequency = "everyhour";
-    sync.collections = "12345, 67890";
-    local.unsplashAccessKey = " user-key ";
-
+  it("initializes default settings when storage is empty", async () => {
     await initializeCoreSettings();
     await initializeUnsplashSettings();
 
     expect(sync).toEqual({
-      [CORE_SETTINGS_KEY]: {
-        ...DEFAULT_CORE_SETTINGS,
-        activeSourceId: "unsplash",
-      },
+      [CORE_SETTINGS_KEY]: DEFAULT_CORE_SETTINGS,
       [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
-      [UNSPLASH_SETTINGS_KEY]: {
-        ...DEFAULT_UNSPLASH_SETTINGS,
-        imageQuality: "high",
-        photoFrequency: "everyhour",
-        collections: "12345, 67890",
-      },
-    });
-    expect(local).toEqual({
-      [UNSPLASH_SETTINGS_KEY]: {
-        version: 1,
-        accessKeyOverride: "user-key",
-      },
+      [UNSPLASH_SETTINGS_KEY]: DEFAULT_UNSPLASH_SETTINGS,
     });
   });
 
-  it("preserves existing namespaced settings while removing legacy keys", async () => {
+  it("preserves existing settings on initialization", async () => {
     sync[CORE_SETTINGS_KEY] = {
       version: 1,
-      activeSourceId: "future-source",
+      activeSourceId: "local",
     };
     sync[UNSPLASH_SETTINGS_KEY] = {
       ...DEFAULT_UNSPLASH_SETTINGS,
@@ -118,37 +101,19 @@ describe("settings", () => {
       photoFrequency: "everyday",
       query: "astronomy",
     };
-    sync.imageSource = "official";
-    sync.imageResolution = "high";
-    sync.photoFrequency = "newtab";
-    sync.collections = "old-collection";
-    local[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
-      accessKeyOverride: "current-key",
-    };
-    local.unsplashAccessKey = "legacy-key";
 
     await initializeCoreSettings();
     await initializeUnsplashSettings();
 
-    expect(sync).toEqual({
-      [CORE_SETTINGS_KEY]: {
-        version: 1,
-        activeSourceId: "future-source",
-      },
-      [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
-      [UNSPLASH_SETTINGS_KEY]: {
-        ...DEFAULT_UNSPLASH_SETTINGS,
-        imageQuality: "max",
-        photoFrequency: "everyday",
-        query: "astronomy",
-      },
+    expect(sync[CORE_SETTINGS_KEY]).toEqual({
+      version: 1,
+      activeSourceId: "local",
     });
-    expect(local).toEqual({
-      [UNSPLASH_SETTINGS_KEY]: {
-        version: 1,
-        accessKeyOverride: "current-key",
-      },
+    expect(sync[UNSPLASH_SETTINGS_KEY]).toEqual({
+      ...DEFAULT_UNSPLASH_SETTINGS,
+      imageQuality: "max",
+      photoFrequency: "everyday",
+      query: "astronomy",
     });
   });
 
@@ -310,19 +275,15 @@ describe("settings", () => {
     });
   });
 
-  it("reads and writes the paused rotation state with legacy fallback", async () => {
-    expect(await readPaused()).toBe(false);
+  it("reads and writes the pinned rotation state", async () => {
+    expect(await readPinned()).toBe(false);
 
-    await writePaused(true);
-    expect(await readPaused()).toBe(true);
-    expect(local[PAUSED_STORAGE_KEY]).toBe(true);
+    await writePinned(true);
+    expect(await readPinned()).toBe(true);
+    expect(local[PINNED_STORAGE_KEY]).toBe(true);
 
-    await writePaused(false);
-    expect(await readPaused()).toBe(false);
-    expect(local[PAUSED_STORAGE_KEY]).toBe(false);
-
-    delete local[PAUSED_STORAGE_KEY];
-    local.imagePaused = true;
-    expect(await readPaused()).toBe(true);
+    await writePinned(false);
+    expect(await readPinned()).toBe(false);
+    expect(local[PINNED_STORAGE_KEY]).toBe(false);
   });
 });

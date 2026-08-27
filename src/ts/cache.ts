@@ -12,12 +12,6 @@ export function assetCacheKey(sourceId: string, sourceAssetId: string): string {
   return `${CACHE_ORIGIN}/asset/${source}/${asset}`;
 }
 
-export function legacyPhotoCacheKey(sourceAssetId: string): string {
-  const asset = encodeURIComponent(validateIdentifier(sourceAssetId, "asset"));
-
-  return `${CACHE_ORIGIN}/photo/${asset}`;
-}
-
 export async function activeCache(): Promise<Cache> {
   return caches.open(ACTIVE_CACHE_NAME);
 }
@@ -37,10 +31,6 @@ export async function putCachedImage(
 
 export async function deleteCachedImage(cacheKey: string): Promise<boolean> {
   return (await activeCache()).delete(cacheKey);
-}
-
-export async function ownedCacheNames(): Promise<string[]> {
-  return (await caches.keys()).filter((name) => name.startsWith(CACHE_PREFIX));
 }
 
 export async function readBoundedImage(response: Response): Promise<Response> {

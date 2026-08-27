@@ -9,22 +9,18 @@ import {
   STELLAR_COLLECTION,
 } from "./unsplash-settings";
 
-import type { UnsplashSettings } from "./unsplash-settings";
-import type {
-  BackgroundAsset,
-  ImageResolution,
-  ImageSource,
-  UncachedBackgroundAsset,
-} from "../types";
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+import type { ImageSource } from "../sources";
+import type { ImageResolution, UnsplashSettings } from "./unsplash-settings";
 
-export interface UnsplashUser {
+interface UnsplashUser {
   name: string;
   username: string | null;
   profileImage: string | null;
   link: string;
 }
 
-export interface UnsplashExif {
+interface UnsplashExif {
   make: string | null;
   model: string | null;
   exposureTime: string | null;
@@ -33,21 +29,23 @@ export interface UnsplashExif {
   iso: number | null;
 }
 
-export interface UnsplashLocation {
+interface UnsplashLocation {
   name: string | null;
   city: string | null;
   country: string | null;
 }
 
-export interface UnsplashInfoData {
+interface UnsplashInfoData {
   user: UnsplashUser | null;
   location: UnsplashLocation | null;
   exif: UnsplashExif | null;
   views: number | null;
+  downloads?: number | null;
+  likes?: number | null;
   description: string | null;
 }
 
-export interface UnsplashPayload {
+interface UnsplashPayload {
   downloadLocation: string;
   imageUrl?: string;
   fullImageUrl?: string;
@@ -91,11 +89,11 @@ interface UnsplashPhotoResponse {
   };
 }
 
-export const API_ORIGINS = new Set(["https://api.unsplash.com"]);
-export const IMAGE_ORIGINS = new Set(["https://images.unsplash.com"]);
-export const WEB_ORIGINS = new Set(["https://unsplash.com"]);
+const API_ORIGINS = new Set(["https://api.unsplash.com"]);
+const IMAGE_ORIGINS = new Set(["https://images.unsplash.com"]);
+const WEB_ORIGINS = new Set(["https://unsplash.com"]);
 
-export const unsplashSource: ImageSource = {
+const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
   supportsDownload: true,
@@ -108,7 +106,7 @@ export const unsplashSource: ImageSource = {
   didDownload,
 };
 
-export function getUnsplashPhotoInfo(
+function getUnsplashPhotoInfo(
   asset: BackgroundAsset | null,
 ): UnsplashInfoData | null {
   if (!asset || asset.sourceId !== unsplashSource.id) return null;
@@ -120,7 +118,7 @@ export function getUnsplashPhotoInfo(
   return payload.info ?? null;
 }
 
-export async function fetchUnsplashPhotoDetails(
+async function fetchUnsplashPhotoDetails(
   asset: BackgroundAsset,
 ): Promise<UnsplashInfoData | null> {
   if (asset.sourceId !== unsplashSource.id) return null;
@@ -141,9 +139,7 @@ export async function fetchUnsplashPhotoDetails(
   }
 }
 
-export function buildRandomPhotoUrl(
-  settings: Partial<UnsplashSettings> = {},
-): URL {
+function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
   const url = new URL("https://api.unsplash.com/photos/random");
   const query = settings.query?.trim() ?? "";
   const topics = normalizeCsv(settings.topics);
@@ -203,7 +199,7 @@ async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
   }
 }
 
-export function fullResolutionImageUrl(rawUrl: string): string {
+function fullResolutionImageUrl(rawUrl: string): string {
   const url = new URL(rawUrl);
 
   url.searchParams.delete("w");
@@ -213,7 +209,7 @@ export function fullResolutionImageUrl(rawUrl: string): string {
   return url.href;
 }
 
-export function imageUrlForResolution(
+function imageUrlForResolution(
   rawUrl: string,
   resolution: ImageResolution,
 ): string {
@@ -480,12 +476,63 @@ function extractPhotoInfo(photo: UnsplashPhotoResponse): UnsplashInfoData {
   };
 }
 
+function cleanIdentifier(value: string): string {
+  let cleaned = value.trim();
+  if (!cleaned) return "";
+
+  if (cleaned.includes("/")) {
+    try {
+      const url = new URL(cleaned);
+      const segments = url.pathname.split("/").filter(Boolean);
+      if (segments[0] === "collections" && segments[1]) {
+        cleaned = segments[1];
+      } else if (segments[0] === "t" && segments[1]) {
+        cleaned = segments[1];
+      } else if (segments[0]?.startsWith("@")) {
+        cleaned = segments[0].slice(1);
+      } else {
+        cleaned = segments.pop() || cleaned;
+      }
+    } catch {
+      const segments = cleaned.split("/").filter(Boolean);
+      cleaned = segments.pop() || cleaned;
+    }
+  }
+
+  if (cleaned.startsWith("@")) {
+    cleaned = cleaned.slice(1);
+  }
+
+  return cleaned.trim();
+}
+
 function normalizeCsv(value?: string | null): string {
   if (!value) return "";
 
   return value
     .split(",")
-    .map((item) => item.trim())
+    .map((item) => cleanIdentifier(item))
     .filter(Boolean)
     .join(",");
 }
+
+export type {
+  UnsplashExif,
+  UnsplashInfoData,
+  UnsplashLocation,
+  UnsplashPayload,
+  UnsplashUser,
+};
+export {
+  API_ORIGINS,
+  buildRandomPhotoUrl,
+  cleanIdentifier,
+  fetchUnsplashPhotoDetails,
+  fullResolutionImageUrl,
+  getUnsplashPhotoInfo,
+  IMAGE_ORIGINS,
+  imageUrlForResolution,
+  normalizeCsv,
+  unsplashSource,
+  WEB_ORIGINS,
+};

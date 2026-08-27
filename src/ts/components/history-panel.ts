@@ -3,14 +3,11 @@ import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/history-panel.css?inline";
+import type { BackgroundAsset } from "../assets";
 import { readCachedImage } from "../cache";
-import { readHistory } from "../history";
 import { getImageSource } from "../sources";
-import { HISTORY_STORAGE_KEY } from "../storage";
-import { HISTORY_LIMIT } from "../types";
+import { HISTORY_LIMIT } from "../storage";
 import "./lucide-icon";
-
-import type { BackgroundAsset } from "../types";
 
 const UTM_PARAMS =
   "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
@@ -28,8 +25,8 @@ class HistoryPanel extends LitElement {
   @property({ attribute: false })
   accessor activeAsset: BackgroundAsset | null = null;
 
-  @state()
-  private accessor historyAssets: BackgroundAsset[] = [];
+  @property({ attribute: false })
+  accessor historyAssets: BackgroundAsset[] = [];
 
   @state()
   private accessor thumbnailUrls = new Map<string, string>();
@@ -42,20 +39,14 @@ class HistoryPanel extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
 
-    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
-      chrome.storage.onChanged.addListener(this.handleStorageChange);
-    }
-
-    if (this.open || this.ready) {
-      void this.loadHistory();
+    if (this.open) {
+      void this.loadThumbnails();
+    } else if (this.ready) {
+      this.scheduleDeferredLoad();
     }
   }
 
   override disconnectedCallback(): void {
-    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
-      chrome.storage.onChanged.removeListener(this.handleStorageChange);
-    }
-
     this.cancelScheduledLoad();
     this.loadGeneration += 1;
     this.cleanupThumbnailUrls();
@@ -63,23 +54,28 @@ class HistoryPanel extends LitElement {
   }
 
   override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
-    if (changedProperties.has("open")) {
-      if (this.open && this.historyAssets.length === 0) {
-        void this.loadHistory();
-      }
-    } else if (
-      changedProperties.has("ready") ||
-      changedProperties.has("activeAsset")
+    if (
+      changedProperties.has("open") ||
+      changedProperties.has("historyAssets") ||
+      changedProperties.has("activeAsset") ||
+      changedProperties.has("ready")
     ) {
-      if (this.ready || this.open) {
-        void this.loadHistory();
+      if (this.open) {
+        void this.loadThumbnails();
+      } else if (this.ready) {
+        this.scheduleDeferredLoad();
       }
     }
   }
 
   override render() {
     const totalSlots = HISTORY_LIMIT;
-    const assets = this.historyAssets;
+    const assets =
+      this.historyAssets.length > 0
+        ? this.historyAssets
+        : this.activeAsset
+          ? [this.activeAsset]
+          : [];
     const placeholderCount = Math.max(0, totalSlots - assets.length);
     const placeholders = Array.from({ length: placeholderCount });
 
@@ -89,13 +85,13 @@ class HistoryPanel extends LitElement {
         role="region"
         aria-label="Photo history"
       >
-        ${assets.map((asset) => this.renderCard(asset))}
+        ${assets.map((asset, index) => this.renderCard(asset, index))}
         ${placeholders.map(() => this.renderPlaceholder())}
       </ul>
     `;
   }
 
-  private renderCard(asset: BackgroundAsset) {
+  private renderCard(asset: BackgroundAsset, index: number) {
     const thumbnailUrl = this.thumbnailUrls.get(asset.cacheKey);
     const description = asset.description || "photo";
     const sourceUrl = asset.attribution?.sourceUrl ?? "";
@@ -106,12 +102,13 @@ class HistoryPanel extends LitElement {
     return html`
       <li
         class="history-card"
+        data-cache-key="${asset.cacheKey}"
         tabindex="0"
         role="button"
         aria-label="Set ${description} as background"
-        @click=${() => this.selectAsset(asset)}
+        @click=${() => this.selectAsset(asset, index)}
         @keydown=${(event: KeyboardEvent) =>
-          this.handleCardKeydown(event, asset)}
+          this.handleCardKeydown(event, asset, index)}
       >
         ${
           thumbnailUrl
@@ -119,8 +116,8 @@ class HistoryPanel extends LitElement {
                 class="card-thumb"
                 src="${thumbnailUrl}"
                 alt="${description}"
-                loading="eager"
-                decoding="sync"
+                loading="lazy"
+                decoding="async"
               />`
             : html`<div class="card-thumb-placeholder">
                 <stellar-icon .icon=${Image}></stellar-icon>
@@ -190,24 +187,39 @@ class HistoryPanel extends LitElement {
     }
   }
 
-  private async loadHistory(): Promise<void> {
+  private scheduleDeferredLoad(): void {
+    this.cancelScheduledLoad();
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      this.idleHandle = window.requestIdleCallback(
+        () => {
+          void this.loadThumbnails();
+        },
+        { timeout: 2000 },
+      );
+    } else {
+      this.timeoutHandle = Number(
+        setTimeout(() => {
+          void this.loadThumbnails();
+        }, 500),
+      );
+    }
+  }
+
+  private async loadThumbnails(): Promise<void> {
     const generation = ++this.loadGeneration;
+    const assets =
+      this.historyAssets.length > 0
+        ? this.historyAssets
+        : this.activeAsset
+          ? [this.activeAsset]
+          : [];
+
+    if (assets.length === 0) return;
 
     try {
-      const state = await readHistory();
-      if (generation !== this.loadGeneration || !this.isConnected) {
-        return;
-      }
-
-      const rawAssets =
-        state.history.length > 0
-          ? state.history
-          : this.activeAsset
-            ? [this.activeAsset]
-            : [];
-
       const results = await Promise.all(
-        rawAssets.map(async (asset) => {
+        assets.map(async (asset) => {
           const existing = this.thumbnailUrls.get(asset.cacheKey);
           if (existing) {
             return { key: asset.cacheKey, url: existing, isNew: false };
@@ -250,23 +262,10 @@ class HistoryPanel extends LitElement {
       }
 
       this.thumbnailUrls = nextUrls;
-      this.historyAssets = rawAssets;
     } catch {
       // Abort gracefully
     }
   }
-
-  private handleStorageChange = (
-    changes: Record<string, chrome.storage.StorageChange>,
-    area: string,
-  ): void => {
-    if (
-      area === "local" &&
-      (HISTORY_STORAGE_KEY in changes || "history" in changes)
-    ) {
-      void this.loadHistory();
-    }
-  };
 
   private cleanupThumbnailUrls(): void {
     for (const url of this.thumbnailUrls.values()) {
@@ -284,10 +283,10 @@ class HistoryPanel extends LitElement {
     return `${rawUrl}${separator}${UTM_PARAMS}`;
   }
 
-  private selectAsset(asset: BackgroundAsset): void {
+  private selectAsset(asset: BackgroundAsset, index: number): void {
     this.dispatchEvent(
       new CustomEvent("select-photo", {
-        detail: { asset },
+        detail: { asset, index },
         bubbles: true,
         composed: true,
       }),
@@ -307,10 +306,11 @@ class HistoryPanel extends LitElement {
   private handleCardKeydown(
     event: KeyboardEvent,
     asset: BackgroundAsset,
+    index: number,
   ): void {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      this.selectAsset(asset);
+      this.selectAsset(asset, index);
     }
   }
 }

@@ -9,8 +9,8 @@ import {
 } from "../sources/unsplash";
 import "./lucide-icon";
 
+import type { BackgroundAsset } from "../assets";
 import type { UnsplashInfoData } from "../sources/unsplash";
-import type { BackgroundAsset } from "../types";
 
 const UTM_PARAMS =
   "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
@@ -261,6 +261,12 @@ class PhotoInfo extends LitElement {
       this.close();
     }
   };
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "stellar-photo-info": PhotoInfo;
+  }
 }
 
 export { PhotoInfo };

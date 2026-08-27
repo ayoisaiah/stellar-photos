@@ -7,12 +7,23 @@ import {
   rotate,
   trackDownload,
 } from "./actions";
+import type { BackgroundAsset } from "./assets";
 
-import type { WorkerCommand, WorkerResult } from "./types";
+type WorkerCommand =
+  | { command: "ensure-current" }
+  | { command: "rotate"; force?: boolean }
+  | { command: "prepare-source"; sourceId: string }
+  | { command: "commit-source"; asset: BackgroundAsset }
+  | { command: "discard-source"; asset: BackgroundAsset }
+  | { command: "track-download"; asset: BackgroundAsset };
+
+type WorkerResult =
+  | { ok: true; current: BackgroundAsset | null }
+  | { ok: false; error: { code: string; message: string } };
 
 let initPromise: Promise<void> | null = null;
 
-export function initializeSettingsAndHistoryMemoized(): Promise<void> {
+function initializeSettingsAndHistoryMemoized(): Promise<void> {
   initPromise ??= initializeSettingsAndHistory().catch((error) => {
     initPromise = null;
     throw error;
@@ -21,8 +32,11 @@ export function initializeSettingsAndHistoryMemoized(): Promise<void> {
   return initPromise;
 }
 
-export function startServiceWorker(): void {
+function startServiceWorker(): void {
   chrome.runtime.onInstalled.addListener(() => {
+    if (typeof navigator !== "undefined" && navigator.storage?.persist) {
+      void navigator.storage.persist();
+    }
     void initializeSettingsAndHistoryMemoized().catch(() => undefined);
   });
 
@@ -41,7 +55,7 @@ export function startServiceWorker(): void {
   );
 }
 
-export async function dispatch(request: unknown): Promise<WorkerResult> {
+async function dispatch(request: unknown): Promise<WorkerResult> {
   if (!isCommand(request))
     return {
       ok: false,
@@ -108,3 +122,6 @@ function isCommand(value: unknown): value is WorkerCommand {
     typeof (value as { asset?: unknown }).asset === "object"
   );
 }
+
+export type { WorkerCommand, WorkerResult };
+export { dispatch, initializeSettingsAndHistoryMemoized, startServiceWorker };

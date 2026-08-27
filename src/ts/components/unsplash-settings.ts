@@ -11,11 +11,11 @@ import "./tag-input";
 
 import type {
   ContentFilter,
+  ImageResolution,
   PhotoFrequency,
   PhotoOrientation,
   UnsplashSettings as UnsplashSettingsData,
 } from "../sources/unsplash-settings";
-import type { ImageResolution } from "../types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 

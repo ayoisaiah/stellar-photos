@@ -1,25 +1,26 @@
-import { assetIdentity } from "./assets";
+import type { BackgroundAsset } from "./assets";
 import {
   assetCacheKey,
   deleteCachedImage,
   putCachedImage,
   readCachedImage,
 } from "./cache";
-import {
-  promoteImage,
-  purgeFolderFromHistory,
-  readHistory,
-  reconcileHistory,
-} from "./history";
 import { getImageSourceId, setImageSourceId } from "./settings";
+import type { ImageSource } from "./sources";
 import {
   getActiveImageSource,
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
-import { addStagedKey, readPaused, removeStagedKey } from "./storage";
-
-import type { BackgroundAsset, HistoryState, ImageSource } from "./types";
+import type { HistoryState } from "./storage";
+import {
+  addStagedKey,
+  HISTORY_LIMIT,
+  readHistory,
+  readPinned,
+  removeStagedKey,
+  writeHistory,
+} from "./storage";
 
 const LOCK_NAME = "stellar_actions_lock";
 
@@ -28,23 +29,23 @@ let initialization: Promise<HistoryState> | null = null;
 let activeRotation: Promise<BackgroundAsset | null> | null = null;
 let pendingRotation = false;
 
-export function initialize(): Promise<HistoryState> {
-  initialization ??= enqueue(reconcileHistory);
+function initialize(): Promise<HistoryState> {
+  initialization ??= enqueue(readHistory);
 
   return initialization;
 }
 
-export async function ensureCurrent(): Promise<BackgroundAsset | null> {
+async function ensureCurrent(): Promise<BackgroundAsset | null> {
   await initialize();
 
   return enqueue(async () => {
     const state = await readHistory();
 
-    return state.history[0] ?? acquireUnique(state);
+    return state.history[0] ?? acquireAsset(state);
   });
 }
 
-export function rotate(force = false): Promise<BackgroundAsset | null> {
+function rotate(force = false): Promise<BackgroundAsset | null> {
   if (activeRotation) {
     pendingRotation = true;
     return activeRotation;
@@ -54,7 +55,7 @@ export function rotate(force = false): Promise<BackgroundAsset | null> {
     pendingRotation = false;
     await initialize();
 
-    const acquire = () => acquireUnique(undefined, undefined, force);
+    const acquire = () => acquireAsset(undefined, undefined, force);
     let current = await enqueue(acquire);
 
     while (pendingRotation) {
@@ -71,7 +72,7 @@ export function rotate(force = false): Promise<BackgroundAsset | null> {
   return activeRotation;
 }
 
-export async function prepareSource(
+async function prepareSource(
   sourceId: string,
 ): Promise<BackgroundAsset | null> {
   const source = getImageSource(sourceId);
@@ -80,10 +81,26 @@ export async function prepareSource(
 
   await initialize();
 
-  return enqueue(async () => prepareUnique(await readHistory(), source));
+  return enqueue(async () => {
+    const candidate = await source.getRandomAsset();
+
+    if (candidate.sourceId !== source.id)
+      throw new Error("Image source returned an asset for another source");
+
+    const image = await source.downloadAsset(candidate);
+    const prepared = {
+      ...candidate,
+      cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
+    };
+
+    await putCachedImage(prepared.cacheKey, image);
+    await addStagedKey(prepared.cacheKey);
+
+    return prepared;
+  });
 }
 
-export async function commitSource(asset: BackgroundAsset): Promise<void> {
+async function commitSource(asset: BackgroundAsset): Promise<void> {
   const source = getImageSource(asset.sourceId);
 
   if (
@@ -100,12 +117,11 @@ export async function commitSource(asset: BackgroundAsset): Promise<void> {
     if (!image) throw new Error("Prepared image is no longer available");
 
     const previousSourceId = await getImageSourceId();
-    const { cacheKey: _cacheKey, ...metadata } = asset;
 
     await setImageSourceId(source.id);
 
     try {
-      const promoted = await promoteImage(metadata, image);
+      const promoted = await saveAndPromote(asset, image);
       const current = promoted.history[0];
 
       if (!current) throw new Error("Promoted image is missing from history");
@@ -117,7 +133,7 @@ export async function commitSource(asset: BackgroundAsset): Promise<void> {
   });
 }
 
-export async function discardSource(asset: BackgroundAsset): Promise<void> {
+async function discardSource(asset: BackgroundAsset): Promise<void> {
   const canonicalKey = assetCacheKey(asset.sourceId, asset.sourceAssetId);
 
   if (asset.cacheKey !== canonicalKey) return;
@@ -132,13 +148,20 @@ export async function discardSource(asset: BackgroundAsset): Promise<void> {
   });
 }
 
-export async function purgeFolder(folderId: string): Promise<void> {
+async function purgeFolder(folderId: string): Promise<void> {
   await initialize();
 
-  await enqueue(() => purgeFolderFromHistory(folderId));
+  await enqueue(async () => {
+    const { next, removed } = await removeFolderFromHistory(folderId);
+    for (const item of removed) {
+      if (!next.history.some((h) => h.cacheKey === item.cacheKey)) {
+        await deleteCachedImage(item.cacheKey);
+      }
+    }
+  });
 }
 
-export async function trackDownload(asset: BackgroundAsset): Promise<void> {
+async function trackDownload(asset: BackgroundAsset): Promise<void> {
   const source = getImageSource(asset.sourceId);
 
   if (!source || !source.supportsDownload) return;
@@ -152,7 +175,7 @@ export async function trackDownload(asset: BackgroundAsset): Promise<void> {
   });
 }
 
-export async function initializeSettingsAndHistory(): Promise<void> {
+async function initializeSettingsAndHistory(): Promise<void> {
   const { initializeCoreSettings } = await import("./settings");
 
   await enqueue(async () => {
@@ -180,7 +203,25 @@ function enqueue<T>(operation: () => Promise<T>): Promise<T> {
   return result;
 }
 
-async function acquireUnique(
+async function saveAndPromote(
+  asset: BackgroundAsset,
+  image: Response,
+): Promise<HistoryState> {
+  await putCachedImage(asset.cacheKey, image);
+
+  const { next, evicted } = await appendToHistory(asset);
+
+  if (
+    evicted &&
+    !next.history.some((item) => item.cacheKey === evicted.cacheKey)
+  ) {
+    await deleteCachedImage(evicted.cacheKey);
+  }
+
+  return next;
+}
+
+async function acquireAsset(
   state?: HistoryState,
   selectedSource?: ImageSource,
   force = false,
@@ -190,8 +231,8 @@ async function acquireUnique(
   const current = state.history[0];
 
   if (!force) {
-    const isPaused = await readPaused();
-    if (isPaused && current) {
+    const isPinned = await readPinned();
+    if (isPinned && current) {
       return current;
     }
 
@@ -204,59 +245,72 @@ async function acquireUnique(
     }
   }
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const candidate = await source.getRandomAsset();
-    if (candidate.sourceId !== source.id)
-      throw new Error("Image source returned an asset for another source");
+  const candidate = await source.getRandomAsset();
+  if (candidate.sourceId !== source.id)
+    throw new Error("Image source returned an asset for another source");
 
-    if (current && assetIdentity(current) === assetIdentity(candidate)) {
-      continue;
-    }
+  const image = await source.downloadAsset(candidate);
+  const asset: BackgroundAsset = {
+    ...candidate,
+    cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
+  };
+  const promoted = await saveAndPromote(asset, image);
+  const promotedCurrent = promoted.history[0];
 
-    const image = await source.downloadAsset(candidate);
-    const promoted = await promoteImage(candidate, image);
-    const promotedCurrent = promoted.history[0];
+  if (!promotedCurrent)
+    throw new Error("Promoted image is missing from history");
 
-    if (!promotedCurrent)
-      throw new Error("Promoted image is missing from history");
-
-    return promotedCurrent;
-  }
-
-  const fallbackCandidate = await source.getRandomAsset();
-  const fallbackImage = await source.downloadAsset(fallbackCandidate);
-  const fallbackPromoted = await promoteImage(fallbackCandidate, fallbackImage);
-
-  return fallbackPromoted.history[0] ?? state.history[0] ?? null;
+  return promotedCurrent;
 }
 
-async function prepareUnique(
-  state: HistoryState,
-  source: ImageSource,
-): Promise<BackgroundAsset> {
-  const current = state.history[0];
+async function appendToHistory(
+  asset: BackgroundAsset,
+): Promise<{ next: HistoryState; evicted: BackgroundAsset | null }> {
+  const current = await readHistory();
+  const nextHistory = [asset, ...current.history].slice(0, HISTORY_LIMIT);
+  const evicted =
+    current.history.length >= HISTORY_LIMIT
+      ? (current.history.at(-1) ?? null)
+      : null;
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const candidate = await source.getRandomAsset();
+  const next: HistoryState = { history: nextHistory };
+  await writeHistory(next);
 
-    if (candidate.sourceId !== source.id)
-      throw new Error("Image source returned an asset for another source");
+  return { next, evicted };
+}
 
-    if (current && assetIdentity(current) === assetIdentity(candidate)) {
-      continue;
+async function removeFolderFromHistory(
+  folderId: string,
+): Promise<{ next: HistoryState; removed: BackgroundAsset[] }> {
+  const current = await readHistory();
+  const removed: BackgroundAsset[] = [];
+  const remaining = current.history.filter((item) => {
+    if (item.sourceId === "local") {
+      const payload = item.sourcePayload as { folderId?: string } | undefined;
+      if (payload?.folderId === folderId) {
+        removed.push(item);
+        return false;
+      }
     }
+    return true;
+  });
 
-    const image = await source.downloadAsset(candidate);
-    const prepared = {
-      ...candidate,
-      cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
-    };
-
-    await putCachedImage(prepared.cacheKey, image);
-    await addStagedKey(prepared.cacheKey);
-
-    return prepared;
+  const next: HistoryState = { history: remaining };
+  if (removed.length > 0) {
+    await writeHistory(next);
   }
 
-  throw new Error("Image source did not return a new photograph");
+  return { next, removed };
 }
+
+export {
+  commitSource,
+  discardSource,
+  ensureCurrent,
+  initialize,
+  initializeSettingsAndHistory,
+  prepareSource,
+  purgeFolder,
+  rotate,
+  trackDownload,
+};

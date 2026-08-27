@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
+import type { BackgroundAsset } from "../src/ts/assets";
 import {
   buildEarthViewImageUrl,
   earthviewSource,
@@ -14,8 +14,6 @@ import {
   setEarthViewPhotoFrequency,
   setEarthViewSettings,
 } from "../src/ts/sources/earthview-settings";
-
-import type { BackgroundAsset } from "../src/ts/types";
 
 const sync: Record<string, unknown> = {};
 

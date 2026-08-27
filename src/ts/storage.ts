@@ -1,72 +1,69 @@
-import type { HistoryState } from "./types";
+import type { BackgroundAsset } from "./assets";
 
-export const HISTORY_STORAGE_KEY = "stellarHistory";
-export const PAUSED_STORAGE_KEY = "stellarPaused";
-export const LEGACY_IMAGE_KEY = "nextImage";
-export const LEGACY_IMAGE_PAUSED_KEY = "imagePaused";
+interface HistoryState {
+  history: BackgroundAsset[];
+}
 
-export const STAGED_KEYS_STORAGE_KEY = "stellarStagedKeys";
+const HISTORY_LIMIT = 10;
+const HISTORY_STORAGE_KEY = "stellarHistory";
+const PINNED_STORAGE_KEY = "stellarPinned";
+const STAGED_KEYS_STORAGE_KEY = "stellarStagedKeys";
 
-export function getSync<T extends Record<string, unknown>>(
+function getSync<T extends Record<string, unknown>>(
   keys: string | string[] | null,
 ): Promise<T> {
   return getFrom<T>("sync", keys);
 }
 
-export function setSync(data: Record<string, unknown>): Promise<void> {
+function setSync(data: Record<string, unknown>): Promise<void> {
   return setIn("sync", data);
 }
 
-export function removeSync(keys: string | string[]): Promise<void> {
+function removeSync(keys: string | string[]): Promise<void> {
   return removeFrom("sync", keys);
 }
 
-export function getLocal<T extends Record<string, unknown>>(
+function getLocal<T extends Record<string, unknown>>(
   keys: string | string[] | null,
 ): Promise<T> {
   return getFrom<T>("local", keys);
 }
 
-export function setLocal(data: Record<string, unknown>): Promise<void> {
+function setLocal(data: Record<string, unknown>): Promise<void> {
   return setIn("local", data);
 }
 
-export function removeLocal(keys: string | string[]): Promise<void> {
+function removeLocal(keys: string | string[]): Promise<void> {
   return removeFrom("local", keys);
 }
 
-export async function readRawHistory(): Promise<unknown> {
-  const result = await getLocal<Record<string, unknown>>(HISTORY_STORAGE_KEY);
+async function readHistory(): Promise<HistoryState> {
+  const result = await getLocal<{ [HISTORY_STORAGE_KEY]?: HistoryState }>(
+    HISTORY_STORAGE_KEY,
+  );
 
-  return result[HISTORY_STORAGE_KEY];
+  return result[HISTORY_STORAGE_KEY] ?? { history: [] };
 }
 
-export async function writeHistory(state: HistoryState): Promise<void> {
+async function writeHistory(state: HistoryState): Promise<void> {
   await setLocal({ [HISTORY_STORAGE_KEY]: state });
 }
 
-export async function readPaused(): Promise<boolean> {
-  const result = await getLocal<Record<string, unknown>>([
-    PAUSED_STORAGE_KEY,
-    LEGACY_IMAGE_PAUSED_KEY,
-  ]);
+async function readPinned(): Promise<boolean> {
+  const result = await getLocal<Record<string, unknown>>(PINNED_STORAGE_KEY);
 
-  if (typeof result[PAUSED_STORAGE_KEY] === "boolean") {
-    return Boolean(result[PAUSED_STORAGE_KEY]);
-  }
-
-  if (typeof result[LEGACY_IMAGE_PAUSED_KEY] === "boolean") {
-    return Boolean(result[LEGACY_IMAGE_PAUSED_KEY]);
+  if (typeof result[PINNED_STORAGE_KEY] === "boolean") {
+    return Boolean(result[PINNED_STORAGE_KEY]);
   }
 
   return false;
 }
 
-export async function writePaused(paused: boolean): Promise<void> {
-  await setLocal({ [PAUSED_STORAGE_KEY]: paused });
+async function writePinned(pinned: boolean): Promise<void> {
+  await setLocal({ [PINNED_STORAGE_KEY]: pinned });
 }
 
-export async function readStagedKeys(): Promise<string[]> {
+async function readStagedKeys(): Promise<string[]> {
   try {
     if (chrome.storage?.session) {
       const res = await new Promise<Record<string, unknown>>((resolve) => {
@@ -94,7 +91,7 @@ export async function readStagedKeys(): Promise<string[]> {
   return [];
 }
 
-export async function addStagedKey(key: string): Promise<void> {
+async function addStagedKey(key: string): Promise<void> {
   const current = await readStagedKeys();
   if (current.includes(key)) return;
 
@@ -115,7 +112,7 @@ export async function addStagedKey(key: string): Promise<void> {
   await setLocal({ [STAGED_KEYS_STORAGE_KEY]: next });
 }
 
-export async function removeStagedKey(key: string): Promise<void> {
+async function removeStagedKey(key: string): Promise<void> {
   const current = await readStagedKeys();
   const next = current.filter((k) => k !== key);
   try {
@@ -189,3 +186,24 @@ function removeFrom(
     });
   });
 }
+
+export type { HistoryState };
+export {
+  addStagedKey,
+  getLocal,
+  getSync,
+  HISTORY_LIMIT,
+  HISTORY_STORAGE_KEY,
+  PINNED_STORAGE_KEY,
+  readHistory,
+  readPinned,
+  readStagedKeys,
+  removeLocal,
+  removeStagedKey,
+  removeSync,
+  STAGED_KEYS_STORAGE_KEY,
+  setLocal,
+  setSync,
+  writeHistory,
+  writePinned,
+};
