@@ -878,7 +878,7 @@ class StellarApp extends LitElement {
       if (!this.isConnected) return;
 
       this.sourceId = event.detail.sourceId;
-      if (this.isPinned) return;
+      this.pinnedAsset = null;
 
       const preparedResult = await this.preparePhoto(result.current);
 

@@ -12,6 +12,7 @@ const writeHistory = vi.fn();
 const getActiveImageSource = vi.fn();
 const getImageSource = vi.fn();
 const readPinnedAsset = vi.fn();
+const writePinnedAsset = vi.fn();
 const deleteCachedThumbnail = vi.fn();
 const putCachedThumbnail = vi.fn();
 const createThumbnail = vi.fn().mockResolvedValue(null);
@@ -35,6 +36,7 @@ vi.mock("../src/ts/storage", () => ({
   readHistory,
   writeHistory,
   readPinnedAsset,
+  writePinnedAsset,
 }));
 
 const { rotate, switchSource, trackDownload } = await import(
@@ -80,6 +82,7 @@ beforeEach(() => {
   readCachedImage.mockResolvedValue(new Response("image"));
   readHistory.mockResolvedValue({ history: [current] });
   writeHistory.mockResolvedValue(undefined);
+  writePinnedAsset.mockResolvedValue(undefined);
   readPinnedAsset.mockResolvedValue(null);
 });
 
@@ -94,6 +97,7 @@ describe("source activation", () => {
       expect.any(Response),
     );
     expect(setImageSourceId).toHaveBeenCalledWith("unsplash");
+    expect(writePinnedAsset).toHaveBeenCalledWith(null);
     expect(writeHistory).toHaveBeenCalledWith({
       history: [prepared, current],
     });
@@ -117,14 +121,15 @@ describe("source activation", () => {
     expect(setImageSourceId).not.toHaveBeenCalled();
   });
 
-  it("changes the preferred source without loading while pinned", async () => {
+  it("unpins and loads the selected source while pinned", async () => {
     readPinnedAsset.mockResolvedValue(current);
 
-    await expect(switchSource("unsplash")).resolves.toEqual(current);
+    await expect(switchSource("unsplash")).resolves.toEqual(prepared);
 
     expect(setImageSourceId).toHaveBeenCalledWith("unsplash");
-    expect(source.getRandomAsset).not.toHaveBeenCalled();
-    expect(writeHistory).not.toHaveBeenCalled();
+    expect(writePinnedAsset).toHaveBeenCalledWith(null);
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(writeHistory).toHaveBeenCalledWith({ history: [prepared, current] });
   });
 
   it("skips rotation when the active source reports the current photo is fresh", async () => {

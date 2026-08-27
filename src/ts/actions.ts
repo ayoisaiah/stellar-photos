@@ -14,7 +14,12 @@ import {
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
-import { readHistory, readPinnedAsset, writeHistory } from "./storage";
+import {
+  readHistory,
+  readPinnedAsset,
+  writeHistory,
+  writePinnedAsset,
+} from "./storage";
 
 const LOCK_NAME = "stellar_actions_lock";
 
@@ -65,24 +70,12 @@ async function switchSource(sourceId: string): Promise<BackgroundAsset> {
   if (!source) throw new Error("Unknown image source");
 
   return enqueue(async () => {
-    const pinned = await readPinnedAsset();
-    if (pinned) {
-      await setImageSourceId(source.id);
-      return pinned;
-    }
-
     const candidate = await source.getRandomAsset();
 
     if (candidate.sourceId !== source.id)
       throw new Error("Image source returned an asset for another source");
 
     const image = await source.downloadAsset(candidate);
-    const newlyPinned = await readPinnedAsset();
-    if (newlyPinned) {
-      await setImageSourceId(source.id);
-      return newlyPinned;
-    }
-
     const asset = {
       ...candidate,
       cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
@@ -93,6 +86,7 @@ async function switchSource(sourceId: string): Promise<BackgroundAsset> {
     if (!current) throw new Error("Promoted image is missing from history");
 
     await setImageSourceId(source.id);
+    await writePinnedAsset(null);
 
     return current;
   });
