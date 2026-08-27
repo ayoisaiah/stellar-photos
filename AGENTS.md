@@ -1,8 +1,8 @@
 ## Module Organization & Spacing
 
-- Order files by reading flow: imports → public types → internal types → module constants & state → primary exports → supporting functions & private
-  helpers.
+- Order files by reading flow: imports → public types → internal types → module constants & state → functions & helpers → single exports block at the bottom.
 - Group imports (Node built-ins, external packages, relative modules, type-only) separated by a single blank line.
+- Use a single `export { ... }` block at the bottom of the file instead of prefixing functions or constants with inline `export`.
 - Separate top-level declarations and distinct constant groups with exactly one blank line.
 - Use paragraph-style spacing inside functions: separate guard clauses, data preparation, DOM/state updates, and cleanup with a single blank line.
 - Never use consecutive blank lines, and avoid blank lines immediately after `{` or before `}`.
