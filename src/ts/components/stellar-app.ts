@@ -56,7 +56,6 @@ class StellarApp extends LitElement {
   static override styles = unsafeCSS(styles);
 
   private lastWheelTime = 0;
-  private navGeneration = 0;
   private objectUrl: string | null = null;
   private requestInFlight = false;
   private sourceSwitchInFlight = false;
@@ -650,21 +649,13 @@ class StellarApp extends LitElement {
 
   private displayHistoryAsset = async (
     asset: BackgroundAsset,
-  ): Promise<"applied" | "missing" | "superseded"> => {
-    const generation = ++this.navGeneration;
+  ): Promise<boolean> => {
     const prepared = await this.preparePhoto(asset);
 
-    if (generation !== this.navGeneration || !this.isConnected) {
-      if (prepared) {
-        URL.revokeObjectURL(prepared.url);
-      }
-      return "superseded";
-    }
-
-    if (!prepared) return "missing";
+    if (!prepared) return false;
 
     this.applyPhoto(prepared.url, prepared.asset);
-    return "applied";
+    return true;
   };
 
   private handlePrevPhoto = async (): Promise<void> => {
@@ -678,9 +669,7 @@ class StellarApp extends LitElement {
       const targetAsset = this.historyAssets[targetIndex];
       if (!targetAsset) break;
 
-      const result = await this.displayHistoryAsset(targetAsset);
-      if (result === "superseded") return;
-      if (result === "applied") {
+      if (await this.displayHistoryAsset(targetAsset)) {
         this.historyIndex = targetIndex;
         return;
       }
@@ -700,9 +689,7 @@ class StellarApp extends LitElement {
       const targetAsset = this.historyAssets[targetIndex];
       if (!targetAsset) break;
 
-      const result = await this.displayHistoryAsset(targetAsset);
-      if (result === "superseded") return;
-      if (result === "applied") {
+      if (await this.displayHistoryAsset(targetAsset)) {
         this.historyIndex = targetIndex;
         return;
       }
@@ -773,9 +760,9 @@ class StellarApp extends LitElement {
     event: CustomEvent<{ asset: BackgroundAsset; index?: number }>,
   ): Promise<void> => {
     const selectedAsset = event.detail.asset;
-    const result = await this.displayHistoryAsset(selectedAsset);
+    const displayed = await this.displayHistoryAsset(selectedAsset);
 
-    if (result === "applied") {
+    if (displayed) {
       if (typeof event.detail.index === "number") {
         this.historyIndex = event.detail.index;
       } else {
