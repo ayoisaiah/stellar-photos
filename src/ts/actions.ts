@@ -9,6 +9,7 @@ import {
   putCachedThumbnail,
 } from "./cache";
 import { setImageSourceId } from "./settings";
+import type { ImageSource } from "./sources";
 import {
   getActiveImageSource,
   getImageSource,
@@ -70,20 +71,7 @@ async function switchSource(sourceId: string): Promise<BackgroundAsset> {
   if (!source) throw new Error("Unknown image source");
 
   return enqueue(async () => {
-    const candidate = await source.getRandomAsset();
-
-    if (candidate.sourceId !== source.id)
-      throw new Error("Image source returned an asset for another source");
-
-    const image = await source.downloadAsset(candidate);
-    const asset = {
-      ...candidate,
-      cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
-    };
-    const promoted = await cacheAndRecordImage(asset, image);
-    const current = promoted.history[0];
-
-    if (!current) throw new Error("Promoted image is missing from history");
+    const current = await fetchAndPromote(source, { respectPin: false });
 
     await setImageSourceId(source.id);
     await writePinnedAsset(null);
@@ -193,25 +181,33 @@ async function acquireAsset(
     return current;
   }
 
+  return fetchAndPromote(source);
+}
+
+async function fetchAndPromote(
+  source: ImageSource,
+  options: { respectPin?: boolean } = {},
+): Promise<BackgroundAsset> {
   const candidate = await source.getRandomAsset();
   if (candidate.sourceId !== source.id)
     throw new Error("Image source returned an asset for another source");
 
   const image = await source.downloadAsset(candidate);
-  const newlyPinned = await readPinnedAsset();
-  if (newlyPinned) return newlyPinned;
+  if (options.respectPin !== false) {
+    const pinned = await readPinnedAsset();
+    if (pinned) return pinned;
+  }
 
   const asset: BackgroundAsset = {
     ...candidate,
     cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
   };
   const promoted = await cacheAndRecordImage(asset, image);
-  const promotedCurrent = promoted.history[0];
+  const current = promoted.history[0];
 
-  if (!promotedCurrent)
-    throw new Error("Promoted image is missing from history");
+  if (!current) throw new Error("Promoted image is missing from history");
 
-  return promotedCurrent;
+  return current;
 }
 
 async function appendToHistory(
