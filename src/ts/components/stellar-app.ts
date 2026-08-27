@@ -17,7 +17,6 @@ import { keyed } from "lit/directives/keyed.js";
 import styles from "../../css/components/stellar-app.css?inline";
 import { assetIdentity } from "../assets";
 import { readCachedImage } from "../cache";
-import { IdleControlsController } from "../controllers/idle-controls";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
 import { dispatch } from "../service-worker";
 import {
@@ -55,14 +54,11 @@ const UTM_PARAMS =
 class StellarApp extends LitElement {
   static override styles = unsafeCSS(styles);
 
+  private controlsTimer: number | undefined;
   private lastWheelTime = 0;
   private objectUrl: string | null = null;
   private requestInFlight = false;
   private sourceSwitchInFlight = false;
-
-  private idleControls = new IdleControlsController(this, {
-    isLocked: () => this.historyOpen || this.settingsOpen || this.infoOpen,
-  });
 
   constructor() {
     super();
@@ -85,6 +81,9 @@ class StellarApp extends LitElement {
       },
     });
   }
+
+  @state()
+  private accessor controlsVisible = false;
 
   @state()
   private accessor currentAsset: BackgroundAsset | null = null;
@@ -137,6 +136,10 @@ class StellarApp extends LitElement {
     );
   }
 
+  private get controlsLocked(): boolean {
+    return this.historyOpen || this.settingsOpen || this.infoOpen;
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
 
@@ -152,6 +155,7 @@ class StellarApp extends LitElement {
 
   override disconnectedCallback(): void {
     this.requestInFlight = false;
+    window.clearTimeout(this.controlsTimer);
     window.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("click", this.handleViewportClick);
 
@@ -177,17 +181,14 @@ class StellarApp extends LitElement {
   }
 
   override render() {
-    const controlsShown =
-      this.idleControls.visible ||
-      this.historyOpen ||
-      this.settingsOpen ||
-      this.infoOpen;
+    const controlsShown = this.controlsVisible || this.controlsLocked;
 
     return html`
       <div
         class="app-viewport ${this.historyOpen ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
         @click=${this.handleViewportClick}
-        @mousemove=${() => this.idleControls.show()}
+        @pointermove=${this.showControls}
+        @pointerleave=${this.showControls}
       >
         ${
           this.objectUrl
@@ -411,7 +412,7 @@ class StellarApp extends LitElement {
 
   private closeInfo = (): void => {
     this.infoOpen = false;
-    this.idleControls.show();
+    this.showControls();
 
     void this.updateComplete.then(() => {
       this.renderRoot.querySelector<HTMLButtonElement>(".info-button")?.focus();
@@ -753,7 +754,7 @@ class StellarApp extends LitElement {
 
   private closeHistory = (): void => {
     this.historyOpen = false;
-    this.idleControls.show();
+    this.showControls();
   };
 
   private handleSelectHistoryPhoto = async (
@@ -809,6 +810,17 @@ class StellarApp extends LitElement {
     }
   };
 
+  private showControls = (): void => {
+    window.clearTimeout(this.controlsTimer);
+    this.controlsVisible = true;
+
+    if (this.controlsLocked) return;
+
+    this.controlsTimer = window.setTimeout(() => {
+      this.controlsVisible = false;
+    }, 2500);
+  };
+
   private handleViewportClick = (event: MouseEvent): void => {
     if (!this.historyOpen) return;
 
@@ -846,7 +858,7 @@ class StellarApp extends LitElement {
   private closeSettings = (): void => {
     this.settingsOpen = false;
     if (!this.sourceSwitchInFlight) this.sourceChange = { status: "idle" };
-    this.idleControls.show();
+    this.showControls();
 
     void this.updateComplete.then(() => {
       this.renderRoot

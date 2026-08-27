@@ -1,6 +1,5 @@
 import type { ReactiveControllerHost } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { IdleControlsController } from "../src/ts/controllers/idle-controls";
 import { KeyboardShortcutsController } from "../src/ts/controllers/keyboard-shortcuts";
 
 function createMockHost(): ReactiveControllerHost {
@@ -11,93 +10,6 @@ function createMockHost(): ReactiveControllerHost {
     updateComplete: Promise.resolve(true),
   };
 }
-
-describe("IdleControlsController", () => {
-  const listeners: Record<string, ((event?: unknown) => void)[]> = {};
-
-  beforeEach(() => {
-    vi.useFakeTimers();
-    for (const key of Object.keys(listeners)) {
-      delete listeners[key];
-    }
-
-    vi.stubGlobal("window", {
-      addEventListener: (
-        event: string,
-        cb: (event?: unknown) => void,
-      ): void => {
-        listeners[event] = listeners[event] || [];
-        listeners[event].push(cb);
-      },
-      removeEventListener: (
-        event: string,
-        cb: (event?: unknown) => void,
-      ): void => {
-        listeners[event] = (listeners[event] || []).filter((l) => l !== cb);
-      },
-      setTimeout: globalThis.setTimeout,
-      clearTimeout: globalThis.clearTimeout,
-    });
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("shows controls and hides after timeout", () => {
-    const host = createMockHost();
-    const controller = new IdleControlsController(host, { timeoutMs: 1000 });
-    controller.hostConnected();
-
-    controller.show();
-    expect(controller.visible).toBe(true);
-    expect(host.requestUpdate).toHaveBeenCalled();
-
-    vi.advanceTimersByTime(1000);
-    expect(controller.visible).toBe(false);
-
-    controller.hostDisconnected();
-  });
-
-  it("does not auto-hide when locked", () => {
-    let locked = true;
-    const host = createMockHost();
-    const controller = new IdleControlsController(host, {
-      timeoutMs: 1000,
-      isLocked: () => locked,
-    });
-    controller.hostConnected();
-
-    controller.show();
-    expect(controller.visible).toBe(true);
-
-    vi.advanceTimersByTime(2000);
-    expect(controller.visible).toBe(true);
-
-    locked = false;
-    controller.show();
-    vi.advanceTimersByTime(1000);
-    expect(controller.visible).toBe(false);
-
-    controller.hostDisconnected();
-  });
-
-  it("hides on mouseleave if not locked", () => {
-    const host = createMockHost();
-    const controller = new IdleControlsController(host, { timeoutMs: 1000 });
-    controller.hostConnected();
-
-    controller.show();
-    expect(controller.visible).toBe(true);
-
-    for (const cb of listeners.mouseleave || []) {
-      cb();
-    }
-    expect(controller.visible).toBe(false);
-
-    controller.hostDisconnected();
-  });
-});
 
 describe("KeyboardShortcutsController", () => {
   const listeners: Record<string, ((event?: unknown) => void)[]> = {};
