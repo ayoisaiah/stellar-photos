@@ -17,12 +17,16 @@ beforeEach(() => {
     runtime: { lastError: undefined },
     storage: {
       local: {
-        get: (_keys: unknown, callback: (value: unknown) => void) =>
-          callback({}),
+        get: (_keys: unknown, callback?: (value: unknown) => void) => {
+          if (callback) callback({});
+          return Promise.resolve({});
+        },
       },
       sync: {
-        get: (_keys: unknown, callback: (value: unknown) => void) =>
-          callback({}),
+        get: (_keys: unknown, callback?: (value: unknown) => void) => {
+          if (callback) callback({});
+          return Promise.resolve({});
+        },
       },
     },
   });
@@ -233,18 +237,23 @@ describe("Unsplash image resolution", () => {
       runtime: { lastError: undefined },
       storage: {
         local: {
-          get: (_keys: unknown, callback: (value: unknown) => void) =>
-            callback({}),
+          get: (_keys: unknown, callback?: (value: unknown) => void) => {
+            if (callback) callback({});
+            return Promise.resolve({});
+          },
         },
         sync: {
-          get: (_keys: unknown, cb: (val: unknown) => void) =>
-            cb({
+          get: (_keys: unknown, cb?: (val: unknown) => void) => {
+            const res = {
               "sourceSettings:unsplash": {
                 version: 1,
                 imageQuality: "standard",
                 photoFrequency: "every15minutes",
               },
-            }),
+            };
+            if (cb) cb(res);
+            return Promise.resolve(res);
+          },
         },
       },
     });
@@ -261,18 +270,23 @@ describe("Unsplash image resolution", () => {
       runtime: { lastError: undefined },
       storage: {
         local: {
-          get: (_keys: unknown, callback: (value: unknown) => void) =>
-            callback({}),
+          get: (_keys: unknown, callback?: (value: unknown) => void) => {
+            if (callback) callback({});
+            return Promise.resolve({});
+          },
         },
         sync: {
-          get: (_keys: unknown, cb: (val: unknown) => void) =>
-            cb({
+          get: (_keys: unknown, cb?: (val: unknown) => void) => {
+            const res = {
               "sourceSettings:unsplash": {
                 version: 1,
                 imageQuality: "standard",
                 photoFrequency: "everyhour",
               },
-            }),
+            };
+            if (cb) cb(res);
+            return Promise.resolve(res);
+          },
         },
       },
     });

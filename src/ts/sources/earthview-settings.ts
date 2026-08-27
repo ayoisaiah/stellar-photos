@@ -1,5 +1,3 @@
-import { getSync, setSync } from "../storage";
-
 import type { PhotoFrequency } from "./unsplash-settings";
 
 export interface EarthViewSettings {
@@ -16,7 +14,7 @@ export const DEFAULT_EARTHVIEW_SETTINGS: Readonly<EarthViewSettings> =
   });
 
 export async function getEarthViewSettings(): Promise<EarthViewSettings> {
-  const values = await getSync<Record<string, unknown>>(EARTHVIEW_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(EARTHVIEW_SETTINGS_KEY);
   const settings = parseEarthViewSettings(values[EARTHVIEW_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_EARTHVIEW_SETTINGS;
@@ -27,7 +25,7 @@ export async function setEarthViewSettings(
 ): Promise<void> {
   const current = await getEarthViewSettings();
 
-  await setSync({
+  await chrome.storage.sync.set({
     [EARTHVIEW_SETTINGS_KEY]: {
       ...current,
       ...partial,
@@ -49,13 +47,11 @@ export async function setEarthViewPhotoFrequency(
 }
 
 export async function initializeEarthViewSettings(): Promise<void> {
-  const syncValues = await getSync<Record<string, unknown>>(
-    EARTHVIEW_SETTINGS_KEY,
-  );
+  const syncValues = await chrome.storage.sync.get(EARTHVIEW_SETTINGS_KEY);
   const current = parseEarthViewSettings(syncValues[EARTHVIEW_SETTINGS_KEY]);
 
   if (!current) {
-    await setSync({
+    await chrome.storage.sync.set({
       [EARTHVIEW_SETTINGS_KEY]: DEFAULT_EARTHVIEW_SETTINGS,
     });
   }

@@ -1,5 +1,3 @@
-import { getSync, removeSync, setSync } from "./storage";
-
 export interface CoreSettings {
   version: 1;
   activeSourceId: string;
@@ -30,7 +28,7 @@ export const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> =
   });
 
 export async function getImageSourceId(): Promise<string> {
-  const values = await getSync<Record<string, unknown>>(CORE_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
   const settings = parseCoreSettings(values[CORE_SETTINGS_KEY]);
   const sourceId = settings?.activeSourceId;
 
@@ -41,10 +39,10 @@ export async function getImageSourceId(): Promise<string> {
 }
 
 export async function setImageSourceId(sourceId: string): Promise<void> {
-  const values = await getSync<Record<string, unknown>>(CORE_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
   const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
 
-  await setSync({
+  await chrome.storage.sync.set({
     [CORE_SETTINGS_KEY]: {
       ...(current ?? DEFAULT_CORE_SETTINGS),
       activeSourceId: sourceId,
@@ -53,7 +51,7 @@ export async function setImageSourceId(sourceId: string): Promise<void> {
 }
 
 export async function getDisplaySettings(): Promise<DisplaySettings> {
-  const values = await getSync<Record<string, unknown>>(DISPLAY_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(DISPLAY_SETTINGS_KEY);
   const settings = parseDisplaySettings(values[DISPLAY_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_DISPLAY_SETTINGS;
@@ -67,7 +65,7 @@ export async function setDisplaySettings(
   const op = async () => {
     const current = await getDisplaySettings();
 
-    await setSync({
+    await chrome.storage.sync.set({
       [DISPLAY_SETTINGS_KEY]: {
         ...current,
         ...partial,
@@ -86,24 +84,22 @@ export async function setDisplaySettings(
 }
 
 export async function initializeDisplaySettings(): Promise<void> {
-  const values = await getSync<Record<string, unknown>>(DISPLAY_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(DISPLAY_SETTINGS_KEY);
   const current = parseDisplaySettings(values[DISPLAY_SETTINGS_KEY]);
 
   if (!current) {
-    await setSync({
+    await chrome.storage.sync.set({
       [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
     });
   }
 }
 
 export async function initializeCoreSettings(): Promise<void> {
-  const values = await getSync<{ [CORE_SETTINGS_KEY]?: unknown }>(
-    CORE_SETTINGS_KEY,
-  );
+  const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
   const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
 
   if (!current) {
-    await setSync({
+    await chrome.storage.sync.set({
       [CORE_SETTINGS_KEY]: DEFAULT_CORE_SETTINGS,
     });
   }

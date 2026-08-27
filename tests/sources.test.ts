@@ -14,8 +14,11 @@ beforeEach(() => {
     runtime: { lastError: undefined },
     storage: {
       sync: {
-        get: (_keys: unknown, callback: (value: unknown) => void) =>
-          callback({ imageSource: selectedSource }),
+        get: (_keys: unknown, callback?: (value: unknown) => void) => {
+          const res = { imageSource: selectedSource };
+          if (callback) callback(res);
+          return Promise.resolve(res);
+        },
       },
     },
   });

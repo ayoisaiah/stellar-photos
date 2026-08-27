@@ -1,5 +1,3 @@
-import { getSync, setSync } from "../storage";
-
 import type { PhotoFrequency } from "./unsplash-settings";
 
 export interface LocalSettings {
@@ -17,7 +15,7 @@ export const DEFAULT_LOCAL_SETTINGS: Readonly<LocalSettings> = Object.freeze({
 });
 
 export async function getLocalSettings(): Promise<LocalSettings> {
-  const values = await getSync<Record<string, unknown>>(LOCAL_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(LOCAL_SETTINGS_KEY);
   const settings = parseLocalSettings(values[LOCAL_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_LOCAL_SETTINGS;
@@ -28,7 +26,7 @@ export async function setLocalSettings(
 ): Promise<void> {
   const current = await getLocalSettings();
 
-  await setSync({
+  await chrome.storage.sync.set({
     [LOCAL_SETTINGS_KEY]: {
       ...current,
       ...partial,
@@ -50,11 +48,11 @@ export async function setLocalPhotoFrequency(
 }
 
 export async function initializeLocalSettings(): Promise<void> {
-  const syncValues = await getSync<Record<string, unknown>>(LOCAL_SETTINGS_KEY);
+  const syncValues = await chrome.storage.sync.get(LOCAL_SETTINGS_KEY);
   const current = parseLocalSettings(syncValues[LOCAL_SETTINGS_KEY]);
 
   if (!current) {
-    await setSync({
+    await chrome.storage.sync.set({
       [LOCAL_SETTINGS_KEY]: DEFAULT_LOCAL_SETTINGS,
     });
   }

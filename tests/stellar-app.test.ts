@@ -14,7 +14,7 @@ function createStorageArea(values: Record<string, unknown>) {
   return {
     get(
       keys: string | string[] | null,
-      callback: (result: Record<string, unknown>) => void,
+      callback?: (result: Record<string, unknown>) => void,
     ) {
       const selected =
         keys === null
@@ -24,17 +24,20 @@ function createStorageArea(values: Record<string, unknown>) {
                 .filter((key) => key in values)
                 .map((key) => [key, values[key]]),
             );
-      callback(selected);
+      if (callback) callback(selected);
+      return Promise.resolve(selected);
     },
-    set(data: Record<string, unknown>, callback: () => void) {
+    set(data: Record<string, unknown>, callback?: () => void) {
       Object.assign(values, data);
-      callback();
+      if (callback) callback();
+      return Promise.resolve();
     },
-    remove(keys: string | string[], callback: () => void) {
+    remove(keys: string | string[], callback?: () => void) {
       for (const key of Array.isArray(keys) ? keys : [keys]) {
         delete values[key];
       }
-      callback();
+      if (callback) callback();
+      return Promise.resolve();
     },
   };
 }

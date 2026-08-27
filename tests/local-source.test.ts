@@ -205,7 +205,7 @@ beforeEach(() => {
       sync: {
         get: (
           keys: string | string[] | null,
-          callback: (result: Record<string, unknown>) => void,
+          callback?: (result: Record<string, unknown>) => void,
         ) => {
           const selected =
             keys === null
@@ -215,11 +215,13 @@ beforeEach(() => {
                     .filter((key) => key in sync)
                     .map((key) => [key, sync[key]]),
                 );
-          callback(selected);
+          if (callback) callback(selected);
+          return Promise.resolve(selected);
         },
-        set: (data: Record<string, unknown>, callback: () => void) => {
+        set: (data: Record<string, unknown>, callback?: () => void) => {
           Object.assign(sync, data);
-          callback();
+          if (callback) callback();
+          return Promise.resolve();
         },
       },
     },

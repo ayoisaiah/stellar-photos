@@ -28,18 +28,20 @@ beforeEach(() => {
       sync: {
         get: (
           keys: string | string[] | null,
-          cb: (res: Record<string, unknown>) => void,
+          cb?: (res: Record<string, unknown>) => void,
         ) => {
           const keyList = Array.isArray(keys) ? keys : [keys as string];
           const res: Record<string, unknown> = {};
           for (const k of keyList) {
             if (k in sync) res[k] = sync[k];
           }
-          cb(res);
+          if (cb) cb(res);
+          return Promise.resolve(res);
         },
-        set: (data: Record<string, unknown>, cb: () => void) => {
+        set: (data: Record<string, unknown>, cb?: () => void) => {
           Object.assign(sync, data);
-          cb();
+          if (cb) cb();
+          return Promise.resolve();
         },
       },
     },

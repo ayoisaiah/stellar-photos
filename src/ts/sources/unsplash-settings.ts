@@ -1,12 +1,3 @@
-import {
-  getLocal,
-  getSync,
-  removeLocal,
-  removeSync,
-  setLocal,
-  setSync,
-} from "../storage";
-
 type ImageResolution = "standard" | "high" | "max";
 
 type PhotoFrequency = "newtab" | "every15minutes" | "everyhour" | "everyday";
@@ -49,7 +40,7 @@ const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = Object.freeze({
 });
 
 async function getUnsplashSettings(): Promise<UnsplashSettings> {
-  const values = await getSync<Record<string, unknown>>(UNSPLASH_SETTINGS_KEY);
+  const values = await chrome.storage.sync.get(UNSPLASH_SETTINGS_KEY);
   const settings = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_UNSPLASH_SETTINGS;
@@ -60,7 +51,7 @@ async function setUnsplashSettings(
 ): Promise<void> {
   const current = await getUnsplashSettings();
 
-  await setSync({
+  await chrome.storage.sync.set({
     [UNSPLASH_SETTINGS_KEY]: {
       ...current,
       ...partial,
@@ -92,9 +83,7 @@ async function setPhotoFrequency(
 }
 
 async function resolveAccessKey(): Promise<string> {
-  const values = await getLocal<{ [UNSPLASH_SETTINGS_KEY]?: unknown }>(
-    UNSPLASH_SETTINGS_KEY,
-  );
+  const values = await chrome.storage.local.get(UNSPLASH_SETTINGS_KEY);
   const settings = parseUnsplashLocalSettings(values[UNSPLASH_SETTINGS_KEY]);
   const override = settings?.accessKeyOverride;
 
@@ -105,13 +94,11 @@ async function resolveAccessKey(): Promise<string> {
 }
 
 async function initializeUnsplashSettings(): Promise<void> {
-  const syncValues = await getSync<{ [UNSPLASH_SETTINGS_KEY]?: unknown }>(
-    UNSPLASH_SETTINGS_KEY,
-  );
+  const syncValues = await chrome.storage.sync.get(UNSPLASH_SETTINGS_KEY);
   const current = parseUnsplashSettings(syncValues[UNSPLASH_SETTINGS_KEY]);
 
   if (!current) {
-    await setSync({
+    await chrome.storage.sync.set({
       [UNSPLASH_SETTINGS_KEY]: DEFAULT_UNSPLASH_SETTINGS,
     });
   }
