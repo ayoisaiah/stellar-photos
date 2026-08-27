@@ -103,13 +103,7 @@ class StellarApp extends LitElement {
   private accessor historyOpen = false;
 
   @state()
-  private accessor historyMounted = false;
-
-  @state()
   private accessor infoOpen = false;
-
-  @state()
-  private accessor infoMounted = false;
 
   @state()
   private accessor isPinned = false;
@@ -119,9 +113,6 @@ class StellarApp extends LitElement {
 
   @state()
   private accessor settingsOpen = false;
-
-  @state()
-  private accessor settingsMounted = false;
 
   @state()
   private accessor sourceId: string = DEFAULT_CORE_SETTINGS.activeSourceId;
@@ -309,50 +300,32 @@ class StellarApp extends LitElement {
             <stellar-icon .icon=${Settings}></stellar-icon>
           </button>
         </div>
-        ${
-          this.historyMounted
-            ? html`
-              <stellar-history-panel
-                class="history-panel"
-                .open=${this.historyOpen}
-                .activeAsset=${this.currentAsset}
-                .historyAssets=${this.historyAssets}
-                @select-photo=${this.handleSelectHistoryPhoto}
-                @download-photo=${this.handleDownloadHistoryPhoto}
-                @nav-next=${this.handleNextPhoto}
-                @nav-prev=${this.handlePrevPhoto}
-                @close-history=${this.closeHistory}
-              ></stellar-history-panel>
-            `
-            : null
-        }
+        <stellar-history-panel
+          class="history-panel"
+          .open=${this.historyOpen}
+          .activeAsset=${this.currentAsset}
+          .historyAssets=${this.historyAssets}
+          @select-photo=${this.handleSelectHistoryPhoto}
+          @download-photo=${this.handleDownloadHistoryPhoto}
+          @nav-next=${this.handleNextPhoto}
+          @nav-prev=${this.handlePrevPhoto}
+          @close-history=${this.closeHistory}
+        ></stellar-history-panel>
       </div>
-      ${
-        this.infoMounted && this.currentAsset
-          ? html`
-            <stellar-photo-info
-              .open=${this.infoOpen}
-              .asset=${this.currentAsset}
-              @close-info=${this.closeInfo}
-            ></stellar-photo-info>
-          `
-          : null
-      }
-      ${
-        this.settingsMounted
-          ? html`
-            <stellar-settings-drawer
-              .open=${this.settingsOpen}
-              .sourceId=${this.sourceId}
-              .displaySettings=${this.displaySettings}
-              .sourceChange=${this.sourceChange}
-              @close-settings=${this.closeSettings}
-              @select-source=${this.selectSource}
-              @display-settings-changed=${this.handleDisplaySettingsChanged}
-            ></stellar-settings-drawer>
-          `
-          : null
-      }
+      <stellar-photo-info
+        .open=${this.infoOpen}
+        .asset=${this.currentAsset}
+        @close-info=${this.closeInfo}
+      ></stellar-photo-info>
+      <stellar-settings-drawer
+        .open=${this.settingsOpen}
+        .sourceId=${this.sourceId}
+        .displaySettings=${this.displaySettings}
+        .sourceChange=${this.sourceChange}
+        @close-settings=${this.closeSettings}
+        @select-source=${this.selectSource}
+        @display-settings-changed=${this.handleDisplaySettingsChanged}
+      ></stellar-settings-drawer>
     `;
   }
 
@@ -432,7 +405,6 @@ class StellarApp extends LitElement {
   private toggleInfo = (): void => {
     if (!this.infoOpen) {
       this.historyOpen = false;
-      this.infoMounted = true;
     }
 
     this.infoOpen = !this.infoOpen;
@@ -541,9 +513,7 @@ class StellarApp extends LitElement {
         if (this.isConnected) {
           this.applyPhoto(prepared.url, prepared.asset);
           this.phase = "ready";
-          if (this.historyMounted || this.historyAssets.length > 0) {
-            await this.loadHistoryAssets();
-          }
+          await this.loadHistoryAssets();
           if (!this.isPinned) {
             void sendCommand({ command: "rotate" });
           }
@@ -579,6 +549,7 @@ class StellarApp extends LitElement {
       this.displaySettings = displaySettings;
       this.sourceId = sourceId;
       this.isPinned = pinned;
+      this.historyAssets = historyState.history;
 
       const current = historyState.history[0] ?? null;
       let rendered = false;
@@ -620,11 +591,9 @@ class StellarApp extends LitElement {
         const newValue = changes[HISTORY_STORAGE_KEY]?.newValue;
         const validated = validateHistoryState(newValue);
         if (validated) {
-          if (this.historyMounted || this.historyAssets.length > 0) {
-            this.historyAssets = validated.history;
-            this.reconcileHistoryIndex();
-          }
-        } else if (this.historyMounted || this.historyAssets.length > 0) {
+          this.historyAssets = validated.history;
+          this.reconcileHistoryIndex();
+        } else {
           void this.loadHistoryAssets();
         }
       }
@@ -789,7 +758,6 @@ class StellarApp extends LitElement {
   };
 
   private openHistory = (): void => {
-    this.historyMounted = true;
     this.historyOpen = true;
     this.infoOpen = false;
     this.settingsOpen = false;
@@ -881,7 +849,6 @@ class StellarApp extends LitElement {
   private toggleSettings = (): void => {
     if (!this.settingsOpen) {
       this.historyOpen = false;
-      this.settingsMounted = true;
       void this.loadSourceId();
     }
 

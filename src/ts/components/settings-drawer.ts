@@ -126,7 +126,7 @@ class SettingsDrawer extends LitElement {
               <h3>${source?.name ?? "Source"}</h3>
               ${switching ? html`<span>Finding a photo…</span>` : null}
             </div>
-            ${source ? renderSourceSettings(source.id) : null}
+            ${this.open && source ? renderSourceSettings(source.id) : null}
             ${error ? html`<p class="error" role="alert">${error}</p>` : null}
           </section>
           <div class="divider"></div>

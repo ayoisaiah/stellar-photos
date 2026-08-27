@@ -36,9 +36,9 @@ class PhotoInfo extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     this.detailsGeneration += 1;
-    window.addEventListener("keydown", this.handleKeyDown);
 
     if (this.open) {
+      window.addEventListener("keydown", this.handleKeyDown);
       void this.loadDetailsIfNeeded();
     }
   }
@@ -60,6 +60,7 @@ class PhotoInfo extends LitElement {
     }
 
     if (changedProperties.has("open") && this.open) {
+      window.addEventListener("keydown", this.handleKeyDown);
       void this.loadDetailsIfNeeded();
 
       void this.updateComplete.then(() => {
@@ -67,6 +68,8 @@ class PhotoInfo extends LitElement {
           .querySelector<HTMLButtonElement>(".close-button")
           ?.focus();
       });
+    } else if (changedProperties.has("open")) {
+      window.removeEventListener("keydown", this.handleKeyDown);
     }
   }
 
