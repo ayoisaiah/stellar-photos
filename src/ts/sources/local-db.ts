@@ -8,21 +8,7 @@ export interface LocalFolderRecord {
   updatedAt: number;
 }
 
-export interface LocalDirectoryMeta {
-  key: "folder";
-  folderName: string;
-  photoCount: number;
-  updatedAt: number;
-}
-
-export interface LocalHandleRecord {
-  key: "handle";
-  handle: FileSystemDirectoryHandle;
-  folderName: string;
-  updatedAt: number;
-}
-
-export interface RandomLocalImageResult {
+interface RandomLocalImageResult {
   handle: FileSystemFileHandle;
   name: string;
   relativePath: string;
@@ -31,8 +17,8 @@ export interface RandomLocalImageResult {
 }
 
 const DB_NAME = "stellar-photos-local";
-const DB_VERSION = 3;
-const HANDLES_STORE = "handles";
+const DB_VERSION = 1;
+const FOLDERS_STORE = "folders";
 
 const IMAGE_EXTENSIONS = new Set([
   "jpg",
@@ -45,7 +31,7 @@ const IMAGE_EXTENSIONS = new Set([
   "svg",
 ]);
 
-export class LocalPermissionError extends Error {
+class LocalPermissionError extends Error {
   code = "NEEDS_PAGE_CONTEXT";
 
   constructor(
@@ -62,7 +48,7 @@ export function isImageFileName(name: string): boolean {
   return ext ? IMAGE_EXTENSIONS.has(ext) : false;
 }
 
-export async function withLocalDb<T>(
+async function withLocalDb<T>(
   callback: (db: IDBDatabase) => Promise<T>,
 ): Promise<T> {
   const db = await openLocalDb();
@@ -70,89 +56,49 @@ export async function withLocalDb<T>(
   try {
     return await callback(db);
   } finally {
-    if (typeof db?.close === "function") {
-      db.close();
-    }
+    db.close();
   }
 }
 
-export function openLocalDb(): Promise<IDBDatabase> {
+function openLocalDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    const cleanup = () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-
-    timeoutId = setTimeout(() => {
-      reject(new Error("IndexedDB open timed out"));
-    }, 5000);
-
-    let request: IDBOpenDBRequest;
-
-    try {
-      request = indexedDB.open(DB_NAME, DB_VERSION);
-    } catch {
-      request = indexedDB.open(DB_NAME);
-    }
-
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = () => {
       const db = request.result;
-      const oldVersion = event.oldVersion;
 
-      if (oldVersion < 1) {
-        // Fresh setup
-      }
-
-      if (db.objectStoreNames.contains("photos")) {
-        db.deleteObjectStore("photos");
-      }
-
-      if (db.objectStoreNames.contains("meta")) {
-        db.deleteObjectStore("meta");
-      }
-
-      if (!db.objectStoreNames.contains(HANDLES_STORE)) {
-        db.createObjectStore(HANDLES_STORE, { keyPath: "id" });
-      }
+      db.createObjectStore(FOLDERS_STORE, { keyPath: "id" });
     };
 
     request.onblocked = () => {
-      cleanup();
       reject(new Error("IndexedDB upgrade blocked by an open connection"));
     };
 
     request.onsuccess = () => {
-      cleanup();
       const db = request.result;
-      if (db) {
-        db.onversionchange = () => {
-          if (typeof db.close === "function") db.close();
-        };
-      }
+      db.onversionchange = () => db.close();
       resolve(db);
     };
 
-    request.onerror = () => {
-      cleanup();
-      if (request.error?.name === "VersionError") {
-        const fallbackRequest = indexedDB.open(DB_NAME);
-        fallbackRequest.onsuccess = () => {
-          const db = fallbackRequest.result;
-          if (db) {
-            db.onversionchange = () => {
-              if (typeof db.close === "function") db.close();
-            };
-          }
-          resolve(db);
-        };
-        fallbackRequest.onerror = () => reject(fallbackRequest.error);
-        return;
-      }
-
-      reject(request.error);
-    };
+    request.onerror = () => reject(request.error);
   });
+}
+
+function withFolderStore<T>(
+  mode: IDBTransactionMode,
+  operation: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
+  return withLocalDb(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const tx = db.transaction(FOLDERS_STORE, mode);
+        const request = operation(tx.objectStore(FOLDERS_STORE));
+
+        tx.oncomplete = () => resolve(request.result);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      }),
+  );
 }
 
 export async function listDirectoryImagePaths(
@@ -225,7 +171,7 @@ export async function verifyHandlePermission(
   return false;
 }
 
-export async function getFileHandleByPath(
+async function getFileHandleByPath(
   rootHandle: FileSystemDirectoryHandle,
   relativePath: string,
 ): Promise<FileSystemFileHandle> {
@@ -264,7 +210,16 @@ export async function addDirectoryHandle(
     if (typeof handle.isSameEntry === "function") {
       try {
         if (await handle.isSameEntry(existing.handle)) {
-          return rescanFolderRecord({ ...existing, handle });
+          const updated = {
+            ...existing,
+            handle,
+            photoCount: imagePaths.length,
+            imagePaths,
+            lastScannedAt: Date.now(),
+          };
+          await withFolderStore("readwrite", (store) => store.put(updated));
+
+          return updated;
         }
       } catch {
         // Fallback
@@ -273,9 +228,8 @@ export async function addDirectoryHandle(
   }
 
   const now = Date.now();
-  const id = `folder_${now}_${Math.random().toString(36).slice(2, 8)}`;
   const record: LocalFolderRecord = {
-    id,
+    id: crypto.randomUUID(),
     folderName: handle.name,
     handle,
     photoCount: imagePaths.length,
@@ -284,36 +238,12 @@ export async function addDirectoryHandle(
     updatedAt: now,
   };
 
-  return withLocalDb((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(HANDLES_STORE, "readwrite");
-      const store = tx.objectStore(HANDLES_STORE);
-      store.put(record);
+  await withFolderStore("readwrite", (store) => store.put(record));
 
-      tx.oncomplete = () => resolve(record);
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-  });
+  return record;
 }
 
-export async function updateFolderRecord(
-  record: LocalFolderRecord,
-): Promise<void> {
-  return withLocalDb((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(HANDLES_STORE, "readwrite");
-      const store = tx.objectStore(HANDLES_STORE);
-      store.put(record);
-
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-  });
-}
-
-export async function rescanFolderRecord(
+async function rescanFolderRecord(
   record: LocalFolderRecord,
 ): Promise<LocalFolderRecord> {
   const imagePaths = await listDirectoryImagePaths(record.handle);
@@ -324,7 +254,7 @@ export async function rescanFolderRecord(
     lastScannedAt: Date.now(),
   };
 
-  await updateFolderRecord(updated);
+  await withFolderStore("readwrite", (store) => store.put(updated));
 
   return updated;
 }
@@ -335,8 +265,7 @@ export async function rescanAllFolders(): Promise<LocalFolderRecord[]> {
 
   for (const record of records) {
     try {
-      const updated = await rescanFolderRecord(record);
-      updatedRecords.push(updated);
+      updatedRecords.push(await rescanFolderRecord(record));
     } catch {
       updatedRecords.push(record);
     }
@@ -346,52 +275,20 @@ export async function rescanAllFolders(): Promise<LocalFolderRecord[]> {
 }
 
 export async function removeDirectoryHandle(id: string): Promise<void> {
-  return withLocalDb((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(HANDLES_STORE, "readwrite");
-      const store = tx.objectStore(HANDLES_STORE);
-      store.delete(id);
-
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-  });
+  await withFolderStore("readwrite", (store) => store.delete(id));
 }
 
 export async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
-  return withLocalDb((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(HANDLES_STORE, "readonly");
-      const store = tx.objectStore(HANDLES_STORE);
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const records = (request.result as LocalFolderRecord[]) || [];
-        resolve(records);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-export async function getStoredFolderRecord(
-  id?: string,
-): Promise<LocalFolderRecord | null> {
-  const records = await listStoredFolderRecords();
-
-  if (records.length === 0) return null;
-  if (id) {
-    return records.find((r) => r.id === id) ?? null;
-  }
-
-  return records[0] ?? null;
+  return withFolderStore<LocalFolderRecord[]>(
+    "readonly",
+    (store) => store.getAll() as IDBRequest<LocalFolderRecord[]>,
+  );
 }
 
 export async function getLocalPhotoCount(): Promise<number> {
   const records = await listStoredFolderRecords();
 
-  return records.reduce((sum, r) => sum + (r.photoCount || 0), 0);
+  return records.reduce((sum, record) => sum + record.photoCount, 0);
 }
 
 export async function getRandomDirectoryImage(
@@ -409,8 +306,7 @@ export async function getRandomDirectoryImage(
     let matches = 0;
 
     for (const record of records) {
-      const paths = record.imagePaths || [];
-      for (const relPath of paths) {
+      for (const relPath of record.imagePaths) {
         const name = relPath.split("/").pop() || relPath;
         if (!excludedSet.has(relPath) && !excludedSet.has(name)) {
           matches += 1;
@@ -424,7 +320,8 @@ export async function getRandomDirectoryImage(
 
     if (!chosenRecord || !chosenPath) {
       if (excludedSet.size > 0) {
-        return getRandomDirectoryImage([]);
+        excludedSet.clear();
+        continue;
       }
       return null;
     }
@@ -444,12 +341,8 @@ export async function getRandomDirectoryImage(
         folderName: chosenRecord.folderName,
       };
     } catch (error) {
-      if (
-        (error as { name?: string })?.name === "LocalPermissionError" ||
-        (error as { code?: string })?.code === "NEEDS_PAGE_CONTEXT"
-      ) {
-        throw error;
-      }
+      if (error instanceof LocalPermissionError) throw error;
+
       excludedSet.add(chosenPath);
     }
   }
@@ -483,53 +376,4 @@ export async function readDirectoryFile(
   );
 
   return fileHandle.getFile();
-}
-
-export async function saveDirectoryHandle(
-  handle: FileSystemDirectoryHandle,
-): Promise<number> {
-  const record = await addDirectoryHandle(handle);
-
-  return record.photoCount;
-}
-
-export async function getStoredDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
-  const record = await getStoredFolderRecord();
-
-  return record?.handle ?? null;
-}
-
-export async function getLocalMeta(): Promise<LocalDirectoryMeta | null> {
-  const records = await listStoredFolderRecords();
-
-  if (records.length === 0) return null;
-
-  const total = records.reduce((sum, r) => sum + (r.photoCount || 0), 0);
-  const names = records.map((r) => r.folderName).join(", ");
-
-  return {
-    key: "folder",
-    folderName: names,
-    photoCount: total,
-    updatedAt: records[0]?.updatedAt ?? Date.now(),
-  };
-}
-
-export async function listDirectoryImageNames(
-  handle: FileSystemDirectoryHandle,
-): Promise<string[]> {
-  return listDirectoryImagePaths(handle);
-}
-
-export async function clearLocalDb(): Promise<void> {
-  return withLocalDb((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(HANDLES_STORE, "readwrite");
-      tx.objectStore(HANDLES_STORE).clear();
-
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-  });
 }

@@ -3,17 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   addDirectoryHandle,
-  clearLocalDb,
-  getLocalMeta,
   getLocalPhotoCount,
   getRandomDirectoryImage,
   isImageFileName,
-  listDirectoryImageNames,
+  listDirectoryImagePaths,
   listStoredFolderRecords,
   readDirectoryFile,
   removeDirectoryHandle,
   rescanAllFolders,
-  saveDirectoryHandle,
 } from "../src/ts/sources/local-db";
 import { computeLocalAssetId, localSource } from "../src/ts/sources/local";
 import {
@@ -93,22 +90,16 @@ let currentDbVersion = 0;
 const mockIdb = {
   open(_name: string, version: number) {
     const isUpgrade = version > currentDbVersion;
-    const oldVersion = currentDbVersion;
     if (isUpgrade) {
       currentDbVersion = version;
     }
 
     const req = {
       result: {
-        objectStoreNames: {
-          contains: (storeName: string) => dbStores.has(storeName),
-        },
         createObjectStore: (storeName: string) => {
           if (!dbStores.has(storeName)) dbStores.set(storeName, new Map());
         },
-        deleteObjectStore: (storeName: string) => {
-          dbStores.delete(storeName);
-        },
+        close: vi.fn(),
         transaction: (_storeNames: string | string[]) => {
           return {
             objectStore: (storeName: string) => {
@@ -116,21 +107,10 @@ const mockIdb = {
               const map = dbStores.get(storeName)!;
 
               return {
-                clear: () => {
-                  map.clear();
-                },
                 put: (val: Record<string, unknown>) => {
                   const key = (val.id ?? val.key) as string;
                   map.set(key, val);
-                },
-                get: (key: string) => {
-                  const getReq = {
-                    result: map.get(key),
-                    onsuccess: null as ((ev?: unknown) => void) | null,
-                    onerror: null as ((ev?: unknown) => void) | null,
-                  };
-                  queueMicrotask(() => getReq.onsuccess?.());
-                  return getReq;
+                  return { result: key };
                 },
                 getAll: () => {
                   const getAllReq = {
@@ -143,15 +123,7 @@ const mockIdb = {
                 },
                 delete: (key: string) => {
                   map.delete(key);
-                },
-                count: () => {
-                  const countReq = {
-                    result: map.size,
-                    onsuccess: null as ((ev?: unknown) => void) | null,
-                    onerror: null as ((ev?: unknown) => void) | null,
-                  };
-                  queueMicrotask(() => countReq.onsuccess?.());
-                  return countReq;
+                  return { result: undefined };
                 },
               };
             },
@@ -174,9 +146,7 @@ const mockIdb = {
 
     queueMicrotask(() => {
       if (isUpgrade) {
-        req.onupgradeneeded?.({
-          oldVersion,
-        } as unknown as IDBVersionChangeEvent);
+        req.onupgradeneeded?.();
       }
       req.onsuccess?.();
     });
@@ -257,19 +227,15 @@ describe("directory handle storage", () => {
       },
     });
 
-    const count = await saveDirectoryHandle(handle);
-    expect(count).toBe(5);
-
-    const meta = await getLocalMeta();
-    expect(meta).toMatchObject({
-      key: "folder",
+    const record = await addDirectoryHandle(handle);
+    expect(record).toMatchObject({
       folderName: "Wallpapers",
       photoCount: 5,
     });
 
     expect(await getLocalPhotoCount()).toBe(5);
 
-    const imagePaths = await listDirectoryImageNames(handle);
+    const imagePaths = await listDirectoryImagePaths(handle);
     expect(imagePaths).toEqual([
       "nature.jpg",
       "space.png",
@@ -290,10 +256,6 @@ describe("directory handle storage", () => {
 
     const file = await readDirectoryFile("Vacation/beach.jpg");
     expect(await file.text()).toBe("beach-data");
-
-    await clearLocalDb();
-    expect(await getLocalPhotoCount()).toBe(0);
-    expect(await getLocalMeta()).toBeNull();
   });
 
   it("supports adding and removing multiple directory handles", async () => {
@@ -355,7 +317,7 @@ describe("directory handle storage", () => {
       "doc.pdf": "pdf-content",
     });
 
-    await expect(saveDirectoryHandle(handle)).rejects.toThrow(
+    await expect(addDirectoryHandle(handle)).rejects.toThrow(
       "No image files found in the selected folder",
     );
   });
@@ -383,7 +345,7 @@ describe("local source image rotation and retrieval", () => {
     const handle = createMockDirHandle("Space", {
       "stars.jpg": "image-bytes",
     });
-    await saveDirectoryHandle(handle);
+    await addDirectoryHandle(handle);
 
     const asset = await localSource.getRandomAsset();
     expect(asset).toMatchObject({
