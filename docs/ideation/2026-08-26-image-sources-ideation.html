@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ideation: Image sources for Stellar Photos</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f5f3ed; --card:#fffdf7; --text:#20211f; --muted:#61655e; --line:#d9d5ca; --accent:#315c4c; --soft:#e1eee7; --cut:#7b3434; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#171916; --card:#20231f; --text:#eff1eb; --muted:#b8bdb3; --line:#3c4139; --accent:#94d3b6; --soft:#293c33; --cut:#efa3a3; } }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.62 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(920px,calc(100% - 32px)); margin:48px auto 72px; }
+    header,section { margin-bottom:36px; }
+    h1 { margin:.2rem 0 .7rem; font-size:clamp(2rem,5vw,3.3rem); line-height:1.04; letter-spacing:-.04em; }
+    h2 { margin:0 0 16px; font-size:1.35rem; }
+    h3 { margin:0; font-size:1.15rem; }
+    p { max-width:74ch; }
+    a { color:var(--accent); }
+    .eyebrow,.meta,.metrics { color:var(--muted); }
+    .meta { display:flex; flex-wrap:wrap; gap:8px 18px; }
+    .axes,.jump { display:flex; flex-wrap:wrap; gap:8px; padding:0; list-style:none; }
+    .axes li,.jump a,.pill { border:1px solid var(--line); border-radius:999px; padding:5px 10px; background:var(--card); }
+    .idea { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px; margin:14px 0; }
+    .idea-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    .rank { color:var(--accent); font-weight:750; }
+    dl { display:grid; grid-template-columns:92px 1fr; gap:7px 14px; margin:16px 0 0; }
+    dt { color:var(--muted); font-weight:650; }
+    dd { margin:0; max-width:74ch; }
+    table { width:100%; border-collapse:collapse; background:var(--card); }
+    th,td { text-align:left; vertical-align:top; border:1px solid var(--line); padding:10px 12px; }
+    th { background:var(--soft); }
+    footer { color:var(--muted); border-top:1px solid var(--line); padding-top:18px; font-size:.85rem; }
+    @media (max-width:620px) { main { margin-top:26px; } .idea-head { display:block; } dl { grid-template-columns:1fr; } dt { margin-top:8px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Stellar Photos · Ideation</div>
+    <h1>Image sources worth adding</h1>
+    <p>Ranked against the extension's real constraints: instant cache-first tabs, MV3 host permissions, public client code, durable reuse rights, useful attribution, and Chrome/Firefox support.</p>
+    <div class="meta"><span>Date: <time datetime="2026-08-26">2026-08-26</time></span><span>Topic: image-sources</span><span>Focus: other image sources for Stellar Photos</span><span>Mode: repo-grounded</span></div>
+  </header>
+
+  <section id="codebase-context">
+    <h2>Codebase Context</h2>
+    <p>The existing <code>ImageSource</code> interface is already the right-sized seam: stable source identity, random metadata acquisition, image download, optional rotation, full download, and tracking. The ten-item Cache Storage history removes new-tab latency from most provider calls. The constraints are outside that interface: every remote origin is currently a required manifest permission; embedded API keys are public; remote URLs are strictly allowlisted; images are bounded to 20 MiB; and the attribution model cannot yet represent license name or license URL. Rich photo information is also still Unsplash-specific.</p>
+    <p>Therefore, the best additions are sources with a small, stable set of origins, explicit caching/reuse terms, strong curation, and metadata that can be preserved locally. Non-default remote sources should use optional host permissions requested when enabled.</p>
+  </section>
+
+  <section id="topic-axes">
+    <h2>Topic Axes</h2>
+    <ul class="axes"><li>Distinctive catalog</li><li>Rights and attribution</li><li>Permission/privacy surface</li><li>Offline reliability</li><li>Extensibility</li></ul>
+  </section>
+
+  <section id="ranked-ideas">
+    <h2>Ranked Ideas</h2>
+    <nav aria-label="Ranked ideas"><ol class="jump"><li><a href="#idea-1">Museum mode</a></li><li><a href="#idea-2">Publisher feed</a></li><li><a href="#idea-3">Commons featured</a></li><li><a href="#idea-4">Procedural fallback</a></li><li><a href="#idea-5">Museum expansion</a></li><li><a href="#idea-6">NASA-owned space</a></li></ol></nav>
+
+    <article class="idea" id="idea-1">
+      <div class="idea-head"><h3><span class="rank">1.</span> Curated Art Institute “Museum mode”</h3><span class="pill">Confidence 95% · Medium</span></div>
+      <p>Add a source restricted to public-domain Art Institute of Chicago works, with filters for image availability, usable resolution, and background-friendly aspect ratios. Use a small generated catalog or paged sampling, then request provider-recommended IIIF sizes.</p>
+      <dl><dt>Axis</dt><dd>Distinctive catalog</dd><dt>Basis</dt><dd><strong>external:</strong> The <a href="https://api.artic.edu/docs/">official AIC API</a> supports public-domain filtering, fixed-size IIIF image URLs, CORS, and explicit hotlinking guidance without a user API key.</dd><dt>Rationale</dt><dd>This is not “another Unsplash.” It gives Stellar Photos a recognizable cultural identity while fitting its cache and origin-validation model unusually well.</dd><dt>Downsides</dt><dd>Many works are portrait or square. Filter deliberately, preserve institution/artist/work metadata, and do not assume every API record is public domain.</dd></dl>
+    </article>
+
+    <article class="idea" id="idea-2">
+      <div class="idea-head"><h3><span class="rank">2.</span> User-owned publisher feed</h3><span class="pill">Confidence 88% · Medium</span></div>
+      <p>Define a small declarative JSON manifest for photographers, teams, or self-hosters: stable ID, image URL, dimensions, title, creator, source URL, and license fields. The extension requests access only to the feed and image origins the user enables.</p>
+      <dl><dt>Axis</dt><dd>Extensibility</dd><dt>Basis</dt><dd><strong>direct:</strong> The source-neutral asset and cache model already accepts opaque provider payloads and stable IDs; the principal missing piece is optional per-origin permission handling.</dd><dt>Rationale</dt><dd>One source unlocks S3/R2/static sites and personal curated collections without building a separate OAuth integration for every storage vendor.</dd><dt>Downsides</dt><dd>Arbitrary origins expand the security surface. Require HTTPS, explicit optional permissions, strict URL/schema validation, bounded redirects, and data-only manifests—never remote executable configuration.</dd></dl>
+    </article>
+
+    <article class="idea" id="idea-3">
+      <div class="idea-head"><h3><span class="rank">3.</span> Wikimedia Featured Pictures</h3><span class="pill">Confidence 84% · High</span></div>
+      <p>Use only Commons Featured Pictures or Picture of the Day, not unrestricted search. Request Wikimedia-hosted thumbnails at a bounded size and persist the work page, creator, license, and license URL with every cached image.</p>
+      <dl><dt>Axis</dt><dd>Rights and attribution</dd><dt>Basis</dt><dd><strong>external:</strong> Wikimedia maintains a community-curated <a href="https://commons.wikimedia.org/wiki/Commons:Featured_pictures">Featured Pictures</a> collection, while its APIs expose media and licensing metadata.</dd><dt>Rationale</dt><dd>It supplies nature, history, architecture, maps, and science at a breadth no single stock provider offers, without a secret key.</dd><dt>Downsides</dt><dd>Licenses vary, metadata may contain HTML, and media types are diverse. This needs a strict image/license allowlist, HTML sanitization, and a richer attribution model before launch.</dd></dl>
+    </article>
+
+    <article class="idea" id="idea-4">
+      <div class="idea-head"><h3><span class="rank">4.</span> Deterministic procedural art</h3><span class="pill">Confidence 90% · Medium</span></div>
+      <p>Generate tasteful seeded gradients, geometric landscapes, or star fields locally. Treat the seed as the stable asset ID and cache the rendered result through the same history pipeline.</p>
+      <dl><dt>Axis</dt><dd>Offline reliability</dd><dt>Basis</dt><dd><strong>reasoned:</strong> A local generator requires no provider permission, key, attribution, network, or policy compliance and can always produce a valid next background.</dd><dt>Rationale</dt><dd>This is the best zero-network fallback and a real differentiator. It also prevents an empty or stale experience when remote providers fail.</dd><dt>Downsides</dt><dd>It stretches the product beyond photography and quality is easy to get wrong. Position it as an explicit “Generative” source or fallback, not as a photo provider.</dd></dl>
+    </article>
+
+    <article class="idea" id="idea-5">
+      <div class="idea-head"><h3><span class="rank">5.</span> Staged open-access museum expansion</h3><span class="pill">Confidence 82% · Medium</span></div>
+      <p>After AIC proves the product, add The Met as the second vetted museum, then extract only the shared image-delivery and attribution behavior. Consider Smithsonian or Rijksmuseum later as curated provider packs.</p>
+      <dl><dt>Axis</dt><dd>Permission/privacy surface</dd><dt>Basis</dt><dd><strong>external:</strong> <a href="https://metmuseum.github.io/">The Met Collection API</a> offers no-key access to Open Access data and corresponding public-domain JPEGs. AIC already provides IIIF, demonstrating useful overlap but not identical provider semantics.</dd><dt>Rationale</dt><dd>This earns a reusable museum layer from two concrete implementations instead of guessing at a universal abstraction. Provider packs keep rights filters and origins auditable.</dd><dt>Downsides</dt><dd>Random selection may require a prebuilt index; records can lack images or suitable orientation. Do not expose arbitrary IIIF endpoints until rights and metadata behavior are understood.</dd></dl>
+    </article>
+
+    <article class="idea" id="idea-6">
+      <div class="idea-head"><h3><span class="rank">6.</span> Verified NASA-owned space imagery</h3><span class="pill">Confidence 72% · Medium</span></div>
+      <p>Create a space source from a curated set of NASA-owned still images, using NASA's image library metadata and explicit credit. APOD may inform discovery, but third-party copyrighted entries and video must never enter the feed automatically.</p>
+      <dl><dt>Axis</dt><dd>Distinctive catalog</dd><dt>Basis</dt><dd><strong>external:</strong> NASA publishes an <a href="https://images.nasa.gov/docs/images.nasa.gov_api_docs.pdf">official image library API</a>, but its media guidance distinguishes NASA material from third-party works. APOD itself is not a blanket public-domain feed.</dd><dt>Rationale</dt><dd>Space is an unusually good thematic match for “Stellar Photos,” and a curated NASA-owned feed avoids APOD's rights ambiguity.</dd><dt>Downsides</dt><dd>Ownership and credit must be checked per asset. A conservative curated catalog is safer than random APOD dates and less operationally simple than AIC.</dd></dl>
+    </article>
+  </section>
+
+  <section id="rejections">
+    <h2>Rejection Summary</h2>
+    <table><thead><tr><th>#</th><th>Idea</th><th>Reason rejected or deferred</th></tr></thead><tbody>
+      <tr><td>1</td><td>NASA APOD as-is</td><td>Refuted: it includes video and third-party copyrighted work; API availability does not grant image reuse rights.</td></tr>
+      <tr><td>2</td><td>Pexels</td><td>Refuted: official API guidance explicitly excludes wallpaper/image-gallery products that primarily serve Pexels imagery.</td></tr>
+      <tr><td>3</td><td>Pixabay</td><td>Refuted: hotlinking, caching, systematic-download, and embedded-key constraints conflict with persistent client-side history.</td></tr>
+      <tr><td>4</td><td>Flickr</td><td>Refuted for public discovery: inconsistent per-image rights, API key/commercial terms, and cache constraints add risk without strong differentiation.</td></tr>
+      <tr><td>5</td><td>Openverse direct</td><td>Deferred: upstream image hosts and licenses vary, causing host-permission sprawl and unreliable runtime downloads. Better as curated ingestion or behind a controlled backend.</td></tr>
+      <tr><td>6</td><td>Generic IIIF source now</td><td>Deferred as premature abstraction. Ship one museum, validate a second, then extract the real common seam.</td></tr>
+      <tr><td>7</td><td>Bing Image of the Day / Google Arts scraping</td><td>Refuted: no durable supported reuse contract; brittle endpoints create legal and store-review risk.</td></tr>
+      <tr><td>8</td><td>Google Photos / Dropbox / OneDrive</td><td>Deferred: OAuth, token storage, privacy disclosures, provider verification, and cross-browser identity cost outweigh the value while local folders exist.</td></tr>
+      <tr><td>9</td><td>Social and wallpaper feeds</td><td>Refuted: moderation, NSFW exposure, provenance, and reuse rights are unacceptable defaults for a new-tab surface.</td></tr>
+    </tbody></table>
+  </section>
+
+  <footer>Composed 2026-08-26T00:00Z by ce-ideate from the Stellar Photos repository and current official provider documentation.</footer>
+</main>
+</body>
+</html>
