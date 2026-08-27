@@ -60,9 +60,14 @@ const {
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
-const { PINNED_STORAGE_KEY, readPinned, writePinned } = await import(
-  "../src/ts/storage"
-);
+const {
+  HISTORY_STORAGE_KEY,
+  PINNED_STORAGE_KEY,
+  readHistory,
+  readPinned,
+  writeHistory,
+  writePinned,
+} = await import("../src/ts/storage");
 
 beforeEach(() => {
   for (const key of Object.keys(local)) delete local[key];
@@ -285,5 +290,70 @@ describe("settings", () => {
     await writePinned(false);
     expect(await readPinned()).toBe(false);
     expect(local[PINNED_STORAGE_KEY]).toBe(false);
+  });
+
+  it("safely reads history with boundary validation and length caps", async () => {
+    expect(await readHistory()).toEqual({ history: [] });
+
+    local[HISTORY_STORAGE_KEY] = "malformed-string";
+    expect(await readHistory()).toEqual({ history: [] });
+
+    local[HISTORY_STORAGE_KEY] = { history: "not-an-array" };
+    expect(await readHistory()).toEqual({ history: [] });
+
+    const fifteenItems = Array.from({ length: 15 }, (_, i) => ({
+      sourceId: "unsplash",
+      sourceAssetId: `photo-${i}`,
+      cacheKey: `cache-${i}`,
+      width: 100,
+      height: 100,
+      color: null,
+      description: null,
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: i,
+    }));
+    local[HISTORY_STORAGE_KEY] = { history: fifteenItems };
+
+    const state = await readHistory();
+    expect(state.history).toHaveLength(10);
+    expect(state.history[0]?.sourceAssetId).toBe("photo-0");
+    expect(state.history[9]?.sourceAssetId).toBe("photo-9");
+
+    await writeHistory({ history: fifteenItems.slice(0, 3) });
+    expect(await readHistory()).toEqual({ history: fifteenItems.slice(0, 3) });
+  });
+
+  it("reconciles history index by cacheKey and createdAt, handling detached states", () => {
+    const history = [
+      { cacheKey: "key-a", createdAt: 100 },
+      { cacheKey: "key-b", createdAt: 90 },
+      { cacheKey: "key-c", createdAt: 80 },
+    ];
+
+    const currentAttached = { cacheKey: "key-b", createdAt: 90 };
+    const indexAttached = history.findIndex(
+      (item) =>
+        item.cacheKey === currentAttached.cacheKey &&
+        item.createdAt === currentAttached.createdAt,
+    );
+    expect(indexAttached).toBe(1);
+
+    const duplicateKeyDifferentTime = { cacheKey: "key-b", createdAt: 50 };
+    const indexDuplicateOld = history.findIndex(
+      (item) =>
+        item.cacheKey === duplicateKeyDifferentTime.cacheKey &&
+        item.createdAt === duplicateKeyDifferentTime.createdAt,
+    );
+    expect(indexDuplicateOld).toBe(-1);
+
+    const currentDetached = { cacheKey: "key-z", createdAt: 10 };
+    const indexDetached = history.findIndex(
+      (item) =>
+        item.cacheKey === currentDetached.cacheKey &&
+        item.createdAt === currentDetached.createdAt,
+    );
+    expect(indexDetached).toBe(-1);
   });
 });

@@ -1,13 +1,38 @@
-import type { BackgroundAsset } from "./assets";
+import type { BackgroundAsset, HistoryState } from "./assets";
+import { HISTORY_LIMIT } from "./assets";
 
-interface HistoryState {
-  history: BackgroundAsset[];
-}
-
-const HISTORY_LIMIT = 10;
 const HISTORY_STORAGE_KEY = "stellarHistory";
 const PINNED_STORAGE_KEY = "stellarPinned";
 const STAGED_KEYS_STORAGE_KEY = "stellarStagedKeys";
+
+function isBackgroundAsset(value: unknown): value is BackgroundAsset {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    typeof candidate.sourceId === "string" &&
+    typeof candidate.sourceAssetId === "string" &&
+    typeof candidate.cacheKey === "string" &&
+    typeof candidate.width === "number" &&
+    typeof candidate.height === "number" &&
+    typeof candidate.payloadVersion === "number" &&
+    typeof candidate.createdAt === "number"
+  );
+}
+
+function validateHistoryState(raw: unknown): HistoryState | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const candidate = raw as Record<string, unknown>;
+  if (!Array.isArray(candidate.history)) return null;
+
+  const validEntries = candidate.history.filter(isBackgroundAsset);
+
+  return {
+    history: validEntries.slice(0, HISTORY_LIMIT),
+  };
+}
 
 function getSync<T extends Record<string, unknown>>(
   keys: string | string[] | null,
@@ -38,11 +63,12 @@ function removeLocal(keys: string | string[]): Promise<void> {
 }
 
 async function readHistory(): Promise<HistoryState> {
-  const result = await getLocal<{ [HISTORY_STORAGE_KEY]?: HistoryState }>(
+  const result = await getLocal<{ [HISTORY_STORAGE_KEY]?: unknown }>(
     HISTORY_STORAGE_KEY,
   );
+  const validated = validateHistoryState(result[HISTORY_STORAGE_KEY]);
 
-  return result[HISTORY_STORAGE_KEY] ?? { history: [] };
+  return validated ?? { history: [] };
 }
 
 async function writeHistory(state: HistoryState): Promise<void> {
@@ -187,13 +213,12 @@ function removeFrom(
   });
 }
 
-export type { HistoryState };
 export {
   addStagedKey,
   getLocal,
   getSync,
-  HISTORY_LIMIT,
   HISTORY_STORAGE_KEY,
+  isBackgroundAsset,
   PINNED_STORAGE_KEY,
   readHistory,
   readPinned,
@@ -204,6 +229,7 @@ export {
   STAGED_KEYS_STORAGE_KEY,
   setLocal,
   setSync,
+  validateHistoryState,
   writeHistory,
   writePinned,
 };

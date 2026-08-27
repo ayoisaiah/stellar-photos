@@ -1,4 +1,5 @@
-import type { BackgroundAsset } from "./assets";
+import type { BackgroundAsset, HistoryState } from "./assets";
+import { HISTORY_LIMIT } from "./assets";
 import {
   assetCacheKey,
   deleteCachedImage,
@@ -12,10 +13,8 @@ import {
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
-import type { HistoryState } from "./storage";
 import {
   addStagedKey,
-  HISTORY_LIMIT,
   readHistory,
   readPinned,
   removeStagedKey,
@@ -25,19 +24,10 @@ import {
 const LOCK_NAME = "stellar_actions_lock";
 
 let queueTail: Promise<void> = Promise.resolve();
-let initialization: Promise<HistoryState> | null = null;
 let activeRotation: Promise<BackgroundAsset | null> | null = null;
 let pendingRotation = false;
 
-function initialize(): Promise<HistoryState> {
-  initialization ??= enqueue(readHistory);
-
-  return initialization;
-}
-
 async function ensureCurrent(): Promise<BackgroundAsset | null> {
-  await initialize();
-
   return enqueue(async () => {
     const state = await readHistory();
 
@@ -53,7 +43,6 @@ function rotate(force = false): Promise<BackgroundAsset | null> {
 
   activeRotation = (async () => {
     pendingRotation = false;
-    await initialize();
 
     const acquire = () => acquireAsset(undefined, undefined, force);
     let current = await enqueue(acquire);
@@ -78,8 +67,6 @@ async function prepareSource(
   const source = getImageSource(sourceId);
 
   if (!source) throw new Error("Unknown image source");
-
-  await initialize();
 
   return enqueue(async () => {
     const candidate = await source.getRandomAsset();
@@ -109,8 +96,6 @@ async function commitSource(asset: BackgroundAsset): Promise<void> {
   )
     throw new Error("Unknown image source");
 
-  await initialize();
-
   await enqueue(async () => {
     const image = await readCachedImage(asset.cacheKey);
 
@@ -121,7 +106,7 @@ async function commitSource(asset: BackgroundAsset): Promise<void> {
     await setImageSourceId(source.id);
 
     try {
-      const promoted = await saveAndPromote(asset, image);
+      const promoted = await cacheAndRecordImage(asset, image);
       const current = promoted.history[0];
 
       if (!current) throw new Error("Promoted image is missing from history");
@@ -144,20 +129,7 @@ async function discardSource(asset: BackgroundAsset): Promise<void> {
 
     if (state.history.some((item) => item.cacheKey === asset.cacheKey)) return;
 
-    await deleteCachedImage(asset.cacheKey);
-  });
-}
-
-async function purgeFolder(folderId: string): Promise<void> {
-  await initialize();
-
-  await enqueue(async () => {
-    const { next, removed } = await removeFolderFromHistory(folderId);
-    for (const item of removed) {
-      if (!next.history.some((h) => h.cacheKey === item.cacheKey)) {
-        await deleteCachedImage(item.cacheKey);
-      }
-    }
+    await deleteCachedImage(asset.cacheKey).catch(() => undefined);
   });
 }
 
@@ -175,14 +147,13 @@ async function trackDownload(asset: BackgroundAsset): Promise<void> {
   });
 }
 
-async function initializeSettingsAndHistory(): Promise<void> {
+async function initializeSettings(): Promise<void> {
   const { initializeCoreSettings } = await import("./settings");
 
   await enqueue(async () => {
     await initializeCoreSettings();
     await initializeImageSourceSettings();
   });
-  await initialize();
 }
 
 function enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -203,19 +174,47 @@ function enqueue<T>(operation: () => Promise<T>): Promise<T> {
   return result;
 }
 
-async function saveAndPromote(
+async function cacheAndRecordImage(
   asset: BackgroundAsset,
   image: Response,
 ): Promise<HistoryState> {
+  const existing = await readCachedImage(asset.cacheKey);
+  const priorResponse = existing ? existing.clone() : null;
+
   await putCachedImage(asset.cacheKey, image);
 
-  const { next, evicted } = await appendToHistory(asset);
+  let next: HistoryState;
+  let evicted: BackgroundAsset | null;
+  try {
+    const result = await appendToHistory(asset);
+    next = result.next;
+    evicted = result.evicted;
+  } catch (error) {
+    if (priorResponse) {
+      try {
+        await putCachedImage(asset.cacheKey, priorResponse);
+      } catch {
+        // Ignore cache restoration error
+      }
+    } else {
+      try {
+        await deleteCachedImage(asset.cacheKey);
+      } catch {
+        // Ignore cache cleanup error
+      }
+    }
+    throw error;
+  }
 
   if (
     evicted &&
     !next.history.some((item) => item.cacheKey === evicted.cacheKey)
   ) {
-    await deleteCachedImage(evicted.cacheKey);
+    try {
+      await deleteCachedImage(evicted.cacheKey);
+    } catch {
+      // Ignore cache cleanup error
+    }
   }
 
   return next;
@@ -254,7 +253,7 @@ async function acquireAsset(
     ...candidate,
     cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
   };
-  const promoted = await saveAndPromote(asset, image);
+  const promoted = await cacheAndRecordImage(asset, image);
   const promotedCurrent = promoted.history[0];
 
   if (!promotedCurrent)
@@ -279,38 +278,12 @@ async function appendToHistory(
   return { next, evicted };
 }
 
-async function removeFolderFromHistory(
-  folderId: string,
-): Promise<{ next: HistoryState; removed: BackgroundAsset[] }> {
-  const current = await readHistory();
-  const removed: BackgroundAsset[] = [];
-  const remaining = current.history.filter((item) => {
-    if (item.sourceId === "local") {
-      const payload = item.sourcePayload as { folderId?: string } | undefined;
-      if (payload?.folderId === folderId) {
-        removed.push(item);
-        return false;
-      }
-    }
-    return true;
-  });
-
-  const next: HistoryState = { history: remaining };
-  if (removed.length > 0) {
-    await writeHistory(next);
-  }
-
-  return { next, removed };
-}
-
 export {
   commitSource,
   discardSource,
   ensureCurrent,
-  initialize,
-  initializeSettingsAndHistory,
+  initializeSettings,
   prepareSource,
-  purgeFolder,
   rotate,
   trackDownload,
 };

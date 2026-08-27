@@ -2,7 +2,7 @@ import {
   commitSource,
   discardSource,
   ensureCurrent,
-  initializeSettingsAndHistory,
+  initializeSettings,
   prepareSource,
   rotate,
   trackDownload,
@@ -23,8 +23,8 @@ type WorkerResult =
 
 let initPromise: Promise<void> | null = null;
 
-function initializeSettingsAndHistoryMemoized(): Promise<void> {
-  initPromise ??= initializeSettingsAndHistory().catch((error) => {
+function initializeSettingsMemoized(): Promise<void> {
+  initPromise ??= initializeSettings().catch((error) => {
     initPromise = null;
     throw error;
   });
@@ -37,7 +37,7 @@ function startServiceWorker(): void {
     if (typeof navigator !== "undefined" && navigator.storage?.persist) {
       void navigator.storage.persist();
     }
-    void initializeSettingsAndHistoryMemoized().catch(() => undefined);
+    void initializeSettingsMemoized().catch(() => undefined);
   });
 
   chrome.runtime.onMessage.addListener(
@@ -124,4 +124,4 @@ function isCommand(value: unknown): value is WorkerCommand {
 }
 
 export type { WorkerCommand, WorkerResult };
-export { dispatch, initializeSettingsAndHistoryMemoized, startServiceWorker };
+export { dispatch, initializeSettingsMemoized, startServiceWorker };

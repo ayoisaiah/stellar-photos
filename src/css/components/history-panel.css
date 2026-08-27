@@ -46,6 +46,13 @@
   box-shadow: 0 0.25rem 0.75rem rgb(0 0 0 / 40%);
 }
 
+.history-card.active {
+  border-color: #eee7d8;
+  box-shadow:
+    0 0 0 2px #eee7d8,
+    0 0.25rem 0.75rem rgb(0 0 0 / 40%);
+}
+
 .history-card:focus-visible {
   outline: 2px solid #eee7d8;
   outline-offset: 2px;

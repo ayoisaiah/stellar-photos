@@ -31,6 +31,7 @@ import {
   PINNED_STORAGE_KEY,
   readHistory,
   readPinned,
+  validateHistoryState,
   writePinned,
 } from "../storage";
 import "./empty-state";
@@ -52,7 +53,11 @@ const UTM_PARAMS =
 class StellarApp extends LitElement {
   static override styles = unsafeCSS(styles);
 
+  private connectionGeneration = 0;
   private controlsTimer: number | null = null;
+  private crossfadeTimer: number | null = null;
+  private historyLoadGeneration = 0;
+  private lastWheelTime = 0;
   private objectUrl: string | null = null;
   private requestInFlight = false;
   private navSequence = 0;
@@ -64,6 +69,12 @@ class StellarApp extends LitElement {
 
   @state()
   private accessor currentAsset: BackgroundAsset | null = null;
+
+  @state()
+  private accessor previousPhoto: {
+    url: string;
+    asset: BackgroundAsset | null;
+  } | null = null;
 
   @state()
   private accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
@@ -105,18 +116,23 @@ class StellarApp extends LitElement {
   private accessor historyIndex = 0;
 
   private get hasNext(): boolean {
-    return this.historyIndex > 0;
+    return (
+      this.historyAssets.length > 0 &&
+      (this.historyIndex > 0 || this.historyIndex === -1)
+    );
   }
 
   private get hasPrevious(): boolean {
     return (
       this.historyAssets.length > 0 &&
+      this.historyIndex !== -1 &&
       this.historyIndex < this.historyAssets.length - 1
     );
   }
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.connectionGeneration += 1;
 
     window.addEventListener("wheel", this.handleWheel, { passive: true });
     window.addEventListener("keydown", this.handleKeydown);
@@ -136,6 +152,7 @@ class StellarApp extends LitElement {
   }
 
   override disconnectedCallback(): void {
+    this.connectionGeneration += 1;
     this.requestInFlight = false;
     window.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("keydown", this.handleKeydown);
@@ -157,9 +174,6 @@ class StellarApp extends LitElement {
   }
 
   override render() {
-    const effectiveMode = this.effectiveDisplayMode;
-    const motionEnabled = this.displaySettings.motion;
-    const paused = this.settingsOpen || this.infoOpen;
     const controlsShown =
       this.controlsVisible ||
       this.historyOpen ||
@@ -173,29 +187,17 @@ class StellarApp extends LitElement {
         @mousemove=${this.handleMouseMove}
       >
         ${
-          this.objectUrl
-            ? keyed(
-                this.objectUrl,
-                html`
-                  <div
-                    class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
-                    aria-hidden="true"
-                  >
-                    ${
-                      effectiveMode === "contain-blur"
-                        ? html`<div
-                            class="photo-backdrop"
-                            style="background-image: url('${this.objectUrl}')"
-                          ></div>`
-                        : null
-                    }
-                    <div
-                      class="photo-main"
-                      style="background-image: url('${this.objectUrl}')"
-                    ></div>
-                  </div>
-                `,
+          this.previousPhoto
+            ? this.renderPhotoStage(
+                this.previousPhoto.url,
+                this.previousPhoto.asset,
+                false,
               )
+            : null
+        }
+        ${
+          this.objectUrl
+            ? this.renderPhotoStage(this.objectUrl, this.currentAsset, true)
             : null
         }
         <stellar-empty-state
@@ -364,11 +366,12 @@ class StellarApp extends LitElement {
         <stellar-history-panel
           class="history-panel"
           .open=${this.historyOpen}
-          .ready=${Boolean(this.objectUrl)}
           .activeAsset=${this.currentAsset}
           .historyAssets=${this.historyAssets}
           @select-photo=${this.handleSelectHistoryPhoto}
           @download-photo=${this.handleDownloadHistoryPhoto}
+          @nav-next=${this.handleNextPhoto}
+          @nav-prev=${this.handlePrevPhoto}
           @close-history=${this.closeHistory}
         ></stellar-history-panel>
       </div>
@@ -446,16 +449,51 @@ class StellarApp extends LitElement {
     });
   };
 
-  private get effectiveDisplayMode(): PhotoDisplayMode {
+  private getEffectiveDisplayMode(
+    asset: BackgroundAsset | null,
+  ): PhotoDisplayMode {
     const isPortrait =
-      this.currentAsset !== null &&
-      this.currentAsset.height > 0 &&
-      this.currentAsset.width > 0 &&
-      this.currentAsset.height > this.currentAsset.width;
+      asset !== null &&
+      asset.height > 0 &&
+      asset.width > 0 &&
+      asset.height > asset.width;
 
     return isPortrait
       ? this.displaySettings.portraitMode
       : this.displaySettings.landscapeMode;
+  }
+
+  private renderPhotoStage(
+    url: string,
+    asset: BackgroundAsset | null,
+    isIncoming: boolean,
+  ) {
+    const effectiveMode = this.getEffectiveDisplayMode(asset);
+    const motionEnabled = this.displaySettings.motion;
+    const paused = this.settingsOpen || this.infoOpen;
+
+    return keyed(
+      url,
+      html`
+        <div
+          class="photo-stage ${isIncoming ? "photo-stage-incoming" : "photo-stage-previous"} ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
+          aria-hidden="true"
+        >
+          ${
+            effectiveMode === "contain-blur"
+              ? html`<div
+                  class="photo-backdrop"
+                  style="background-image: url('${url}')"
+                ></div>`
+              : null
+          }
+          <div
+            class="photo-main"
+            style="background-image: url('${url}')"
+          ></div>
+        </div>
+      `,
+    );
   }
 
   private async preparePhoto(
@@ -470,7 +508,16 @@ class StellarApp extends LitElement {
     let dims = { width: metadata.width, height: metadata.height };
 
     try {
-      if (metadata.width === 0 && metadata.height === 0) {
+      if (typeof Image !== "undefined") {
+        const img = new Image();
+        img.src = nextUrl;
+        if ("decode" in img) {
+          await img.decode();
+        }
+        if (dims.width === 0 && dims.height === 0 && img.naturalWidth > 0) {
+          dims = { width: img.naturalWidth, height: img.naturalHeight };
+        }
+      } else if (metadata.width === 0 && metadata.height === 0) {
         if (typeof createImageBitmap === "function") {
           const bitmap = await createImageBitmap(blob);
           dims = { width: bitmap.width, height: bitmap.height };
@@ -500,19 +547,39 @@ class StellarApp extends LitElement {
   }
 
   private applyPhoto(nextUrl: string, asset: BackgroundAsset | null): void {
-    const previous = this.objectUrl;
+    if (this.objectUrl === nextUrl) {
+      this.currentAsset = asset;
+      return;
+    }
+
+    if (this.crossfadeTimer !== null) {
+      window.clearTimeout(this.crossfadeTimer);
+      this.crossfadeTimer = null;
+    }
+
+    if (this.previousPhoto) {
+      URL.revokeObjectURL(this.previousPhoto.url);
+      this.previousPhoto = null;
+    }
+
+    if (this.objectUrl) {
+      this.previousPhoto = {
+        url: this.objectUrl,
+        asset: this.currentAsset,
+      };
+    }
 
     this.objectUrl = nextUrl;
     this.currentAsset = asset;
 
-    if (previous && previous !== nextUrl) {
-      if (typeof requestAnimationFrame === "function") {
-        requestAnimationFrame(() => {
-          URL.revokeObjectURL(previous);
-        });
-      } else {
-        URL.revokeObjectURL(previous);
-      }
+    if (this.previousPhoto) {
+      this.crossfadeTimer = window.setTimeout(() => {
+        if (this.previousPhoto) {
+          URL.revokeObjectURL(this.previousPhoto.url);
+          this.previousPhoto = null;
+        }
+        this.crossfadeTimer = null;
+      }, 550);
     }
   }
 
@@ -520,19 +587,20 @@ class StellarApp extends LitElement {
     if (this.requestInFlight) return;
 
     this.requestInFlight = true;
+    const connGen = this.connectionGeneration;
     if (!this.objectUrl) this.phase = "loading";
 
     try {
       const result = await sendCommand({ command: "ensure-current" });
 
-      if (!this.isConnected) return;
+      if (!this.isConnected || connGen !== this.connectionGeneration) return;
       if (!result.ok) throw new Error(result.error.message);
 
       const prepared =
         result.current && (await this.preparePhoto(result.current));
 
       if (prepared) {
-        if (this.isConnected) {
+        if (this.isConnected && connGen === this.connectionGeneration) {
           this.applyPhoto(prepared.url, prepared.asset);
           this.phase = "ready";
           await this.loadHistoryAssets();
@@ -546,13 +614,24 @@ class StellarApp extends LitElement {
         throw new Error("No usable image is available yet");
       }
     } catch {
-      if (this.isConnected && !this.objectUrl) this.phase = "error";
+      if (
+        this.isConnected &&
+        connGen === this.connectionGeneration &&
+        !this.objectUrl
+      ) {
+        this.phase = "error";
+      }
     } finally {
-      if (this.isConnected) this.requestInFlight = false;
+      if (this.isConnected && connGen === this.connectionGeneration) {
+        this.requestInFlight = false;
+      }
     }
   };
 
   private async initializeState(): Promise<void> {
+    const connGen = this.connectionGeneration;
+    const historyGen = ++this.historyLoadGeneration;
+
     try {
       const [displaySettings, sourceId, pinned, historyState] =
         await Promise.all([
@@ -562,21 +641,23 @@ class StellarApp extends LitElement {
           readHistory().catch(() => ({ history: [] })),
         ]);
 
-      if (!this.isConnected) return;
+      if (!this.isConnected || connGen !== this.connectionGeneration) return;
 
       this.displaySettings = displaySettings;
       this.sourceId = sourceId;
       this.isPinned = pinned;
-      this.historyAssets = historyState.history;
-      this.historyIndex = 0;
+      if (historyGen === this.historyLoadGeneration) {
+        this.historyAssets = historyState.history;
+        this.historyIndex = 0;
+      }
 
       const current = this.historyAssets[0] ?? null;
-
       let rendered = false;
+
       if (current) {
         const prepared = await this.preparePhoto(current);
         if (prepared) {
-          if (this.isConnected) {
+          if (this.isConnected && connGen === this.connectionGeneration) {
             this.applyPhoto(prepared.url, prepared.asset);
             this.phase = "ready";
             rendered = true;
@@ -602,23 +683,67 @@ class StellarApp extends LitElement {
     changes: Record<string, chrome.storage.StorageChange>,
     area: string,
   ): void => {
-    if (area === "local" && PINNED_STORAGE_KEY in changes) {
-      void this.loadPinnedState();
+    if (area === "local") {
+      if (PINNED_STORAGE_KEY in changes) {
+        void this.loadPinnedState();
+      }
+
+      if (HISTORY_STORAGE_KEY in changes) {
+        const newValue = changes[HISTORY_STORAGE_KEY]?.newValue;
+        const validated = validateHistoryState(newValue);
+        if (validated) {
+          this.historyLoadGeneration += 1;
+          this.historyAssets = validated.history;
+          this.reconcileHistoryIndex();
+        } else {
+          void this.loadHistoryAssets();
+        }
+      }
     }
   };
 
   private async loadPinnedState(): Promise<void> {
+    const connGen = this.connectionGeneration;
+
     try {
-      this.isPinned = await readPinned();
+      const isPinned = await readPinned();
+      if (!this.isConnected || connGen !== this.connectionGeneration) return;
+      this.isPinned = isPinned;
     } catch {
       // Graceful fallback
     }
   }
 
+  private reconcileHistoryIndex(): void {
+    if (!this.currentAsset) {
+      this.historyIndex = 0;
+      return;
+    }
+
+    const index = this.historyAssets.findIndex(
+      (a) =>
+        a.cacheKey === this.currentAsset?.cacheKey &&
+        a.createdAt === this.currentAsset?.createdAt,
+    );
+
+    this.historyIndex = index;
+  }
+
   private async loadHistoryAssets(): Promise<void> {
+    const gen = ++this.historyLoadGeneration;
+    const connGen = this.connectionGeneration;
+
     try {
       const state = await readHistory();
+      if (
+        gen !== this.historyLoadGeneration ||
+        !this.isConnected ||
+        connGen !== this.connectionGeneration
+      ) {
+        return;
+      }
       this.historyAssets = state.history;
+      this.reconcileHistoryIndex();
     } catch {
       // Graceful fallback
     }
@@ -640,19 +765,24 @@ class StellarApp extends LitElement {
 
   private displayHistoryAsset = async (
     asset: BackgroundAsset,
-  ): Promise<boolean> => {
+  ): Promise<"applied" | "missing" | "superseded"> => {
     const seq = ++this.navSequence;
+    const connGen = this.connectionGeneration;
     const prepared = await this.preparePhoto(asset);
 
-    if (seq !== this.navSequence || !this.isConnected) {
+    if (
+      seq !== this.navSequence ||
+      !this.isConnected ||
+      connGen !== this.connectionGeneration
+    ) {
       if (prepared) URL.revokeObjectURL(prepared.url);
-      return false;
+      return "superseded";
     }
 
-    if (!prepared) return false;
+    if (!prepared) return "missing";
 
     this.applyPhoto(prepared.url, prepared.asset);
-    return true;
+    return "applied";
   };
 
   private handlePrevPhoto = async (): Promise<void> => {
@@ -663,10 +793,12 @@ class StellarApp extends LitElement {
       const targetAsset = this.historyAssets[targetIndex];
       if (!targetAsset) break;
 
-      this.historyIndex = targetIndex;
-
-      const success = await this.displayHistoryAsset(targetAsset);
-      if (success) return;
+      const result = await this.displayHistoryAsset(targetAsset);
+      if (result === "superseded") return;
+      if (result === "applied") {
+        this.historyIndex = targetIndex;
+        return;
+      }
 
       targetIndex += 1;
     }
@@ -675,15 +807,17 @@ class StellarApp extends LitElement {
   private handleNextPhoto = async (): Promise<void> => {
     if (!this.hasNext) return;
 
-    let targetIndex = this.historyIndex - 1;
+    let targetIndex = this.historyIndex === -1 ? 0 : this.historyIndex - 1;
     while (targetIndex >= 0) {
       const targetAsset = this.historyAssets[targetIndex];
       if (!targetAsset) break;
 
-      this.historyIndex = targetIndex;
-
-      const success = await this.displayHistoryAsset(targetAsset);
-      if (success) return;
+      const result = await this.displayHistoryAsset(targetAsset);
+      if (result === "superseded") return;
+      if (result === "applied") {
+        this.historyIndex = targetIndex;
+        return;
+      }
 
       targetIndex -= 1;
     }
@@ -780,21 +914,16 @@ class StellarApp extends LitElement {
     event: CustomEvent<{ asset: BackgroundAsset; index?: number }>,
   ): Promise<void> => {
     const selectedAsset = event.detail.asset;
-    if (typeof event.detail.index === "number") {
-      this.historyIndex = event.detail.index;
-    } else {
-      const index = this.historyAssets.findIndex(
-        (a) =>
-          assetIdentity(a) === assetIdentity(selectedAsset) ||
-          a.cacheKey === selectedAsset.cacheKey,
-      );
-      if (index !== -1) {
-        this.historyIndex = index;
-      }
-    }
+    const result = await this.displayHistoryAsset(selectedAsset);
 
-    await this.setPinnedState(true);
-    await this.displayHistoryAsset(selectedAsset);
+    if (result === "applied") {
+      if (typeof event.detail.index === "number") {
+        this.historyIndex = event.detail.index;
+      } else {
+        this.reconcileHistoryIndex();
+      }
+      await this.setPinnedState(true);
+    }
   };
 
   private handleDownloadHistoryPhoto = async (
@@ -813,11 +942,23 @@ class StellarApp extends LitElement {
         el.tagName.toLowerCase() === "stellar-history-panel",
     );
 
-    if (isInsideHistory) return;
+    if (isInsideHistory) {
+      const now = Date.now();
+      if (now - this.lastWheelTime > 200) {
+        if (event.deltaX > 15 || event.deltaY > 15) {
+          this.lastWheelTime = now;
+          void this.handleNextPhoto();
+        } else if (event.deltaX < -15 || event.deltaY < -15) {
+          this.lastWheelTime = now;
+          void this.handlePrevPhoto();
+        }
+      }
+      return;
+    }
 
-    if (event.deltaY < 0 && !this.historyOpen) {
+    if (event.deltaY < -30 && !this.historyOpen) {
       this.openHistory();
-    } else if (event.deltaY > 0 && this.historyOpen) {
+    } else if (event.deltaY > 30 && this.historyOpen) {
       this.closeHistory();
     }
   };
@@ -1010,10 +1151,21 @@ class StellarApp extends LitElement {
   };
 
   private releaseObjectUrl(): void {
-    if (!this.objectUrl) return;
+    if (this.crossfadeTimer !== null) {
+      window.clearTimeout(this.crossfadeTimer);
+      this.crossfadeTimer = null;
+    }
 
-    URL.revokeObjectURL(this.objectUrl);
-    this.objectUrl = null;
+    if (this.previousPhoto) {
+      URL.revokeObjectURL(this.previousPhoto.url);
+      this.previousPhoto = null;
+    }
+
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
+    }
+
     this.currentAsset = null;
   }
 }

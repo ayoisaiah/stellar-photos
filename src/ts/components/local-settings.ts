@@ -3,7 +3,6 @@ import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/local-settings.css?inline";
-import { purgeFolder } from "../actions";
 import {
   addDirectoryHandle,
   listStoredFolderRecords,
@@ -327,7 +326,6 @@ class LocalSettingsComponent extends LitElement {
 
     try {
       await removeDirectoryHandle(id);
-      await purgeFolder(id);
       const updatedFolders = await listStoredFolderRecords();
       const folderNames = updatedFolders.map((f) => f.folderName).join(", ");
       await setLocalSettings({ folderName: folderNames });

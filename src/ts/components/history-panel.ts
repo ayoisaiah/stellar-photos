@@ -4,9 +4,9 @@ import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
+import { HISTORY_LIMIT } from "../assets";
 import { readCachedImage } from "../cache";
 import { getImageSource } from "../sources";
-import { HISTORY_LIMIT } from "../storage";
 import "./lucide-icon";
 
 const UTM_PARAMS =
@@ -19,9 +19,6 @@ class HistoryPanel extends LitElement {
   @property({ type: Boolean, reflect: true })
   accessor open = false;
 
-  @property({ type: Boolean })
-  accessor ready = false;
-
   @property({ attribute: false })
   accessor activeAsset: BackgroundAsset | null = null;
 
@@ -32,22 +29,19 @@ class HistoryPanel extends LitElement {
   private accessor thumbnailUrls = new Map<string, string>();
 
   private loadGeneration = 0;
-
-  private idleHandle: number | null = null;
-  private timeoutHandle: number | null = null;
+  private lastWheelTime = 0;
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.addEventListener("wheel", this.handleWheel, { passive: false });
 
     if (this.open) {
       void this.loadThumbnails();
-    } else if (this.ready) {
-      this.scheduleDeferredLoad();
     }
   }
 
   override disconnectedCallback(): void {
-    this.cancelScheduledLoad();
+    this.removeEventListener("wheel", this.handleWheel);
     this.loadGeneration += 1;
     this.cleanupThumbnailUrls();
     super.disconnectedCallback();
@@ -57,26 +51,28 @@ class HistoryPanel extends LitElement {
     if (
       changedProperties.has("open") ||
       changedProperties.has("historyAssets") ||
-      changedProperties.has("activeAsset") ||
-      changedProperties.has("ready")
+      changedProperties.has("activeAsset")
     ) {
       if (this.open) {
         void this.loadThumbnails();
-      } else if (this.ready) {
-        this.scheduleDeferredLoad();
       }
     }
   }
 
   override render() {
     const totalSlots = HISTORY_LIMIT;
-    const assets =
+    const rawAssets =
       this.historyAssets.length > 0
         ? this.historyAssets
         : this.activeAsset
           ? [this.activeAsset]
           : [];
-    const placeholderCount = Math.max(0, totalSlots - assets.length);
+    const assetsWithIndex = rawAssets.map((asset, index) => ({
+      asset,
+      index,
+    }));
+    const reversedAssets = [...assetsWithIndex].reverse();
+    const placeholderCount = Math.max(0, totalSlots - rawAssets.length);
     const placeholders = Array.from({ length: placeholderCount });
 
     return html`
@@ -85,7 +81,7 @@ class HistoryPanel extends LitElement {
         role="region"
         aria-label="Photo history"
       >
-        ${assets.map((asset, index) => this.renderCard(asset, index))}
+        ${reversedAssets.map(({ asset, index }) => this.renderCard(asset, index))}
         ${placeholders.map(() => this.renderPlaceholder())}
       </ul>
     `;
@@ -98,10 +94,14 @@ class HistoryPanel extends LitElement {
     const supportsDownload = Boolean(
       getImageSource(asset.sourceId)?.supportsDownload,
     );
+    const isActive =
+      this.activeAsset !== null &&
+      this.activeAsset.cacheKey === asset.cacheKey &&
+      this.activeAsset.createdAt === asset.createdAt;
 
     return html`
       <li
-        class="history-card"
+        class="history-card ${isActive ? "active" : ""}"
         data-cache-key="${asset.cacheKey}"
         tabindex="0"
         role="button"
@@ -172,39 +172,23 @@ class HistoryPanel extends LitElement {
     `;
   }
 
-  private cancelScheduledLoad(): void {
-    if (
-      this.idleHandle !== null &&
-      typeof window !== "undefined" &&
-      "cancelIdleCallback" in window
-    ) {
-      window.cancelIdleCallback(this.idleHandle);
-      this.idleHandle = null;
-    }
-    if (this.timeoutHandle !== null) {
-      clearTimeout(this.timeoutHandle);
-      this.timeoutHandle = null;
-    }
-  }
+  private handleWheel = (event: WheelEvent): void => {
+    event.preventDefault();
+    const now = Date.now();
+    if (now - this.lastWheelTime < 200) return;
 
-  private scheduleDeferredLoad(): void {
-    this.cancelScheduledLoad();
-
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      this.idleHandle = window.requestIdleCallback(
-        () => {
-          void this.loadThumbnails();
-        },
-        { timeout: 2000 },
+    if (event.deltaX > 15 || event.deltaY > 15) {
+      this.lastWheelTime = now;
+      this.dispatchEvent(
+        new CustomEvent("nav-next", { bubbles: true, composed: true }),
       );
-    } else {
-      this.timeoutHandle = Number(
-        setTimeout(() => {
-          void this.loadThumbnails();
-        }, 500),
+    } else if (event.deltaX < -15 || event.deltaY < -15) {
+      this.lastWheelTime = now;
+      this.dispatchEvent(
+        new CustomEvent("nav-prev", { bubbles: true, composed: true }),
       );
     }
-  }
+  };
 
   private async loadThumbnails(): Promise<void> {
     const generation = ++this.loadGeneration;

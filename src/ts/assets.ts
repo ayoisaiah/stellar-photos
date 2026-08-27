@@ -20,11 +20,22 @@ interface BackgroundAsset {
 
 type UncachedBackgroundAsset = Omit<BackgroundAsset, "cacheKey">;
 
+interface HistoryState {
+  history: BackgroundAsset[];
+}
+
+const HISTORY_LIMIT = 10;
+
 function assetIdentity(
   asset: Pick<BackgroundAsset, "sourceId" | "sourceAssetId">,
 ): string {
   return `${encodeURIComponent(asset.sourceId)}:${encodeURIComponent(asset.sourceAssetId)}`;
 }
 
-export type { Attribution, BackgroundAsset, UncachedBackgroundAsset };
-export { assetIdentity };
+export type {
+  Attribution,
+  BackgroundAsset,
+  HistoryState,
+  UncachedBackgroundAsset,
+};
+export { assetIdentity, HISTORY_LIMIT };

@@ -38,8 +38,9 @@ vi.mock("../src/ts/storage", () => ({
   removeStagedKey,
 }));
 
-const { commitSource, prepareSource, purgeFolder, rotate, trackDownload } =
-  await import("../src/ts/actions");
+const { commitSource, prepareSource, rotate, trackDownload } = await import(
+  "../src/ts/actions"
+);
 
 const candidate = {
   sourceId: "unsplash",
@@ -197,19 +198,47 @@ describe("source activation", () => {
     expect(source.getRandomAsset).toHaveBeenCalledTimes(2);
   });
 
-  it("purges folder assets from history and cache", async () => {
-    const localAsset: BackgroundAsset = {
+  it("rolls back cached image if recording history fails", async () => {
+    readCachedImage.mockResolvedValueOnce(undefined);
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+    writeHistory.mockRejectedValueOnce(new Error("Storage quota exceeded"));
+
+    await expect(rotate(true)).rejects.toThrow("Storage quota exceeded");
+
+    expect(putCachedImage).toHaveBeenCalledWith(
+      prepared.cacheKey,
+      expect.any(Response),
+    );
+    expect(deleteCachedImage).toHaveBeenCalledWith(prepared.cacheKey);
+  });
+
+  it("restores prior cached image on rollback when duplicate cache key exists", async () => {
+    const priorResponse = new Response("prior-image");
+    readCachedImage.mockResolvedValueOnce(priorResponse);
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+    writeHistory.mockRejectedValueOnce(new Error("Storage quota exceeded"));
+
+    await expect(rotate(true)).rejects.toThrow("Storage quota exceeded");
+
+    expect(putCachedImage).toHaveBeenLastCalledWith(
+      prepared.cacheKey,
+      expect.any(Response),
+    );
+    expect(deleteCachedImage).not.toHaveBeenCalled();
+  });
+
+  it("deletes cached image of evicted history item when history limit is exceeded", async () => {
+    const tenItems: BackgroundAsset[] = Array.from({ length: 10 }, (_, i) => ({
       ...candidate,
-      sourceId: "local",
-      sourceAssetId: "photo-local",
-      cacheKey: "cache-local",
-      sourcePayload: { folderId: "folder-1" },
-    };
-    readHistory.mockResolvedValue({ history: [localAsset, current] });
+      sourceAssetId: `photo-old-${i}`,
+      cacheKey: `cache-old-${i}`,
+      createdAt: i,
+    }));
+    readHistory.mockResolvedValue({ history: tenItems });
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
 
-    await purgeFolder("folder-1");
+    await expect(rotate(true)).resolves.toEqual(prepared);
 
-    expect(writeHistory).toHaveBeenCalledWith({ history: [current] });
-    expect(deleteCachedImage).toHaveBeenCalledWith("cache-local");
+    expect(deleteCachedImage).toHaveBeenCalledWith("cache-old-9");
   });
 });
