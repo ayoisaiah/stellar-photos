@@ -89,6 +89,9 @@ class StellarApp extends LitElement {
   private accessor historyOpen = false;
 
   @state()
+  private accessor historyMounted = false;
+
+  @state()
   private accessor infoOpen = false;
 
   @state()
@@ -363,17 +366,23 @@ class StellarApp extends LitElement {
             <stellar-icon .icon=${Settings}></stellar-icon>
           </button>
         </div>
-        <stellar-history-panel
-          class="history-panel"
-          .open=${this.historyOpen}
-          .activeAsset=${this.currentAsset}
-          .historyAssets=${this.historyAssets}
-          @select-photo=${this.handleSelectHistoryPhoto}
-          @download-photo=${this.handleDownloadHistoryPhoto}
-          @nav-next=${this.handleNextPhoto}
-          @nav-prev=${this.handlePrevPhoto}
-          @close-history=${this.closeHistory}
-        ></stellar-history-panel>
+        ${
+          this.historyMounted
+            ? html`
+              <stellar-history-panel
+                class="history-panel"
+                .open=${this.historyOpen}
+                .activeAsset=${this.currentAsset}
+                .historyAssets=${this.historyAssets}
+                @select-photo=${this.handleSelectHistoryPhoto}
+                @download-photo=${this.handleDownloadHistoryPhoto}
+                @nav-next=${this.handleNextPhoto}
+                @nav-prev=${this.handlePrevPhoto}
+                @close-history=${this.closeHistory}
+              ></stellar-history-panel>
+            `
+            : null
+        }
       </div>
       ${
         this.infoMounted && this.currentAsset
@@ -603,7 +612,9 @@ class StellarApp extends LitElement {
         if (this.isConnected && connGen === this.connectionGeneration) {
           this.applyPhoto(prepared.url, prepared.asset);
           this.phase = "ready";
-          await this.loadHistoryAssets();
+          if (this.historyMounted || this.historyAssets.length > 0) {
+            await this.loadHistoryAssets();
+          }
           if (!this.isPinned) {
             void sendCommand({ command: "rotate" });
           }
@@ -630,7 +641,6 @@ class StellarApp extends LitElement {
 
   private async initializeState(): Promise<void> {
     const connGen = this.connectionGeneration;
-    const historyGen = ++this.historyLoadGeneration;
 
     try {
       const [displaySettings, sourceId, pinned, historyState] =
@@ -646,12 +656,8 @@ class StellarApp extends LitElement {
       this.displaySettings = displaySettings;
       this.sourceId = sourceId;
       this.isPinned = pinned;
-      if (historyGen === this.historyLoadGeneration) {
-        this.historyAssets = historyState.history;
-        this.historyIndex = 0;
-      }
 
-      const current = this.historyAssets[0] ?? null;
+      const current = historyState.history[0] ?? null;
       let rendered = false;
 
       if (current) {
@@ -672,7 +678,6 @@ class StellarApp extends LitElement {
 
       if (!rendered) {
         await this.ensureAndRender();
-        await this.loadHistoryAssets();
       }
     } catch {
       await this.ensureAndRender();
@@ -693,9 +698,11 @@ class StellarApp extends LitElement {
         const validated = validateHistoryState(newValue);
         if (validated) {
           this.historyLoadGeneration += 1;
-          this.historyAssets = validated.history;
-          this.reconcileHistoryIndex();
-        } else {
+          if (this.historyMounted || this.historyAssets.length > 0) {
+            this.historyAssets = validated.history;
+            this.reconcileHistoryIndex();
+          }
+        } else if (this.historyMounted || this.historyAssets.length > 0) {
           void this.loadHistoryAssets();
         }
       }
@@ -786,6 +793,9 @@ class StellarApp extends LitElement {
   };
 
   private handlePrevPhoto = async (): Promise<void> => {
+    if (this.historyAssets.length === 0) {
+      await this.loadHistoryAssets();
+    }
     if (!this.hasPrevious) return;
 
     let targetIndex = this.historyIndex + 1;
@@ -805,6 +815,9 @@ class StellarApp extends LitElement {
   };
 
   private handleNextPhoto = async (): Promise<void> => {
+    if (this.historyAssets.length === 0) {
+      await this.loadHistoryAssets();
+    }
     if (!this.hasNext) return;
 
     let targetIndex = this.historyIndex === -1 ? 0 : this.historyIndex - 1;
@@ -900,9 +913,11 @@ class StellarApp extends LitElement {
   };
 
   private openHistory = (): void => {
+    this.historyMounted = true;
     this.historyOpen = true;
     this.infoOpen = false;
     this.settingsOpen = false;
+    void this.loadHistoryAssets();
   };
 
   private closeHistory = (): void => {
