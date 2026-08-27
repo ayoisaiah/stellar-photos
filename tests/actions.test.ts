@@ -207,35 +207,6 @@ describe("source activation", () => {
     expect(source.getRandomAsset).toHaveBeenCalledTimes(2);
   });
 
-  it("rolls back cached image if recording history fails", async () => {
-    readCachedImage.mockResolvedValueOnce(undefined);
-    source.shouldRotate = vi.fn().mockResolvedValue(true);
-    writeHistory.mockRejectedValueOnce(new Error("Storage quota exceeded"));
-
-    await expect(rotate(true)).rejects.toThrow("Storage quota exceeded");
-
-    expect(putCachedImage).toHaveBeenCalledWith(
-      prepared.cacheKey,
-      expect.any(Response),
-    );
-    expect(deleteCachedImage).toHaveBeenCalledWith(prepared.cacheKey);
-  });
-
-  it("restores prior cached image on rollback when duplicate cache key exists", async () => {
-    const priorResponse = new Response("prior-image");
-    readCachedImage.mockResolvedValueOnce(priorResponse);
-    source.shouldRotate = vi.fn().mockResolvedValue(true);
-    writeHistory.mockRejectedValueOnce(new Error("Storage quota exceeded"));
-
-    await expect(rotate(true)).rejects.toThrow("Storage quota exceeded");
-
-    expect(putCachedImage).toHaveBeenLastCalledWith(
-      prepared.cacheKey,
-      expect.any(Response),
-    );
-    expect(deleteCachedImage).not.toHaveBeenCalled();
-  });
-
   it("generates and caches thumbnail derivative when image is rotated", async () => {
     const fakeThumbBlob = new Blob(["fake-webp"], { type: "image/webp" });
     createThumbnail.mockResolvedValueOnce(fakeThumbBlob);

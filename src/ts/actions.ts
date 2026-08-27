@@ -191,16 +191,9 @@ async function cacheAndRecordImage(
   asset: BackgroundAsset,
   image: Response,
 ): Promise<HistoryState> {
-  const existing = await readCachedImage(asset.cacheKey);
-  const priorResponse = existing ? existing.clone() : null;
-
-  const existingThumb = await readCachedThumbnail(asset.cacheKey);
-  const priorThumbResponse = existingThumb ? existingThumb.clone() : null;
-
   const imageForThumb = image.clone();
   await putCachedImage(asset.cacheKey, image);
 
-  let createdThumb = false;
   try {
     const blob = await imageForThumb.blob();
     const thumbnailBlob = await createThumbnail(blob);
@@ -214,49 +207,12 @@ async function cacheAndRecordImage(
           },
         }),
       );
-      createdThumb = true;
     }
   } catch {
     // Non-fatal thumbnail generation failure
   }
 
-  let next: HistoryState;
-  let evicted: BackgroundAsset | null;
-  try {
-    const result = await appendToHistory(asset);
-    next = result.next;
-    evicted = result.evicted;
-  } catch (error) {
-    if (priorResponse) {
-      try {
-        await putCachedImage(asset.cacheKey, priorResponse);
-      } catch {
-        // Ignore cache restoration error
-      }
-    } else {
-      try {
-        await deleteCachedImage(asset.cacheKey);
-      } catch {
-        // Ignore cache cleanup error
-      }
-    }
-
-    if (priorThumbResponse) {
-      try {
-        await putCachedThumbnail(asset.cacheKey, priorThumbResponse);
-      } catch {
-        // Ignore thumbnail restoration error
-      }
-    } else if (createdThumb) {
-      try {
-        await deleteCachedThumbnail(asset.cacheKey);
-      } catch {
-        // Ignore thumbnail cleanup error
-      }
-    }
-
-    throw error;
-  }
+  const { next, evicted } = await appendToHistory(asset);
 
   if (
     evicted &&

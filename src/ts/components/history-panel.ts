@@ -5,12 +5,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
 import { HISTORY_LIMIT } from "../assets";
-import {
-  createThumbnail,
-  putCachedThumbnail,
-  readCachedImage,
-  readCachedThumbnail,
-} from "../cache";
+import { readCachedImage, readCachedThumbnail } from "../cache";
 import { getImageSource } from "../sources";
 import "./lucide-icon";
 
@@ -215,36 +210,11 @@ class HistoryPanel extends LitElement {
           }
 
           const cachedThumbnail = await readCachedThumbnail(asset.cacheKey);
-          if (cachedThumbnail) {
-            const blob = await cachedThumbnail.blob();
-            return {
-              key: asset.cacheKey,
-              url: URL.createObjectURL(blob),
-              isNew: true,
-            };
-          }
+          const response =
+            cachedThumbnail ?? (await readCachedImage(asset.cacheKey));
 
-          const fullImage = await readCachedImage(asset.cacheKey);
-          if (fullImage) {
-            const blob = await fullImage.blob();
-            void createThumbnail(blob).then(async (thumbBlob) => {
-              if (thumbBlob) {
-                try {
-                  await putCachedThumbnail(
-                    asset.cacheKey,
-                    new Response(thumbBlob, {
-                      headers: {
-                        "content-type": "image/webp",
-                        "content-length": String(thumbBlob.size),
-                      },
-                    }),
-                  );
-                } catch {
-                  // Non-fatal cache backfill error
-                }
-              }
-            });
-
+          if (response) {
+            const blob = await response.blob();
             return {
               key: asset.cacheKey,
               url: URL.createObjectURL(blob),
