@@ -146,22 +146,6 @@
   height: 1rem;
 }
 
-.history-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  border-radius: 0.5rem;
-  border: 1px dashed rgb(255 255 255 / 12%);
-  background: rgb(255 255 255 / 3%);
-  color: rgb(255 255 255 / 25%);
-}
-
-.history-placeholder stellar-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
 @media (max-width: 1200px) {
   .history-list {
     grid-template-columns: repeat(10, minmax(130px, 1fr));

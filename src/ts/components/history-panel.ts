@@ -4,7 +4,6 @@ import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
-import { HISTORY_LIMIT } from "../assets";
 import { readCachedImage, readCachedThumbnail } from "../cache";
 import { getImageSource } from "../sources";
 import "./lucide-icon";
@@ -60,7 +59,6 @@ class HistoryPanel extends LitElement {
   }
 
   override render() {
-    const totalSlots = HISTORY_LIMIT;
     const rawAssets =
       this.historyAssets.length > 0
         ? this.historyAssets
@@ -72,8 +70,6 @@ class HistoryPanel extends LitElement {
       index,
     }));
     const reversedAssets = [...assetsWithIndex].reverse();
-    const placeholderCount = Math.max(0, totalSlots - rawAssets.length);
-    const placeholders = Array.from({ length: placeholderCount });
 
     return html`
       <ul
@@ -81,7 +77,6 @@ class HistoryPanel extends LitElement {
         role="region"
         aria-label="Photo history"
       >
-        ${placeholders.map(() => this.renderPlaceholder())}
         ${reversedAssets.map(({ asset, index }) => this.renderCard(asset, index))}
       </ul>
     `;
@@ -160,14 +155,6 @@ class HistoryPanel extends LitElement {
               : null
           }
         </div>
-      </li>
-    `;
-  }
-
-  private renderPlaceholder() {
-    return html`
-      <li class="history-placeholder" aria-hidden="true">
-        <stellar-icon .icon=${Image}></stellar-icon>
       </li>
     `;
   }
