@@ -1,39 +1,121 @@
 const CACHE_PREFIX = "stellar-photos-images-v";
-export const ACTIVE_CACHE_NAME = `${CACHE_PREFIX}1`;
-export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+const ACTIVE_CACHE_NAME = `${CACHE_PREFIX}1`;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const CACHE_ORIGIN = "https://cache.stellar-photos.invalid";
+const THUMBNAIL_WIDTH = 480;
+const THUMBNAIL_HEIGHT = 270;
+const THUMBNAIL_QUALITY = 0.85;
 // biome-ignore lint/suspicious/noControlCharactersInRegex: IDs must reject ASCII control characters.
 const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
 
-export function assetCacheKey(sourceId: string, sourceAssetId: string): string {
+function assetCacheKey(sourceId: string, sourceAssetId: string): string {
   const source = encodeURIComponent(validateIdentifier(sourceId, "source"));
   const asset = encodeURIComponent(validateIdentifier(sourceAssetId, "asset"));
 
   return `${CACHE_ORIGIN}/asset/${source}/${asset}`;
 }
 
-export async function activeCache(): Promise<Cache> {
+function assetThumbnailCacheKey(cacheKey: string): string {
+  return cacheKey.replace("/asset/", "/thumbnail/");
+}
+
+async function activeCache(): Promise<Cache> {
   return caches.open(ACTIVE_CACHE_NAME);
 }
 
-export async function readCachedImage(
+async function readCachedImage(
   cacheKey: string,
 ): Promise<Response | undefined> {
   return (await activeCache()).match(cacheKey);
 }
 
-export async function putCachedImage(
+async function putCachedImage(
   cacheKey: string,
   response: Response,
 ): Promise<void> {
   await (await activeCache()).put(cacheKey, response);
 }
 
-export async function deleteCachedImage(cacheKey: string): Promise<boolean> {
+async function deleteCachedImage(cacheKey: string): Promise<boolean> {
   return (await activeCache()).delete(cacheKey);
 }
 
-export async function readBoundedImage(response: Response): Promise<Response> {
+async function readCachedThumbnail(
+  cacheKey: string,
+): Promise<Response | undefined> {
+  const thumbKey = assetThumbnailCacheKey(cacheKey);
+
+  return (await activeCache()).match(thumbKey);
+}
+
+async function putCachedThumbnail(
+  cacheKey: string,
+  response: Response,
+): Promise<void> {
+  const thumbKey = assetThumbnailCacheKey(cacheKey);
+
+  await (await activeCache()).put(thumbKey, response);
+}
+
+async function deleteCachedThumbnail(cacheKey: string): Promise<boolean> {
+  const thumbKey = assetThumbnailCacheKey(cacheKey);
+
+  return (await activeCache()).delete(thumbKey);
+}
+
+async function createThumbnail(blob: Blob): Promise<Blob | null> {
+  try {
+    if (
+      typeof createImageBitmap !== "function" ||
+      typeof OffscreenCanvas !== "function"
+    ) {
+      return null;
+    }
+
+    const initialBitmap = await createImageBitmap(blob);
+    const origWidth = initialBitmap.width;
+    const origHeight = initialBitmap.height;
+    initialBitmap.close();
+
+    if (origWidth <= 0 || origHeight <= 0) {
+      return null;
+    }
+
+    const scale = Math.max(
+      THUMBNAIL_WIDTH / origWidth,
+      THUMBNAIL_HEIGHT / origHeight,
+    );
+    const resizeWidth = Math.max(1, Math.round(origWidth * scale));
+    const resizeHeight = Math.max(1, Math.round(origHeight * scale));
+
+    const bitmap = await createImageBitmap(blob, {
+      resizeWidth,
+      resizeHeight,
+      resizeQuality: "high",
+    });
+
+    const canvas = new OffscreenCanvas(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return null;
+    }
+
+    const offsetX = Math.round((THUMBNAIL_WIDTH - bitmap.width) / 2);
+    const offsetY = Math.round((THUMBNAIL_HEIGHT - bitmap.height) / 2);
+    ctx.drawImage(bitmap, offsetX, offsetY, bitmap.width, bitmap.height);
+    bitmap.close();
+
+    return await canvas.convertToBlob({
+      type: "image/webp",
+      quality: THUMBNAIL_QUALITY,
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function readBoundedImage(response: Response): Promise<Response> {
   if (!response.ok)
     throw new Error(`Image request failed (${response.status})`);
 
@@ -91,3 +173,18 @@ function validateIdentifier(id: string, label: string): string {
 
   return id;
 }
+
+export {
+  ACTIVE_CACHE_NAME,
+  assetCacheKey,
+  assetThumbnailCacheKey,
+  createThumbnail,
+  deleteCachedImage,
+  deleteCachedThumbnail,
+  MAX_IMAGE_BYTES,
+  putCachedImage,
+  putCachedThumbnail,
+  readBoundedImage,
+  readCachedImage,
+  readCachedThumbnail,
+};

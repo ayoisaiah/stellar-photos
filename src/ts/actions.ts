@@ -2,9 +2,13 @@ import type { BackgroundAsset, HistoryState } from "./assets";
 import { HISTORY_LIMIT } from "./assets";
 import {
   assetCacheKey,
+  createThumbnail,
   deleteCachedImage,
+  deleteCachedThumbnail,
   putCachedImage,
+  putCachedThumbnail,
   readCachedImage,
+  readCachedThumbnail,
 } from "./cache";
 import { getImageSourceId, setImageSourceId } from "./settings";
 import type { ImageSource } from "./sources";
@@ -129,7 +133,16 @@ async function discardSource(asset: BackgroundAsset): Promise<void> {
 
     if (state.history.some((item) => item.cacheKey === asset.cacheKey)) return;
 
-    await deleteCachedImage(asset.cacheKey).catch(() => undefined);
+    try {
+      await deleteCachedImage(asset.cacheKey);
+    } catch {
+      // Ignore cache cleanup error
+    }
+    try {
+      await deleteCachedThumbnail(asset.cacheKey);
+    } catch {
+      // Ignore thumbnail cleanup error
+    }
   });
 }
 
@@ -181,7 +194,31 @@ async function cacheAndRecordImage(
   const existing = await readCachedImage(asset.cacheKey);
   const priorResponse = existing ? existing.clone() : null;
 
+  const existingThumb = await readCachedThumbnail(asset.cacheKey);
+  const priorThumbResponse = existingThumb ? existingThumb.clone() : null;
+
+  const imageForThumb = image.clone();
   await putCachedImage(asset.cacheKey, image);
+
+  let createdThumb = false;
+  try {
+    const blob = await imageForThumb.blob();
+    const thumbnailBlob = await createThumbnail(blob);
+    if (thumbnailBlob) {
+      await putCachedThumbnail(
+        asset.cacheKey,
+        new Response(thumbnailBlob, {
+          headers: {
+            "content-type": "image/webp",
+            "content-length": String(thumbnailBlob.size),
+          },
+        }),
+      );
+      createdThumb = true;
+    }
+  } catch {
+    // Non-fatal thumbnail generation failure
+  }
 
   let next: HistoryState;
   let evicted: BackgroundAsset | null;
@@ -203,6 +240,21 @@ async function cacheAndRecordImage(
         // Ignore cache cleanup error
       }
     }
+
+    if (priorThumbResponse) {
+      try {
+        await putCachedThumbnail(asset.cacheKey, priorThumbResponse);
+      } catch {
+        // Ignore thumbnail restoration error
+      }
+    } else if (createdThumb) {
+      try {
+        await deleteCachedThumbnail(asset.cacheKey);
+      } catch {
+        // Ignore thumbnail cleanup error
+      }
+    }
+
     throw error;
   }
 
@@ -214,6 +266,11 @@ async function cacheAndRecordImage(
       await deleteCachedImage(evicted.cacheKey);
     } catch {
       // Ignore cache cleanup error
+    }
+    try {
+      await deleteCachedThumbnail(evicted.cacheKey);
+    } catch {
+      // Ignore thumbnail cleanup error
     }
   }
 

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   assetCacheKey,
+  assetThumbnailCacheKey,
+  createThumbnail,
   MAX_IMAGE_BYTES,
   readBoundedImage,
 } from "../src/ts/cache";
@@ -16,6 +18,13 @@ describe("image cache contract", () => {
     );
   });
 
+  it("derives thumbnail cache key from canonical asset cache key", () => {
+    const assetKey = assetCacheKey("unsplash", "photo-1");
+    expect(assetThumbnailCacheKey(assetKey)).toBe(
+      "https://cache.stellar-photos.invalid/thumbnail/unsplash/photo-1",
+    );
+  });
+
   it.each(["", "a".repeat(129), "bad\u0000id"])(
     "rejects invalid source and asset IDs %j",
     (id) => {
@@ -23,6 +32,12 @@ describe("image cache contract", () => {
       expect(() => assetCacheKey("source", id)).toThrow("Invalid asset ID");
     },
   );
+
+  it("handles non-fatal createThumbnail when canvas/bitmap APIs are unavailable in node", async () => {
+    const blob = new Blob(["fake-image-bytes"], { type: "image/jpeg" });
+    const result = await createThumbnail(blob);
+    expect(result).toBeNull();
+  });
 
   it("rejects oversized and non-image responses", async () => {
     await expect(

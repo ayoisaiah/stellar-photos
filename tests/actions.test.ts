@@ -17,12 +17,21 @@ const readStagedKeys = vi.fn().mockResolvedValue([]);
 const addStagedKey = vi.fn().mockResolvedValue(undefined);
 const removeStagedKey = vi.fn().mockResolvedValue(undefined);
 
+const deleteCachedThumbnail = vi.fn();
+const putCachedThumbnail = vi.fn();
+const readCachedThumbnail = vi.fn();
+const createThumbnail = vi.fn().mockResolvedValue(null);
+
 vi.mock("../src/ts/settings", () => ({ getImageSourceId, setImageSourceId }));
 vi.mock("../src/ts/cache", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/ts/cache")>()),
+  createThumbnail,
   deleteCachedImage,
+  deleteCachedThumbnail,
   putCachedImage,
+  putCachedThumbnail,
   readCachedImage,
+  readCachedThumbnail,
 }));
 vi.mock("../src/ts/sources", () => ({
   getActiveImageSource,
@@ -227,7 +236,21 @@ describe("source activation", () => {
     expect(deleteCachedImage).not.toHaveBeenCalled();
   });
 
-  it("deletes cached image of evicted history item when history limit is exceeded", async () => {
+  it("generates and caches thumbnail derivative when image is rotated", async () => {
+    const fakeThumbBlob = new Blob(["fake-webp"], { type: "image/webp" });
+    createThumbnail.mockResolvedValueOnce(fakeThumbBlob);
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+
+    await expect(rotate(true)).resolves.toEqual(prepared);
+
+    expect(createThumbnail).toHaveBeenCalled();
+    expect(putCachedThumbnail).toHaveBeenCalledWith(
+      prepared.cacheKey,
+      expect.any(Response),
+    );
+  });
+
+  it("deletes cached image and thumbnail of evicted history item when history limit is exceeded", async () => {
     const tenItems: BackgroundAsset[] = Array.from({ length: 10 }, (_, i) => ({
       ...candidate,
       sourceAssetId: `photo-old-${i}`,
@@ -240,5 +263,25 @@ describe("source activation", () => {
     await expect(rotate(true)).resolves.toEqual(prepared);
 
     expect(deleteCachedImage).toHaveBeenCalledWith("cache-old-9");
+    expect(deleteCachedThumbnail).toHaveBeenCalledWith("cache-old-9");
+  });
+
+  it("does not delete cached thumbnail if duplicate cacheKey remains in history after eviction", async () => {
+    const tenItems: BackgroundAsset[] = Array.from({ length: 10 }, (_, i) => ({
+      ...candidate,
+      sourceAssetId: `photo-old-${i}`,
+      cacheKey: i === 9 ? "shared-cache-key" : `cache-old-${i}`,
+      createdAt: i,
+    }));
+    // Item at index 0 also shares the cache key
+    tenItems[0] = { ...tenItems[0]!, cacheKey: "shared-cache-key" };
+
+    readHistory.mockResolvedValue({ history: tenItems });
+    source.shouldRotate = vi.fn().mockResolvedValue(true);
+
+    await expect(rotate(true)).resolves.toEqual(prepared);
+
+    expect(deleteCachedImage).not.toHaveBeenCalledWith("shared-cache-key");
+    expect(deleteCachedThumbnail).not.toHaveBeenCalledWith("shared-cache-key");
   });
 });

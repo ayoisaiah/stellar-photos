@@ -5,7 +5,12 @@ import { customElement, property, state } from "lit/decorators.js";
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
 import { HISTORY_LIMIT } from "../assets";
-import { readCachedImage } from "../cache";
+import {
+  createThumbnail,
+  putCachedThumbnail,
+  readCachedImage,
+  readCachedThumbnail,
+} from "../cache";
 import { getImageSource } from "../sources";
 import "./lucide-icon";
 
@@ -81,8 +86,8 @@ class HistoryPanel extends LitElement {
         role="region"
         aria-label="Photo history"
       >
-        ${reversedAssets.map(({ asset, index }) => this.renderCard(asset, index))}
         ${placeholders.map(() => this.renderPlaceholder())}
+        ${reversedAssets.map(({ asset, index }) => this.renderCard(asset, index))}
       </ul>
     `;
   }
@@ -209,9 +214,37 @@ class HistoryPanel extends LitElement {
             return { key: asset.cacheKey, url: existing, isNew: false };
           }
 
-          const response = await readCachedImage(asset.cacheKey);
-          if (response) {
-            const blob = await response.blob();
+          const cachedThumbnail = await readCachedThumbnail(asset.cacheKey);
+          if (cachedThumbnail) {
+            const blob = await cachedThumbnail.blob();
+            return {
+              key: asset.cacheKey,
+              url: URL.createObjectURL(blob),
+              isNew: true,
+            };
+          }
+
+          const fullImage = await readCachedImage(asset.cacheKey);
+          if (fullImage) {
+            const blob = await fullImage.blob();
+            void createThumbnail(blob).then(async (thumbBlob) => {
+              if (thumbBlob) {
+                try {
+                  await putCachedThumbnail(
+                    asset.cacheKey,
+                    new Response(thumbBlob, {
+                      headers: {
+                        "content-type": "image/webp",
+                        "content-length": String(thumbBlob.size),
+                      },
+                    }),
+                  );
+                } catch {
+                  // Non-fatal cache backfill error
+                }
+              }
+            });
+
             return {
               key: asset.cacheKey,
               url: URL.createObjectURL(blob),
