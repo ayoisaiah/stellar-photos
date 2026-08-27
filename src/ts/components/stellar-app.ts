@@ -55,7 +55,6 @@ const UTM_PARAMS =
 class StellarApp extends LitElement {
   static override styles = unsafeCSS(styles);
 
-  private crossfadeTimer: number | null = null;
   private lastWheelTime = 0;
   private navGeneration = 0;
   private objectUrl: string | null = null;
@@ -90,12 +89,6 @@ class StellarApp extends LitElement {
 
   @state()
   private accessor currentAsset: BackgroundAsset | null = null;
-
-  @state()
-  private accessor previousPhoto: {
-    url: string;
-    asset: BackgroundAsset | null;
-  } | null = null;
 
   @state()
   private accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
@@ -207,17 +200,8 @@ class StellarApp extends LitElement {
         @mousemove=${() => this.idleControls.show()}
       >
         ${
-          this.previousPhoto
-            ? this.renderPhotoStage(
-                this.previousPhoto.url,
-                this.previousPhoto.asset,
-                false,
-              )
-            : null
-        }
-        ${
           this.objectUrl
-            ? this.renderPhotoStage(this.objectUrl, this.currentAsset, true)
+            ? this.renderPhotoStage(this.objectUrl, this.currentAsset)
             : null
         }
         <stellar-empty-state
@@ -477,11 +461,7 @@ class StellarApp extends LitElement {
       : this.displaySettings.landscapeMode;
   }
 
-  private renderPhotoStage(
-    url: string,
-    asset: BackgroundAsset | null,
-    isIncoming: boolean,
-  ) {
+  private renderPhotoStage(url: string, asset: BackgroundAsset | null) {
     const effectiveMode = this.getEffectiveDisplayMode(asset);
     const motionEnabled = this.displaySettings.motion;
     const paused = this.settingsOpen || this.infoOpen;
@@ -490,7 +470,7 @@ class StellarApp extends LitElement {
       url,
       html`
         <div
-          class="photo-stage ${isIncoming ? "photo-stage-incoming" : "photo-stage-previous"} ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
+          class="photo-stage ${effectiveMode === "contain-blur" ? "mode-contain-blur" : "mode-cover"} ${motionEnabled ? "motion-enabled" : ""} ${paused ? "stage-paused" : ""}"
           aria-hidden="true"
         >
           ${
@@ -534,35 +514,12 @@ class StellarApp extends LitElement {
       return;
     }
 
-    if (this.crossfadeTimer !== null) {
-      window.clearTimeout(this.crossfadeTimer);
-      this.crossfadeTimer = null;
-    }
-
-    if (this.previousPhoto) {
-      URL.revokeObjectURL(this.previousPhoto.url);
-      this.previousPhoto = null;
-    }
-
     if (this.objectUrl) {
-      this.previousPhoto = {
-        url: this.objectUrl,
-        asset: this.currentAsset,
-      };
+      URL.revokeObjectURL(this.objectUrl);
     }
 
     this.objectUrl = nextUrl;
     this.currentAsset = asset;
-
-    if (this.previousPhoto) {
-      this.crossfadeTimer = window.setTimeout(() => {
-        if (this.previousPhoto) {
-          URL.revokeObjectURL(this.previousPhoto.url);
-          this.previousPhoto = null;
-        }
-        this.crossfadeTimer = null;
-      }, 550);
-    }
   }
 
   private ensureAndRender = async (): Promise<void> => {
@@ -955,16 +912,14 @@ class StellarApp extends LitElement {
   ): Promise<void> => {
     if (this.sourceSwitchInFlight) return;
 
-    let prepared: BackgroundAsset | null = null;
     let preparedUrl: string | null = null;
-    let committed = false;
 
     this.sourceSwitchInFlight = true;
     this.sourceChange = { status: "switching" };
 
     try {
       const result = await sendCommand({
-        command: "prepare-source",
+        command: "switch-source",
         sourceId: event.detail.sourceId,
       });
 
@@ -972,26 +927,15 @@ class StellarApp extends LitElement {
       if (!result.current)
         throw new Error("The source did not return a photograph");
 
-      prepared = result.current;
-
       if (!this.isConnected) return;
 
-      const preparedResult = await this.preparePhoto(prepared);
+      const preparedResult = await this.preparePhoto(result.current);
 
       if (!preparedResult)
         throw new Error("The photograph could not be displayed");
 
       preparedUrl = preparedResult.url;
 
-      const commitResult = await sendCommand({
-        command: "commit-source",
-        asset: prepared,
-      });
-
-      if (!this.isConnected) return;
-      if (!commitResult.ok) throw new Error(commitResult.error.message);
-
-      committed = true;
       this.applyPhoto(preparedUrl, preparedResult.asset);
       preparedUrl = null;
       this.sourceId = event.detail.sourceId;
@@ -1014,9 +958,6 @@ class StellarApp extends LitElement {
       }
     } finally {
       if (preparedUrl) URL.revokeObjectURL(preparedUrl);
-      if (prepared && !committed) {
-        void sendCommand({ command: "discard-source", asset: prepared });
-      }
 
       this.sourceSwitchInFlight = false;
 
@@ -1027,16 +968,6 @@ class StellarApp extends LitElement {
   };
 
   private releaseObjectUrl(): void {
-    if (this.crossfadeTimer !== null) {
-      window.clearTimeout(this.crossfadeTimer);
-      this.crossfadeTimer = null;
-    }
-
-    if (this.previousPhoto) {
-      URL.revokeObjectURL(this.previousPhoto.url);
-      this.previousPhoto = null;
-    }
-
     if (this.objectUrl) {
       URL.revokeObjectURL(this.objectUrl);
       this.objectUrl = null;
@@ -1047,12 +978,7 @@ class StellarApp extends LitElement {
 }
 
 async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
-  if (
-    (command.command === "prepare-source" && command.sourceId === "local") ||
-    (command.command === "commit-source" &&
-      command.asset.sourceId === "local") ||
-    (command.command === "discard-source" && command.asset.sourceId === "local")
-  ) {
+  if (command.command === "switch-source" && command.sourceId === "local") {
     return dispatch(command);
   }
 

@@ -1,10 +1,8 @@
 import {
-  commitSource,
-  discardSource,
   ensureCurrent,
   initializeSettings,
-  prepareSource,
   rotate,
+  switchSource,
   trackDownload,
 } from "./actions";
 import type { BackgroundAsset } from "./assets";
@@ -12,9 +10,7 @@ import type { BackgroundAsset } from "./assets";
 type WorkerCommand =
   | { command: "ensure-current" }
   | { command: "rotate"; force?: boolean }
-  | { command: "prepare-source"; sourceId: string }
-  | { command: "commit-source"; asset: BackgroundAsset }
-  | { command: "discard-source"; asset: BackgroundAsset }
+  | { command: "switch-source"; sourceId: string }
   | { command: "track-download"; asset: BackgroundAsset };
 
 type WorkerResult =
@@ -67,14 +63,8 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
 
     if (request.command === "ensure-current") {
       current = await ensureCurrent();
-    } else if (request.command === "prepare-source") {
-      current = await prepareSource(request.sourceId);
-    } else if (request.command === "commit-source") {
-      await commitSource(request.asset);
-      current = null;
-    } else if (request.command === "discard-source") {
-      await discardSource(request.asset);
-      current = null;
+    } else if (request.command === "switch-source") {
+      current = await switchSource(request.sourceId);
     } else if (request.command === "track-download") {
       await trackDownload(request.asset);
       current = null;
@@ -111,13 +101,11 @@ function isCommand(value: unknown): value is WorkerCommand {
 
   if (command === "ensure-current" || command === "rotate") return true;
 
-  if (command === "prepare-source")
+  if (command === "switch-source")
     return typeof (value as { sourceId?: unknown }).sourceId === "string";
 
   return (
-    (command === "commit-source" ||
-      command === "discard-source" ||
-      command === "track-download") &&
+    command === "track-download" &&
     !!(value as { asset?: unknown }).asset &&
     typeof (value as { asset?: unknown }).asset === "object"
   );

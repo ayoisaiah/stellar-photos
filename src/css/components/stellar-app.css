@@ -24,15 +24,7 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-}
-
-.photo-stage.photo-stage-incoming {
-  z-index: 1;
   animation: photo-stage-fade-in 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.photo-stage.photo-stage-previous {
-  z-index: 0;
 }
 
 @keyframes photo-stage-fade-in {
@@ -45,8 +37,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .photo-stage.photo-stage-incoming {
-    animation-duration: 0.01ms;
+  .photo-stage {
+    animation: none;
   }
 }
 

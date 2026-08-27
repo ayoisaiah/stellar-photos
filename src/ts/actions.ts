@@ -7,23 +7,15 @@ import {
   deleteCachedThumbnail,
   putCachedImage,
   putCachedThumbnail,
-  readCachedImage,
-  readCachedThumbnail,
 } from "./cache";
-import { getImageSourceId, setImageSourceId } from "./settings";
+import { setImageSourceId } from "./settings";
 import type { ImageSource } from "./sources";
 import {
   getActiveImageSource,
   getImageSource,
   initializeImageSourceSettings,
 } from "./sources";
-import {
-  addStagedKey,
-  readHistory,
-  readPinned,
-  removeStagedKey,
-  writeHistory,
-} from "./storage";
+import { readHistory, readPinned, writeHistory } from "./storage";
 
 const LOCK_NAME = "stellar_actions_lock";
 
@@ -65,9 +57,7 @@ function rotate(force = false): Promise<BackgroundAsset | null> {
   return activeRotation;
 }
 
-async function prepareSource(
-  sourceId: string,
-): Promise<BackgroundAsset | null> {
+async function switchSource(sourceId: string): Promise<BackgroundAsset> {
   const source = getImageSource(sourceId);
 
   if (!source) throw new Error("Unknown image source");
@@ -79,70 +69,18 @@ async function prepareSource(
       throw new Error("Image source returned an asset for another source");
 
     const image = await source.downloadAsset(candidate);
-    const prepared = {
+    const asset = {
       ...candidate,
       cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
     };
+    const promoted = await cacheAndRecordImage(asset, image);
+    const current = promoted.history[0];
 
-    await putCachedImage(prepared.cacheKey, image);
-    await addStagedKey(prepared.cacheKey);
-
-    return prepared;
-  });
-}
-
-async function commitSource(asset: BackgroundAsset): Promise<void> {
-  const source = getImageSource(asset.sourceId);
-
-  if (
-    !source ||
-    asset.cacheKey !== assetCacheKey(source.id, asset.sourceAssetId)
-  )
-    throw new Error("Unknown image source");
-
-  await enqueue(async () => {
-    const image = await readCachedImage(asset.cacheKey);
-
-    if (!image) throw new Error("Prepared image is no longer available");
-
-    const previousSourceId = await getImageSourceId();
+    if (!current) throw new Error("Promoted image is missing from history");
 
     await setImageSourceId(source.id);
 
-    try {
-      const promoted = await cacheAndRecordImage(asset, image);
-      const current = promoted.history[0];
-
-      if (!current) throw new Error("Promoted image is missing from history");
-      await removeStagedKey(asset.cacheKey);
-    } catch (error) {
-      await setImageSourceId(previousSourceId);
-      throw error;
-    }
-  });
-}
-
-async function discardSource(asset: BackgroundAsset): Promise<void> {
-  const canonicalKey = assetCacheKey(asset.sourceId, asset.sourceAssetId);
-
-  if (asset.cacheKey !== canonicalKey) return;
-
-  await enqueue(async () => {
-    await removeStagedKey(asset.cacheKey);
-    const state = await readHistory();
-
-    if (state.history.some((item) => item.cacheKey === asset.cacheKey)) return;
-
-    try {
-      await deleteCachedImage(asset.cacheKey);
-    } catch {
-      // Ignore cache cleanup error
-    }
-    try {
-      await deleteCachedThumbnail(asset.cacheKey);
-    } catch {
-      // Ignore thumbnail cleanup error
-    }
+    return current;
   });
 }
 
@@ -292,11 +230,9 @@ async function appendToHistory(
 }
 
 export {
-  commitSource,
-  discardSource,
   ensureCurrent,
   initializeSettings,
-  prepareSource,
   rotate,
+  switchSource,
   trackDownload,
 };

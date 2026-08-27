@@ -1,21 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const commitSource = vi.fn();
-const discardSource = vi.fn();
 const ensureCurrent = vi.fn();
 const initializeSettingsAndHistory = vi.fn();
-const prepareSource = vi.fn();
 const rotate = vi.fn();
+const switchSource = vi.fn();
 const trackDownload = vi.fn();
 const current = { sourceId: "unsplash", sourceAssetId: "photo-1" };
 
 vi.mock("../src/ts/actions", () => ({
-  commitSource,
-  discardSource,
   ensureCurrent,
   initializeSettingsAndHistory,
-  prepareSource,
   rotate,
+  switchSource,
   trackDownload,
 }));
 
@@ -27,34 +23,27 @@ beforeEach(() => {
 
 describe("service worker commands", () => {
   it("activates a compiled-in source and returns its first photograph", async () => {
-    prepareSource.mockResolvedValue(current);
+    switchSource.mockResolvedValue(current);
 
     await expect(
-      dispatch({ command: "prepare-source", sourceId: "unsplash" }),
+      dispatch({ command: "switch-source", sourceId: "unsplash" }),
     ).resolves.toEqual({ ok: true, current });
-    expect(prepareSource).toHaveBeenCalledWith("unsplash");
-  });
-
-  it("commits a source only after the page requests activation", async () => {
-    await expect(
-      dispatch({ command: "commit-source", asset: current }),
-    ).resolves.toEqual({ ok: true, current: null });
-    expect(commitSource).toHaveBeenCalledWith(current);
+    expect(switchSource).toHaveBeenCalledWith("unsplash");
   });
 
   it("rejects malformed source-selection commands", async () => {
-    await expect(dispatch({ command: "prepare-source" })).resolves.toEqual({
+    await expect(dispatch({ command: "switch-source" })).resolves.toEqual({
       ok: false,
       error: { code: "INVALID_COMMAND", message: "Unknown command" },
     });
-    expect(prepareSource).not.toHaveBeenCalled();
+    expect(switchSource).not.toHaveBeenCalled();
   });
 
   it("returns source activation errors to the page", async () => {
-    prepareSource.mockRejectedValue(new Error("Unknown image source"));
+    switchSource.mockRejectedValue(new Error("Unknown image source"));
 
     await expect(
-      dispatch({ command: "prepare-source", sourceId: "missing" }),
+      dispatch({ command: "switch-source", sourceId: "missing" }),
     ).resolves.toEqual({
       ok: false,
       error: { code: "OPERATION_FAILED", message: "Unknown image source" },

@@ -4,7 +4,6 @@ import type { BackgroundAsset } from "../src/ts/assets";
 import type { ImageSource } from "../src/ts/sources";
 
 const setImageSourceId = vi.fn();
-const getImageSourceId = vi.fn();
 const deleteCachedImage = vi.fn();
 const putCachedImage = vi.fn();
 const readCachedImage = vi.fn();
@@ -13,16 +12,11 @@ const writeHistory = vi.fn();
 const getActiveImageSource = vi.fn();
 const getImageSource = vi.fn();
 const readPinned = vi.fn();
-const readStagedKeys = vi.fn().mockResolvedValue([]);
-const addStagedKey = vi.fn().mockResolvedValue(undefined);
-const removeStagedKey = vi.fn().mockResolvedValue(undefined);
-
 const deleteCachedThumbnail = vi.fn();
 const putCachedThumbnail = vi.fn();
-const readCachedThumbnail = vi.fn();
 const createThumbnail = vi.fn().mockResolvedValue(null);
 
-vi.mock("../src/ts/settings", () => ({ getImageSourceId, setImageSourceId }));
+vi.mock("../src/ts/settings", () => ({ setImageSourceId }));
 vi.mock("../src/ts/cache", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/ts/cache")>()),
   createThumbnail,
@@ -31,7 +25,6 @@ vi.mock("../src/ts/cache", async (importOriginal) => ({
   putCachedImage,
   putCachedThumbnail,
   readCachedImage,
-  readCachedThumbnail,
 }));
 vi.mock("../src/ts/sources", () => ({
   getActiveImageSource,
@@ -42,12 +35,9 @@ vi.mock("../src/ts/storage", () => ({
   readHistory,
   writeHistory,
   readPinned,
-  readStagedKeys,
-  addStagedKey,
-  removeStagedKey,
 }));
 
-const { commitSource, prepareSource, rotate, trackDownload } = await import(
+const { rotate, switchSource, trackDownload } = await import(
   "../src/ts/actions"
 );
 
@@ -86,7 +76,6 @@ beforeEach(() => {
   };
   getImageSource.mockReturnValue(source);
   getActiveImageSource.mockResolvedValue(source);
-  getImageSourceId.mockResolvedValue("unsplash");
   deleteCachedImage.mockResolvedValue(true);
   readCachedImage.mockResolvedValue(new Response("image"));
   readHistory.mockResolvedValue({ history: [current] });
@@ -95,8 +84,8 @@ beforeEach(() => {
 });
 
 describe("source activation", () => {
-  it("prepares a source photograph without persisting the selection", async () => {
-    await expect(prepareSource("unsplash")).resolves.toEqual(prepared);
+  it("switches source and promotes its first photograph in one operation", async () => {
+    await expect(switchSource("unsplash")).resolves.toEqual(prepared);
 
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
     expect(source.downloadAsset).toHaveBeenCalledWith(candidate);
@@ -104,13 +93,6 @@ describe("source activation", () => {
       prepared.cacheKey,
       expect.any(Response),
     );
-    expect(writeHistory).not.toHaveBeenCalled();
-    expect(setImageSourceId).not.toHaveBeenCalled();
-  });
-
-  it("persists only through the separate commit step", async () => {
-    await commitSource(prepared);
-
     expect(setImageSourceId).toHaveBeenCalledWith("unsplash");
     expect(writeHistory).toHaveBeenCalledWith({
       history: [prepared, current],
@@ -120,10 +102,18 @@ describe("source activation", () => {
   it("rejects an unavailable source without doing work", async () => {
     getImageSource.mockReturnValue(null);
 
-    await expect(prepareSource("missing")).rejects.toThrow(
+    await expect(switchSource("missing")).rejects.toThrow(
       "Unknown image source",
     );
     expect(source.getRandomAsset).not.toHaveBeenCalled();
+    expect(setImageSourceId).not.toHaveBeenCalled();
+  });
+
+  it("does not change source when promotion fails", async () => {
+    writeHistory.mockRejectedValue(new Error("storage failed"));
+
+    await expect(switchSource("unsplash")).rejects.toThrow("storage failed");
+
     expect(setImageSourceId).not.toHaveBeenCalled();
   });
 
