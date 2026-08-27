@@ -89,9 +89,7 @@ interface UnsplashPhotoResponse {
   };
 }
 
-const API_ORIGINS = new Set(["https://api.unsplash.com"]);
-const IMAGE_ORIGINS = new Set(["https://images.unsplash.com"]);
-const WEB_ORIGINS = new Set(["https://unsplash.com"]);
+const API_ORIGIN = "https://api.unsplash.com";
 
 const unsplashSource: ImageSource = {
   id: "unsplash",
@@ -124,14 +122,14 @@ async function fetchUnsplashPhotoDetails(
   if (asset.sourceId !== unsplashSource.id) return null;
 
   try {
-    const url = trustedUrl(
-      `https://api.unsplash.com/photos/${encodeURIComponent(asset.sourceAssetId)}`,
-      API_ORIGINS,
+    const url = new URL(
+      `/photos/${encodeURIComponent(asset.sourceAssetId)}`,
+      API_ORIGIN,
     );
     const response = await authenticatedFetch(url);
     if (!response.ok) return null;
 
-    const data = parsePhoto(await response.json());
+    const data = (await response.json()) as UnsplashPhotoResponse;
 
     return extractPhotoInfo(data);
   } catch {
@@ -140,7 +138,7 @@ async function fetchUnsplashPhotoDetails(
 }
 
 function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
-  const url = new URL("https://api.unsplash.com/photos/random");
+  const url = new URL("/photos/random", API_ORIGIN);
   const query = settings.query?.trim() ?? "";
   const topics = normalizeCsv(settings.topics);
   const collections = normalizeCsv(settings.collections);
@@ -225,17 +223,14 @@ function imageUrlForResolution(
 
 async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   const settings = await getUnsplashSettings();
-  const endpoint = trustedUrl(buildRandomPhotoUrl(settings).href, API_ORIGINS);
-  const photo = parsePhoto(await (await authenticatedFetch(endpoint)).json());
-  const rawImageUrl = trustedUrl(photo.urls.raw, IMAGE_ORIGINS);
-  const fullImageUrl = trustedUrl(
-    fullResolutionImageUrl(photo.urls.full ?? photo.urls.raw),
-    IMAGE_ORIGINS,
+  const endpoint = buildRandomPhotoUrl(settings);
+  const photo = (await (
+    await authenticatedFetch(endpoint)
+  ).json()) as UnsplashPhotoResponse;
+  const fullImageUrl = fullResolutionImageUrl(
+    photo.urls.full ?? photo.urls.raw,
   );
-  const imageUrl = trustedUrl(
-    imageUrlForResolution(rawImageUrl.href, settings.imageQuality),
-    IMAGE_ORIGINS,
-  );
+  const imageUrl = imageUrlForResolution(photo.urls.raw, settings.imageQuality);
 
   return {
     sourceId: unsplashSource.id,
@@ -246,15 +241,14 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
     description: photo.description ?? photo.alt_description ?? null,
     attribution: {
       name: photo.user.name,
-      url: trustedUrl(photo.user.links.html, WEB_ORIGINS).href,
-      sourceUrl: trustedUrl(photo.links.html, WEB_ORIGINS).href,
+      url: photo.user.links.html,
+      sourceUrl: photo.links.html,
     },
     payloadVersion: 1,
     sourcePayload: {
-      downloadLocation: trustedUrl(photo.links.download_location, API_ORIGINS)
-        .href,
-      imageUrl: imageUrl.href,
-      fullImageUrl: fullImageUrl.href,
+      downloadLocation: photo.links.download_location,
+      imageUrl,
+      fullImageUrl,
       info: extractPhotoInfo(photo),
     } satisfies UnsplashPayload,
     createdAt: Date.now(),
@@ -268,12 +262,9 @@ async function downloadAsset(
   if (typeof payload.imageUrl !== "string")
     throw new Error("Unsplash asset payload has no image URL");
 
-  const imageUrl = trustedUrl(payload.imageUrl, IMAGE_ORIGINS);
-  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
-
-  if (response.url) {
-    trustedUrl(response.url, IMAGE_ORIGINS);
-  }
+  const response = await fetchWithTimeout(payload.imageUrl, {
+    redirect: "follow",
+  });
 
   return readBoundedImage(response);
 }
@@ -285,15 +276,7 @@ async function downloadFullAsset(asset: BackgroundAsset): Promise<Response> {
     throw new Error("Unsplash asset payload has no image URL");
 
   const fullUrl = fullResolutionImageUrl(baseOrFullUrl);
-  const imageUrl = trustedUrl(fullUrl, IMAGE_ORIGINS);
-  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
-
-  if (response.url) {
-    trustedUrl(response.url, IMAGE_ORIGINS);
-  }
-
-  if (!response.ok)
-    throw new Error(`Image request failed (${response.status})`);
+  const response = await fetchWithTimeout(fullUrl, { redirect: "follow" });
 
   return readBoundedImage(response);
 }
@@ -301,7 +284,7 @@ async function downloadFullAsset(asset: BackgroundAsset): Promise<Response> {
 async function didDownload(asset: BackgroundAsset): Promise<void> {
   const payload = parsePayload(asset);
 
-  await authenticatedFetch(trustedUrl(payload.downloadLocation, API_ORIGINS));
+  await authenticatedFetch(new URL(payload.downloadLocation));
 }
 
 function parsePayload(asset: UncachedBackgroundAsset): UnsplashPayload {
@@ -323,34 +306,22 @@ function parsePayload(asset: UncachedBackgroundAsset): UnsplashPayload {
   return payload as UnsplashPayload;
 }
 
-function trustedUrl(value: string, origins: Set<string>): URL {
-  const url = new URL(value);
-
-  if (
-    url.protocol !== "https:" ||
-    url.username ||
-    url.password ||
-    url.port ||
-    !origins.has(url.origin)
-  ) {
-    throw new Error("Unsplash returned an untrusted URL");
-  }
-
-  return url;
-}
-
 function authHeaders(key: string): HeadersInit {
   return { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" };
 }
 
 async function authenticatedFetch(url: URL): Promise<Response> {
+  if (url.origin !== API_ORIGIN) {
+    throw new Error("Refusing to send Unsplash credentials to another origin");
+  }
+
   const response = await fetchWithTimeout(url, {
     headers: authHeaders(await resolveAccessKey()),
     redirect: "follow",
   });
 
-  if (response.url) {
-    trustedUrl(response.url, API_ORIGINS);
+  if (response.url && new URL(response.url).origin !== API_ORIGIN) {
+    throw new Error("Unsplash API redirected to another origin");
   }
 
   if (!response.ok)
@@ -359,119 +330,41 @@ async function authenticatedFetch(url: URL): Promise<Response> {
   return response;
 }
 
-function parsePhoto(value: unknown): UnsplashPhotoResponse {
-  if (!value || typeof value !== "object")
-    throw new Error("Malformed Unsplash response");
-
-  const photo = value as Partial<UnsplashPhotoResponse>;
-
-  if (
-    typeof photo.id !== "string" ||
-    typeof photo.width !== "number" ||
-    typeof photo.height !== "number" ||
-    !photo.urls ||
-    typeof photo.urls.raw !== "string" ||
-    !photo.links ||
-    typeof photo.links.html !== "string" ||
-    typeof photo.links.download_location !== "string" ||
-    !photo.user ||
-    typeof photo.user.name !== "string" ||
-    !photo.user.links ||
-    typeof photo.user.links.html !== "string"
-  ) {
-    throw new Error("Malformed Unsplash response");
-  }
-
-  return photo as UnsplashPhotoResponse;
-}
-
 function extractPhotoInfo(photo: UnsplashPhotoResponse): UnsplashInfoData {
-  const location: UnsplashLocation | null =
-    photo.location && typeof photo.location === "object"
-      ? {
-          name:
-            typeof photo.location.name === "string"
-              ? photo.location.name
-              : null,
-          city:
-            typeof photo.location.city === "string"
-              ? photo.location.city
-              : null,
-          country:
-            typeof photo.location.country === "string"
-              ? photo.location.country
-              : null,
-        }
-      : null;
-
-  const exif: UnsplashExif | null =
-    photo.exif && typeof photo.exif === "object"
-      ? {
-          make: typeof photo.exif.make === "string" ? photo.exif.make : null,
-          model: typeof photo.exif.model === "string" ? photo.exif.model : null,
-          exposureTime:
-            typeof photo.exif.exposure_time === "string"
-              ? photo.exif.exposure_time
-              : null,
-          aperture:
-            typeof photo.exif.aperture === "string"
-              ? photo.exif.aperture
-              : null,
-          focalLength:
-            typeof photo.exif.focal_length === "string"
-              ? photo.exif.focal_length
-              : typeof photo.exif.focal_length === "number"
-                ? String(photo.exif.focal_length)
-                : null,
-          iso: typeof photo.exif.iso === "number" ? photo.exif.iso : null,
-        }
-      : null;
-
-  let profileImage: string | null = null;
-  if (
-    photo.user?.profile_image &&
-    typeof photo.user.profile_image === "object"
-  ) {
-    const candidate =
-      typeof photo.user.profile_image.medium === "string"
-        ? photo.user.profile_image.medium
-        : typeof photo.user.profile_image.small === "string"
-          ? photo.user.profile_image.small
-          : null;
-
-    if (candidate) {
-      try {
-        profileImage = trustedUrl(candidate, IMAGE_ORIGINS).toString();
-      } catch {
-        profileImage = null;
-      }
-    }
-  }
-
-  let userLink = "";
-  if (photo.user?.links && typeof photo.user.links.html === "string") {
-    try {
-      userLink = trustedUrl(photo.user.links.html, WEB_ORIGINS).toString();
-    } catch {
-      userLink = "";
-    }
-  }
-
-  const user: UnsplashUser | null = photo.user
+  const location: UnsplashLocation | null = photo.location
     ? {
-        name: photo.user.name,
-        username:
-          typeof photo.user.username === "string" ? photo.user.username : null,
-        profileImage,
-        link: userLink,
+        name: photo.location.name ?? null,
+        city: photo.location.city ?? null,
+        country: photo.location.country ?? null,
+      }
+    : null;
+  const exif: UnsplashExif | null = photo.exif
+    ? {
+        make: photo.exif.make ?? null,
+        model: photo.exif.model ?? null,
+        exposureTime: photo.exif.exposure_time ?? null,
+        aperture: photo.exif.aperture ?? null,
+        focalLength:
+          photo.exif.focal_length == null
+            ? null
+            : String(photo.exif.focal_length),
+        iso: photo.exif.iso ?? null,
       }
     : null;
 
   return {
-    user,
+    user: {
+      name: photo.user.name,
+      username: photo.user.username ?? null,
+      profileImage:
+        photo.user.profile_image?.medium ??
+        photo.user.profile_image?.small ??
+        null,
+      link: photo.user.links.html,
+    },
     location,
     exif,
-    views: typeof photo.views === "number" ? photo.views : null,
+    views: photo.views ?? null,
     description: photo.description ?? photo.alt_description ?? null,
   };
 }
@@ -524,15 +417,12 @@ export type {
   UnsplashUser,
 };
 export {
-  API_ORIGINS,
   buildRandomPhotoUrl,
   cleanIdentifier,
   fetchUnsplashPhotoDetails,
   fullResolutionImageUrl,
   getUnsplashPhotoInfo,
-  IMAGE_ORIGINS,
   imageUrlForResolution,
   normalizeCsv,
   unsplashSource,
-  WEB_ORIGINS,
 };

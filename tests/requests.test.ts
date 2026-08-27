@@ -213,6 +213,32 @@ describe("Unsplash image resolution", () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
+  it("does not send credentials to a foreign tracking origin", async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const asset = {
+      sourceId: "unsplash",
+      sourceAssetId: "photo-1",
+      cacheKey: "cache-1",
+      width: 1600,
+      height: 900,
+      color: null,
+      description: null,
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {
+        downloadLocation: "https://example.com/collect",
+      },
+      createdAt: Date.now(),
+    };
+
+    await expect(unsplashSource.didDownload?.(asset)).rejects.toThrow(
+      "Refusing to send Unsplash credentials to another origin",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("determines whether to rotate according to photo frequency setting and photo age", async () => {
     const asset = {
       sourceId: "unsplash",
