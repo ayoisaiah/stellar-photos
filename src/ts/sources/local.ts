@@ -16,9 +16,21 @@ interface LocalPayload {
   lastModified: number;
 }
 
+function isLocalSupported(): boolean {
+  if (
+    typeof navigator !== "undefined" &&
+    /firefox/i.test(navigator.userAgent)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 const localSource: ImageSource = {
   id: "local",
   name: "Local folder",
+  isSupported: isLocalSupported,
   shouldRotate: shouldRotateLocal,
   getRandomAsset: getRandomLocalAsset,
   downloadAsset: downloadLocalAsset,
@@ -32,7 +44,7 @@ async function shouldRotateLocal(current: BackgroundAsset): Promise<boolean> {
   );
 }
 
-export async function computeLocalAssetId(
+async function computeLocalAssetId(
   folderId = "folder",
   relativePath = "photo",
 ): Promise<string> {
@@ -123,4 +135,4 @@ async function downloadLocalAsset(
 }
 
 export type { LocalPayload };
-export { localSource };
+export { computeLocalAssetId, isLocalSupported, localSource };

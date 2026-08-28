@@ -9,6 +9,7 @@ interface ImageSource {
   readonly name: string;
   readonly supportsDownload?: boolean;
   readonly supportsInfo?: boolean;
+  isSupported?(): boolean;
   shouldRotate?(current: BackgroundAsset): Promise<boolean>;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
@@ -26,12 +27,19 @@ const imageSources: ReadonlyMap<string, ImageSource> = new Map(
 );
 const defaultImageSource = unsplashSource;
 
+function isSourceSupported(source: ImageSource): boolean {
+  return source.isSupported ? source.isSupported() : true;
+}
+
 function listImageSources(): readonly ImageSource[] {
-  return bundledImageSources;
+  return bundledImageSources.filter(isSourceSupported);
 }
 
 function getImageSource(sourceId: string): ImageSource | null {
-  return imageSources.get(sourceId) ?? null;
+  const source = imageSources.get(sourceId);
+  if (!source || !isSourceSupported(source)) return null;
+
+  return source;
 }
 
 async function getActiveImageSource(): Promise<ImageSource> {

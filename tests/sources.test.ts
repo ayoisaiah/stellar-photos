@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getActiveImageSource,
@@ -7,6 +7,10 @@ import {
 } from "../src/ts/sources";
 
 let selectedSource: unknown;
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 beforeEach(() => {
   selectedSource = undefined;
@@ -72,4 +76,19 @@ describe("image source registry", () => {
       expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
     },
   );
+
+  it("disables the local folder source in Firefox", async () => {
+    vi.stubGlobal("navigator", {
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
+    });
+
+    const sources = listImageSources();
+    expect(sources.some((s) => s.id === "local")).toBe(false);
+    expect(sources.map((s) => s.id)).toEqual(["unsplash", "earthview"]);
+    expect(getImageSource("local")).toBeNull();
+
+    selectedSource = "local";
+    expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
+  });
 });

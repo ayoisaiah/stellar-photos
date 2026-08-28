@@ -19,8 +19,6 @@ type SourceChangeState =
   | { status: "switching" }
   | { status: "error"; message: string };
 
-const imageSources = listImageSources();
-
 function getExtensionVersion(): string {
   try {
     if (typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
@@ -55,7 +53,7 @@ class SettingsDrawer extends LitElement {
   accessor open = false;
 
   @property({ attribute: "source-id" })
-  accessor sourceId = imageSources[0]?.id ?? "";
+  accessor sourceId = listImageSources()[0]?.id ?? "unsplash";
 
   @property({ attribute: false })
   accessor sourceChange: SourceChangeState = { status: "idle" };
@@ -90,8 +88,9 @@ class SettingsDrawer extends LitElement {
   }
 
   override render() {
+    const sources = listImageSources();
     const currentSourceId = this.selectedSourceId || this.sourceId;
-    const source = getImageSource(currentSourceId) ?? imageSources[0];
+    const source = getImageSource(currentSourceId) ?? sources[0];
     const switching = this.sourceChange.status === "switching";
     const error =
       this.sourceChange.status === "error" ? this.sourceChange.message : "";
@@ -134,7 +133,7 @@ class SettingsDrawer extends LitElement {
                 ?disabled=${switching}
                 @change=${this.selectSource}
               >
-                ${imageSources.map(
+                ${sources.map(
                   ({ id, name }) =>
                     html`<option value=${id} ?selected=${id === currentSourceId}>${name}</option>`,
                 )}
