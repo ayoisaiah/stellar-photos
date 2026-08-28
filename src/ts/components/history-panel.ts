@@ -80,7 +80,17 @@ class HistoryPanel extends LitElement {
   private renderCard(asset: BackgroundAsset, index: number) {
     const thumbnailUrl = this.thumbnailUrls.get(asset.cacheKey);
     const description = asset.description || "photo";
-    const sourceUrl = asset.attribution?.sourceUrl ?? "";
+    const isEarthView = asset.sourceId === "earthview";
+    const sourceUrl =
+      isEarthView && asset.attribution?.url
+        ? asset.attribution.url
+        : (asset.attribution?.sourceUrl ?? "");
+    const sourceTitle =
+      asset.sourceId === "unsplash"
+        ? "View photo on Unsplash"
+        : isEarthView
+          ? "View on Google Earth View"
+          : "View photo on source";
     const supportsDownload = Boolean(
       getImageSource(asset.sourceId)?.supportsDownload,
     );
@@ -140,8 +150,8 @@ class HistoryPanel extends LitElement {
                   href="${attributionUrl(sourceUrl, asset.sourceId)}"
                   target="_blank"
                   rel="noopener"
-                  title="View photo on ${asset.sourceId === "unsplash" ? "Unsplash" : "source"}"
-                  aria-label="View photo on source"
+                  title="${sourceTitle}"
+                  aria-label="${sourceTitle}"
                   @click=${(event: Event) => event.stopPropagation()}
                 >
                   <stellar-icon .icon=${ExternalLink}></stellar-icon>

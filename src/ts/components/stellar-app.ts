@@ -172,7 +172,8 @@ class StellarApp extends LitElement {
 
   private get isInfoAvailable(): boolean {
     return (
-      this.currentAsset !== null && this.currentAsset.sourceId === "unsplash"
+      this.currentAsset !== null &&
+      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsInfo)
     );
   }
 
@@ -340,10 +341,13 @@ class StellarApp extends LitElement {
     const photographerUrl =
       info?.user?.link || this.currentAsset.attribution.url;
     const photographerImage = info?.user?.profileImage;
-    const sourceUrl = this.currentAsset.attribution.sourceUrl;
+    const sourceUrl =
+      isEarthView && this.currentAsset.attribution.url
+        ? this.currentAsset.attribution.url
+        : this.currentAsset.attribution.sourceUrl;
     const source = getImageSource(this.currentAsset.sourceId);
     const sourceDisplayName =
-      source?.name ?? (isEarthView ? "Google Earth" : "Unsplash");
+      source?.name ?? (isEarthView ? "Google Earth View" : "Unsplash");
 
     return html`
       <div class="bottom-credit">

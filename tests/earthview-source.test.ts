@@ -3,7 +3,8 @@ import type { BackgroundAsset } from "../src/ts/assets";
 import {
   buildEarthViewImageUrl,
   earthviewSource,
-  getEarthViewCatalog,
+  fetchEarthViewDetails,
+  getEarthViewPhotoIds,
 } from "../src/ts/sources/earthview";
 import {
   DEFAULT_EARTHVIEW_SETTINGS,
@@ -48,14 +49,11 @@ beforeEach(() => {
 });
 
 describe("earthview catalog and image helper", () => {
-  it("provides a curated catalog of Earth View photos", async () => {
-    const catalog = await getEarthViewCatalog();
-    expect(catalog.length).toBeGreaterThan(1000);
-    expect(catalog[0]).toMatchObject({
-      id: expect.any(Number),
-      country: expect.any(String),
-      map: expect.stringContaining("google.com/maps"),
-    });
+  it("provides a curated list of Earth View photo IDs", () => {
+    const ids = getEarthViewPhotoIds();
+    expect(ids.length).toBeGreaterThan(1000);
+    expect(ids[0]).toBe(1003);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("builds the correct gstatic image URL", () => {
@@ -92,7 +90,7 @@ describe("earthview source retrieval and rotation", () => {
     expect(asset.sourceId).toBe("earthview");
     expect(asset.sourceAssetId).toMatch(/^[0-9]+$/);
     expect(asset.attribution?.name).toBeTruthy();
-    expect(asset.attribution?.url).toContain("google.com/maps");
+    expect(asset.attribution?.url).toBe("https://earth.google.com/");
     expect(asset.attribution?.sourceUrl).toBe("https://earth.google.com/");
     expect(asset.sourcePayload).toMatchObject({
       id: expect.any(Number),
@@ -149,5 +147,50 @@ describe("earthview source retrieval and rotation", () => {
     // Frequency = newtab -> always rotates
     await setEarthViewPhotoFrequency("newtab");
     expect(await earthviewSource.shouldRotate!(asset)).toBe(true);
+  });
+
+  it("fetches Earth View satellite metadata details", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "1004",
+          lat: -19.140249,
+          lng: -68.683995,
+          zoom: 14,
+          elevation: 5253.089,
+          geocode: {
+            establishment: "Volcán Isluga National Park",
+            country: "Chile",
+          },
+          attribution: "©2019 CNES / Astrium",
+        }),
+        {
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const asset: BackgroundAsset = {
+      sourceId: "earthview",
+      sourceAssetId: "1004",
+      cacheKey: "cache-key-1004",
+      width: 1800,
+      height: 1200,
+      color: null,
+      description: "Chile",
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: Date.now(),
+    };
+
+    const details = await fetchEarthViewDetails(asset);
+    expect(details).not.toBeNull();
+    expect(details?.lat).toBe(-19.140249);
+    expect(details?.lng).toBe(-68.683995);
+    expect(details?.elevation).toBeCloseTo(5253.089);
+    expect(details?.geocode?.establishment).toBe("Volcán Isluga National Park");
+    expect(details?.attribution).toBe("©2019 CNES / Astrium");
   });
 });

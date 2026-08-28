@@ -95,6 +95,7 @@ const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
   supportsDownload: true,
+  supportsInfo: true,
   shouldRotate,
   getRandomAsset,
   downloadAsset,

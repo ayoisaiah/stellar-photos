@@ -8,6 +8,7 @@ interface ImageSource {
   readonly id: string;
   readonly name: string;
   readonly supportsDownload?: boolean;
+  readonly supportsInfo?: boolean;
   shouldRotate?(current: BackgroundAsset): Promise<boolean>;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
