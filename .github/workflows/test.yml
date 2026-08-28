@@ -1,14 +1,23 @@
-name: Publish Stellar Photos
+name: Test & Publish
 
 on:
   push:
+    branches:
+      - master
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  publish:
-    name: Build & Submit to Webstores
+  test:
+    name: Lint, Typecheck & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -23,11 +32,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Code quality and test checks
-        run: |
-          npm run check
-          npm run typecheck
-          npm test
+      - name: Run Biome check
+        run: npm run check
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Run Vitest test suite
+        run: npm test
+
+      - name: Verify production build
+        run: npm run build
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY || 'test-ci-key' }}
+
+  publish:
+    name: Build & Submit to Webstores
+    needs: test
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build and package extensions
         run: |
