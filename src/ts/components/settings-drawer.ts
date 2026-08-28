@@ -34,20 +34,13 @@ function getExtensionVersion(): string {
 }
 
 function getWebstoreReviewUrl(): string {
-  const isFirefox =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as { env?: { BROWSER?: string } }).env?.BROWSER ===
-        "firefox") ||
-    (typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent));
+  const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
 
-  if (isFirefox) {
+  if (/firefox/i.test(userAgent)) {
     return "https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/reviews/";
   }
 
-  if (
-    typeof navigator !== "undefined" &&
-    /\bEdg\b|\bEdge\//i.test(navigator.userAgent)
-  ) {
+  if (/\bEdg\b|\bEdge\//i.test(userAgent)) {
     return "https://microsoftedge.microsoft.com/addons/detail/stellar-photos/oifbedjcmofkjgmjakgbppkocdfpjpjg";
   }
 

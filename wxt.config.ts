@@ -33,7 +33,7 @@ export default defineConfig({
       browser === "firefox"
         ? {
             gecko: {
-              id: "stellar-photos@freshman.tech",
+              id: "stellar@stellarapp.photos",
               strict_min_version: "153.0",
             },
           }

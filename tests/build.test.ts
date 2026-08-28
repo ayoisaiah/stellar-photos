@@ -81,7 +81,7 @@ describe("browser packages", () => {
         expect(manifest.minimum_chrome_version).toBe("150");
       } else {
         expect(manifest.browser_specific_settings.gecko).toMatchObject({
-          id: "stellar-photos@freshman.tech",
+          id: "stellar@stellarapp.photos",
           strict_min_version: "153.0",
         });
       }

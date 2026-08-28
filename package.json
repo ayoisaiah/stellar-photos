@@ -20,10 +20,10 @@
     "prepare": "wxt prepare && simple-git-hooks"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.11",
     "@types/chrome": "^0.2.7",
-    "@types/node": "^26.3.0",
-    "lint-staged": "^17.3.0",
+    "@types/node": "^26.4.0",
+    "lint-staged": "^17.4.1",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
@@ -37,7 +37,7 @@
     "pre-commit": "npx lint-staged && npm run typecheck && npm test"
   },
   "dependencies": {
-    "@lucide/icons": "^1.34.0",
+    "@lucide/icons": "^1.35.0",
     "lit": "^3.3.3"
   }
 }
