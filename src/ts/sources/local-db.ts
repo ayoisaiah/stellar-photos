@@ -20,16 +20,7 @@ const DB_NAME = "stellar-photos-local";
 const DB_VERSION = 1;
 const FOLDERS_STORE = "folders";
 
-const IMAGE_EXTENSIONS = new Set([
-  "jpg",
-  "jpeg",
-  "png",
-  "webp",
-  "avif",
-  "gif",
-  "bmp",
-  "svg",
-]);
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "avif"]);
 
 class LocalPermissionError extends Error {
   code = "NEEDS_PAGE_CONTEXT";

@@ -39,7 +39,7 @@ vi.mock("../src/ts/storage", () => ({
   writePinnedAsset,
 }));
 
-const { rotate, switchSource, trackDownload } = await import(
+const { ensureCurrent, rotate, switchSource, trackDownload } = await import(
   "../src/ts/actions"
 );
 
@@ -87,6 +87,17 @@ beforeEach(() => {
 });
 
 describe("source activation", () => {
+  it("reacquires when stored assets are missing from cache", async () => {
+    readPinnedAsset.mockResolvedValueOnce(current).mockResolvedValueOnce(null);
+    readCachedImage.mockResolvedValue(undefined);
+
+    await expect(ensureCurrent()).resolves.toEqual(prepared);
+
+    expect(writeHistory).toHaveBeenCalledWith({ history: [] });
+    expect(writePinnedAsset).toHaveBeenCalledWith(null);
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+  });
+
   it("switches source and promotes its first photograph in one operation", async () => {
     await expect(switchSource("unsplash")).resolves.toEqual(prepared);
 

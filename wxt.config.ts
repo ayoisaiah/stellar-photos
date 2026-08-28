@@ -16,7 +16,7 @@ export default defineConfig({
     name: "Stellar Photos",
     version: "5.0.0",
     description:
-      "Experience a beautiful high-resolution photo every time you open a new browser tab",
+      "Experience a beautiful high-resolution photo every time you open a new browser tab. Fast, customizable, and clutter-free.",
     icons: {
       48: "48.png",
       64: "64.png",

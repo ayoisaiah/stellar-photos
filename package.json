@@ -2,7 +2,7 @@
   "name": "stellar-photos",
   "type": "module",
   "version": "5.0.0",
-  "description": "Beautiful high-res photos in your browser tabs. Available for Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox",
+  "description": "Experience a beautiful high-resolution photo every time you open a new browser tab. Fast, customizable, and clutter-free",
   "repository": "git@github.com:ayoisaiah/stellar-photos.git",
   "author": "Ayooluwa Isaiah <ayo@freshman.tech>",
   "license": "MIT",

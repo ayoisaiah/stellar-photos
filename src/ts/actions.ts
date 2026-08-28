@@ -7,6 +7,7 @@ import {
   deleteCachedThumbnail,
   putCachedImage,
   putCachedThumbnail,
+  readCachedImage,
 } from "./cache";
 import { setImageSourceId } from "./settings";
 import { getActiveImageSource, getImageSource } from "./sources";
@@ -29,9 +30,27 @@ let pendingRotation = false;
 async function ensureCurrent(): Promise<BackgroundAsset | null> {
   return enqueue(async () => {
     const pinned = await readPinnedAsset();
-    if (pinned) return pinned;
+    if (pinned) {
+      const cached = await readCachedImage(pinned.cacheKey);
+      if (cached) return pinned;
+
+      await writePinnedAsset(null);
+    }
 
     const state = await readHistory();
+    let firstCached = 0;
+
+    while (
+      state.history[firstCached] &&
+      !(await readCachedImage(state.history[firstCached]!.cacheKey))
+    ) {
+      firstCached += 1;
+    }
+
+    if (firstCached > 0) {
+      state.history = state.history.slice(firstCached);
+      await writeHistory(state);
+    }
 
     return state.history[0] ?? acquireAsset(state);
   });

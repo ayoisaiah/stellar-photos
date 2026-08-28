@@ -206,6 +206,9 @@ describe("local image file detection", () => {
     expect(isImageFileName("photo.png")).toBe(true);
     expect(isImageFileName("photo.webp")).toBe(true);
     expect(isImageFileName("photo.avif")).toBe(true);
+    expect(isImageFileName("animation.gif")).toBe(false);
+    expect(isImageFileName("graphic.bmp")).toBe(false);
+    expect(isImageFileName("vector.svg")).toBe(false);
     expect(isImageFileName("document.pdf")).toBe(false);
     expect(isImageFileName("notes.txt")).toBe(false);
   });
