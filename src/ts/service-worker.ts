@@ -1,10 +1,4 @@
-import {
-  ensureCurrent,
-  initializeSettings,
-  rotate,
-  switchSource,
-  trackDownload,
-} from "./actions";
+import { ensureCurrent, rotate, switchSource, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
 
 type WorkerCommand =
@@ -17,23 +11,11 @@ type WorkerResult =
   | { ok: true; current: BackgroundAsset | null }
   | { ok: false; error: { code: string; message: string } };
 
-let initPromise: Promise<void> | null = null;
-
-function initializeSettingsMemoized(): Promise<void> {
-  initPromise ??= initializeSettings().catch((error) => {
-    initPromise = null;
-    throw error;
-  });
-
-  return initPromise;
-}
-
 function startServiceWorker(): void {
   chrome.runtime.onInstalled.addListener(() => {
     if (typeof navigator !== "undefined" && navigator.storage?.persist) {
       void navigator.storage.persist();
     }
-    void initializeSettingsMemoized().catch(() => undefined);
   });
 
   chrome.runtime.onMessage.addListener(
@@ -112,4 +94,4 @@ function isCommand(value: unknown): value is WorkerCommand {
 }
 
 export type { WorkerCommand, WorkerResult };
-export { dispatch, initializeSettingsMemoized, startServiceWorker };
+export { dispatch, startServiceWorker };

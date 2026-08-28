@@ -1,4 +1,4 @@
-import type { BackgroundAsset, HistoryState } from "./assets";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { HISTORY_LIMIT } from "./assets";
 import {
   assetCacheKey,
@@ -9,18 +9,16 @@ import {
   putCachedThumbnail,
 } from "./cache";
 import { setImageSourceId } from "./settings";
-import type { ImageSource } from "./sources";
-import {
-  getActiveImageSource,
-  getImageSource,
-  initializeImageSourceSettings,
-} from "./sources";
+import { getActiveImageSource, getImageSource } from "./sources";
 import {
   readHistory,
   readPinnedAsset,
   writeHistory,
   writePinnedAsset,
 } from "./storage";
+
+import type { BackgroundAsset, HistoryState } from "./assets";
+import type { ImageSource } from "./sources";
 
 const LOCK_NAME = "stellar_actions_lock";
 
@@ -91,15 +89,6 @@ async function trackDownload(asset: BackgroundAsset): Promise<void> {
     } catch {
       // Ignore tracking errors
     }
-  });
-}
-
-async function initializeSettings(): Promise<void> {
-  const { initializeCoreSettings } = await import("./settings");
-
-  await enqueue(async () => {
-    await initializeCoreSettings();
-    await initializeImageSourceSettings();
   });
 }
 
@@ -226,10 +215,4 @@ async function appendToHistory(
   return { next, evicted };
 }
 
-export {
-  ensureCurrent,
-  initializeSettings,
-  rotate,
-  switchSource,
-  trackDownload,
-};
+export { ensureCurrent, rotate, switchSource, trackDownload };

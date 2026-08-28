@@ -47,17 +47,13 @@ describe("image source registry", () => {
     expect(getImageSource("unsplash")).toMatchObject({
       id: "unsplash",
       supportsDownload: true,
-      supportsInfo: true,
     });
     expect(getImageSource("earthview")).toMatchObject({
       id: "earthview",
       supportsDownload: true,
-      supportsInfo: false,
     });
     expect(getImageSource("local")).toMatchObject({
       id: "local",
-      supportsDownload: false,
-      supportsInfo: false,
     });
     expect(getImageSource("future-source")).toBeNull();
   });

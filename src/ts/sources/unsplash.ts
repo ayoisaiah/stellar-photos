@@ -1,15 +1,17 @@
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
-import type { ImageSource } from "../sources";
-import type { ImageResolution, UnsplashSettings } from "./unsplash-settings";
+import { shouldRotateAtFrequency } from "./photo-frequency";
 import {
   getPhotoFrequency,
   getUnsplashSettings,
-  initializeUnsplashSettings,
   resolveAccessKey,
   STELLAR_COLLECTION,
 } from "./unsplash-settings";
+
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+import type { ImageSource } from "../sources";
+import type { ImageResolution, UnsplashSettings } from "./unsplash-settings";
 
 interface UnsplashUser {
   name: string;
@@ -93,8 +95,6 @@ const unsplashSource: ImageSource = {
   id: "unsplash",
   name: "Unsplash",
   supportsDownload: true,
-  supportsInfo: true,
-  initializeSettings: initializeUnsplashSettings,
   shouldRotate,
   getRandomAsset,
   downloadAsset,
@@ -177,22 +177,7 @@ function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
 }
 
 async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
-  if (current.sourceId !== unsplashSource.id) return true;
-
-  const frequency = await getPhotoFrequency();
-  const elapsed = Date.now() - current.createdAt;
-
-  switch (frequency) {
-    case "every15minutes":
-      return elapsed >= 15 * 60 * 1000;
-    case "everyhour":
-      return elapsed >= 60 * 60 * 1000;
-    case "everyday":
-      return elapsed >= 24 * 60 * 60 * 1000;
-    case "newtab":
-    default:
-      return true;
-  }
+  return shouldRotateAtFrequency(current, unsplashSource.id, getPhotoFrequency);
 }
 
 function fullResolutionImageUrl(rawUrl: string): string {

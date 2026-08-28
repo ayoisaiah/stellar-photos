@@ -1,5 +1,7 @@
-import type { PhotoFrequency } from "./photo-frequency";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { isPhotoFrequency } from "./photo-frequency";
+
+import type { PhotoFrequency } from "./photo-frequency";
 
 export interface EarthViewSettings {
   version: 1;
@@ -8,11 +10,10 @@ export interface EarthViewSettings {
 
 export const EARTHVIEW_SETTINGS_KEY = "sourceSettings:earthview";
 
-export const DEFAULT_EARTHVIEW_SETTINGS: Readonly<EarthViewSettings> =
-  Object.freeze({
-    version: 1,
-    photoFrequency: "newtab",
-  });
+export const DEFAULT_EARTHVIEW_SETTINGS: Readonly<EarthViewSettings> = {
+  version: 1,
+  photoFrequency: "newtab",
+};
 
 export async function getEarthViewSettings(): Promise<EarthViewSettings> {
   const values = await chrome.storage.sync.get(EARTHVIEW_SETTINGS_KEY);
@@ -45,17 +46,6 @@ export async function setEarthViewPhotoFrequency(
   photoFrequency: PhotoFrequency,
 ): Promise<void> {
   await setEarthViewSettings({ photoFrequency });
-}
-
-export async function initializeEarthViewSettings(): Promise<void> {
-  const syncValues = await chrome.storage.sync.get(EARTHVIEW_SETTINGS_KEY);
-  const current = parseEarthViewSettings(syncValues[EARTHVIEW_SETTINGS_KEY]);
-
-  if (!current) {
-    await chrome.storage.sync.set({
-      [EARTHVIEW_SETTINGS_KEY]: DEFAULT_EARTHVIEW_SETTINGS,
-    });
-  }
 }
 
 function parseEarthViewSettings(value: unknown): EarthViewSettings | null {

@@ -46,19 +46,14 @@ const {
   DISPLAY_SETTINGS_KEY,
   getDisplaySettings,
   getImageSourceId,
-  initializeCoreSettings,
-  initializeDisplaySettings,
   setDisplaySettings,
   setImageSourceId,
 } = await import("../src/ts/settings");
 const {
   DEFAULT_UNSPLASH_SETTINGS,
-  getImageQuality,
   getPhotoFrequency,
   getUnsplashSettings,
-  initializeUnsplashSettings,
   resolveAccessKey,
-  setImageQuality,
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
@@ -86,54 +81,19 @@ describe("settings", () => {
     expect(await resolveAccessKey()).toBe("user-key");
   });
 
-  it("initializes default settings when storage is empty", async () => {
-    await initializeCoreSettings();
-    await initializeUnsplashSettings();
-
-    expect(sync).toEqual({
-      [CORE_SETTINGS_KEY]: DEFAULT_CORE_SETTINGS,
-      [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
-      [UNSPLASH_SETTINGS_KEY]: DEFAULT_UNSPLASH_SETTINGS,
-    });
+  it("returns lazy defaults without writing storage", async () => {
+    expect(await getImageSourceId()).toBe(DEFAULT_CORE_SETTINGS.activeSourceId);
+    expect(await getDisplaySettings()).toEqual(DEFAULT_DISPLAY_SETTINGS);
+    expect(await getUnsplashSettings()).toEqual(DEFAULT_UNSPLASH_SETTINGS);
+    expect(sync).toEqual({});
   });
 
-  it("preserves existing settings on initialization", async () => {
-    sync[CORE_SETTINGS_KEY] = {
-      version: 1,
-      activeSourceId: "local",
-    };
-    sync[UNSPLASH_SETTINGS_KEY] = {
-      ...DEFAULT_UNSPLASH_SETTINGS,
-      imageQuality: "max",
-      photoFrequency: "everyday",
-      query: "astronomy",
-    };
-
-    await initializeCoreSettings();
-    await initializeUnsplashSettings();
-
-    expect(sync[CORE_SETTINGS_KEY]).toEqual({
-      version: 1,
-      activeSourceId: "local",
-    });
-    expect(sync[UNSPLASH_SETTINGS_KEY]).toEqual({
-      ...DEFAULT_UNSPLASH_SETTINGS,
-      imageQuality: "max",
-      photoFrequency: "everyday",
-      query: "astronomy",
-    });
-  });
-
-  it("does not overwrite settings written by a newer schema", async () => {
+  it("rejects settings written by a newer schema", async () => {
     sync[CORE_SETTINGS_KEY] = { version: 2, activeSourceId: "future-source" };
 
-    await expect(initializeCoreSettings()).rejects.toThrow(
+    await expect(getImageSourceId()).rejects.toThrow(
       "Unsupported core settings version: 2",
     );
-    expect(sync[CORE_SETTINGS_KEY]).toEqual({
-      version: 2,
-      activeSourceId: "future-source",
-    });
 
     delete sync[CORE_SETTINGS_KEY];
     sync[UNSPLASH_SETTINGS_KEY] = {
@@ -142,33 +102,28 @@ describe("settings", () => {
       photoFrequency: "future",
     };
 
-    await expect(initializeUnsplashSettings()).rejects.toThrow(
+    await expect(getUnsplashSettings()).rejects.toThrow(
       "Unsupported Unsplash settings version: 2",
     );
-    expect(sync[UNSPLASH_SETTINGS_KEY]).toEqual({
-      version: 2,
-      imageQuality: "future",
-      photoFrequency: "future",
-    });
   });
 
   it("defaults invalid or missing image resolution to standard", async () => {
-    expect(await getImageQuality()).toBe("standard");
+    expect((await getUnsplashSettings()).imageQuality).toBe("standard");
     sync[UNSPLASH_SETTINGS_KEY] = {
       ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "high",
     };
-    expect(await getImageQuality()).toBe("high");
+    expect((await getUnsplashSettings()).imageQuality).toBe("high");
     sync[UNSPLASH_SETTINGS_KEY] = {
       ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "max",
     };
-    expect(await getImageQuality()).toBe("max");
+    expect((await getUnsplashSettings()).imageQuality).toBe("max");
     sync[UNSPLASH_SETTINGS_KEY] = {
       ...DEFAULT_UNSPLASH_SETTINGS,
       imageQuality: "unexpected",
     };
-    expect(await getImageQuality()).toBe("standard");
+    expect((await getUnsplashSettings()).imageQuality).toBe("standard");
   });
 
   it("defaults invalid or missing photo frequency to newtab", async () => {
@@ -207,8 +162,10 @@ describe("settings", () => {
   });
 
   it("persists source-owned and application-owned settings", async () => {
-    await setImageQuality("max");
-    await setUnsplashSettings({ photoFrequency: "everyday" });
+    await setUnsplashSettings({
+      imageQuality: "max",
+      photoFrequency: "everyday",
+    });
     await setImageSourceId("unsplash");
 
     expect(sync).toEqual({
@@ -242,8 +199,7 @@ describe("settings", () => {
     });
   });
 
-  it("initializes and updates display customization settings", async () => {
-    await initializeDisplaySettings();
+  it("defaults and updates display customization settings", async () => {
     expect(await getDisplaySettings()).toEqual(DEFAULT_DISPLAY_SETTINGS);
 
     await setDisplaySettings({

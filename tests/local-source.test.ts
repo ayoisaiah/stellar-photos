@@ -3,7 +3,6 @@ import type { BackgroundAsset } from "../src/ts/assets";
 import { computeLocalAssetId, localSource } from "../src/ts/sources/local";
 import {
   addDirectoryHandle,
-  getLocalPhotoCount,
   getRandomDirectoryImage,
   isImageFileName,
   listDirectoryImagePaths,
@@ -16,13 +15,19 @@ import {
   DEFAULT_LOCAL_SETTINGS,
   getLocalPhotoFrequency,
   getLocalSettings,
-  initializeLocalSettings,
   LOCAL_SETTINGS_KEY,
   setLocalPhotoFrequency,
   setLocalSettings,
 } from "../src/ts/sources/local-settings";
 
 const sync: Record<string, unknown> = {};
+
+async function localPhotoCount(): Promise<number> {
+  return (await listStoredFolderRecords()).reduce(
+    (sum, record) => sum + record.photoCount,
+    0,
+  );
+}
 
 type MockDirStructure = {
   [name: string]: string | MockDirStructure;
@@ -230,7 +235,7 @@ describe("directory handle storage", () => {
       photoCount: 5,
     });
 
-    expect(await getLocalPhotoCount()).toBe(5);
+    expect(await localPhotoCount()).toBe(5);
 
     const imagePaths = await listDirectoryImagePaths(handle);
     expect(imagePaths).toEqual([
@@ -272,7 +277,7 @@ describe("directory handle storage", () => {
 
     expect(record1.photoCount).toBe(2);
     expect(record2.photoCount).toBe(2);
-    expect(await getLocalPhotoCount()).toBe(4);
+    expect(await localPhotoCount()).toBe(4);
 
     const stored = await listStoredFolderRecords();
     expect(stored).toHaveLength(2);
@@ -283,7 +288,7 @@ describe("directory handle storage", () => {
     expect(["a1.jpg", "a2.png", "b1.webp", "b2.jpg"]).toContain(random?.name);
 
     await removeDirectoryHandle(record1.id);
-    expect(await getLocalPhotoCount()).toBe(2);
+    expect(await localPhotoCount()).toBe(2);
     const remaining = await listStoredFolderRecords();
     expect(remaining).toHaveLength(1);
     expect(remaining[0]?.folderName).toBe("FolderB");
@@ -306,7 +311,7 @@ describe("directory handle storage", () => {
     expect(updated).toHaveLength(1);
     expect(updated[0]?.photoCount).toBe(2);
     expect(updated[0]?.imagePaths).toEqual(["pic1.jpg", "pic2.png"]);
-    expect(await getLocalPhotoCount()).toBe(2);
+    expect(await localPhotoCount()).toBe(2);
   });
 
   it("throws when saving a folder with no valid image files", async () => {
@@ -322,7 +327,6 @@ describe("directory handle storage", () => {
 
 describe("local source settings", () => {
   it("defaults settings and allows updates", async () => {
-    await initializeLocalSettings();
     expect(await getLocalSettings()).toEqual(DEFAULT_LOCAL_SETTINGS);
 
     await setLocalSettings({ folderName: "My Photos" });

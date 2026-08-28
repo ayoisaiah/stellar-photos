@@ -285,12 +285,6 @@ export async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
   );
 }
 
-export async function getLocalPhotoCount(): Promise<number> {
-  const records = await listStoredFolderRecords();
-
-  return records.reduce((sum, record) => sum + record.photoCount, 0);
-}
-
 export async function getRandomDirectoryImage(
   excludePaths: string[] = [],
 ): Promise<RandomLocalImageResult | null> {

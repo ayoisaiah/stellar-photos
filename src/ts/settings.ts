@@ -13,19 +13,18 @@ export interface DisplaySettings {
 }
 
 export const CORE_SETTINGS_KEY = "coreSettings";
-export const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = Object.freeze({
+export const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = {
   version: 1,
   activeSourceId: "unsplash",
-});
+};
 
 export const DISPLAY_SETTINGS_KEY = "displaySettings";
-export const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> =
-  Object.freeze({
-    version: 1,
-    landscapeMode: "cover",
-    portraitMode: "contain-blur",
-    motion: false,
-  });
+export const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> = {
+  version: 1,
+  landscapeMode: "cover",
+  portraitMode: "contain-blur",
+  motion: false,
+};
 
 export async function getImageSourceId(): Promise<string> {
   const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
@@ -81,30 +80,6 @@ export async function setDisplaySettings(
   );
 
   return next;
-}
-
-export async function initializeDisplaySettings(): Promise<void> {
-  const values = await chrome.storage.sync.get(DISPLAY_SETTINGS_KEY);
-  const current = parseDisplaySettings(values[DISPLAY_SETTINGS_KEY]);
-
-  if (!current) {
-    await chrome.storage.sync.set({
-      [DISPLAY_SETTINGS_KEY]: DEFAULT_DISPLAY_SETTINGS,
-    });
-  }
-}
-
-export async function initializeCoreSettings(): Promise<void> {
-  const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
-  const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
-
-  if (!current) {
-    await chrome.storage.sync.set({
-      [CORE_SETTINGS_KEY]: DEFAULT_CORE_SETTINGS,
-    });
-  }
-
-  await initializeDisplaySettings();
 }
 
 function parseCoreSettings(value: unknown): CoreSettings | null {

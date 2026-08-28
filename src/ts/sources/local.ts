@@ -1,10 +1,10 @@
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
+import { getLocalPhotoFrequency } from "./local-settings";
+import { shouldRotateAtFrequency } from "./photo-frequency";
+
 import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import type { ImageSource } from "../sources";
-import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
-import {
-  getLocalPhotoFrequency,
-  initializeLocalSettings,
-} from "./local-settings";
 
 interface LocalPayload {
   folderId?: string;
@@ -19,31 +19,17 @@ interface LocalPayload {
 const localSource: ImageSource = {
   id: "local",
   name: "Local folder",
-  supportsDownload: false,
-  supportsInfo: false,
-  initializeSettings: initializeLocalSettings,
   shouldRotate: shouldRotateLocal,
   getRandomAsset: getRandomLocalAsset,
   downloadAsset: downloadLocalAsset,
 };
 
 async function shouldRotateLocal(current: BackgroundAsset): Promise<boolean> {
-  if (current.sourceId !== localSource.id) return true;
-
-  const frequency = await getLocalPhotoFrequency();
-  const elapsed = Date.now() - current.createdAt;
-
-  switch (frequency) {
-    case "every15minutes":
-      return elapsed >= 15 * 60 * 1000;
-    case "everyhour":
-      return elapsed >= 60 * 60 * 1000;
-    case "everyday":
-      return elapsed >= 24 * 60 * 60 * 1000;
-    case "newtab":
-    default:
-      return true;
-  }
+  return shouldRotateAtFrequency(
+    current,
+    localSource.id,
+    getLocalPhotoFrequency,
+  );
 }
 
 export async function computeLocalAssetId(

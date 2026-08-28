@@ -1,5 +1,7 @@
-import type { PhotoFrequency } from "./photo-frequency";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { isPhotoFrequency } from "./photo-frequency";
+
+import type { PhotoFrequency } from "./photo-frequency";
 
 type ImageResolution = "standard" | "high" | "max";
 
@@ -28,7 +30,7 @@ declare const __UNSPLASH_ACCESS_KEY__: string;
 
 const STELLAR_COLLECTION = "998309";
 const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
-const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = Object.freeze({
+const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = {
   version: 1,
   imageQuality: "standard",
   photoFrequency: "newtab",
@@ -38,7 +40,7 @@ const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = Object.freeze({
   query: "",
   orientation: "",
   contentFilter: "low",
-});
+};
 
 async function getUnsplashSettings(): Promise<UnsplashSettings> {
   const values = await chrome.storage.sync.get(UNSPLASH_SETTINGS_KEY);
@@ -61,16 +63,6 @@ async function setUnsplashSettings(
   });
 }
 
-async function getImageQuality(): Promise<ImageResolution> {
-  const settings = await getUnsplashSettings();
-
-  return settings.imageQuality;
-}
-
-async function setImageQuality(imageQuality: ImageResolution): Promise<void> {
-  await setUnsplashSettings({ imageQuality });
-}
-
 async function getPhotoFrequency(): Promise<PhotoFrequency> {
   const settings = await getUnsplashSettings();
 
@@ -86,17 +78,6 @@ async function resolveAccessKey(): Promise<string> {
   if (__UNSPLASH_ACCESS_KEY__.trim()) return __UNSPLASH_ACCESS_KEY__.trim();
 
   throw new Error("No Unsplash access key is configured");
-}
-
-async function initializeUnsplashSettings(): Promise<void> {
-  const syncValues = await chrome.storage.sync.get(UNSPLASH_SETTINGS_KEY);
-  const current = parseUnsplashSettings(syncValues[UNSPLASH_SETTINGS_KEY]);
-
-  if (!current) {
-    await chrome.storage.sync.set({
-      [UNSPLASH_SETTINGS_KEY]: DEFAULT_UNSPLASH_SETTINGS,
-    });
-  }
 }
 
 function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
@@ -197,13 +178,10 @@ export type {
 };
 export {
   DEFAULT_UNSPLASH_SETTINGS,
-  getImageQuality,
   getPhotoFrequency,
   getUnsplashSettings,
-  initializeUnsplashSettings,
   resolveAccessKey,
   STELLAR_COLLECTION,
-  setImageQuality,
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 };

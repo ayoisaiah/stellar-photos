@@ -10,7 +10,6 @@ import {
   EARTHVIEW_SETTINGS_KEY,
   getEarthViewPhotoFrequency,
   getEarthViewSettings,
-  initializeEarthViewSettings,
   setEarthViewPhotoFrequency,
   setEarthViewSettings,
 } from "../src/ts/sources/earthview-settings";
@@ -70,8 +69,7 @@ describe("earthview catalog and image helper", () => {
 });
 
 describe("earthview settings", () => {
-  it("initializes and defaults settings", async () => {
-    await initializeEarthViewSettings();
+  it("defaults settings and allows updates", async () => {
     expect(await getEarthViewSettings()).toEqual(DEFAULT_EARTHVIEW_SETTINGS);
 
     await setEarthViewPhotoFrequency("everyhour");

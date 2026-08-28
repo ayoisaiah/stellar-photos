@@ -1,12 +1,12 @@
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
-import type { ImageSource } from "../sources";
 import earthViewCatalog from "./earthview-data.json";
-import {
-  getEarthViewPhotoFrequency,
-  initializeEarthViewSettings,
-} from "./earthview-settings";
+import { getEarthViewPhotoFrequency } from "./earthview-settings";
+import { shouldRotateAtFrequency } from "./photo-frequency";
+
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+import type { ImageSource } from "../sources";
 
 interface EarthViewPhotoEntry {
   id: number;
@@ -30,12 +30,10 @@ const earthviewSource: ImageSource = {
   id: "earthview",
   name: "Google Earth View",
   supportsDownload: true,
-  supportsInfo: false,
-  initializeSettings: initializeEarthViewSettings,
   shouldRotate: shouldRotateEarthView,
   getRandomAsset: getRandomEarthViewAsset,
   downloadAsset: downloadEarthViewAsset,
-  downloadFullAsset: downloadFullEarthViewAsset,
+  downloadFullAsset: downloadEarthViewAsset,
 };
 
 function getEarthViewCatalog(): readonly EarthViewPhotoEntry[] {
@@ -65,22 +63,11 @@ function trustedEarthViewUrl(value: string): URL {
 async function shouldRotateEarthView(
   current: BackgroundAsset,
 ): Promise<boolean> {
-  if (current.sourceId !== earthviewSource.id) return true;
-
-  const frequency = await getEarthViewPhotoFrequency();
-  const elapsed = Date.now() - current.createdAt;
-
-  switch (frequency) {
-    case "every15minutes":
-      return elapsed >= 15 * 60 * 1000;
-    case "everyhour":
-      return elapsed >= 60 * 60 * 1000;
-    case "everyday":
-      return elapsed >= 24 * 60 * 60 * 1000;
-    case "newtab":
-    default:
-      return true;
-  }
+  return shouldRotateAtFrequency(
+    current,
+    earthviewSource.id,
+    getEarthViewPhotoFrequency,
+  );
 }
 
 async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
@@ -121,21 +108,6 @@ async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
 
 async function downloadEarthViewAsset(
   asset: UncachedBackgroundAsset,
-): Promise<Response> {
-  const imageUrl = trustedEarthViewUrl(
-    buildEarthViewImageUrl(asset.sourceAssetId),
-  );
-  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
-
-  if (response.url) {
-    trustedEarthViewUrl(response.url);
-  }
-
-  return readBoundedImage(response);
-}
-
-async function downloadFullEarthViewAsset(
-  asset: BackgroundAsset,
 ): Promise<Response> {
   const imageUrl = trustedEarthViewUrl(
     buildEarthViewImageUrl(asset.sourceAssetId),

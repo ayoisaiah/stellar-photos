@@ -1,5 +1,7 @@
-import type { PhotoFrequency } from "./photo-frequency";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { isPhotoFrequency } from "./photo-frequency";
+
+import type { PhotoFrequency } from "./photo-frequency";
 
 export interface LocalSettings {
   version: 1;
@@ -9,11 +11,11 @@ export interface LocalSettings {
 
 export const LOCAL_SETTINGS_KEY = "sourceSettings:local";
 
-export const DEFAULT_LOCAL_SETTINGS: Readonly<LocalSettings> = Object.freeze({
+export const DEFAULT_LOCAL_SETTINGS: Readonly<LocalSettings> = {
   version: 1,
   photoFrequency: "newtab",
   folderName: "",
-});
+};
 
 export async function getLocalSettings(): Promise<LocalSettings> {
   const values = await chrome.storage.sync.get(LOCAL_SETTINGS_KEY);
@@ -46,17 +48,6 @@ export async function setLocalPhotoFrequency(
   photoFrequency: PhotoFrequency,
 ): Promise<void> {
   await setLocalSettings({ photoFrequency });
-}
-
-export async function initializeLocalSettings(): Promise<void> {
-  const syncValues = await chrome.storage.sync.get(LOCAL_SETTINGS_KEY);
-  const current = parseLocalSettings(syncValues[LOCAL_SETTINGS_KEY]);
-
-  if (!current) {
-    await chrome.storage.sync.set({
-      [LOCAL_SETTINGS_KEY]: DEFAULT_LOCAL_SETTINGS,
-    });
-  }
 }
 
 function parseLocalSettings(value: unknown): LocalSettings | null {

@@ -8,8 +8,6 @@ interface ImageSource {
   readonly id: string;
   readonly name: string;
   readonly supportsDownload?: boolean;
-  readonly supportsInfo?: boolean;
-  initializeSettings?(): Promise<void>;
   shouldRotate?(current: BackgroundAsset): Promise<boolean>;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
@@ -35,12 +33,6 @@ function getImageSource(sourceId: string): ImageSource | null {
   return imageSources.get(sourceId) ?? null;
 }
 
-async function initializeImageSourceSettings(): Promise<void> {
-  await Promise.all(
-    bundledImageSources.map((source) => source.initializeSettings?.()),
-  );
-}
-
 async function getActiveImageSource(): Promise<ImageSource> {
   const sourceId = await getImageSourceId();
 
@@ -48,9 +40,4 @@ async function getActiveImageSource(): Promise<ImageSource> {
 }
 
 export type { ImageSource };
-export {
-  getActiveImageSource,
-  getImageSource,
-  initializeImageSourceSettings,
-  listImageSources,
-};
+export { getActiveImageSource, getImageSource, listImageSources };
