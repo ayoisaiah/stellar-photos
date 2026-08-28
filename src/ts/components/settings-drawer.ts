@@ -14,12 +14,45 @@ import "./lucide-icon";
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import { renderSourceSettings } from "./source-settings";
 
-export type SourceChangeState =
+type SourceChangeState =
   | { status: "idle" }
   | { status: "switching" }
   | { status: "error"; message: string };
 
 const imageSources = listImageSources();
+
+function getExtensionVersion(): string {
+  try {
+    if (typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
+      return chrome.runtime.getManifest().version;
+    }
+  } catch {
+    // Graceful fallback
+  }
+
+  return "5.0.0";
+}
+
+function getWebstoreReviewUrl(): string {
+  const isFirefox =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as { env?: { BROWSER?: string } }).env?.BROWSER ===
+        "firefox") ||
+    (typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent));
+
+  if (isFirefox) {
+    return "https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/reviews/";
+  }
+
+  if (
+    typeof navigator !== "undefined" &&
+    /\bEdg\b|\bEdge\//i.test(navigator.userAgent)
+  ) {
+    return "https://microsoftedge.microsoft.com/addons/detail/stellar-photos/oifbedjcmofkjgmjakgbppkocdfpjpjg";
+  }
+
+  return "https://chromewebstore.google.com/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo/reviews";
+}
 
 @customElement("stellar-settings-drawer")
 class SettingsDrawer extends LitElement {
@@ -225,6 +258,64 @@ class SettingsDrawer extends LitElement {
               </div>
             </fieldset>
           </section>
+          <div class="divider"></div>
+          <section>
+            <div class="section-heading">
+              <h3>About</h3>
+              <span class="version-badge">v${getExtensionVersion()}</span>
+            </div>
+            <p class="about-text">
+              Stellar Photos is created by
+              <a
+                href="https://github.com/ayoisaiah"
+                target="_blank"
+                rel="noopener"
+              >Ayooluwa Isaiah</a>
+              and released under the
+              <a
+                href="https://github.com/ayoisaiah/stellar-photos/blob/master/LICENCE"
+                target="_blank"
+                rel="noopener"
+              >MIT License</a>.
+            </p>
+            <div class="about-links">
+              <a
+                class="about-link"
+                href="${getWebstoreReviewUrl()}"
+                target="_blank"
+                rel="noopener"
+              >
+                Write a review
+              </a>
+              <span class="dot" aria-hidden="true">•</span>
+              <a
+                class="about-link"
+                href="https://github.com/ayoisaiah/stellar-photos"
+                target="_blank"
+                rel="noopener"
+              >
+                GitHub
+              </a>
+              <span class="dot" aria-hidden="true">•</span>
+              <a
+                class="about-link"
+                href="https://github.com/ayoisaiah/stellar-photos/releases"
+                target="_blank"
+                rel="noopener"
+              >
+                Releases
+              </a>
+              <span class="dot" aria-hidden="true">•</span>
+              <a
+                class="about-link"
+                href="https://github.com/ayoisaiah/stellar-photos/issues"
+                target="_blank"
+                rel="noopener"
+              >
+                Report issue
+              </a>
+            </div>
+          </section>
         </div>
       </aside>
     `;
@@ -341,3 +432,6 @@ declare global {
     "stellar-settings-drawer": SettingsDrawer;
   }
 }
+
+export type { SourceChangeState };
+export { getExtensionVersion, getWebstoreReviewUrl, SettingsDrawer };

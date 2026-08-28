@@ -4,24 +4,25 @@
 
 # Beautiful hi-res photos in your browser tabs!
 
-Experience a beautiful photo from [Unsplash](https://unsplash.com) every time
-you open a new browser tab. Each image is specially curated and guaranteed to be
-stunning each time.
+Experience a beautiful high-resolution photo every time you open a new browser tab. Enjoy stunning photography from Unsplash, breathtaking satellite views from Google Earth View, or your own local photo folders.
 
 ![Screenshot of Stellar Photos on Google Chrome](https://ik.imagekit.io/turnupdev/stellar-chrome_hLlZOg4St.png)
 
 ## Install Stellar Photos
 
-Chrome | Firefox | Edge
--------|---------|---------
-<a href="https://chrome.google.com/webstore/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo?hl=en"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/chrome/chrome_256x256.png" alt="Chrome browser logo"></a> | <a href="https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/firefox/firefox_256x256.png" alt="Firefox browser logo"></a> | <a href="https://microsoftedge.microsoft.com/addons/detail/stellar-photos/oifbedjcmofkjgmjakgbppkocdfpjpjg"><img width="100" src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/69.0.4/edge/edge_256x256.png" alt="Microsoft Edge browser logo"></a>
+| Chrome                                                                                                                                                                                                                                   | Firefox                                                                                                                                                                                                           | Edge                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a href="https://chromewebstore.google.com/detail/stellar-photos/dgjeipdebjigeaanhogpdjdjigogpjmo"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/chrome/chrome_256x256.png" alt="Chrome browser logo"></a> | <a href="https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/"><img width="100" src="https://github.com/alrra/browser-logos/raw/master/src/firefox/firefox_256x256.png" alt="Firefox browser logo"></a> | <a href="https://microsoftedge.microsoft.com/addons/detail/stellar-photos/oifbedjcmofkjgmjakgbppkocdfpjpjg"><img width="100" src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/69.0.4/edge/edge_256x256.png" alt="Microsoft Edge browser logo"></a> |
 
 ## Main features
 
-- Enjoy a new, carefully curated hi-res photo every time you open a new tab - [totally free](https://unsplash.com/license) for personal or commercial use with no attribution required.
-- Open new tabs instantly from a local image cache, including while offline.
-- Keep the 10 most recently downloaded photos ready for a future history interface.
-- Recover cleanly when Unsplash or the network is temporarily unavailable.
+- **Multiple Photo Sources**: Choose from curated collections on Unsplash, satellite imagery from Google Earth View, or select photos from your local folders.
+- **Custom Rotation Schedules**: Rotate photos on every new tab, every 15 minutes, hourly, daily, or pause rotation whenever you want.
+- **Pin Photos**: Keep your favorite photo pinned across tabs with a single click or keyboard shortcut (`P`).
+- **History Navigation**: Browse through your 10 most recent photos using on-screen controls, arrow keys, or mouse wheel scrolling.
+- **Photo & Camera Details**: View photographer profiles, EXIF camera specifications (camera model, shutter speed, aperture, focal length, ISO), or satellite telemetry (coordinates, elevation, Google Maps links).
+- **Display Modes & Motion**: Customise display scaling (Cover or Contain with blurred backdrop) and toggle subtle zoom motion.
+- **Instant Local Caching**: Opens new tabs instantly from an offline cache with zero lag.
 
 ## Screenshots
 
@@ -35,26 +36,45 @@ Chrome | Firefox | Edge
 
 ## Supported Browsers
 
-The current and previous stable desktop releases of Chrome/Chromium and Firefox.
+Compatible with modern desktop releases of Google Chrome, Mozilla Firefox, Microsoft Edge, Brave, Vivaldi, Opera, and other Chromium-based browsers.
 
 ## Development
 
-The active extension is TypeScript and uses WXT with npm. Set
-`UNSPLASH_ACCESS_KEY` in your environment, then run `npm run chrome:prod` or
-`npm run firefox:prod`.
-Browser-specific unpacked extensions are written to `dist/chrome` and
-`dist/firefox`. Run `npm run check`, `npm run typecheck`, and `npm test` before
-submitting changes. Use `npm run fmt` to apply Biome formatting.
+Stellar Photos is built with TypeScript, [Lit](https://lit.dev/), and [WXT](https://wxt.dev/).
 
-The production key is deliberately embedded in the packaged extension. A future
-settings interface may provide a per-user override, which will be kept in local
-extension storage. The legacy `old/` directory is not part of the build.
+### Setup & Commands
+
+1. **Install dependencies**:
+
+   ```bash
+   npm install
+   ```
+
+2. **Development mode**:
+
+   ```bash
+   npm run chrome:dev   # or npm run firefox:dev
+   ```
+
+3. **Production build**:
+
+   ```bash
+   # Set UNSPLASH_ACCESS_KEY in your environment or .env file
+   npm run build        # builds dist/chrome and dist/firefox
+   ```
+
+4. **Code quality & tests**:
+   ```bash
+   npm run check        # run Biome linter and formatter checks
+   npm run typecheck    # run TypeScript compiler check
+   npm test             # run Vitest test suite
+   ```
 
 ## Contribute
 
-Bug reports, feature requests or pull requests are much appreciated! See [CONTRIBUTING.md](https://github.com/ayoisaiah/stellar-photos/blob/master/CONTRIBUTING.md) for more details.
+Bug reports, feature requests, and pull requests are welcome! See [CONTRIBUTING.md](https://github.com/ayoisaiah/stellar-photos/blob/master/CONTRIBUTING.md) for guidelines.
 
-## Credits and Licence
+## Credits & License
 
-- Powered by the [Unsplash API](https://unsplash.com/developers).
-- Created by Ayooluwa Isaiah and released under the terms of the [MIT Licence](http://opensource.org/licenses/MIT).
+- Powered by [Unsplash](https://unsplash.com/developers) and [Google Earth View](https://earthview.withgoogle.com/).
+- Created by [Ayooluwa Isaiah](https://github.com/ayoisaiah) and released under the [MIT License](http://opensource.org/licenses/MIT).

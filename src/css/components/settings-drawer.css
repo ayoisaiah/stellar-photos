@@ -319,6 +319,51 @@ label.checkbox-label small {
   line-height: 1.35;
 }
 
+.about-text {
+  margin: 0.55rem 0 0;
+  color: #8f96a3;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.about-text a,
+.about-links a {
+  color: #eee7d8;
+  text-decoration: underline;
+  text-decoration-color: rgb(238 231 216 / 35%);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 150ms ease;
+}
+
+.about-text a:hover,
+.about-links a:hover {
+  text-decoration-color: #eee7d8;
+}
+
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  font-size: 0.74rem;
+}
+
+.about-links .dot {
+  color: rgb(255 255 255 / 20%);
+}
+
+.version-badge {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 5%);
+  color: #8f96a3;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :host,
   .backdrop,
