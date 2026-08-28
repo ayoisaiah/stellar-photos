@@ -244,9 +244,9 @@ class StellarApp extends LitElement {
           <button
             class="action-button pin-toggle ${this.isPinned ? "active" : ""}"
             type="button"
-            aria-label=${this.isPinned ? "Resume new photos" : "Keep this photo"}
+            aria-label=${this.isPinned ? "Unpin this image" : "Pin this image"}
             aria-pressed=${this.isPinned}
-            title=${this.isPinned ? "Resume new photos (P)" : "Keep this photo (P)"}
+            title=${this.isPinned ? "Unpin this image (P)" : "Pin this image (P)"}
             @click=${this.togglePin}
           >
             <stellar-icon .icon=${this.isPinned ? PinOff : Pin}></stellar-icon>
@@ -622,7 +622,12 @@ class StellarApp extends LitElement {
   }
 
   private togglePin = async (): Promise<void> => {
-    await this.setPinnedState(this.pinnedAsset ? null : this.currentAsset);
+    const nextPinned = this.pinnedAsset ? null : this.currentAsset;
+    await this.setPinnedState(nextPinned);
+
+    if (!nextPinned) {
+      void sendCommand({ command: "rotate" });
+    }
   };
 
   private setPinnedState = async (
