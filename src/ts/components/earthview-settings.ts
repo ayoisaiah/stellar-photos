@@ -1,22 +1,20 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/settings-form.css?inline";
+import type { EarthViewSettings as EarthViewSettingsData } from "../sources/earthview-settings";
 import {
   DEFAULT_EARTHVIEW_SETTINGS,
   getEarthViewSettings,
   setEarthViewSettings,
 } from "../sources/earthview-settings";
+import type { SaveState } from "./settings-form";
 import {
   readFrequency,
   renderFrequencySelector,
   scheduleSavedReset,
   statusMessage,
 } from "./settings-form";
-
-import type { EarthViewSettings as EarthViewSettingsData } from "../sources/earthview-settings";
-import type { SaveState } from "./settings-form";
 
 @customElement("stellar-earthview-settings")
 class EarthViewSettingsComponent extends LitElement {

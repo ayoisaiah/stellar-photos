@@ -1,6 +1,6 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
+import type { BackgroundAsset } from "../src/ts/assets";
+import { computeLocalAssetId, localSource } from "../src/ts/sources/local";
 import {
   addDirectoryHandle,
   getLocalPhotoCount,
@@ -12,7 +12,6 @@ import {
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../src/ts/sources/local-db";
-import { computeLocalAssetId, localSource } from "../src/ts/sources/local";
 import {
   DEFAULT_LOCAL_SETTINGS,
   getLocalPhotoFrequency,
@@ -22,8 +21,6 @@ import {
   setLocalPhotoFrequency,
   setLocalSettings,
 } from "../src/ts/sources/local-settings";
-
-import type { BackgroundAsset } from "../src/ts/assets";
 
 const sync: Record<string, unknown> = {};
 

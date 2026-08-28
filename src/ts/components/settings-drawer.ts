@@ -1,4 +1,3 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { Check, X } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -11,9 +10,9 @@ import {
   verifyHandlePermission,
 } from "../sources/local-db";
 import "./lucide-icon";
-import { renderSourceSettings } from "./source-settings";
 
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
+import { renderSourceSettings } from "./source-settings";
 
 export type SourceChangeState =
   | { status: "idle" }

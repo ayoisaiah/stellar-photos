@@ -1,6 +1,8 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
+import type { ImageSource } from "../sources";
+import type { ImageResolution, UnsplashSettings } from "./unsplash-settings";
 import {
   getPhotoFrequency,
   getUnsplashSettings,
@@ -8,10 +10,6 @@ import {
   resolveAccessKey,
   STELLAR_COLLECTION,
 } from "./unsplash-settings";
-
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
-import type { ImageSource } from "../sources";
-import type { ImageResolution, UnsplashSettings } from "./unsplash-settings";
 
 interface UnsplashUser {
   name: string;

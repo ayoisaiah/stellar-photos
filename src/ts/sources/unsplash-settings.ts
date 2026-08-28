@@ -1,7 +1,5 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
-import { isPhotoFrequency } from "./photo-frequency";
-
 import type { PhotoFrequency } from "./photo-frequency";
+import { isPhotoFrequency } from "./photo-frequency";
 
 type ImageResolution = "standard" | "high" | "max";
 
