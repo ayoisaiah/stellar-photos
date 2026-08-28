@@ -1,21 +1,18 @@
-export const DEFAULT_FETCH_TIMEOUT_MS = 60000;
+const DEFAULT_FETCH_TIMEOUT_MS = 60000;
 
-export async function fetchWithTimeout(
+async function fetchWithTimeout(
   input: string | URL | Request,
   init?: RequestInit,
   timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
 ): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  const signal = init?.signal
+    ? AbortSignal.any([init.signal, AbortSignal.timeout(timeoutMs)])
+    : AbortSignal.timeout(timeoutMs);
 
-  try {
-    const response = await fetch(input, {
-      ...init,
-      signal: controller.signal,
-    });
-
-    return response;
-  } finally {
-    clearTimeout(id);
-  }
+  return fetch(input, {
+    ...init,
+    signal,
+  });
 }
+
+export { DEFAULT_FETCH_TIMEOUT_MS, fetchWithTimeout };

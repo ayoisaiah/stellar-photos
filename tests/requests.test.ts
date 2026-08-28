@@ -327,24 +327,41 @@ describe("Unsplash image resolution", () => {
   });
 
   it("times out fetch requests when deadline exceeds timeout", async () => {
-    vi.useFakeTimers();
-    try {
-      const mockFetch = vi.fn().mockImplementation((_url, init) => {
-        return new Promise((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () => {
-            reject(new Error("aborted"));
-          });
+    const mockFetch = vi.fn().mockImplementation((_url, init) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new Error("aborted"));
         });
       });
-      vi.stubGlobal("fetch", mockFetch);
+    });
+    vi.stubGlobal("fetch", mockFetch);
 
-      const promise = fetchWithTimeout("https://images.unsplash.com/test");
-      vi.advanceTimersByTime(60000);
+    const promise = fetchWithTimeout(
+      "https://images.unsplash.com/test",
+      undefined,
+      10,
+    );
 
-      await expect(promise).rejects.toThrow("aborted");
-    } finally {
-      vi.useRealTimers();
-    }
+    await expect(promise).rejects.toThrow("aborted");
+  });
+
+  it("respects caller-provided abort signals", async () => {
+    const mockFetch = vi.fn().mockImplementation((_url, init) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new Error("caller-aborted"));
+        });
+      });
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const controller = new AbortController();
+    const promise = fetchWithTimeout("https://images.unsplash.com/test", {
+      signal: controller.signal,
+    });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow("caller-aborted");
   });
 });
 
