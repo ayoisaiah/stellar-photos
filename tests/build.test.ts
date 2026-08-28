@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import config from "../wxt.config";
 
 const TEST_OUT_DIR = ".wxt-test-dist";
 const DIST_SENTINEL = "dist/.build-test-sentinel";
@@ -95,21 +96,18 @@ describe("browser packages", () => {
   );
 
   it("refuses a production build without a key", () => {
-    const env: NodeJS.ProcessEnv = {
-      ...process.env,
-      STELLAR_OUT_DIR: TEST_OUT_DIR,
-      STELLAR_ENV_FILE: ".missing-test-env",
-    };
-    delete env.UNSPLASH_ACCESS_KEY;
-    const result = spawnSync(
-      process.execPath,
-      ["node_modules/wxt/bin/wxt.mjs", "build", "--browser", "chrome", "--mv3"],
-      { cwd: process.cwd(), env, encoding: "utf8" },
-    );
-    expect(result.status).not.toBe(0);
-    expect(`${result.stdout}${result.stderr}`).toContain(
-      "UNSPLASH_ACCESS_KEY is required for a production build",
-    );
+    process.env.STELLAR_ENV_FILE = ".missing-test-env";
+
+    expect(() =>
+      config.vite?.({
+        browser: "chrome",
+        command: "build",
+        manifestVersion: 3,
+        mode: "production",
+      }),
+    ).toThrow("UNSPLASH_ACCESS_KEY is required for a production build");
+
+    delete process.env.STELLAR_ENV_FILE;
   });
 
   it("maps development bundles to their TypeScript and CSS sources", async () => {
