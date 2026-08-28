@@ -8,40 +8,15 @@ import {
   getEarthViewSettings,
   setEarthViewSettings,
 } from "../sources/earthview-settings";
+import {
+  readFrequency,
+  renderFrequencySelector,
+  scheduleSavedReset,
+  statusMessage,
+} from "./settings-form";
 
 import type { EarthViewSettings as EarthViewSettingsData } from "../sources/earthview-settings";
-import type { PhotoFrequency } from "../sources/unsplash-settings";
-
-type SaveState = "idle" | "saving" | "saved" | "error";
-
-const SAVED_RESET_DELAY_MS = 2500;
-
-const FREQUENCIES: readonly {
-  value: PhotoFrequency;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "newtab",
-    label: "Every new tab",
-    description: "Load a new photo whenever you open a tab",
-  },
-  {
-    value: "every15minutes",
-    label: "Every 15 minutes",
-    description: "Keep the same photo for 15 minutes",
-  },
-  {
-    value: "everyhour",
-    label: "Every hour",
-    description: "Keep the same photo for 1 hour",
-  },
-  {
-    value: "everyday",
-    label: "Every 24 hours",
-    description: "Keep the same photo for 24 hours",
-  },
-];
+import type { SaveState } from "./settings-form";
 
 @customElement("stellar-earthview-settings")
 class EarthViewSettingsComponent extends LitElement {
@@ -69,32 +44,13 @@ class EarthViewSettingsComponent extends LitElement {
 
   override render() {
     return html`
-      <fieldset>
-        <legend>Change background image</legend>
-        <p class="hint">Choose how often Stellar Photos displays a new photo.</p>
-        <div class="options">
-          ${FREQUENCIES.map(
-            ({ value, label, description }) => html`
-              <label>
-                <input
-                  type="radio"
-                  name="frequency"
-                  value=${value}
-                  .checked=${this.settings.photoFrequency === value}
-                  @change=${this.changeFrequency}
-                />
-                <span class="control" aria-hidden="true"></span>
-                <span>
-                  <strong>${label}</strong>
-                  <small>${description}</small>
-                </span>
-              </label>
-            `,
-          )}
-        </div>
-      </fieldset>
+      ${renderFrequencySelector(
+        this.settings.photoFrequency,
+        false,
+        this.changeFrequency,
+      )}
 
-      <p class="status" aria-live="polite">${this.statusMessage()}</p>
+      <p class="status" aria-live="polite">${statusMessage(this.saveState)}</p>
     `;
   }
 
@@ -110,11 +66,13 @@ class EarthViewSettingsComponent extends LitElement {
   }
 
   private changeFrequency = (event: Event): void => {
-    const target = event.target as HTMLInputElement;
+    const frequency = readFrequency(event);
+
+    if (!frequency || frequency === this.settings.photoFrequency) return;
 
     this.settings = {
       ...this.settings,
-      photoFrequency: target.value as PhotoFrequency,
+      photoFrequency: frequency,
     };
 
     void this.save();
@@ -143,26 +101,12 @@ class EarthViewSettingsComponent extends LitElement {
     }
 
     this.saveState = "saved";
-    this.saveResetTimeout = window.setTimeout(() => {
+    this.saveResetTimeout = scheduleSavedReset(() => {
       if (this.saveState === "saved") {
         this.saveState = "idle";
       }
-    }, SAVED_RESET_DELAY_MS);
+    });
     this.saveInFlight = false;
-  }
-
-  private statusMessage(): string {
-    switch (this.saveState) {
-      case "saving":
-        return "Saving changes…";
-      case "saved":
-        return "Saved";
-      case "error":
-        return "Failed to save settings";
-      case "idle":
-      default:
-        return "";
-    }
   }
 }
 

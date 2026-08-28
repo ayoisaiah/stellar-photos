@@ -15,12 +15,17 @@ import {
   setLocalPhotoFrequency,
   setLocalSettings,
 } from "../sources/local-settings";
+import {
+  readFrequency,
+  renderFrequencySelector,
+  scheduleSavedReset,
+  statusMessage,
+} from "./settings-form";
 import "./lucide-icon";
 
 import type { LocalFolderRecord } from "../sources/local-db";
 import type { PhotoFrequency } from "../sources/unsplash-settings";
-
-type SaveState = "idle" | "saving" | "saved" | "error";
+import type { SaveState } from "./settings-form";
 
 interface DirectoryPickerWindow {
   showDirectoryPicker?: (options?: {
@@ -28,35 +33,6 @@ interface DirectoryPickerWindow {
     mode?: "read" | "readwrite";
   }) => Promise<FileSystemDirectoryHandle>;
 }
-
-const SAVED_RESET_DELAY_MS = 2500;
-
-const FREQUENCIES: readonly {
-  value: PhotoFrequency;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "newtab",
-    label: "Every new tab",
-    description: "Load a new photo whenever you open a tab",
-  },
-  {
-    value: "every15minutes",
-    label: "Every 15 minutes",
-    description: "Keep the same photo for 15 minutes",
-  },
-  {
-    value: "everyhour",
-    label: "Every hour",
-    description: "Keep the same photo for 1 hour",
-  },
-  {
-    value: "everyday",
-    label: "Every 24 hours",
-    description: "Keep the same photo for 24 hours",
-  },
-];
 
 @customElement("stellar-local-settings")
 class LocalSettingsComponent extends LitElement {
@@ -199,33 +175,16 @@ class LocalSettingsComponent extends LitElement {
         }
       </fieldset>
 
-      <fieldset>
-        <legend>Change background image</legend>
-        <p class="hint">Choose how often Stellar Photos displays a new photo.</p>
-        <div class="options">
-          ${FREQUENCIES.map(
-            ({ value, label, description }) => html`
-              <label class="radio-label">
-                <input
-                  type="radio"
-                  name="frequency"
-                  value=${value}
-                  .checked=${this.frequency === value}
-                  ?disabled=${this.loading}
-                  @change=${this.changeFrequency}
-                />
-                <span class="control" aria-hidden="true"></span>
-                <span>
-                  <strong>${label}</strong>
-                  <small>${description}</small>
-                </span>
-              </label>
-            `,
-          )}
-        </div>
-      </fieldset>
+      ${renderFrequencySelector(
+        this.frequency,
+        this.loading,
+        this.changeFrequency,
+        "radio-label",
+      )}
 
-      <p class="status" aria-live="polite">${this.statusMessage()}</p>
+      <p class="status" aria-live="polite">
+        ${this.loading ? "Reading folder photos…" : statusMessage(this.saveState)}
+      </p>
     `;
   }
 
@@ -256,11 +215,11 @@ class LocalSettingsComponent extends LitElement {
       this.saveState = "saved";
 
       window.clearTimeout(this.saveResetTimeout);
-      this.saveResetTimeout = window.setTimeout(() => {
+      this.saveResetTimeout = scheduleSavedReset(() => {
         if (this.saveState === "saved") {
           this.saveState = "idle";
         }
-      }, SAVED_RESET_DELAY_MS);
+      });
     } catch (err: unknown) {
       this.errorMessage = (err as Error).message || "Failed to rescan folders";
     } finally {
@@ -304,11 +263,11 @@ class LocalSettingsComponent extends LitElement {
       );
 
       window.clearTimeout(this.saveResetTimeout);
-      this.saveResetTimeout = window.setTimeout(() => {
+      this.saveResetTimeout = scheduleSavedReset(() => {
         if (this.saveState === "saved") {
           this.saveState = "idle";
         }
-      }, SAVED_RESET_DELAY_MS);
+      });
     } catch (err: unknown) {
       if ((err as Error).name === "AbortError") return;
 
@@ -340,10 +299,7 @@ class LocalSettingsComponent extends LitElement {
   };
 
   private changeFrequency = async (event: Event): Promise<void> => {
-    const target = event.currentTarget as HTMLInputElement;
-    const nextFrequency = FREQUENCIES.find(
-      ({ value }) => value === target.value,
-    )?.value;
+    const nextFrequency = readFrequency(event);
 
     if (!nextFrequency || nextFrequency === this.frequency) return;
 
@@ -369,22 +325,13 @@ class LocalSettingsComponent extends LitElement {
     }
 
     this.saveState = "saved";
-    this.saveResetTimeout = window.setTimeout(() => {
+    this.saveResetTimeout = scheduleSavedReset(() => {
       if (this.saveState === "saved") {
         this.saveState = "idle";
       }
-    }, SAVED_RESET_DELAY_MS);
+    });
     this.saveInFlight = false;
   };
-
-  private statusMessage(): string {
-    if (this.loading) return "Reading folder photos…";
-    if (this.saveState === "saving") return "Saving…";
-    if (this.saveState === "saved") return "Saved";
-    if (this.saveState === "error") return "Couldn’t save this setting.";
-
-    return "";
-  }
 }
 
 declare global {
