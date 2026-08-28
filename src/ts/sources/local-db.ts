@@ -118,7 +118,9 @@ async function listDirectoryImagePaths(
         imagePaths.push(...subPaths);
       }
     }
-  } catch {
+  } catch (error) {
+    if (!currentPath) throw error;
+
     // Graceful fallback for restricted subfolders
   }
 

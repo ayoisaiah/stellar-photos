@@ -25,6 +25,9 @@ class EarthViewSettingsComponent extends LitElement {
   private saveResetTimeout: number | undefined;
 
   @state()
+  private accessor loaded = false;
+
+  @state()
   private accessor settings: EarthViewSettingsData = DEFAULT_EARTHVIEW_SETTINGS;
 
   @state()
@@ -44,7 +47,7 @@ class EarthViewSettingsComponent extends LitElement {
     return html`
       ${renderFrequencySelector(
         this.settings.photoFrequency,
-        false,
+        !this.loaded,
         this.changeFrequency,
       )}
 
@@ -60,6 +63,8 @@ class EarthViewSettingsComponent extends LitElement {
       this.settings = settings;
     } catch {
       this.saveState = "error";
+    } finally {
+      this.loaded = true;
     }
   }
 

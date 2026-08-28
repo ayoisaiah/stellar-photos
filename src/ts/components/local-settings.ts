@@ -44,7 +44,7 @@ class LocalSettingsComponent extends LitElement {
   private saveResetTimeout: number | undefined;
 
   @state()
-  private accessor loading = false;
+  private accessor loading = true;
 
   @state()
   private accessor scanning = false;
@@ -200,6 +200,8 @@ class LocalSettingsComponent extends LitElement {
       this.frequency = frequency;
     } catch {
       this.saveState = "error";
+    } finally {
+      this.loading = false;
     }
   }
 

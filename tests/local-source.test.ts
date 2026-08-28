@@ -317,6 +317,21 @@ describe("directory handle storage", () => {
     expect(await localPhotoCount()).toBe(2);
   });
 
+  it("keeps the existing index when a rescan cannot read the folder", async () => {
+    const handle = createMockDirHandle("UnavailableFolder", {
+      "pic.jpg": "data",
+    });
+    const record = await addDirectoryHandle(handle);
+
+    handle.entries = async function* () {
+      yield* [];
+      throw new Error("Folder unavailable");
+    };
+
+    await expect(rescanAllFolders()).resolves.toEqual([record]);
+    await expect(listStoredFolderRecords()).resolves.toEqual([record]);
+  });
+
   it("throws when saving a folder with no valid image files", async () => {
     const handle = createMockDirHandle("Empty", {
       "doc.pdf": "pdf-content",
