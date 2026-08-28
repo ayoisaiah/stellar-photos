@@ -48,7 +48,11 @@ export default defineConfig({
         "");
     const normalizedAccessKey = accessKey.trim();
 
-    if (mode === "production" && !normalizedAccessKey) {
+    const isPreparing =
+      process.argv.includes("prepare") ||
+      process.env.npm_lifecycle_event === "prepare";
+
+    if (mode === "production" && !isPreparing && !normalizedAccessKey) {
       throw new Error("UNSPLASH_ACCESS_KEY is required for a production build");
     }
 
