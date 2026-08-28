@@ -28,11 +28,9 @@ class HistoryPanel extends LitElement {
   private accessor thumbnailUrls = new Map<string, string>();
 
   private loadGeneration = 0;
-  private lastWheelTime = 0;
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.addEventListener("wheel", this.handleWheel, { passive: false });
 
     if (this.open) {
       void this.loadThumbnails();
@@ -40,7 +38,6 @@ class HistoryPanel extends LitElement {
   }
 
   override disconnectedCallback(): void {
-    this.removeEventListener("wheel", this.handleWheel);
     this.loadGeneration += 1;
     this.cleanupThumbnailUrls();
     super.disconnectedCallback();
@@ -158,24 +155,6 @@ class HistoryPanel extends LitElement {
       </li>
     `;
   }
-
-  private handleWheel = (event: WheelEvent): void => {
-    event.preventDefault();
-    const now = Date.now();
-    if (now - this.lastWheelTime < 200) return;
-
-    if (event.deltaX > 15 || event.deltaY > 15) {
-      this.lastWheelTime = now;
-      this.dispatchEvent(
-        new CustomEvent("nav-next", { bubbles: true, composed: true }),
-      );
-    } else if (event.deltaX < -15 || event.deltaY < -15) {
-      this.lastWheelTime = now;
-      this.dispatchEvent(
-        new CustomEvent("nav-prev", { bubbles: true, composed: true }),
-      );
-    }
-  };
 
   private async loadThumbnails(): Promise<void> {
     const generation = ++this.loadGeneration;

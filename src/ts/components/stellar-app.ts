@@ -148,7 +148,7 @@ class StellarApp extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
 
-    window.addEventListener("wheel", this.handleWheel, { passive: true });
+    window.addEventListener("wheel", this.handleWheel, { passive: false });
     window.addEventListener("click", this.handleViewportClick);
 
     if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
@@ -312,8 +312,6 @@ class StellarApp extends LitElement {
           .historyAssets=${this.historyAssets}
           @select-photo=${this.handleSelectHistoryPhoto}
           @download-photo=${this.handleDownloadHistoryPhoto}
-          @nav-next=${() => void this.navigateHistory(-1)}
-          @nav-prev=${() => void this.navigateHistory(1)}
           @close-history=${this.closeHistory}
         ></stellar-history-panel>
       </div>
@@ -772,14 +770,15 @@ class StellarApp extends LitElement {
     );
 
     if (isInsideHistory) {
+      event.preventDefault();
       const now = Date.now();
       if (now - this.lastWheelTime > 200) {
         if (event.deltaX > 15 || event.deltaY > 15) {
           this.lastWheelTime = now;
-          void this.navigateHistory(-1);
+          void this.navigateHistory(1);
         } else if (event.deltaX < -15 || event.deltaY < -15) {
           this.lastWheelTime = now;
-          void this.navigateHistory(1);
+          void this.navigateHistory(-1);
         }
       }
       return;
