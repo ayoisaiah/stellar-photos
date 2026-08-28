@@ -73,36 +73,36 @@ jobs:
 
       - name: Submit to Chrome Web Store
         if: ${{ env.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL != '' }}
-        uses: aklinker1/publish-browser-extension@v6
-        with:
-          chrome-api-version: 'v2'
-          chrome-extension-id: ${{ secrets.CHROME_EXTENSION_ID || 'dgjeipdebjigeaanhogpdjdjigogpjmo' }}
-          chrome-publisher-id: ${{ secrets.CHROME_PUBLISHER_ID }}
-          chrome-service-account-client-email: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
-          chrome-service-account-private-key: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
-          chrome-zip: dist/*-chrome.zip
+        run: |
+          npx wxt submit \
+            --chrome-api-version "v2" \
+            --chrome-extension-id "${{ secrets.CHROME_EXTENSION_ID || 'dgjeipdebjigeaanhogpdjdjigogpjmo' }}" \
+            --chrome-publisher-id "${{ secrets.CHROME_PUBLISHER_ID }}" \
+            --chrome-service-account-client-email "${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}" \
+            --chrome-service-account-private-key "${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}" \
+            --chrome-zip dist/*-chrome.zip
         env:
           CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
 
       - name: Submit to Firefox Add-ons
         if: ${{ env.FIREFOX_JWT_ISSUER != '' }}
-        uses: aklinker1/publish-browser-extension@v6
-        with:
-          firefox-extension-id: ${{ secrets.FIREFOX_EXTENSION_ID || 'stellar@stellarapp.photos' }}
-          firefox-jwt-issuer: ${{ secrets.FIREFOX_JWT_ISSUER }}
-          firefox-jwt-secret: ${{ secrets.FIREFOX_JWT_SECRET }}
-          firefox-zip: dist/*-firefox.zip
-          firefox-sources-zip: dist/*-sources.zip
+        run: |
+          npx wxt submit \
+            --firefox-extension-id "${{ secrets.FIREFOX_EXTENSION_ID || 'stellar@stellarapp.photos' }}" \
+            --firefox-jwt-issuer "${{ secrets.FIREFOX_JWT_ISSUER }}" \
+            --firefox-jwt-secret "${{ secrets.FIREFOX_JWT_SECRET }}" \
+            --firefox-zip dist/*-firefox.zip \
+            --firefox-sources-zip dist/*-sources.zip
         env:
           FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
 
       - name: Submit to Microsoft Edge Add-ons
         if: ${{ env.EDGE_API_KEY != '' }}
-        uses: aklinker1/publish-browser-extension@v6
-        with:
-          edge-product-id: ${{ secrets.EDGE_PRODUCT_ID || 'oifbedjcmofkjgmjakgbppkocdfpjpjg' }}
-          edge-client-id: ${{ secrets.EDGE_CLIENT_ID }}
-          edge-api-key: ${{ secrets.EDGE_API_KEY }}
-          edge-zip: dist/*-chrome.zip
+        run: |
+          npx wxt submit \
+            --edge-product-id "${{ secrets.EDGE_PRODUCT_ID || 'oifbedjcmofkjgmjakgbppkocdfpjpjg' }}" \
+            --edge-client-id "${{ secrets.EDGE_CLIENT_ID }}" \
+            --edge-api-key "${{ secrets.EDGE_API_KEY }}" \
+            --edge-zip dist/*-chrome.zip
         env:
           EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
