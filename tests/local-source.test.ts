@@ -323,6 +323,32 @@ describe("directory handle storage", () => {
       "No image files found in the selected folder",
     );
   });
+
+  it("selects random photos efficiently across multiple folders respecting exclusions", async () => {
+    const structureA: Record<string, string> = {};
+    const structureB: Record<string, string> = {};
+    for (let i = 0; i < 50; i++) {
+      structureA[`a_${i}.jpg`] = `data_a_${i}`;
+      structureB[`b_${i}.jpg`] = `data_b_${i}`;
+    }
+
+    await addDirectoryHandle(createMockDirHandle("FolderA", structureA));
+    await addDirectoryHandle(createMockDirHandle("FolderB", structureB));
+
+    const allSelections = new Set<string>();
+    for (let i = 0; i < 20; i++) {
+      const selected = await getRandomDirectoryImage();
+      expect(selected).not.toBeNull();
+      allSelections.add(selected!.relativePath);
+    }
+    expect(allSelections.size).toBeGreaterThan(1);
+
+    // Test exclusions
+    const excluded = ["a_0.jpg", "a_1.jpg", "a_2.jpg"];
+    const pick = await getRandomDirectoryImage(excluded);
+    expect(pick).not.toBeNull();
+    expect(excluded).not.toContain(pick!.relativePath);
+  });
 });
 
 describe("local source settings", () => {

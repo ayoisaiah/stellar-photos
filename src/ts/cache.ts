@@ -130,7 +130,7 @@ async function readBoundedImage(response: Response): Promise<Response> {
   if (!response.body) throw new Error("Image response has no body");
 
   const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks: BlobPart[] = [];
   let total = 0;
 
   while (true) {
@@ -146,13 +146,7 @@ async function readBoundedImage(response: Response): Promise<Response> {
     chunks.push(value);
   }
 
-  const body = new Uint8Array(total);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    body.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
+  const body = new Blob(chunks, { type: contentType });
 
   return new Response(body, {
     status: response.status,

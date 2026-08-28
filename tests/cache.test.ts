@@ -53,4 +53,28 @@ describe("image cache contract", () => {
     });
     await expect(readBoundedImage(response)).rejects.toThrow("20 MiB");
   });
+
+  it("reads and buffers streaming image chunks into a valid response", async () => {
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3]));
+        controller.enqueue(new Uint8Array([4, 5, 6]));
+        controller.close();
+      },
+    });
+
+    const inputResponse = new Response(stream, {
+      headers: { "content-type": "image/webp" },
+    });
+
+    const bounded = await readBoundedImage(inputResponse);
+    expect(bounded.headers.get("content-type")).toBe("image/webp");
+
+    const blob = await bounded.blob();
+    expect(blob.size).toBe(6);
+    expect(blob.type).toBe("image/webp");
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(
+      new Uint8Array([1, 2, 3, 4, 5, 6]),
+    );
+  });
 });

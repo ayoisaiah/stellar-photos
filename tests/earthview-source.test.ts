@@ -48,8 +48,8 @@ beforeEach(() => {
 });
 
 describe("earthview catalog and image helper", () => {
-  it("provides a curated catalog of Earth View photos", () => {
-    const catalog = getEarthViewCatalog();
+  it("provides a curated catalog of Earth View photos", async () => {
+    const catalog = await getEarthViewCatalog();
     expect(catalog.length).toBeGreaterThan(1000);
     expect(catalog[0]).toMatchObject({
       id: expect.any(Number),

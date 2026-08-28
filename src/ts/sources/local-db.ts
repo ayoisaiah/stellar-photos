@@ -1,4 +1,4 @@
-export interface LocalFolderRecord {
+interface LocalFolderRecord {
   id: string;
   folderName: string;
   handle: FileSystemDirectoryHandle;
@@ -42,7 +42,7 @@ class LocalPermissionError extends Error {
   }
 }
 
-export function isImageFileName(name: string): boolean {
+function isImageFileName(name: string): boolean {
   const ext = name.split(".").pop()?.toLowerCase();
 
   return ext ? IMAGE_EXTENSIONS.has(ext) : false;
@@ -101,7 +101,7 @@ function withFolderStore<T>(
   );
 }
 
-export async function listDirectoryImagePaths(
+async function listDirectoryImagePaths(
   handle: FileSystemDirectoryHandle,
   maxDepth = 10,
   currentPath = "",
@@ -143,7 +143,7 @@ interface FileSystemHandleWithPermissions {
   }) => Promise<PermissionState>;
 }
 
-export async function verifyHandlePermission(
+async function verifyHandlePermission(
   handle: FileSystemHandle,
   mode: "read" | "readwrite" = "read",
 ): Promise<boolean> {
@@ -196,7 +196,7 @@ async function getFileHandleByPath(
   return currentDir.getFileHandle(fileName);
 }
 
-export async function addDirectoryHandle(
+async function addDirectoryHandle(
   handle: FileSystemDirectoryHandle,
 ): Promise<LocalFolderRecord> {
   const imagePaths = await listDirectoryImagePaths(handle);
@@ -259,7 +259,7 @@ async function rescanFolderRecord(
   return updated;
 }
 
-export async function rescanAllFolders(): Promise<LocalFolderRecord[]> {
+async function rescanAllFolders(): Promise<LocalFolderRecord[]> {
   const records = await listStoredFolderRecords();
   const updatedRecords: LocalFolderRecord[] = [];
 
@@ -274,39 +274,77 @@ export async function rescanAllFolders(): Promise<LocalFolderRecord[]> {
   return updatedRecords;
 }
 
-export async function removeDirectoryHandle(id: string): Promise<void> {
+async function removeDirectoryHandle(id: string): Promise<void> {
   await withFolderStore("readwrite", (store) => store.delete(id));
 }
 
-export async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
+async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
   return withFolderStore<LocalFolderRecord[]>(
     "readonly",
     (store) => store.getAll() as IDBRequest<LocalFolderRecord[]>,
   );
 }
 
-export async function getRandomDirectoryImage(
+function pickRandomByCumulativeCount(
+  records: LocalFolderRecord[],
+  totalCount: number,
+): { record: LocalFolderRecord; path: string } | null {
+  if (totalCount === 0) return null;
+
+  let target = Math.floor(Math.random() * totalCount);
+
+  for (const record of records) {
+    if (target < record.imagePaths.length) {
+      const path = record.imagePaths[target];
+      return path ? { record, path } : null;
+    }
+    target -= record.imagePaths.length;
+  }
+
+  return null;
+}
+
+async function getRandomDirectoryImage(
   excludePaths: string[] = [],
 ): Promise<RandomLocalImageResult | null> {
   const records = await listStoredFolderRecords();
 
   if (records.length === 0) return null;
 
+  const totalPhotos = records.reduce((acc, r) => acc + r.imagePaths.length, 0);
+  if (totalPhotos === 0) return null;
+
   const excludedSet = new Set(excludePaths);
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     let chosenRecord: LocalFolderRecord | null = null;
     let chosenPath: string | null = null;
-    let matches = 0;
 
-    for (const record of records) {
-      for (const relPath of record.imagePaths) {
-        const name = relPath.split("/").pop() || relPath;
-        if (!excludedSet.has(relPath) && !excludedSet.has(name)) {
-          matches += 1;
-          if (Math.random() < 1 / matches) {
-            chosenRecord = record;
-            chosenPath = relPath;
+    if (excludedSet.size < totalPhotos) {
+      for (let trial = 0; trial < 25; trial += 1) {
+        const candidate = pickRandomByCumulativeCount(records, totalPhotos);
+        if (candidate) {
+          const name = candidate.path.split("/").pop() || candidate.path;
+          if (!excludedSet.has(candidate.path) && !excludedSet.has(name)) {
+            chosenRecord = candidate.record;
+            chosenPath = candidate.path;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!chosenRecord || !chosenPath) {
+      let matches = 0;
+      for (const record of records) {
+        for (const relPath of record.imagePaths) {
+          const name = relPath.split("/").pop() || relPath;
+          if (!excludedSet.has(relPath) && !excludedSet.has(name)) {
+            matches += 1;
+            if (Math.random() < 1 / matches) {
+              chosenRecord = record;
+              chosenPath = relPath;
+            }
           }
         }
       }
@@ -344,7 +382,7 @@ export async function getRandomDirectoryImage(
   return null;
 }
 
-export async function readDirectoryFile(
+async function readDirectoryFile(
   relativePath: string,
   folderId?: string,
 ): Promise<File> {
@@ -371,3 +409,16 @@ export async function readDirectoryFile(
 
   return fileHandle.getFile();
 }
+
+export type { LocalFolderRecord, RandomLocalImageResult };
+export {
+  addDirectoryHandle,
+  getRandomDirectoryImage,
+  isImageFileName,
+  listDirectoryImagePaths,
+  listStoredFolderRecords,
+  readDirectoryFile,
+  removeDirectoryHandle,
+  rescanAllFolders,
+  verifyHandlePermission,
+};

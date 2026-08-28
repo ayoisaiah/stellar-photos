@@ -669,7 +669,11 @@ class StellarApp extends LitElement {
 
     this.downloading = true;
     try {
-      const response = await readCachedImage(asset.cacheKey);
+      const source = getImageSource(asset.sourceId);
+      const response = source?.downloadFullAsset
+        ? await source.downloadFullAsset(asset)
+        : await readCachedImage(asset.cacheKey);
+
       if (!response) throw new Error("Image response unavailable");
 
       const blob = await response.blob();

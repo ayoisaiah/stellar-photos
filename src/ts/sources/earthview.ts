@@ -1,12 +1,9 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
-import earthViewCatalog from "./earthview-data.json";
+import type { ImageSource } from "../sources";
 import { getEarthViewPhotoFrequency } from "./earthview-settings";
 import { shouldRotateAtFrequency } from "./photo-frequency";
-
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
-import type { ImageSource } from "../sources";
 
 interface EarthViewPhotoEntry {
   id: number;
@@ -24,7 +21,7 @@ interface EarthViewPayload {
 }
 
 const GSTATIC_ORIGIN = new Set(["https://www.gstatic.com"]);
-const catalog: readonly EarthViewPhotoEntry[] = earthViewCatalog;
+let cachedCatalog: readonly EarthViewPhotoEntry[] | null = null;
 
 const earthviewSource: ImageSource = {
   id: "earthview",
@@ -36,8 +33,13 @@ const earthviewSource: ImageSource = {
   downloadFullAsset: downloadEarthViewAsset,
 };
 
-function getEarthViewCatalog(): readonly EarthViewPhotoEntry[] {
-  return catalog;
+async function getEarthViewCatalog(): Promise<readonly EarthViewPhotoEntry[]> {
+  if (cachedCatalog) return cachedCatalog;
+
+  const module = await import("./earthview-data.json");
+  cachedCatalog = module.default as readonly EarthViewPhotoEntry[];
+
+  return cachedCatalog;
 }
 
 function buildEarthViewImageUrl(id: number | string): string {
@@ -71,6 +73,8 @@ async function shouldRotateEarthView(
 }
 
 async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
+  const catalog = await getEarthViewCatalog();
+
   if (catalog.length === 0) {
     throw new Error("No Earth View photos available in catalog");
   }
