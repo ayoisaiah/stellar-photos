@@ -6,7 +6,7 @@
 
 Experience a beautiful high-resolution photo every time you open a new browser tab. Enjoy stunning photography from Unsplash, breathtaking satellite views from Google Earth View, or your own local photo folders.
 
-![Screenshot of Stellar Photos on Google Chrome](https://ik.imagekit.io/turnupdev/stellar-chrome_hLlZOg4St.png)
+![Screenshot of Stellar Photos](docs/images/1.png)
 
 ## Install Stellar Photos
 
@@ -26,13 +26,13 @@ Experience a beautiful high-resolution photo every time you open a new browser t
 
 ## Screenshots
 
-![Screenshot of Stellar Photos on Google Chrome showing UI elements](https://ik.imagekit.io/turnupdev/stellar-chrome-2_a7muqGgMH.png)
+![Screenshot of Stellar Photos on Google Chrome showing history pane](docs/images/4.png)
 
-![Screenshot of Stellar Photos on Google Chrome showing history pane](https://ik.imagekit.io/turnupdev/stellar-chrome-3_xXUBuOzp4.png)
+![Screenshot of Stellar Photos showing photo information](docs/images/5.png)
 
-![Screenshot of Stellar Photos on Vivaldi showing photo information](https://ik.imagekit.io/turnupdev/stellar-vivaldi_N_mCOv_Fef.png)
+![Screenshot of Stellar Photos showing Google Earth View settings](docs/images/2.png)
 
-![Screenshot of Stellar Photos on Microsoft Edge showing UI elements](https://ik.imagekit.io/turnupdev/stellar-edge_qGV6FSutX.png)
+![Screenshot of Stellar Photos showing Unsplash settings](docs/images/3.png)
 
 ## Supported Browsers
 
