@@ -131,14 +131,8 @@ class StellarTagInput extends LitElement {
 
   private addTags(candidates: string[]): void {
     const current = this.tags;
-    const next = [...current];
-
-    for (const item of candidates) {
-      const clean = item.trim();
-      if (clean && !next.includes(clean)) {
-        next.push(clean);
-      }
-    }
+    const additions = candidates.map((item) => item.trim()).filter(Boolean);
+    const next = [...new Set([...current, ...additions])];
 
     if (next.length !== current.length) {
       this.emitChange(next.join(", "));

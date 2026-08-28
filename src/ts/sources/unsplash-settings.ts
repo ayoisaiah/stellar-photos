@@ -1,6 +1,9 @@
-type ImageResolution = "standard" | "high" | "max";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { isPhotoFrequency } from "./photo-frequency";
 
-type PhotoFrequency = "newtab" | "every15minutes" | "everyhour" | "everyday";
+import type { PhotoFrequency } from "./photo-frequency";
+
+type ImageResolution = "standard" | "high" | "max";
 
 type PhotoOrientation = "landscape" | "portrait" | "squarish";
 
@@ -74,12 +77,6 @@ async function getPhotoFrequency(): Promise<PhotoFrequency> {
   const settings = await getUnsplashSettings();
 
   return settings.photoFrequency;
-}
-
-async function setPhotoFrequency(
-  photoFrequency: PhotoFrequency,
-): Promise<void> {
-  await setUnsplashSettings({ photoFrequency });
 }
 
 async function resolveAccessKey(): Promise<string> {
@@ -180,15 +177,6 @@ function isImageResolution(value: unknown): value is ImageResolution {
   return value === "standard" || value === "high" || value === "max";
 }
 
-function isPhotoFrequency(value: unknown): value is PhotoFrequency {
-  return (
-    value === "newtab" ||
-    value === "every15minutes" ||
-    value === "everyhour" ||
-    value === "everyday"
-  );
-}
-
 function isPhotoOrientation(value: unknown): value is PhotoOrientation | "" {
   return (
     value === "" ||
@@ -218,7 +206,6 @@ export {
   resolveAccessKey,
   STELLAR_COLLECTION,
   setImageQuality,
-  setPhotoFrequency,
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 };

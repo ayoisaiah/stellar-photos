@@ -1,4 +1,7 @@
-import type { PhotoFrequency } from "./unsplash-settings";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { isPhotoFrequency } from "./photo-frequency";
+
+import type { PhotoFrequency } from "./photo-frequency";
 
 export interface LocalSettings {
   version: 1;
@@ -85,13 +88,4 @@ function parseLocalSettings(value: unknown): LocalSettings | null {
     photoFrequency,
     folderName,
   };
-}
-
-function isPhotoFrequency(value: unknown): value is PhotoFrequency {
-  return (
-    value === "newtab" ||
-    value === "every15minutes" ||
-    value === "everyhour" ||
-    value === "everyday"
-  );
 }

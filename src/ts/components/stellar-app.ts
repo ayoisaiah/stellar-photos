@@ -924,42 +924,38 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
     return dispatch(command);
   }
 
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage(
-      command,
-      (response: WorkerResult | undefined) => {
-        if (chrome.runtime.lastError) {
-          if (command.command === "ensure-current") {
-            void dispatch(command).then(resolve);
-          } else {
-            resolve({
-              ok: false,
-              error: {
-                code: "RUNTIME_ERROR",
-                message: chrome.runtime.lastError.message ?? "Runtime error",
-              },
-            });
-          }
-        } else if (
-          response &&
-          !response.ok &&
-          response.error.code === "NEEDS_PAGE_CONTEXT"
-        ) {
-          void dispatch(command).then(resolve);
-        } else {
-          resolve(
-            response ?? {
-              ok: false,
-              error: {
-                code: "NO_RESPONSE",
-                message: "The background process did not respond",
-              },
-            },
-          );
-        }
+  try {
+    const response = (await chrome.runtime.sendMessage(command)) as
+      | WorkerResult
+      | undefined;
+
+    if (!response) {
+      if (command.command === "ensure-current") return dispatch(command);
+
+      return {
+        ok: false,
+        error: {
+          code: "NO_RESPONSE",
+          message: "The background process did not respond",
+        },
+      };
+    }
+
+    if (!response.ok && response.error.code === "NEEDS_PAGE_CONTEXT")
+      return dispatch(command);
+
+    return response;
+  } catch (error) {
+    if (command.command === "ensure-current") return dispatch(command);
+
+    return {
+      ok: false,
+      error: {
+        code: "RUNTIME_ERROR",
+        message: error instanceof Error ? error.message : "Runtime error",
       },
-    );
-  });
+    };
+  }
 }
 
 declare global {

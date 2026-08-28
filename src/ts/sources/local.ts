@@ -52,30 +52,16 @@ export async function computeLocalAssetId(
 ): Promise<string> {
   const raw = `${folderId}:${relativePath}`;
 
-  if (typeof crypto !== "undefined" && crypto.subtle?.digest) {
-    try {
-      const buffer = await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode(raw),
-      );
-      const hashArray = Array.from(new Uint8Array(buffer));
-      const hex = hashArray
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")
-        .slice(0, 32);
-      return `${encodeURIComponent(folderId)}_${hex}`;
-    } catch {
-      // Fallback below
-    }
-  }
+  const buffer = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(raw),
+  );
+  const hash = Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 32);
 
-  let hash = 0;
-  for (let i = 0; i < raw.length; i += 1) {
-    hash = (hash << 5) - hash + raw.charCodeAt(i);
-    hash |= 0;
-  }
-
-  return `${encodeURIComponent(folderId)}_${Math.abs(hash).toString(36)}`;
+  return `${encodeURIComponent(folderId)}_${hash}`;
 }
 
 async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {

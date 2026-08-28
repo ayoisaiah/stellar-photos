@@ -1,6 +1,7 @@
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
+import formStyles from "../../css/components/settings-form.css?inline";
 import styles from "../../css/components/unsplash-settings.css?inline";
 import {
   DEFAULT_UNSPLASH_SETTINGS,
@@ -65,7 +66,7 @@ const CONTENT_FILTERS: readonly {
 
 @customElement("stellar-unsplash-settings")
 class UnsplashSettings extends LitElement {
-  static override styles = unsafeCSS(styles);
+  static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
   private confirmedSettings: UnsplashSettingsData = DEFAULT_UNSPLASH_SETTINGS;
   private saveInFlight = false;

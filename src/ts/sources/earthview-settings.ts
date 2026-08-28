@@ -1,4 +1,7 @@
-import type { PhotoFrequency } from "./unsplash-settings";
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { isPhotoFrequency } from "./photo-frequency";
+
+import type { PhotoFrequency } from "./photo-frequency";
 
 export interface EarthViewSettings {
   version: 1;
@@ -78,13 +81,4 @@ function parseEarthViewSettings(value: unknown): EarthViewSettings | null {
     version: 1,
     photoFrequency,
   };
-}
-
-function isPhotoFrequency(value: unknown): value is PhotoFrequency {
-  return (
-    value === "newtab" ||
-    value === "every15minutes" ||
-    value === "everyhour" ||
-    value === "everyday"
-  );
 }

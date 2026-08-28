@@ -7,7 +7,6 @@ import styles from "../../css/components/settings-drawer.css?inline";
 import { DEFAULT_DISPLAY_SETTINGS, setDisplaySettings } from "../settings";
 import { getImageSource, listImageSources } from "../sources";
 import {
-  getLocalPhotoCount,
   listStoredFolderRecords,
   verifyHandlePermission,
 } from "../sources/local-db";

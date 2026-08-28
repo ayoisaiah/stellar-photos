@@ -2,7 +2,7 @@
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
-import styles from "../../css/components/earthview-settings.css?inline";
+import styles from "../../css/components/settings-form.css?inline";
 import {
   DEFAULT_EARTHVIEW_SETTINGS,
   getEarthViewSettings,

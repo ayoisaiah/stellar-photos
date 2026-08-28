@@ -38,7 +38,8 @@ legend {
   gap: 0.5rem;
 }
 
-label {
+label,
+label.radio-label {
   display: grid;
   grid-template-columns: 1.1rem 1fr;
   gap: 0 0.75rem;
@@ -53,12 +54,14 @@ label {
     background-color 150ms ease;
 }
 
-label:hover {
+label:hover,
+label.radio-label:hover {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 6%);
 }
 
-label:has(input:checked) {
+label:has(input:checked),
+label.radio-label:has(input:checked) {
   border-color: #eee7d8;
   background: rgb(238 231 216 / 8%);
 }

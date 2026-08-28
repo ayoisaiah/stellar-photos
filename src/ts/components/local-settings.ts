@@ -1,8 +1,8 @@
 import { Folder, FolderOpen, Plus, RefreshCw, Trash2 } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
-
 import styles from "../../css/components/local-settings.css?inline";
+import formStyles from "../../css/components/settings-form.css?inline";
 import {
   addDirectoryHandle,
   listStoredFolderRecords,
@@ -36,7 +36,7 @@ interface DirectoryPickerWindow {
 
 @customElement("stellar-local-settings")
 class LocalSettingsComponent extends LitElement {
-  static override styles = unsafeCSS(styles);
+  static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
   private confirmedFrequency: PhotoFrequency =
     DEFAULT_LOCAL_SETTINGS.photoFrequency;

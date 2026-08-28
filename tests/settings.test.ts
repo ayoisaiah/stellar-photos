@@ -59,7 +59,6 @@ const {
   initializeUnsplashSettings,
   resolveAccessKey,
   setImageQuality,
-  setPhotoFrequency,
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
@@ -209,7 +208,7 @@ describe("settings", () => {
 
   it("persists source-owned and application-owned settings", async () => {
     await setImageQuality("max");
-    await setPhotoFrequency("everyday");
+    await setUnsplashSettings({ photoFrequency: "everyday" });
     await setImageSourceId("unsplash");
 
     expect(sync).toEqual({
