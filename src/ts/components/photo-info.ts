@@ -3,6 +3,7 @@ import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/photo-info.css?inline";
+import { attributionUrl } from "../attribution";
 import {
   fetchUnsplashPhotoDetails,
   getUnsplashPhotoInfo,
@@ -11,9 +12,6 @@ import "./lucide-icon";
 
 import type { BackgroundAsset } from "../assets";
 import type { UnsplashInfoData } from "../sources/unsplash";
-
-const UTM_PARAMS =
-  "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
 
 @customElement("stellar-photo-info")
 class PhotoInfo extends LitElement {
@@ -145,7 +143,7 @@ class PhotoInfo extends LitElement {
               photographerUrl
                 ? html`<a
                     class="photographer-name"
-                    href="${this.appendUtm(photographerUrl)}"
+                    href="${attributionUrl(photographerUrl, this.asset.sourceId)}"
                     target="_blank"
                     rel="noopener"
                   >
@@ -156,7 +154,7 @@ class PhotoInfo extends LitElement {
             <span class="photographer-credit">
               Photo on
               <a
-                href="${this.appendUtm(sourceUrl)}"
+                href="${attributionUrl(sourceUrl, this.asset.sourceId)}"
                 target="_blank"
                 rel="noopener"
               >
@@ -218,12 +216,6 @@ class PhotoInfo extends LitElement {
         }
       </div>
     `;
-  }
-
-  private appendUtm(rawUrl: string): string {
-    const separator = rawUrl.includes("?") ? "&" : "?";
-
-    return `${rawUrl}${separator}${UTM_PARAMS}`;
   }
 
   private async loadDetailsIfNeeded(): Promise<void> {

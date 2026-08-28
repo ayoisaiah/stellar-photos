@@ -4,12 +4,10 @@ import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
+import { attributionUrl } from "../attribution";
 import { readCachedImage, readCachedThumbnail } from "../cache";
 import { getImageSource } from "../sources";
 import "./lucide-icon";
-
-const UTM_PARAMS =
-  "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
 
 @customElement("stellar-history-panel")
 class HistoryPanel extends LitElement {
@@ -139,7 +137,7 @@ class HistoryPanel extends LitElement {
               ? html`
                 <a
                   class="card-action-btn source-link"
-                  href="${this.appendUtm(sourceUrl)}"
+                  href="${attributionUrl(sourceUrl, asset.sourceId)}"
                   target="_blank"
                   rel="noopener"
                   title="View photo on ${asset.sourceId === "unsplash" ? "Unsplash" : "source"}"
@@ -228,12 +226,6 @@ class HistoryPanel extends LitElement {
     }
 
     this.thumbnailUrls.clear();
-  }
-
-  private appendUtm(rawUrl: string): string {
-    const separator = rawUrl.includes("?") ? "&" : "?";
-
-    return `${rawUrl}${separator}${UTM_PARAMS}`;
   }
 
   private selectAsset(asset: BackgroundAsset, index: number): void {

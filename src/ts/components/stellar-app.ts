@@ -16,6 +16,7 @@ import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
 import { assetIdentity } from "../assets";
+import { attributionUrl } from "../attribution";
 import { readCachedImage } from "../cache";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
 import { dispatch } from "../service-worker";
@@ -47,9 +48,6 @@ import type { WorkerCommand, WorkerResult } from "../service-worker";
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import type { EmptyStatePhase } from "./empty-state";
 import type { SourceChangeState } from "./settings-drawer";
-
-const UTM_PARAMS =
-  "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
 
 @customElement("stellar-app")
 class StellarApp extends LitElement {
@@ -367,7 +365,7 @@ class StellarApp extends LitElement {
                 ? html`
                   <a
                     class="photographer-name"
-                    href="${this.appendUtm(photographerUrl)}"
+                    href="${attributionUrl(photographerUrl, this.currentAsset.sourceId)}"
                     target="_blank"
                     rel="noopener"
                   >
@@ -381,7 +379,7 @@ class StellarApp extends LitElement {
             <span class="photographer-meta">
               Photo on
               <a
-                href="${this.appendUtm(sourceUrl)}"
+                href="${attributionUrl(sourceUrl, this.currentAsset.sourceId)}"
                 target="_blank"
                 rel="noopener"
               >
@@ -392,17 +390,6 @@ class StellarApp extends LitElement {
         </div>
       </div>
     `;
-  }
-
-  private appendUtm(rawUrl: string): string {
-    if (!rawUrl) return "";
-    if (this.currentAsset?.sourceId !== "unsplash") {
-      return rawUrl;
-    }
-
-    const separator = rawUrl.includes("?") ? "&" : "?";
-
-    return `${rawUrl}${separator}${UTM_PARAMS}`;
   }
 
   private toggleInfo = (): void => {
@@ -611,9 +598,9 @@ class StellarApp extends LitElement {
     }
 
     const index = this.historyAssets.findIndex(
-      (a) =>
-        a.cacheKey === this.currentAsset?.cacheKey &&
-        a.createdAt === this.currentAsset?.createdAt,
+      (asset) =>
+        asset.cacheKey === this.currentAsset?.cacheKey &&
+        asset.createdAt === this.currentAsset?.createdAt,
     );
 
     this.historyIndex = index;
@@ -641,7 +628,7 @@ class StellarApp extends LitElement {
     this.pinnedAsset = asset;
   };
 
-  private displayHistoryAsset = async (
+  private showHistoryAsset = async (
     asset: BackgroundAsset,
   ): Promise<boolean> => {
     const prepared = await this.preparePhoto(asset);
@@ -668,7 +655,7 @@ class StellarApp extends LitElement {
       const targetAsset = this.historyAssets[targetIndex];
       if (!targetAsset) break;
 
-      if (await this.displayHistoryAsset(targetAsset)) {
+      if (await this.showHistoryAsset(targetAsset)) {
         this.historyIndex = targetIndex;
         return;
       }
@@ -739,17 +726,15 @@ class StellarApp extends LitElement {
     event: CustomEvent<{ asset: BackgroundAsset; index?: number }>,
   ): Promise<void> => {
     const selectedAsset = event.detail.asset;
-    const displayed = await this.displayHistoryAsset(selectedAsset);
+    if (!(await this.showHistoryAsset(selectedAsset))) return;
 
-    if (displayed) {
-      if (typeof event.detail.index === "number") {
-        this.historyIndex = event.detail.index;
-      } else {
-        this.reconcileHistoryIndex();
-      }
-      if (!this.isPinned) {
-        await this.setPinnedState(selectedAsset);
-      }
+    if (typeof event.detail.index === "number") {
+      this.historyIndex = event.detail.index;
+    } else {
+      this.reconcileHistoryIndex();
+    }
+    if (!this.isPinned) {
+      await this.setPinnedState(selectedAsset);
     }
   };
 
