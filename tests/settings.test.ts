@@ -52,8 +52,10 @@ const {
 const {
   DEFAULT_UNSPLASH_SETTINGS,
   getPhotoFrequency,
+  getUnsplashAccessKey,
   getUnsplashSettings,
   resolveAccessKey,
+  setUnsplashAccessKey,
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 } = await import("../src/ts/sources/unsplash-settings");
@@ -73,12 +75,16 @@ beforeEach(() => {
 
 describe("settings", () => {
   it("prefers a local user key and otherwise uses the bundled key", async () => {
+    expect(await getUnsplashAccessKey()).toBe("");
     expect(await resolveAccessKey()).toBe("bundled-key");
-    local[UNSPLASH_SETTINGS_KEY] = {
-      version: 1,
-      accessKeyOverride: "user-key",
-    };
+
+    await setUnsplashAccessKey("user-key");
+    expect(await getUnsplashAccessKey()).toBe("user-key");
     expect(await resolveAccessKey()).toBe("user-key");
+
+    await setUnsplashAccessKey("");
+    expect(await getUnsplashAccessKey()).toBe("");
+    expect(await resolveAccessKey()).toBe("bundled-key");
   });
 
   it("returns lazy defaults without writing storage", async () => {

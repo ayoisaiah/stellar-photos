@@ -119,8 +119,11 @@ small {
 }
 
 .status {
-  min-height: 1.25rem;
   margin: 0.7rem 0 0;
   color: #a7b0be;
   font-size: 0.75rem;
+}
+
+.status:empty {
+  display: none;
 }

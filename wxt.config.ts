@@ -9,9 +9,6 @@ export default defineConfig({
   outDir: process.env.STELLAR_OUT_DIR ?? "dist",
   outDirTemplate: "{{browser}}",
   publicDir: "src/icons",
-  suppressWarnings: {
-    firefoxDataCollection: true,
-  },
   manifest: ({ browser }) => ({
     name: "Stellar Photos",
     version: "5.0.0",
@@ -35,6 +32,9 @@ export default defineConfig({
             gecko: {
               id: "stellar@stellarapp.photos",
               strict_min_version: "153.0",
+              data_collection_permissions: {
+                required: ["none"],
+              },
             },
           }
         : undefined,

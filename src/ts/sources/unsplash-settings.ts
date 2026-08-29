@@ -69,12 +69,28 @@ async function getPhotoFrequency(): Promise<PhotoFrequency> {
   return settings.photoFrequency;
 }
 
-async function resolveAccessKey(): Promise<string> {
+async function getUnsplashAccessKey(): Promise<string> {
   const values = await chrome.storage.local.get(UNSPLASH_SETTINGS_KEY);
   const settings = parseUnsplashLocalSettings(values[UNSPLASH_SETTINGS_KEY]);
-  const override = settings?.accessKeyOverride;
 
-  if (typeof override === "string" && override.trim()) return override.trim();
+  return settings?.accessKeyOverride ?? "";
+}
+
+async function setUnsplashAccessKey(accessKey: string): Promise<void> {
+  const trimmed = accessKey.trim();
+
+  await chrome.storage.local.set({
+    [UNSPLASH_SETTINGS_KEY]: {
+      version: 1,
+      accessKeyOverride: trimmed,
+    } satisfies UnsplashLocalSettings,
+  });
+}
+
+async function resolveAccessKey(): Promise<string> {
+  const override = await getUnsplashAccessKey();
+
+  if (override.trim()) return override.trim();
   if (__UNSPLASH_ACCESS_KEY__.trim()) return __UNSPLASH_ACCESS_KEY__.trim();
 
   throw new Error("No Unsplash access key is configured");
@@ -179,9 +195,11 @@ export type {
 export {
   DEFAULT_UNSPLASH_SETTINGS,
   getPhotoFrequency,
+  getUnsplashAccessKey,
   getUnsplashSettings,
   resolveAccessKey,
   STELLAR_COLLECTION,
+  setUnsplashAccessKey,
   setUnsplashSettings,
   UNSPLASH_SETTINGS_KEY,
 };
