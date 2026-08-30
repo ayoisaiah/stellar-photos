@@ -233,7 +233,7 @@ class PhotoInfo extends LitElement {
         ${
           isEarthView
             ? this.renderEarthView(this.asset)
-            : this.renderUnsplash(this.asset)
+            : this.renderPhoto(this.asset)
         }
 
         ${
@@ -307,12 +307,19 @@ class PhotoInfo extends LitElement {
     `;
   }
 
-  private renderUnsplash(asset: BackgroundAsset) {
-    const info = this.fetchedUnsplashInfo ?? getUnsplashPhotoInfo(asset);
+  private renderPhoto(asset: BackgroundAsset) {
+    const info =
+      asset.sourceId === "unsplash"
+        ? (this.fetchedUnsplashInfo ?? getUnsplashPhotoInfo(asset))
+        : null;
     const attribution = asset.attribution;
     const photographerName = info?.user?.name ?? attribution?.name ?? "Unknown";
     const photographerUrl = info?.user?.link || attribution?.url || "";
     const sourceUrl = attribution?.sourceUrl ?? "https://unsplash.com";
+    const sourceName =
+      asset.sourceId === "unsplash"
+        ? "Unsplash"
+        : (attribution?.name ?? "Source");
 
     const description = info?.description ?? asset.description;
     const locationName = info?.location?.name
@@ -357,7 +364,7 @@ class PhotoInfo extends LitElement {
         name: photographerName,
         nameUrl: photographerUrl,
         creditPrefix: "Photo on",
-        sourceName: "Unsplash",
+        sourceName,
         sourceUrl,
         sourceId: asset.sourceId,
       })}

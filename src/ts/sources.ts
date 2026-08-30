@@ -2,6 +2,7 @@ import type { BackgroundAsset, UncachedBackgroundAsset } from "./assets";
 import { getImageSourceId } from "./settings";
 import { earthviewSource } from "./sources/earthview";
 import { localSource } from "./sources/local";
+import { smithsonianSource } from "./sources/smithsonian";
 import { unsplashSource } from "./sources/unsplash";
 
 interface ImageSource {
@@ -20,6 +21,7 @@ interface ImageSource {
 const bundledImageSources: readonly ImageSource[] = [
   unsplashSource,
   earthviewSource,
+  smithsonianSource,
   localSource,
 ];
 const imageSources: ReadonlyMap<string, ImageSource> = new Map(

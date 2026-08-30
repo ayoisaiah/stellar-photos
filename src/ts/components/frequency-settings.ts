@@ -1,14 +1,12 @@
+// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/settings-form.css?inline";
-import type { EarthViewSettings as EarthViewSettingsData } from "../sources/earthview-settings";
 import {
-  DEFAULT_EARTHVIEW_SETTINGS,
-  getEarthViewSettings,
-  setEarthViewSettings,
-} from "../sources/earthview-settings";
-import type { SaveState } from "./settings-form";
+  getStoredPhotoFrequency,
+  setStoredPhotoFrequency,
+} from "../sources/photo-frequency";
 import {
   readFrequency,
   renderFrequencySelector,
@@ -16,19 +14,25 @@ import {
   statusMessage,
 } from "./settings-form";
 
-@customElement("stellar-earthview-settings")
-class EarthViewSettingsComponent extends LitElement {
+import type { PhotoFrequency } from "../sources/photo-frequency";
+import type { SaveState } from "./settings-form";
+
+@customElement("stellar-frequency-settings")
+class FrequencySettings extends LitElement {
   static override styles = unsafeCSS(styles);
 
-  private confirmedSettings: EarthViewSettingsData = DEFAULT_EARTHVIEW_SETTINGS;
+  @property()
+  accessor settingsKey = "";
+
+  private confirmedFrequency: PhotoFrequency = "newtab";
   private saveInFlight = false;
   private saveResetTimeout: number | undefined;
 
   @state()
-  private accessor loaded = false;
+  private accessor frequency: PhotoFrequency = "newtab";
 
   @state()
-  private accessor settings: EarthViewSettingsData = DEFAULT_EARTHVIEW_SETTINGS;
+  private accessor loaded = false;
 
   @state()
   private accessor saveState: SaveState = "idle";
@@ -46,7 +50,7 @@ class EarthViewSettingsComponent extends LitElement {
   override render() {
     return html`
       ${renderFrequencySelector(
-        this.settings.photoFrequency,
+        this.frequency,
         !this.loaded,
         this.changeFrequency,
       )}
@@ -57,10 +61,10 @@ class EarthViewSettingsComponent extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      const settings = await getEarthViewSettings();
+      const frequency = await getStoredPhotoFrequency(this.settingsKey);
 
-      this.confirmedSettings = settings;
-      this.settings = settings;
+      this.confirmedFrequency = frequency;
+      this.frequency = frequency;
     } catch {
       this.saveState = "error";
     } finally {
@@ -71,13 +75,9 @@ class EarthViewSettingsComponent extends LitElement {
   private changeFrequency = (event: Event): void => {
     const frequency = readFrequency(event);
 
-    if (!frequency || frequency === this.settings.photoFrequency) return;
+    if (!frequency || frequency === this.frequency) return;
 
-    this.settings = {
-      ...this.settings,
-      photoFrequency: frequency,
-    };
-
+    this.frequency = frequency;
     void this.save();
   };
 
@@ -88,16 +88,14 @@ class EarthViewSettingsComponent extends LitElement {
     this.saveState = "saving";
     window.clearTimeout(this.saveResetTimeout);
 
-    while (
-      this.settings.photoFrequency !== this.confirmedSettings.photoFrequency
-    ) {
-      const targetSettings = { ...this.settings };
+    while (this.frequency !== this.confirmedFrequency) {
+      const target = this.frequency;
       try {
-        await setEarthViewSettings(targetSettings);
-        this.confirmedSettings = targetSettings;
+        await setStoredPhotoFrequency(this.settingsKey, target);
+        this.confirmedFrequency = target;
       } catch {
+        this.frequency = this.confirmedFrequency;
         this.saveState = "error";
-        this.settings = this.confirmedSettings;
         this.saveInFlight = false;
         return;
       }
@@ -105,9 +103,7 @@ class EarthViewSettingsComponent extends LitElement {
 
     this.saveState = "saved";
     this.saveResetTimeout = scheduleSavedReset(() => {
-      if (this.saveState === "saved") {
-        this.saveState = "idle";
-      }
+      if (this.saveState === "saved") this.saveState = "idle";
     });
     this.saveInFlight = false;
   }
@@ -115,8 +111,8 @@ class EarthViewSettingsComponent extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "stellar-earthview-settings": EarthViewSettingsComponent;
+    "stellar-frequency-settings": FrequencySettings;
   }
 }
 
-export { EarthViewSettingsComponent };
+export { FrequencySettings };

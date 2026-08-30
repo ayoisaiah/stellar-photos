@@ -2,6 +2,8 @@ import type { BackgroundAsset } from "../assets";
 
 type PhotoFrequency = "newtab" | "every15minutes" | "everyhour" | "everyday";
 
+const DEFAULT_PHOTO_FREQUENCY: PhotoFrequency = "newtab";
+
 function isPhotoFrequency(value: unknown): value is PhotoFrequency {
   return (
     value === "newtab" ||
@@ -32,5 +34,34 @@ async function shouldRotateAtFrequency(
   }
 }
 
+async function getStoredPhotoFrequency(key: string): Promise<PhotoFrequency> {
+  const values = await chrome.storage.sync.get(key);
+  const settings = values[key] as
+    | { photoFrequency?: unknown; version?: unknown }
+    | undefined;
+
+  if (typeof settings?.version === "number" && settings.version > 1) {
+    throw new Error(`Unsupported source settings version: ${settings.version}`);
+  }
+
+  return isPhotoFrequency(settings?.photoFrequency)
+    ? settings.photoFrequency
+    : DEFAULT_PHOTO_FREQUENCY;
+}
+
+async function setStoredPhotoFrequency(
+  key: string,
+  photoFrequency: PhotoFrequency,
+): Promise<void> {
+  await chrome.storage.sync.set({
+    [key]: { version: 1, photoFrequency },
+  });
+}
+
 export type { PhotoFrequency };
-export { isPhotoFrequency, shouldRotateAtFrequency };
+export {
+  getStoredPhotoFrequency,
+  isPhotoFrequency,
+  setStoredPhotoFrequency,
+  shouldRotateAtFrequency,
+};

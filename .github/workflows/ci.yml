@@ -44,6 +44,7 @@ jobs:
       - name: Verify production build
         run: npm run build
         env:
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY || 'test-smithsonian-key' }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY || 'test-ci-key' }}
 
   publish:
@@ -69,6 +70,7 @@ jobs:
           npx wxt zip -b chrome --mv3
           npx wxt zip -b firefox --mv3 --sources
         env:
+          SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
 
       - name: Submit to Chrome Web Store

@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import config from "../wxt.config";
 
 const TEST_OUT_DIR = ".wxt-test-dist";
@@ -41,6 +41,7 @@ describe("browser packages", () => {
           cwd: process.cwd(),
           env: {
             ...process.env,
+            SMITHSONIAN_API_KEY: "test-smithsonian-key",
             STELLAR_OUT_DIR: TEST_OUT_DIR,
             UNSPLASH_ACCESS_KEY: "test-sentinel-key",
           },
@@ -94,6 +95,8 @@ describe("browser packages", () => {
       expect(bundle).not.toContain('from "');
       expect(bundle).not.toContain("old/");
       expect(bundle).toContain("test-sentinel-key");
+      expect(bundle).toContain("test-smithsonian-key");
+      expect(bundle).not.toContain("__SMITHSONIAN_API_KEY__");
       expect(bundle).not.toContain("__UNSPLASH_ACCESS_KEY__");
     },
   );
@@ -113,6 +116,24 @@ describe("browser packages", () => {
     delete process.env.STELLAR_ENV_FILE;
   });
 
+  it("requires a Smithsonian key for production builds", () => {
+    vi.stubEnv("UNSPLASH_ACCESS_KEY", "test-key");
+    vi.stubEnv("SMITHSONIAN_API_KEY", " ");
+
+    try {
+      expect(() =>
+        config.vite?.({
+          browser: "chrome",
+          command: "build",
+          manifestVersion: 3,
+          mode: "production",
+        }),
+      ).toThrow("SMITHSONIAN_API_KEY is required for a production build");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("maps development bundles to their TypeScript and CSS sources", async () => {
     const result = spawnSync(
       process.execPath,
@@ -129,6 +150,7 @@ describe("browser packages", () => {
         cwd: process.cwd(),
         env: {
           ...process.env,
+          SMITHSONIAN_API_KEY: "test-smithsonian-key",
           STELLAR_OUT_DIR: TEST_OUT_DIR,
           UNSPLASH_ACCESS_KEY: "test-sentinel-key",
         },

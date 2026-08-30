@@ -20,6 +20,11 @@ fieldset + fieldset {
   margin-top: 1.5rem;
 }
 
+stellar-frequency-settings {
+  display: block;
+  margin-top: 1.5rem;
+}
+
 legend {
   padding: 0;
   font-size: 0.9rem;

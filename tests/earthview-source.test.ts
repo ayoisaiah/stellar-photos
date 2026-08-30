@@ -2,18 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BackgroundAsset } from "../src/ts/assets";
 import {
   buildEarthViewImageUrl,
+  EARTHVIEW_SETTINGS_KEY,
   earthviewSource,
   fetchEarthViewDetails,
   getEarthViewPhotoIds,
 } from "../src/ts/sources/earthview";
-import {
-  DEFAULT_EARTHVIEW_SETTINGS,
-  EARTHVIEW_SETTINGS_KEY,
-  getEarthViewPhotoFrequency,
-  getEarthViewSettings,
-  setEarthViewPhotoFrequency,
-  setEarthViewSettings,
-} from "../src/ts/sources/earthview-settings";
 
 const sync: Record<string, unknown> = {};
 
@@ -66,23 +59,6 @@ describe("earthview catalog and image helper", () => {
   });
 });
 
-describe("earthview settings", () => {
-  it("defaults settings and allows updates", async () => {
-    expect(await getEarthViewSettings()).toEqual(DEFAULT_EARTHVIEW_SETTINGS);
-
-    await setEarthViewPhotoFrequency("everyhour");
-    expect(await getEarthViewPhotoFrequency()).toBe("everyhour");
-
-    const raw = sync[EARTHVIEW_SETTINGS_KEY] as Record<string, unknown>;
-    expect(raw.photoFrequency).toBe("everyhour");
-  });
-
-  it("handles partial settings updates", async () => {
-    await setEarthViewSettings({ photoFrequency: "everyday" });
-    expect(await getEarthViewPhotoFrequency()).toBe("everyday");
-  });
-});
-
 describe("earthview source retrieval and rotation", () => {
   it("retrieves a random Earth View asset", async () => {
     const asset = await earthviewSource.getRandomAsset();
@@ -119,7 +95,10 @@ describe("earthview source retrieval and rotation", () => {
   });
 
   it("evaluates shouldRotate based on frequency setting", async () => {
-    await setEarthViewPhotoFrequency("every15minutes");
+    sync[EARTHVIEW_SETTINGS_KEY] = {
+      version: 1,
+      photoFrequency: "every15minutes",
+    };
 
     const asset: BackgroundAsset = {
       sourceId: "earthview",
@@ -145,8 +124,29 @@ describe("earthview source retrieval and rotation", () => {
     expect(await earthviewSource.shouldRotate!(olderAsset)).toBe(true);
 
     // Frequency = newtab -> always rotates
-    await setEarthViewPhotoFrequency("newtab");
+    sync[EARTHVIEW_SETTINGS_KEY] = { version: 1, photoFrequency: "newtab" };
     expect(await earthviewSource.shouldRotate!(asset)).toBe(true);
+  });
+
+  it("rejects unsupported settings versions", async () => {
+    sync[EARTHVIEW_SETTINGS_KEY] = { version: 2 };
+    const asset: BackgroundAsset = {
+      sourceId: "earthview",
+      sourceAssetId: "1003",
+      cacheKey: "cache-key",
+      width: 1800,
+      height: 1200,
+      color: null,
+      description: null,
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {},
+      createdAt: Date.now(),
+    };
+
+    await expect(earthviewSource.shouldRotate!(asset)).rejects.toThrow(
+      "Unsupported source settings version: 2",
+    );
   });
 
   it("fetches Earth View satellite metadata details", async () => {

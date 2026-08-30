@@ -41,6 +41,10 @@ describe("image source registry", () => {
         name: "Google Earth View",
       }),
       expect.objectContaining({
+        id: "smithsonian",
+        name: "Smithsonian Open Access",
+      }),
+      expect.objectContaining({
         id: "local",
         name: "Local folder",
       }),
@@ -54,6 +58,10 @@ describe("image source registry", () => {
     });
     expect(getImageSource("earthview")).toMatchObject({
       id: "earthview",
+      supportsDownload: true,
+    });
+    expect(getImageSource("smithsonian")).toMatchObject({
+      id: "smithsonian",
       supportsDownload: true,
     });
     expect(getImageSource("local")).toMatchObject({
@@ -85,7 +93,11 @@ describe("image source registry", () => {
 
     const sources = listImageSources();
     expect(sources.some((s) => s.id === "local")).toBe(false);
-    expect(sources.map((s) => s.id)).toEqual(["unsplash", "earthview"]);
+    expect(sources.map((s) => s.id)).toEqual([
+      "unsplash",
+      "earthview",
+      "smithsonian",
+    ]);
     expect(getImageSource("local")).toBeNull();
 
     selectedSource = "local";

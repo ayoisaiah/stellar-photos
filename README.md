@@ -4,7 +4,7 @@
 
 # Beautiful hi-res photos in your browser tabs!
 
-Experience a beautiful high-resolution photo every time you open a new browser tab. Enjoy stunning photography from Unsplash, breathtaking satellite views from Google Earth View, or your own local photo folders.
+Experience a beautiful high-resolution photo every time you open a new browser tab. Enjoy photography from Unsplash, satellite views from Google Earth View, public-domain treasures from Smithsonian Open Access, or your own local photo folders.
 
 ![Screenshot of Stellar Photos](docs/images/1.png)
 
@@ -16,7 +16,7 @@ Experience a beautiful high-resolution photo every time you open a new browser t
 
 ## Main features
 
-- **Multiple Photo Sources**: Choose from curated collections on Unsplash, satellite imagery from Google Earth View, or select photos from your local folders.
+- **Multiple Photo Sources**: Choose from Unsplash photography, Google Earth View satellite imagery, Smithsonian Open Access collections, or your local folders.
 - **Custom Rotation Schedules**: Rotate photos on every new tab, every 15 minutes, hourly, daily, or pause rotation whenever you want.
 - **Pin Photos**: Keep your favorite photo pinned across tabs with a single click or keyboard shortcut (`P`).
 - **History Navigation**: Browse through your 10 most recent photos using on-screen controls, arrow keys, or mouse wheel scrolling.
@@ -59,7 +59,7 @@ Stellar Photos is built with TypeScript, [Lit](https://lit.dev/), and [WXT](http
 3. **Production build**:
 
    ```bash
-   # Set UNSPLASH_ACCESS_KEY in your environment or .env file
+   # Set UNSPLASH_ACCESS_KEY and SMITHSONIAN_API_KEY in your environment or .env file
    npm run build        # builds dist/chrome and dist/firefox
    ```
 
@@ -76,5 +76,5 @@ Bug reports, feature requests, and pull requests are welcome! See [CONTRIBUTING.
 
 ## Credits & License
 
-- Powered by [Unsplash](https://unsplash.com/developers) and [Google Earth View](https://earthview.withgoogle.com/).
+- Powered by [Unsplash](https://unsplash.com/developers), [Google Earth View](https://earthview.withgoogle.com/), and [Smithsonian Open Access](https://www.si.edu/openaccess).
 - Created by [Ayooluwa Isaiah](https://github.com/ayoisaiah) and released under the [MIT License](http://opensource.org/licenses/MIT).
