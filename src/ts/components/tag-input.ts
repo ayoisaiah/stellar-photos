@@ -1,9 +1,21 @@
-import { X } from "@lucide/icons";
+import { Loader2, X } from "@lucide/icons";
 import { html, LitElement, nothing, unsafeCSS } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 
 import styles from "../../css/components/tag-input.css?inline";
 import "./lucide-icon";
+
+type TagValidationResult =
+  | boolean
+  | {
+      valid: boolean;
+      normalized?: string;
+      error?: string;
+    };
+
+type TagValidator = (
+  tag: string,
+) => Promise<TagValidationResult> | TagValidationResult;
 
 @customElement("stellar-tag-input")
 class StellarTagInput extends LitElement {
@@ -21,8 +33,17 @@ class StellarTagInput extends LitElement {
   @property({ type: String })
   accessor inputId = "";
 
+  @property({ attribute: false })
+  accessor validate: TagValidator | null = null;
+
   @state()
   private accessor inputValue = "";
+
+  @state()
+  private accessor validating = false;
+
+  @state()
+  private accessor errorMessage = "";
 
   @query(".native-input")
   private accessor inputElement!: HTMLInputElement;
@@ -33,10 +54,12 @@ class StellarTagInput extends LitElement {
 
   override render() {
     const tags = this.tags;
+    const isBusy = this.validating;
+    const hasError = Boolean(this.errorMessage);
 
     return html`
       <div
-        class="tag-input-container ${this.disabled ? "disabled" : ""}"
+        class="tag-input-container ${this.disabled ? "disabled" : ""} ${hasError ? "error" : ""}"
         @click=${this.focusInput}
       >
         ${tags.map(
@@ -47,7 +70,7 @@ class StellarTagInput extends LitElement {
                 type="button"
                 class="tag-remove"
                 aria-label="Remove ${tag}"
-                ?disabled=${this.disabled}
+                ?disabled=${this.disabled || isBusy}
                 @click=${(event: MouseEvent) => {
                   event.stopPropagation();
                   this.removeTag(index);
@@ -64,12 +87,31 @@ class StellarTagInput extends LitElement {
           class="native-input"
           placeholder=${tags.length === 0 ? this.placeholder : ""}
           .value=${this.inputValue}
-          ?disabled=${this.disabled}
+          ?disabled=${this.disabled || isBusy}
+          aria-invalid=${hasError ? "true" : "false"}
           @keydown=${this.handleKeyDown}
           @input=${this.handleInput}
           @blur=${this.handleBlur}
         />
+        ${
+          isBusy
+            ? html`
+              <span class="tag-spinner" aria-label="Validating">
+                <stellar-icon class="spinning" .icon=${Loader2}></stellar-icon>
+              </span>
+            `
+            : nothing
+        }
       </div>
+      ${
+        hasError
+          ? html`
+            <p class="tag-input-error" role="alert">
+              ${this.errorMessage}
+            </p>
+          `
+          : nothing
+      }
     `;
   }
 
@@ -82,7 +124,7 @@ class StellarTagInput extends LitElement {
   private handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key === "," || event.key === "Enter") {
       event.preventDefault();
-      this.commitInput();
+      void this.commitInput();
       return;
     }
 
@@ -100,14 +142,18 @@ class StellarTagInput extends LitElement {
     const target = event.currentTarget as HTMLInputElement;
     const value = target.value;
 
+    if (this.errorMessage) {
+      this.errorMessage = "";
+    }
+
     if (value.includes(",")) {
       const parts = value.split(",");
       const toAdd = parts.slice(0, -1);
       const remaining = parts[parts.length - 1] ?? "";
 
-      this.addTags(toAdd);
       this.inputValue = remaining;
       target.value = remaining;
+      void this.addTags(toAdd, false);
       return;
     }
 
@@ -116,23 +162,87 @@ class StellarTagInput extends LitElement {
 
   private handleBlur = (): void => {
     if (this.inputValue.trim()) {
-      this.commitInput();
+      void this.commitInput();
     }
   };
 
-  private commitInput(): void {
+  private async commitInput(): Promise<void> {
     const raw = this.inputValue.trim();
 
-    if (!raw) return;
+    if (!raw || this.validating) return;
 
-    this.addTags([raw]);
-    this.inputValue = "";
+    await this.addTags([raw], true);
   }
 
-  private addTags(candidates: string[]): void {
+  private async addTags(
+    candidates: string[],
+    clearOnSuccess = false,
+  ): Promise<void> {
+    const rawAdditions = candidates.map((item) => item.trim()).filter(Boolean);
+
+    if (rawAdditions.length === 0) return;
+
     const current = this.tags;
-    const additions = candidates.map((item) => item.trim()).filter(Boolean);
-    const next = [...new Set([...current, ...additions])];
+    const next = [...current];
+    let validationError = "";
+    let lastFailedCandidate = "";
+
+    if (this.validate) {
+      this.validating = true;
+      this.errorMessage = "";
+
+      try {
+        for (const candidate of rawAdditions) {
+          const result = await this.validate(candidate);
+
+          if (typeof result === "boolean") {
+            if (result) {
+              if (!next.includes(candidate)) {
+                next.push(candidate);
+              }
+            } else {
+              validationError = `"${candidate}" is invalid.`;
+              lastFailedCandidate = candidate;
+            }
+          } else {
+            if (result.valid) {
+              const tagToAdd = result.normalized ?? candidate;
+              if (!next.includes(tagToAdd)) {
+                next.push(tagToAdd);
+              }
+            } else {
+              validationError = result.error || `"${candidate}" is invalid.`;
+              lastFailedCandidate = candidate;
+            }
+          }
+        }
+      } catch (err) {
+        validationError =
+          err instanceof Error ? err.message : "Validation failed.";
+      } finally {
+        this.validating = false;
+      }
+    } else {
+      for (const candidate of rawAdditions) {
+        if (!next.includes(candidate)) {
+          next.push(candidate);
+        }
+      }
+    }
+
+    this.errorMessage = validationError;
+
+    if (!validationError && clearOnSuccess) {
+      this.inputValue = "";
+      if (this.inputElement) {
+        this.inputElement.value = "";
+      }
+    } else if (validationError && clearOnSuccess && rawAdditions.length === 1) {
+      this.inputValue = lastFailedCandidate;
+      if (this.inputElement) {
+        this.inputElement.value = lastFailedCandidate;
+      }
+    }
 
     if (next.length !== current.length) {
       this.emitChange(next.join(", "));
@@ -143,6 +253,7 @@ class StellarTagInput extends LitElement {
     const current = this.tags;
     const next = current.filter((_, i) => i !== index);
 
+    this.errorMessage = "";
     this.emitChange(next.join(", "));
   }
 
@@ -173,4 +284,5 @@ declare global {
   }
 }
 
+export type { TagValidationResult, TagValidator };
 export { parseTags, StellarTagInput };

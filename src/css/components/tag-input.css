@@ -105,3 +105,40 @@ stellar-icon {
 .native-input:disabled {
   cursor: not-allowed;
 }
+
+.tag-input-container.error {
+  border-color: rgb(248 113 113 / 60%);
+}
+
+.tag-input-container.error:focus-within {
+  border-color: #f87171;
+  outline-color: #f87171;
+}
+
+.tag-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.2rem;
+  color: #9ca3af;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tag-input-error {
+  margin: 0.35rem 0 0;
+  color: #f87171;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}

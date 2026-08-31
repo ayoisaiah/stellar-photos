@@ -4,6 +4,10 @@ import { customElement, state } from "lit/decorators.js";
 import formStyles from "../../css/components/settings-form.css?inline";
 import styles from "../../css/components/unsplash-settings.css?inline";
 import {
+  verifyUnsplashCollection,
+  verifyUnsplashTopic,
+} from "../sources/unsplash";
+import {
   DEFAULT_UNSPLASH_SETTINGS,
   getUnsplashAccessKey,
   getUnsplashSettings,
@@ -130,11 +134,12 @@ class UnsplashSettings extends LitElement {
               id="filter-collections"
               placeholder="e.g. 998309, 317099"
               .value=${this.settings.collections}
+              .validate=${verifyUnsplashCollection}
               ?disabled=${!this.loaded}
               @change=${(e: CustomEvent<{ value: string }>) =>
                 this.saveTagInput("collections", e)}
             ></stellar-tag-input>
-            <p class="field-help">Public collection IDs. Defaults to Stellar Photos.</p>
+            <p class="field-help">Public collection IDs. Defaults to <a href="https://unsplash.com/collections/998309/stellar-photos" target="_blank" rel="noopener">Stellar Photos</a>.</p>
           </div>
 
           <div class="field">
@@ -143,11 +148,12 @@ class UnsplashSettings extends LitElement {
               id="filter-topics"
               placeholder="e.g. wallpapers, nature"
               .value=${this.settings.topics}
+              .validate=${verifyUnsplashTopic}
               ?disabled=${!this.loaded}
               @change=${(e: CustomEvent<{ value: string }>) =>
                 this.saveTagInput("topics", e)}
             ></stellar-tag-input>
-            <p class="field-help">Public topic IDs or slugs.</p>
+            <p class="field-help">Public topic IDs or slugs. Slugs are automatically replaced with IDs.</p>
           </div>
 
           <div class="field">
@@ -201,6 +207,7 @@ class UnsplashSettings extends LitElement {
                 `,
               )}
             </select>
+            <p class="field-help">Filter sensitive content. Set to high for stricter safe-for-work filtering.</p>
           </div>
         </div>
       </fieldset>
@@ -233,7 +240,7 @@ class UnsplashSettings extends LitElement {
 
       <fieldset>
         <legend>Custom access key</legend>
-        <p class="hint">Use your own Unsplash API application access key instead of the built-in key.</p>
+        <p class="hint">Use your own Unsplash API application access key instead of the built-in key to guarantee higher usage limits.</p>
         <div class="field">
           <label for="unsplash-access-key">Access key</label>
           <input

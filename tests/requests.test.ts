@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchWithTimeout } from "../src/ts/requests";
 import {
   buildRandomPhotoUrl,
+  clearVerificationCache,
   fullResolutionImageUrl,
   getUnsplashPhotoInfo,
   imageUrlForResolution,
   unsplashSource,
+  verifyUnsplashCollection,
+  verifyUnsplashTopic,
 } from "../src/ts/sources/unsplash";
 
 const raw = "https://images.unsplash.com/photo-example?ixid=example";
@@ -365,12 +368,176 @@ describe("Unsplash image resolution", () => {
   });
 });
 
+describe("Unsplash collection and topic verification", () => {
+  beforeEach(() => {
+    clearVerificationCache();
+  });
+
+  it("verifies default collection without network request", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashCollection("998309");
+
+    expect(result).toEqual({ valid: true, normalized: "998309" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("verifies valid collection and caches the result", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/collections/12345",
+      JSON.stringify({ id: "12345", total_photos: 50 }),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const firstResult = await verifyUnsplashCollection("12345");
+    expect(firstResult).toEqual({ valid: true, normalized: "12345" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const secondResult = await verifyUnsplashCollection("12345");
+    expect(secondResult).toEqual({ valid: true, normalized: "12345" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("extracts collection ID from full URL and verifies it", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/collections/45678",
+      JSON.stringify({ id: "45678", total_photos: 12 }),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashCollection(
+      "https://unsplash.com/collections/45678/featured-shots",
+    );
+
+    expect(result).toEqual({ valid: true, normalized: "45678" });
+  });
+
+  it("fails when collection does not exist (404)", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/collections/00000",
+      "{}",
+      {
+        status: 404,
+      },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashCollection("00000");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("was not found");
+  });
+
+  it("fails when collection has 0 photos", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/collections/empty-coll",
+      JSON.stringify({ id: "empty-coll", total_photos: 0 }),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashCollection("empty-coll");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("contains no photos");
+  });
+
+  it("verifies valid topic and resolves its topic ID", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/topics/wallpapers",
+      JSON.stringify({
+        id: "bo8jQKTaE0Y",
+        slug: "wallpapers",
+        total_photos: 100,
+      }),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const firstResult = await verifyUnsplashTopic("wallpapers");
+    expect(firstResult).toEqual({ valid: true, normalized: "bo8jQKTaE0Y" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const secondResult = await verifyUnsplashTopic("wallpapers");
+    expect(secondResult).toEqual({ valid: true, normalized: "bo8jQKTaE0Y" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("extracts topic slug from full URL and resolves its topic ID", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/topics/nature",
+      JSON.stringify({ id: "6sMVjTLSkeQ", slug: "nature", total_photos: 200 }),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashTopic("https://unsplash.com/t/nature");
+
+    expect(result).toEqual({ valid: true, normalized: "6sMVjTLSkeQ" });
+  });
+
+  it("fails when topic does not exist (404)", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/topics/nonexistent",
+      "{}",
+      {
+        status: 404,
+      },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashTopic("nonexistent");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("was not found");
+  });
+
+  it("fails when topic contains 0 photos", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/topics/empty-topic",
+      JSON.stringify({ id: "t3", slug: "empty-topic", total_photos: 0 }),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashTopic("empty-topic");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("contains no photos");
+  });
+
+  it("rejects empty or whitespace-only identifiers", async () => {
+    expect((await verifyUnsplashCollection("")).valid).toBe(false);
+    expect((await verifyUnsplashCollection("   ")).valid).toBe(false);
+    expect((await verifyUnsplashTopic("")).valid).toBe(false);
+    expect((await verifyUnsplashTopic("   ")).valid).toBe(false);
+  });
+});
+
 function responseAt(
   url: string,
   body: BodyInit,
-  headers: HeadersInit,
+  init?: ResponseInit | HeadersInit,
 ): Response {
-  const response = new Response(body, { headers });
+  const options =
+    init &&
+    typeof init === "object" &&
+    !("status" in init) &&
+    !("headers" in init)
+      ? { headers: init as HeadersInit }
+      : (init as ResponseInit);
+  const response = new Response(body, options);
 
   Object.defineProperty(response, "url", { value: url });
 

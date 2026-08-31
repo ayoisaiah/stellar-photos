@@ -90,6 +90,8 @@ interface UnsplashPhotoResponse {
 }
 
 const API_ORIGIN = "https://api.unsplash.com";
+const verifiedCollections = new Set<string>([STELLAR_COLLECTION]);
+const verifiedTopics = new Map<string, string>();
 
 const unsplashSource: ImageSource = {
   id: "unsplash",
@@ -393,6 +395,155 @@ function normalizeCsv(value?: string | null): string {
     .join(",");
 }
 
+async function verifyUnsplashCollection(
+  idOrUrl: string,
+): Promise<{ valid: boolean; normalized?: string; error?: string }> {
+  const id = cleanIdentifier(idOrUrl);
+
+  if (!id) {
+    return { valid: false, error: "Please enter a valid collection ID." };
+  }
+
+  if (verifiedCollections.has(id)) {
+    return { valid: true, normalized: id };
+  }
+
+  try {
+    const url = new URL(`/collections/${encodeURIComponent(id)}`, API_ORIGIN);
+    const response = await authenticatedFetch(url);
+    const data = (await response.json()) as { total_photos?: number };
+
+    if (typeof data.total_photos === "number" && data.total_photos === 0) {
+      return {
+        valid: false,
+        error: `Collection "${id}" contains no photos.`,
+      };
+    }
+
+    verifiedCollections.add(id);
+
+    return { valid: true, normalized: id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes("404")) {
+      return {
+        valid: false,
+        error: `Collection "${id}" was not found on Unsplash.`,
+      };
+    }
+
+    if (
+      message.includes("401") ||
+      message.includes("403") ||
+      message.includes("429")
+    ) {
+      return {
+        valid: false,
+        error:
+          "Unable to verify collection: API access denied or rate limit reached.",
+      };
+    }
+
+    if (message.includes("No Unsplash access key")) {
+      return {
+        valid: false,
+        error: "No Unsplash access key configured.",
+      };
+    }
+
+    return {
+      valid: false,
+      error: `Could not verify collection "${id}". Please check your network connection.`,
+    };
+  }
+}
+
+async function verifyUnsplashTopic(
+  slugOrUrl: string,
+): Promise<{ valid: boolean; normalized?: string; error?: string }> {
+  const slugOrId = cleanIdentifier(slugOrUrl);
+
+  if (!slugOrId) {
+    return { valid: false, error: "Please enter a valid topic slug or ID." };
+  }
+
+  const cachedId = verifiedTopics.get(slugOrId);
+
+  if (cachedId) {
+    return { valid: true, normalized: cachedId };
+  }
+
+  try {
+    const url = new URL(`/topics/${encodeURIComponent(slugOrId)}`, API_ORIGIN);
+    const response = await authenticatedFetch(url);
+    const data = (await response.json()) as {
+      id?: string;
+      slug?: string;
+      total_photos?: number;
+      status?: string;
+    };
+
+    if (typeof data.total_photos === "number" && data.total_photos === 0) {
+      return {
+        valid: false,
+        error: `Topic "${slugOrId}" contains no photos.`,
+      };
+    }
+
+    const topicId = data.id || slugOrId;
+
+    verifiedTopics.set(slugOrId, topicId);
+    if (data.slug) {
+      verifiedTopics.set(data.slug, topicId);
+    }
+    if (data.id) {
+      verifiedTopics.set(data.id, topicId);
+    }
+
+    return { valid: true, normalized: topicId };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes("404")) {
+      return {
+        valid: false,
+        error: `Topic "${slugOrId}" was not found on Unsplash.`,
+      };
+    }
+
+    if (
+      message.includes("401") ||
+      message.includes("403") ||
+      message.includes("429")
+    ) {
+      return {
+        valid: false,
+        error:
+          "Unable to verify topic: API access denied or rate limit reached.",
+      };
+    }
+
+    if (message.includes("No Unsplash access key")) {
+      return {
+        valid: false,
+        error: "No Unsplash access key configured.",
+      };
+    }
+
+    return {
+      valid: false,
+      error: `Could not verify topic "${slugOrId}". Please check your network connection.`,
+    };
+  }
+}
+
+function clearVerificationCache(): void {
+  verifiedCollections.clear();
+  verifiedCollections.add(STELLAR_COLLECTION);
+  verifiedTopics.clear();
+}
+
 export type {
   UnsplashExif,
   UnsplashInfoData,
@@ -403,10 +554,13 @@ export type {
 export {
   buildRandomPhotoUrl,
   cleanIdentifier,
+  clearVerificationCache,
   fetchUnsplashPhotoDetails,
   fullResolutionImageUrl,
   getUnsplashPhotoInfo,
   imageUrlForResolution,
   normalizeCsv,
   unsplashSource,
+  verifyUnsplashCollection,
+  verifyUnsplashTopic,
 };
