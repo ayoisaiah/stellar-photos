@@ -1,17 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ensureCurrent = vi.fn();
-const initializeSettingsAndHistory = vi.fn();
 const rotate = vi.fn();
-const switchSource = vi.fn();
 const trackDownload = vi.fn();
 const current = { sourceId: "unsplash", sourceAssetId: "photo-1" };
 
 vi.mock("../src/ts/actions", () => ({
   ensureCurrent,
-  initializeSettingsAndHistory,
   rotate,
-  switchSource,
   trackDownload,
 }));
 
@@ -22,39 +18,14 @@ beforeEach(() => {
 });
 
 describe("service worker commands", () => {
-  it("activates a compiled-in source and returns its first photograph", async () => {
-    switchSource.mockResolvedValue(current);
+  it("handles ensure-current commands", async () => {
+    ensureCurrent.mockResolvedValue(current);
 
-    await expect(
-      dispatch({ command: "switch-source", sourceId: "unsplash" }),
-    ).resolves.toEqual({ ok: true, current });
-    expect(switchSource).toHaveBeenCalledWith("unsplash");
-  });
-
-  it("rejects malformed source-selection commands", async () => {
-    await expect(dispatch({ command: "switch-source" })).resolves.toEqual({
-      ok: false,
-      error: { code: "INVALID_COMMAND", message: "Unknown command" },
+    await expect(dispatch({ command: "ensure-current" })).resolves.toEqual({
+      ok: true,
+      current,
     });
-    expect(switchSource).not.toHaveBeenCalled();
-  });
-
-  it("returns source activation errors to the page", async () => {
-    switchSource.mockRejectedValue(new Error("Unknown image source"));
-
-    await expect(
-      dispatch({ command: "switch-source", sourceId: "missing" }),
-    ).resolves.toEqual({
-      ok: false,
-      error: { code: "OPERATION_FAILED", message: "Unknown image source" },
-    });
-  });
-
-  it("handles track-download commands", async () => {
-    await expect(
-      dispatch({ command: "track-download", asset: current }),
-    ).resolves.toEqual({ ok: true, current: null });
-    expect(trackDownload).toHaveBeenCalledWith(current);
+    expect(ensureCurrent).toHaveBeenCalledWith();
   });
 
   it("handles rotate commands", async () => {
@@ -67,6 +38,20 @@ describe("service worker commands", () => {
     expect(rotate).toHaveBeenCalledWith();
   });
 
+  it("handles track-download commands", async () => {
+    await expect(
+      dispatch({ command: "track-download", asset: current }),
+    ).resolves.toEqual({ ok: true, current: null });
+    expect(trackDownload).toHaveBeenCalledWith(current);
+  });
+
+  it("rejects malformed commands", async () => {
+    await expect(dispatch({ command: "unknown-cmd" })).resolves.toEqual({
+      ok: false,
+      error: { code: "INVALID_COMMAND", message: "Unknown command" },
+    });
+  });
+
   it("returns NEEDS_PAGE_CONTEXT error code when local permission is required", async () => {
     const error = new Error("Failed to execute 'getFileHandle'");
     error.name = "LocalPermissionError";
@@ -77,6 +62,18 @@ describe("service worker commands", () => {
       error: {
         code: "NEEDS_PAGE_CONTEXT",
         message: "Failed to execute 'getFileHandle'",
+      },
+    });
+  });
+
+  it("returns OPERATION_FAILED for generic errors", async () => {
+    rotate.mockRejectedValue(new Error("Network timeout"));
+
+    await expect(dispatch({ command: "rotate" })).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "OPERATION_FAILED",
+        message: "Network timeout",
       },
     });
   });

@@ -23,8 +23,9 @@ import { dispatch } from "../service-worker";
 import {
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
+  getActiveImageSourceIds,
+  getCoreSettings,
   getDisplaySettings,
-  getImageSourceId,
 } from "../settings";
 import { getImageSource } from "../sources";
 import { getUnsplashPhotoInfo } from "../sources/unsplash";
@@ -46,8 +47,8 @@ import "./settings-drawer";
 import type { BackgroundAsset } from "../assets";
 import type { WorkerCommand, WorkerResult } from "../service-worker";
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
+import type { PhotoFrequency } from "../sources/photo-frequency";
 import type { EmptyStatePhase } from "./empty-state";
-import type { SourceChangeState } from "./settings-drawer";
 
 @customElement("stellar-app")
 class StellarApp extends LitElement {
@@ -57,7 +58,6 @@ class StellarApp extends LitElement {
   private lastWheelTime = 0;
   private objectUrl: string | null = null;
   private requestInFlight = false;
-  private sourceSwitchInFlight = false;
 
   constructor() {
     super();
@@ -112,10 +112,13 @@ class StellarApp extends LitElement {
   private accessor settingsOpen = false;
 
   @state()
-  private accessor sourceId: string = DEFAULT_CORE_SETTINGS.activeSourceId;
+  private accessor activeSourceIds: string[] = [
+    ...DEFAULT_CORE_SETTINGS.activeSourceIds,
+  ];
 
   @state()
-  private accessor sourceChange: SourceChangeState = { status: "idle" };
+  private accessor photoFrequency: PhotoFrequency =
+    DEFAULT_CORE_SETTINGS.photoFrequency;
 
   @state()
   private accessor historyIndex = 0;
@@ -321,11 +324,12 @@ class StellarApp extends LitElement {
       ></stellar-photo-info>
       <stellar-settings-drawer
         .open=${this.settingsOpen}
-        .sourceId=${this.sourceId}
+        .activeSourceIds=${this.activeSourceIds}
+        .photoFrequency=${this.photoFrequency}
         .displaySettings=${this.displaySettings}
-        .sourceChange=${this.sourceChange}
         @close-settings=${this.closeSettings}
-        @select-source=${this.selectSource}
+        @active-sources-changed=${this.handleActiveSourcesChanged}
+        @frequency-changed=${this.handleFrequencyChanged}
         @display-settings-changed=${this.handleDisplaySettingsChanged}
       ></stellar-settings-drawer>
     `;
@@ -459,7 +463,12 @@ class StellarApp extends LitElement {
   private async preparePhoto(
     metadata: BackgroundAsset,
   ): Promise<{ url: string; asset: BackgroundAsset } | null> {
-    const response = await readCachedImage(metadata.cacheKey);
+    let response = await readCachedImage(metadata.cacheKey);
+
+    if (!response) {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      response = await readCachedImage(metadata.cacheKey);
+    }
 
     if (!response || !this.isConnected) return null;
 
@@ -530,10 +539,10 @@ class StellarApp extends LitElement {
 
   private async initializeState(): Promise<void> {
     try {
-      const [displaySettings, sourceId, pinned, historyState] =
+      const [displaySettings, coreSettings, pinned, historyState] =
         await Promise.all([
           getDisplaySettings().catch(() => DEFAULT_DISPLAY_SETTINGS),
-          getImageSourceId().catch(() => DEFAULT_CORE_SETTINGS.activeSourceId),
+          getCoreSettings().catch(() => DEFAULT_CORE_SETTINGS),
           readPinnedAsset().catch(() => null),
           readHistory().catch(() => ({ history: [] })),
         ]);
@@ -541,7 +550,8 @@ class StellarApp extends LitElement {
       if (!this.isConnected) return;
 
       this.displaySettings = displaySettings;
-      this.sourceId = sourceId;
+      this.activeSourceIds = coreSettings.activeSourceIds;
+      this.photoFrequency = coreSettings.photoFrequency;
       this.pinnedAsset = pinned;
       this.historyAssets = historyState.history;
 
@@ -816,9 +826,11 @@ class StellarApp extends LitElement {
     }
   };
 
-  private async loadSourceId(): Promise<void> {
+  private async loadCoreSettings(): Promise<void> {
     try {
-      this.sourceId = await getImageSourceId();
+      const settings = await getCoreSettings();
+      this.activeSourceIds = settings.activeSourceIds;
+      this.photoFrequency = settings.photoFrequency;
     } catch {
       // Graceful fallback
     }
@@ -827,16 +839,14 @@ class StellarApp extends LitElement {
   private toggleSettings = (): void => {
     if (!this.settingsOpen) {
       this.historyOpen = false;
-      void this.loadSourceId();
+      void this.loadCoreSettings();
     }
 
     this.settingsOpen = !this.settingsOpen;
-    if (!this.sourceSwitchInFlight) this.sourceChange = { status: "idle" };
   };
 
   private closeSettings = (): void => {
     this.settingsOpen = false;
-    if (!this.sourceSwitchInFlight) this.sourceChange = { status: "idle" };
     this.showControls();
 
     void this.updateComplete.then(() => {
@@ -852,65 +862,22 @@ class StellarApp extends LitElement {
     this.displaySettings = event.detail.displaySettings;
   };
 
-  private selectSource = async (
-    event: CustomEvent<{ sourceId: string }>,
-  ): Promise<void> => {
-    if (this.sourceSwitchInFlight) return;
+  private handleFrequencyChanged = (
+    event: CustomEvent<{ frequency: PhotoFrequency }>,
+  ): void => {
+    this.photoFrequency = event.detail.frequency;
+  };
 
-    let preparedUrl: string | null = null;
+  private handleActiveSourcesChanged = (
+    event: CustomEvent<{ sourceIds: string[] }>,
+  ): void => {
+    this.activeSourceIds = event.detail.sourceIds;
 
-    this.sourceSwitchInFlight = true;
-    this.sourceChange = { status: "switching" };
-
-    try {
-      const result = await sendCommand({
-        command: "switch-source",
-        sourceId: event.detail.sourceId,
-      });
-
-      if (!result.ok) throw new Error(result.error.message);
-      if (!result.current)
-        throw new Error("The source did not return a photograph");
-
-      if (!this.isConnected) return;
-
-      this.sourceId = event.detail.sourceId;
-      this.pinnedAsset = null;
-
-      const preparedResult = await this.preparePhoto(result.current);
-
-      if (!preparedResult)
-        throw new Error("The photograph could not be displayed");
-
-      preparedUrl = preparedResult.url;
-
-      this.applyPhoto(preparedUrl, preparedResult.asset);
-      preparedUrl = null;
-      this.phase = "ready";
-      this.historyIndex = 0;
-      await this.loadHistoryAssets();
-
-      if (!this.isPinned) {
-        void sendCommand({ command: "rotate" });
-      }
-    } catch (error) {
-      if (this.isConnected) {
-        this.sourceChange = {
-          status: "error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Couldn’t switch photo sources.",
-        };
-      }
-    } finally {
-      if (preparedUrl) URL.revokeObjectURL(preparedUrl);
-
-      this.sourceSwitchInFlight = false;
-
-      if (this.isConnected && this.sourceChange.status === "switching") {
-        this.sourceChange = { status: "idle" };
-      }
+    if (
+      this.currentAsset &&
+      !event.detail.sourceIds.includes(this.currentAsset.sourceId)
+    ) {
+      void this.ensureAndRender();
     }
   };
 
@@ -925,13 +892,9 @@ class StellarApp extends LitElement {
 }
 
 async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
-  if (command.command === "switch-source" && command.sourceId === "local") {
-    return dispatch(command);
-  }
-
-  const activeSourceId = await getImageSourceId();
+  const activeSourceIds = await getActiveImageSourceIds();
   if (
-    activeSourceId === "local" &&
+    activeSourceIds.includes("local") &&
     (command.command === "rotate" || command.command === "ensure-current")
   ) {
     return dispatch(command);

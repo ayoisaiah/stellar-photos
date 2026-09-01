@@ -1,9 +1,7 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
-import { shouldRotateAtFrequency } from "./photo-frequency";
 import {
-  getPhotoFrequency,
   getUnsplashSettings,
   resolveAccessKey,
   STELLAR_COLLECTION,
@@ -98,7 +96,6 @@ const unsplashSource: ImageSource = {
   name: "Unsplash",
   supportsDownload: true,
   supportsInfo: true,
-  shouldRotate,
   getRandomAsset,
   downloadAsset,
   downloadFullAsset,
@@ -177,10 +174,6 @@ function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
   }
 
   return url;
-}
-
-async function shouldRotate(current: BackgroundAsset): Promise<boolean> {
-  return shouldRotateAtFrequency(current, unsplashSource.id, getPhotoFrequency);
 }
 
 function fullResolutionImageUrl(rawUrl: string): string {

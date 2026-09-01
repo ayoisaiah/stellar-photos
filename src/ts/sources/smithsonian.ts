@@ -2,10 +2,6 @@ import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import type { ImageSource } from "../sources";
-import {
-  getStoredPhotoFrequency,
-  shouldRotateAtFrequency,
-} from "./photo-frequency";
 
 type SmithsonianCategory =
   | "all"
@@ -49,7 +45,6 @@ interface SmithsonianResponse {
 
 declare const __SMITHSONIAN_API_KEY__: string;
 
-const SMITHSONIAN_SETTINGS_KEY = "sourceSettings:smithsonian";
 const SMITHSONIAN_CATEGORY_KEY = "sourceSettings:smithsonian:category";
 const API_ORIGIN = "https://api.si.edu";
 const IMAGE_ORIGIN = "https://ids.si.edu";
@@ -59,7 +54,6 @@ const smithsonianSource: ImageSource = {
   id: "smithsonian",
   name: "Smithsonian Open Access",
   supportsDownload: true,
-  shouldRotate: shouldRotateSmithsonian,
   getRandomAsset: getRandomSmithsonianAsset,
   downloadAsset: downloadSmithsonianAsset,
   downloadFullAsset: downloadSmithsonianAsset,
@@ -138,14 +132,6 @@ function recordUrl(value: string | undefined): string {
   }
 
   return OPEN_ACCESS_URL;
-}
-
-async function shouldRotateSmithsonian(
-  current: BackgroundAsset,
-): Promise<boolean> {
-  return shouldRotateAtFrequency(current, smithsonianSource.id, () =>
-    getStoredPhotoFrequency(SMITHSONIAN_SETTINGS_KEY),
-  );
 }
 
 async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
@@ -229,9 +215,4 @@ async function downloadSmithsonianAsset(
 }
 
 export type { SmithsonianCategory };
-export {
-  getSmithsonianCategory,
-  SMITHSONIAN_SETTINGS_KEY,
-  setSmithsonianCategory,
-  smithsonianSource,
-};
+export { getSmithsonianCategory, setSmithsonianCategory, smithsonianSource };

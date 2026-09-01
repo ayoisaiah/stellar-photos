@@ -147,28 +147,6 @@ describe("smithsonian source", () => {
     );
   });
 
-  it("respects its stored photo frequency", async () => {
-    sync["sourceSettings:smithsonian"] = {
-      version: 1,
-      photoFrequency: "everyhour",
-    };
-    const asset = {
-      sourceId: "smithsonian",
-      sourceAssetId: "item",
-      cacheKey: "cache-key",
-      width: 2400,
-      height: 1600,
-      color: null,
-      description: null,
-      attribution: null,
-      payloadVersion: 1,
-      sourcePayload: {},
-      createdAt: Date.now() - 30 * 60 * 1000,
-    };
-
-    await expect(smithsonianSource.shouldRotate?.(asset)).resolves.toBe(false);
-  });
-
   it("falls back to default dimensions when metadata lacks width or height", async () => {
     vi.stubGlobal(
       "fetch",

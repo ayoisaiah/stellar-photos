@@ -14,12 +14,7 @@ import {
   setUnsplashAccessKey,
   setUnsplashSettings,
 } from "../sources/unsplash-settings";
-import {
-  readFrequency,
-  renderFrequencySelector,
-  scheduleSavedReset,
-  statusMessage,
-} from "./settings-form";
+import { scheduleSavedReset, statusMessage } from "./settings-form";
 import "./tag-input";
 
 import type {
@@ -103,12 +98,6 @@ class UnsplashSettings extends LitElement {
 
   override render() {
     return html`
-      ${renderFrequencySelector(
-        this.settings.photoFrequency,
-        !this.loaded,
-        this.changeFrequency,
-      )}
-
       <fieldset>
         <legend>Photo filters</legend>
         <p class="hint">Filter the pool of random photos from Unsplash.</p>
@@ -315,15 +304,6 @@ class UnsplashSettings extends LitElement {
       }
     });
     this.saveInFlight = false;
-  };
-
-  private changeFrequency = (event: Event): void => {
-    const nextFrequency = readFrequency(event);
-
-    if (!nextFrequency || nextFrequency === this.settings.photoFrequency)
-      return;
-
-    void this.persist({ photoFrequency: nextFrequency });
   };
 
   private changeResolution = (event: Event): void => {

@@ -1,35 +1,35 @@
-import { Check, X } from "@lucide/icons";
+import { Check, ChevronDown, X } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/settings-drawer.css?inline";
-import { DEFAULT_DISPLAY_SETTINGS, setDisplaySettings } from "../settings";
-import { getImageSource, listImageSources } from "../sources";
+import {
+  DEFAULT_CORE_SETTINGS,
+  DEFAULT_DISPLAY_SETTINGS,
+  setActiveImageSourceIds,
+  setDisplaySettings,
+  setPhotoFrequency,
+} from "../settings";
+import { listImageSources } from "../sources";
 import {
   listStoredFolderRecords,
   verifyHandlePermission,
 } from "../sources/local-db";
+import { readFrequency, renderFrequencySelector } from "./settings-form";
+import { hasSourceSettings, renderSourceSettings } from "./source-settings";
 import "./lucide-icon";
 
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
-import { renderSourceSettings } from "./source-settings";
+import type { PhotoFrequency } from "../sources/photo-frequency";
 
-type SourceChangeState =
-  | { status: "idle" }
-  | { status: "switching" }
-  | { status: "error"; message: string };
+declare const __APP_VERSION__: string;
 
-function getExtensionVersion(): string {
-  try {
-    if (typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
-      return chrome.runtime.getManifest().version;
-    }
-  } catch {
-    // Graceful fallback
-  }
-
-  return "5.0.0";
-}
+const SOURCE_DESCRIPTIONS: Readonly<Record<string, string>> = {
+  unsplash: "Photography from the Unsplash community",
+  earthview: "Satellite imagery from around the world",
+  smithsonian: "High-resolution open access museum collections",
+  local: "Photographs from your local device",
+};
 
 function getWebstoreReviewUrl(): string {
   const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -52,29 +52,46 @@ class SettingsDrawer extends LitElement {
   @property({ type: Boolean, reflect: true })
   accessor open = false;
 
-  @property({ attribute: "source-id" })
-  accessor sourceId = listImageSources()[0]?.id ?? "unsplash";
+  @property({ attribute: false })
+  accessor activeSourceIds: string[] = [
+    ...DEFAULT_CORE_SETTINGS.activeSourceIds,
+  ];
 
   @property({ attribute: false })
-  accessor sourceChange: SourceChangeState = { status: "idle" };
+  accessor photoFrequency: PhotoFrequency =
+    DEFAULT_CORE_SETTINGS.photoFrequency;
 
   @property({ attribute: false })
   accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
 
   @state()
-  private accessor selectedSourceId = "";
+  private accessor localSourceIds: string[] = [
+    ...DEFAULT_CORE_SETTINGS.activeSourceIds,
+  ];
+
+  @state()
+  private accessor localPhotoFrequency: PhotoFrequency =
+    DEFAULT_CORE_SETTINGS.photoFrequency;
+
+  @state()
+  private accessor expandedSourceIds: Set<string> = new Set();
 
   @state()
   private accessor localDisplaySettings: DisplaySettings =
     DEFAULT_DISPLAY_SETTINGS;
 
   override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
-    if (changedProperties.has("sourceId")) {
-      this.selectedSourceId = this.sourceId;
+    if (changedProperties.has("activeSourceIds")) {
+      this.localSourceIds = this.activeSourceIds;
+    }
+
+    if (changedProperties.has("photoFrequency")) {
+      this.localPhotoFrequency = this.photoFrequency;
     }
 
     if (changedProperties.has("open") && this.open) {
-      this.selectedSourceId = this.sourceId;
+      this.localSourceIds = this.activeSourceIds;
+      this.localPhotoFrequency = this.photoFrequency;
     }
 
     if (changedProperties.has("displaySettings")) {
@@ -89,11 +106,6 @@ class SettingsDrawer extends LitElement {
 
   override render() {
     const sources = listImageSources();
-    const currentSourceId = this.selectedSourceId || this.sourceId;
-    const source = getImageSource(currentSourceId) ?? sources[0];
-    const switching = this.sourceChange.status === "switching";
-    const error =
-      this.sourceChange.status === "error" ? this.sourceChange.message : "";
 
     return html`
       <button
@@ -105,7 +117,6 @@ class SettingsDrawer extends LitElement {
       ></button>
       <aside
         role="dialog"
-        aria-busy=${switching}
         aria-hidden=${!this.open}
         aria-labelledby="settings-title"
       >
@@ -125,32 +136,81 @@ class SettingsDrawer extends LitElement {
         </header>
         <div class="content">
           <section>
-            <label class="source-label" for="source">Photo source</label>
-            <div class="select-wrap">
-              <select
-                id="source"
-                .value=${source?.id ?? ""}
-                ?disabled=${switching}
-                @change=${this.selectSource}
-              >
-                ${sources.map(
-                  ({ id, name }) =>
-                    html`<option value=${id} ?selected=${id === currentSourceId}>${name}</option>`,
-                )}
-              </select>
+            <div class="section-heading">
+              <h3>Photo sources</h3>
             </div>
             <p class="source-help">
-              Choose where Stellar Photos finds your backgrounds.
+              Choose one or more sources Stellar Photos pulls backgrounds from.
             </p>
+            <div class="source-list">
+              ${sources.map((source) => {
+                const isActive = this.localSourceIds.includes(source.id);
+                const isOnlyActive =
+                  isActive && this.localSourceIds.length === 1;
+                const canConfigure = hasSourceSettings(source.id);
+                const isExpanded = this.expandedSourceIds.has(source.id);
+
+                return html`
+                  <div class="source-card ${isActive ? "active" : ""}">
+                    <div class="source-card-header">
+                      <label class="source-toggle-label">
+                        <input
+                          type="checkbox"
+                          .checked=${isActive}
+                          ?disabled=${isOnlyActive}
+                          @change=${() => this.toggleSource(source.id)}
+                        />
+                        <span class="checkbox-control" aria-hidden="true">
+                          <stellar-icon .icon=${Check}></stellar-icon>
+                        </span>
+                        <span>
+                          <strong>${source.name}</strong>
+                          <small>${SOURCE_DESCRIPTIONS[source.id] ?? ""}</small>
+                        </span>
+                      </label>
+                      ${
+                        canConfigure
+                          ? html`
+                            <button
+                              type="button"
+                              class="source-expand-btn ${isExpanded ? "expanded" : ""}"
+                              aria-label="${isExpanded ? "Collapse" : "Expand"} ${source.name} settings"
+                              aria-expanded=${isExpanded}
+                              @click=${() => this.toggleExpand(source.id)}
+                            >
+                              <stellar-icon .icon=${ChevronDown}></stellar-icon>
+                            </button>
+                          `
+                          : null
+                      }
+                    </div>
+                    ${
+                      canConfigure && isExpanded && this.open
+                        ? html`
+                          <div class="source-card-body">
+                            ${renderSourceSettings(source.id)}
+                          </div>
+                        `
+                        : null
+                    }
+                  </div>
+                `;
+              })}
+            </div>
           </section>
           <div class="divider"></div>
           <section>
             <div class="section-heading">
-              <h3>${source?.name ?? "Source"}</h3>
-              ${switching ? html`<span>Finding a photo…</span>` : null}
+              <h3>Photo frequency</h3>
             </div>
-            ${this.open && source ? renderSourceSettings(source.id) : null}
-            ${error ? html`<p class="error" role="alert">${error}</p>` : null}
+            <p class="source-help display-help">
+              Choose how often Stellar Photos displays a new photo.
+            </p>
+            ${renderFrequencySelector(
+              this.localPhotoFrequency,
+              false,
+              this.changeFrequency,
+            )}
           </section>
           <div class="divider"></div>
           <section>
@@ -254,7 +314,7 @@ class SettingsDrawer extends LitElement {
           <section>
             <div class="section-heading">
               <h3>About</h3>
-              <span class="version-badge">v${getExtensionVersion()}</span>
+              <span class="version-badge">v${__APP_VERSION__}</span>
             </div>
             <p class="about-text">
               Stellar Photos is created by
@@ -331,24 +391,61 @@ class SettingsDrawer extends LitElement {
     this.dispatchEvent(new CustomEvent("close-settings"));
   };
 
-  private selectSource = async (event: Event): Promise<void> => {
-    const sourceId = (event.currentTarget as HTMLSelectElement).value;
+  private changeFrequency = async (event: Event): Promise<void> => {
+    const nextFrequency = readFrequency(event);
+    if (!nextFrequency || nextFrequency === this.localPhotoFrequency) return;
 
-    this.selectedSourceId = sourceId;
-
-    if (sourceId === this.sourceId) return;
-
-    if (sourceId === "local") {
-      const records = await listStoredFolderRecords().catch(() => []);
-      if (records.length === 0) return;
-
-      for (const record of records) {
-        await verifyHandlePermission(record.handle, "read");
-      }
-    }
+    this.localPhotoFrequency = nextFrequency;
+    await setPhotoFrequency(nextFrequency);
 
     this.dispatchEvent(
-      new CustomEvent("select-source", { detail: { sourceId } }),
+      new CustomEvent("frequency-changed", {
+        detail: { frequency: nextFrequency },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
+  private toggleExpand = (sourceId: string): void => {
+    const next = new Set(this.expandedSourceIds);
+    if (next.has(sourceId)) {
+      next.delete(sourceId);
+    } else {
+      next.add(sourceId);
+    }
+    this.expandedSourceIds = next;
+  };
+
+  private toggleSource = async (sourceId: string): Promise<void> => {
+    const isActive = this.localSourceIds.includes(sourceId);
+
+    if (isActive && this.localSourceIds.length === 1) return;
+
+    let nextSourceIds: string[];
+    if (isActive) {
+      nextSourceIds = this.localSourceIds.filter((id) => id !== sourceId);
+    } else {
+      if (sourceId === "local") {
+        const records = await listStoredFolderRecords().catch(() => []);
+        if (records.length > 0) {
+          for (const record of records) {
+            await verifyHandlePermission(record.handle, "read");
+          }
+        }
+      }
+      nextSourceIds = [...this.localSourceIds, sourceId];
+    }
+
+    this.localSourceIds = nextSourceIds;
+    await setActiveImageSourceIds(nextSourceIds);
+
+    this.dispatchEvent(
+      new CustomEvent("active-sources-changed", {
+        detail: { sourceIds: nextSourceIds },
+        bubbles: true,
+        composed: true,
+      }),
     );
   };
 
@@ -425,5 +522,4 @@ declare global {
   }
 }
 
-export type { SourceChangeState };
-export { getExtensionVersion, getWebstoreReviewUrl, SettingsDrawer };
+export { getWebstoreReviewUrl, SettingsDrawer };

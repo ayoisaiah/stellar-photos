@@ -44,14 +44,18 @@ const {
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
   DISPLAY_SETTINGS_KEY,
+  getActiveImageSourceIds,
+  getCoreSettings,
   getDisplaySettings,
-  getImageSourceId,
+  getPhotoFrequency,
+  migrateCoreSettings,
+  setActiveImageSourceIds,
+  setCoreSettings,
   setDisplaySettings,
-  setImageSourceId,
+  setPhotoFrequency,
 } = await import("../src/ts/settings");
 const {
   DEFAULT_UNSPLASH_SETTINGS,
-  getPhotoFrequency,
   getUnsplashAccessKey,
   getUnsplashSettings,
   resolveAccessKey,
@@ -88,16 +92,37 @@ describe("settings", () => {
   });
 
   it("returns lazy defaults without writing storage", async () => {
-    expect(await getImageSourceId()).toBe(DEFAULT_CORE_SETTINGS.activeSourceId);
+    expect(await getCoreSettings()).toEqual(DEFAULT_CORE_SETTINGS);
+    expect(await getActiveImageSourceIds()).toEqual(
+      DEFAULT_CORE_SETTINGS.activeSourceIds,
+    );
+    expect(await getPhotoFrequency()).toBe(
+      DEFAULT_CORE_SETTINGS.photoFrequency,
+    );
     expect(await getDisplaySettings()).toEqual(DEFAULT_DISPLAY_SETTINGS);
     expect(await getUnsplashSettings()).toEqual(DEFAULT_UNSPLASH_SETTINGS);
     expect(sync).toEqual({});
   });
 
-  it("rejects settings written by a newer schema", async () => {
-    sync[CORE_SETTINGS_KEY] = { version: 2, activeSourceId: "future-source" };
+  it("updates core settings via setCoreSettings", async () => {
+    await setCoreSettings({
+      activeSourceIds: ["smithsonian"],
+      photoFrequency: "everyday",
+    });
+    expect(await getCoreSettings()).toEqual({
+      version: 1,
+      activeSourceIds: ["smithsonian"],
+      photoFrequency: "everyday",
+    });
+  });
 
-    await expect(getImageSourceId()).rejects.toThrow(
+  it("rejects settings written by a newer schema", async () => {
+    sync[CORE_SETTINGS_KEY] = {
+      version: 2,
+      activeSourceIds: ["future-source"],
+    };
+
+    await expect(getActiveImageSourceIds()).rejects.toThrow(
       "Unsupported core settings version: 2",
     );
 
@@ -105,7 +130,6 @@ describe("settings", () => {
     sync[UNSPLASH_SETTINGS_KEY] = {
       version: 2,
       imageQuality: "future",
-      photoFrequency: "future",
     };
 
     await expect(getUnsplashSettings()).rejects.toThrow(
@@ -134,55 +158,75 @@ describe("settings", () => {
 
   it("defaults invalid or missing photo frequency to newtab", async () => {
     expect(await getPhotoFrequency()).toBe("newtab");
-    sync[UNSPLASH_SETTINGS_KEY] = {
-      ...DEFAULT_UNSPLASH_SETTINGS,
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceIds: ["unsplash"],
       photoFrequency: "every15minutes",
     };
     expect(await getPhotoFrequency()).toBe("every15minutes");
-    sync[UNSPLASH_SETTINGS_KEY] = {
-      ...DEFAULT_UNSPLASH_SETTINGS,
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceIds: ["unsplash"],
       photoFrequency: "everyhour",
     };
     expect(await getPhotoFrequency()).toBe("everyhour");
-    sync[UNSPLASH_SETTINGS_KEY] = {
-      ...DEFAULT_UNSPLASH_SETTINGS,
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceIds: ["unsplash"],
       photoFrequency: "everyday",
     };
     expect(await getPhotoFrequency()).toBe("everyday");
-    sync[UNSPLASH_SETTINGS_KEY] = {
-      ...DEFAULT_UNSPLASH_SETTINGS,
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceIds: ["unsplash"],
       photoFrequency: "unexpected",
     };
     expect(await getPhotoFrequency()).toBe("newtab");
   });
 
   it("resolves the internal source selection and its legacy value", async () => {
-    expect(await getImageSourceId()).toBe("unsplash");
+    expect(await getActiveImageSourceIds()).toEqual(["unsplash"]);
     sync[CORE_SETTINGS_KEY] = { version: 1, activeSourceId: "official" };
-    expect(await getImageSourceId()).toBe("unsplash");
+    expect(await getActiveImageSourceIds()).toEqual(["unsplash"]);
     sync[CORE_SETTINGS_KEY] = {
       version: 1,
       activeSourceId: "future-source",
     };
-    expect(await getImageSourceId()).toBe("future-source");
+    expect(await getActiveImageSourceIds()).toEqual(["future-source"]);
+  });
+
+  it("migrates legacy core settings to activeSourceIds format", async () => {
+    sync[CORE_SETTINGS_KEY] = {
+      version: 1,
+      activeSourceId: "earthview",
+      photoFrequency: "everyhour",
+    };
+
+    await migrateCoreSettings();
+
+    expect(sync[CORE_SETTINGS_KEY]).toEqual({
+      version: 1,
+      activeSourceIds: ["earthview"],
+      photoFrequency: "everyhour",
+    });
   });
 
   it("persists source-owned and application-owned settings", async () => {
     await setUnsplashSettings({
       imageQuality: "max",
-      photoFrequency: "everyday",
     });
-    await setImageSourceId("unsplash");
+    await setActiveImageSourceIds(["unsplash", "earthview"]);
+    await setPhotoFrequency("everyday");
 
     expect(sync).toEqual({
       [CORE_SETTINGS_KEY]: {
         version: 1,
-        activeSourceId: "unsplash",
+        activeSourceIds: ["unsplash", "earthview"],
+        photoFrequency: "everyday",
       },
       [UNSPLASH_SETTINGS_KEY]: {
         ...DEFAULT_UNSPLASH_SETTINGS,
         imageQuality: "max",
-        photoFrequency: "everyday",
       },
     });
   });

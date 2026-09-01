@@ -1,6 +1,6 @@
 import { html } from "lit";
 
-import type { PhotoFrequency } from "../sources/unsplash-settings";
+import type { PhotoFrequency } from "../sources/photo-frequency";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -37,34 +37,30 @@ function renderFrequencySelector(
   value: PhotoFrequency,
   disabled: boolean,
   change: (event: Event) => void,
-  labelClass = "",
+  labelClass = "radio-label",
 ) {
   return html`
-    <fieldset>
-      <legend>Change background image</legend>
-      <p class="hint">Choose how often Stellar Photos displays a new photo.</p>
-      <div class="options">
-        ${FREQUENCIES.map(
-          (frequency) => html`
-            <label class=${labelClass}>
-              <input
-                type="radio"
-                name="frequency"
-                value=${frequency.value}
-                .checked=${value === frequency.value}
-                ?disabled=${disabled}
-                @change=${change}
-              />
-              <span class="control" aria-hidden="true"></span>
-              <span>
-                <strong>${frequency.label}</strong>
-                <small>${frequency.description}</small>
-              </span>
-            </label>
-          `,
-        )}
-      </div>
-    </fieldset>
+    <div class="options">
+      ${FREQUENCIES.map(
+        (frequency) => html`
+          <label class=${labelClass}>
+            <input
+              type="radio"
+              name="frequency"
+              value=${frequency.value}
+              .checked=${value === frequency.value}
+              ?disabled=${disabled}
+              @change=${change}
+            />
+            <span class="control" aria-hidden="true"></span>
+            <span>
+              <strong>${frequency.label}</strong>
+              <small>${frequency.description}</small>
+            </span>
+          </label>
+        `,
+      )}
+    </div>
   `;
 }
 
@@ -88,6 +84,7 @@ function scheduleSavedReset(reset: () => void): number {
 
 export type { SaveState };
 export {
+  FREQUENCIES,
   readFrequency,
   renderFrequencySelector,
   scheduleSavedReset,

@@ -1,7 +1,5 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
 import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
-import { getLocalPhotoFrequency } from "./local-settings";
-import { shouldRotateAtFrequency } from "./photo-frequency";
 
 import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import type { ImageSource } from "../sources";
@@ -31,18 +29,9 @@ const localSource: ImageSource = {
   id: "local",
   name: "Local folder",
   isSupported: isLocalSupported,
-  shouldRotate: shouldRotateLocal,
   getRandomAsset: getRandomLocalAsset,
   downloadAsset: downloadLocalAsset,
 };
-
-async function shouldRotateLocal(current: BackgroundAsset): Promise<boolean> {
-  return shouldRotateAtFrequency(
-    current,
-    localSource.id,
-    getLocalPhotoFrequency,
-  );
-}
 
 async function computeLocalAssetId(
   folderId = "folder",

@@ -4,6 +4,8 @@ import { parseEnv } from "node:util";
 import { loadEnv } from "vite";
 import { defineConfig } from "wxt";
 
+import packageJson from "./package.json" with { type: "json" };
+
 export default defineConfig({
   manifestVersion: 3,
   outDir: process.env.STELLAR_OUT_DIR ?? "dist",
@@ -11,7 +13,6 @@ export default defineConfig({
   publicDir: "src/icons",
   manifest: ({ browser }) => ({
     name: "Stellar Photos",
-    version: "5.0.0",
     description:
       "Experience a beautiful high-resolution photo every time you open a new browser tab. Fast, customizable, and clutter-free.",
     icons: {
@@ -74,6 +75,7 @@ export default defineConfig({
         devSourcemap: mode === "development",
       },
       define: {
+        __APP_VERSION__: JSON.stringify(packageJson.version),
         __UNSPLASH_ACCESS_KEY__: JSON.stringify(
           unsplashAccessKey || "development-key",
         ),

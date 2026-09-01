@@ -98,6 +98,14 @@ button.close {
   background: rgb(255 255 255 / 5%);
   color: inherit;
   cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+button.close:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 10%);
 }
 
 stellar-icon {
@@ -109,41 +117,6 @@ stellar-icon {
   padding: 0.5rem 1.5rem 2rem;
 }
 
-.source-label {
-  display: block;
-  margin-bottom: 0.55rem;
-  font-size: 0.85rem;
-  font-weight: 650;
-}
-
-.select-wrap {
-  position: relative;
-}
-
-.select-wrap::after {
-  position: absolute;
-  inset: 50% 0.9rem auto auto;
-  width: 0.42rem;
-  height: 0.42rem;
-  border-right: 1px solid currentcolor;
-  border-bottom: 1px solid currentcolor;
-  content: "";
-  pointer-events: none;
-  transform: translateY(-70%) rotate(45deg);
-}
-
-select {
-  width: 100%;
-  padding: 0.8rem 2.5rem 0.8rem 0.9rem;
-  border: 1px solid rgb(255 255 255 / 14%);
-  border-radius: 0.65rem;
-  appearance: none;
-  background: #202329;
-  color: inherit;
-  font: inherit;
-}
-
-select:focus-visible,
 button:focus-visible {
   outline: 2px solid #eee7d8;
   outline-offset: 3px;
@@ -166,7 +139,7 @@ button:focus-visible {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .section-heading span {
@@ -175,6 +148,7 @@ button:focus-visible {
 }
 
 .error {
+  margin-top: 0.85rem;
   padding: 0.75rem;
   border: 1px solid rgb(248 113 113 / 25%);
   border-radius: 0.65rem;
@@ -182,6 +156,111 @@ button:focus-visible {
   color: #fecaca;
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.source-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.source-card {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 3%);
+  overflow: hidden;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.source-card:hover {
+  border-color: rgb(255 255 255 / 18%);
+}
+
+.source-card.active {
+  border-color: rgb(238 231 216 / 35%);
+  background: rgb(238 231 216 / 4%);
+}
+
+.source-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem;
+  gap: 0.75rem;
+}
+
+.source-toggle-label {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  gap: 0 0.75rem;
+  align-items: center;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.source-toggle-label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.source-toggle-label input:disabled ~ .checkbox-control {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.source-toggle-label strong {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.source-toggle-label small {
+  display: block;
+  margin-top: 0.15rem;
+  color: #8f96a3;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.source-expand-btn {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.45rem;
+  background: rgb(255 255 255 / 5%);
+  color: #a7b0be;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.source-expand-btn:hover {
+  background: rgb(255 255 255 / 12%);
+  color: #f8fafc;
+}
+
+.source-expand-btn stellar-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  transition: transform 200ms ease;
+}
+
+.source-expand-btn.expanded stellar-icon {
+  transform: rotate(180deg);
+}
+
+.source-card-body {
+  padding: 0.85rem;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+  background: rgb(0 0 0 / 20%);
 }
 
 fieldset {
@@ -293,12 +372,12 @@ label.radio-label:has(input:checked) .control::after {
     transform 150ms ease;
 }
 
-label.checkbox-label:has(input:checked) .checkbox-control {
+label:has(input:checked) .checkbox-control {
   border-color: #eee7d8;
   background: #eee7d8;
 }
 
-label.checkbox-label:has(input:checked) .checkbox-control stellar-icon {
+label:has(input:checked) .checkbox-control stellar-icon {
   opacity: 1;
   transform: scale(1);
 }

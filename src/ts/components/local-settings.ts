@@ -9,22 +9,11 @@ import {
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../sources/local-db";
-import {
-  DEFAULT_LOCAL_SETTINGS,
-  getLocalPhotoFrequency,
-  setLocalPhotoFrequency,
-  setLocalSettings,
-} from "../sources/local-settings";
-import {
-  readFrequency,
-  renderFrequencySelector,
-  scheduleSavedReset,
-  statusMessage,
-} from "./settings-form";
+import { setLocalSettings } from "../sources/local-settings";
+import { scheduleSavedReset, statusMessage } from "./settings-form";
 import "./lucide-icon";
 
 import type { LocalFolderRecord } from "../sources/local-db";
-import type { PhotoFrequency } from "../sources/unsplash-settings";
 import type { SaveState } from "./settings-form";
 
 interface DirectoryPickerWindow {
@@ -38,9 +27,6 @@ interface DirectoryPickerWindow {
 class LocalSettingsComponent extends LitElement {
   static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
-  private confirmedFrequency: PhotoFrequency =
-    DEFAULT_LOCAL_SETTINGS.photoFrequency;
-  private saveInFlight = false;
   private saveResetTimeout: number | undefined;
 
   @state()
@@ -51,10 +37,6 @@ class LocalSettingsComponent extends LitElement {
 
   @state()
   private accessor folders: LocalFolderRecord[] = [];
-
-  @state()
-  private accessor frequency: PhotoFrequency =
-    DEFAULT_LOCAL_SETTINGS.photoFrequency;
 
   @state()
   private accessor errorMessage = "";
@@ -175,13 +157,6 @@ class LocalSettingsComponent extends LitElement {
         }
       </fieldset>
 
-      ${renderFrequencySelector(
-        this.frequency,
-        this.loading,
-        this.changeFrequency,
-        "radio-label",
-      )}
-
       <p class="status" aria-live="polite">
         ${this.loading ? "Reading folder photos…" : statusMessage(this.saveState)}
       </p>
@@ -190,14 +165,7 @@ class LocalSettingsComponent extends LitElement {
 
   private async load(): Promise<void> {
     try {
-      const [folders, frequency] = await Promise.all([
-        listStoredFolderRecords(),
-        getLocalPhotoFrequency(),
-      ]);
-
-      this.folders = folders;
-      this.confirmedFrequency = frequency;
-      this.frequency = frequency;
+      this.folders = await listStoredFolderRecords();
     } catch {
       this.saveState = "error";
     } finally {
@@ -256,14 +224,6 @@ class LocalSettingsComponent extends LitElement {
       this.folders = updatedFolders;
       this.saveState = "saved";
 
-      this.dispatchEvent(
-        new CustomEvent("select-source", {
-          detail: { sourceId: "local" },
-          bubbles: true,
-          composed: true,
-        }),
-      );
-
       window.clearTimeout(this.saveResetTimeout);
       this.saveResetTimeout = scheduleSavedReset(() => {
         if (this.saveState === "saved") {
@@ -298,41 +258,6 @@ class LocalSettingsComponent extends LitElement {
     } finally {
       this.loading = false;
     }
-  };
-
-  private changeFrequency = async (event: Event): Promise<void> => {
-    const nextFrequency = readFrequency(event);
-
-    if (!nextFrequency || nextFrequency === this.frequency) return;
-
-    this.frequency = nextFrequency;
-
-    if (this.saveInFlight) return;
-
-    window.clearTimeout(this.saveResetTimeout);
-    this.saveInFlight = true;
-    this.saveState = "saving";
-
-    while (this.frequency !== this.confirmedFrequency) {
-      const targetFrequency = this.frequency;
-      try {
-        await setLocalPhotoFrequency(targetFrequency);
-        this.confirmedFrequency = targetFrequency;
-      } catch {
-        this.frequency = this.confirmedFrequency;
-        this.saveState = "error";
-        this.saveInFlight = false;
-        return;
-      }
-    }
-
-    this.saveState = "saved";
-    this.saveResetTimeout = scheduleSavedReset(() => {
-      if (this.saveState === "saved") {
-        this.saveState = "idle";
-      }
-    });
-    this.saveInFlight = false;
   };
 }
 

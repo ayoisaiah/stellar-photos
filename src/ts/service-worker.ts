@@ -1,10 +1,10 @@
-import { ensureCurrent, rotate, switchSource, trackDownload } from "./actions";
+import { ensureCurrent, rotate, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
+import { migrateCoreSettings } from "./settings";
 
 type WorkerCommand =
   | { command: "ensure-current" }
   | { command: "rotate" }
-  | { command: "switch-source"; sourceId: string }
   | { command: "track-download"; asset: BackgroundAsset };
 
 type WorkerResult =
@@ -13,6 +13,7 @@ type WorkerResult =
 
 function startServiceWorker(): void {
   chrome.runtime.onInstalled.addListener(() => {
+    void migrateCoreSettings();
     if (typeof navigator !== "undefined" && navigator.storage?.persist) {
       void navigator.storage.persist();
     }
@@ -24,9 +25,22 @@ function startServiceWorker(): void {
       _sender,
       sendResponse: (response: WorkerResult) => void,
     ) => {
-      void dispatch(request).then((result) => {
-        sendResponse(result);
-      });
+      void dispatch(request)
+        .then((result) => {
+          sendResponse(result);
+        })
+        .catch((error) => {
+          sendResponse({
+            ok: false,
+            error: {
+              code: "OPERATION_FAILED",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Unexpected extension error",
+            },
+          });
+        });
 
       return true;
     },
@@ -45,8 +59,6 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
 
     if (request.command === "ensure-current") {
       current = await ensureCurrent();
-    } else if (request.command === "switch-source") {
-      current = await switchSource(request.sourceId);
     } else if (request.command === "track-download") {
       await trackDownload(request.asset);
       current = null;
@@ -82,9 +94,6 @@ function isCommand(value: unknown): value is WorkerCommand {
   const command = (value as { command?: unknown }).command;
 
   if (command === "ensure-current" || command === "rotate") return true;
-
-  if (command === "switch-source")
-    return typeof (value as { sourceId?: unknown }).sourceId === "string";
 
   return (
     command === "track-download" &&

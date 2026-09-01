@@ -1,64 +1,142 @@
-export interface CoreSettings {
+import type { PhotoFrequency } from "./sources/photo-frequency";
+import {
+  DEFAULT_PHOTO_FREQUENCY,
+  isPhotoFrequency,
+} from "./sources/photo-frequency";
+
+interface CoreSettings {
   version: 1;
-  activeSourceId: string;
+  activeSourceIds: string[];
+  photoFrequency: PhotoFrequency;
 }
 
-export type PhotoDisplayMode = "cover" | "contain-blur";
+type PhotoDisplayMode = "cover" | "contain-blur";
 
-export interface DisplaySettings {
+interface DisplaySettings {
   version: 1;
   landscapeMode: PhotoDisplayMode;
   portraitMode: PhotoDisplayMode;
   motion: boolean;
 }
 
-export const CORE_SETTINGS_KEY = "coreSettings";
-export const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = {
+const CORE_SETTINGS_KEY = "coreSettings";
+const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = {
   version: 1,
-  activeSourceId: "unsplash",
+  activeSourceIds: ["unsplash"],
+  photoFrequency: DEFAULT_PHOTO_FREQUENCY,
 };
 
-export const DISPLAY_SETTINGS_KEY = "displaySettings";
-export const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> = {
+const DISPLAY_SETTINGS_KEY = "displaySettings";
+const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> = {
   version: 1,
   landscapeMode: "cover",
   portraitMode: "contain-blur",
   motion: false,
 };
 
-export async function getImageSourceId(): Promise<string> {
+let coreSettingsQueue: Promise<void> = Promise.resolve();
+let displaySettingsQueue: Promise<void> = Promise.resolve();
+
+async function getCoreSettings(): Promise<CoreSettings> {
   const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
   const settings = parseCoreSettings(values[CORE_SETTINGS_KEY]);
-  const sourceId = settings?.activeSourceId;
 
-  if (sourceId === "official") return "unsplash";
-  if (typeof sourceId === "string" && sourceId) return sourceId;
-
-  return DEFAULT_CORE_SETTINGS.activeSourceId;
+  return settings ?? DEFAULT_CORE_SETTINGS;
 }
 
-export async function setImageSourceId(sourceId: string): Promise<void> {
+async function setCoreSettings(
+  partial: Partial<Omit<CoreSettings, "version">>,
+): Promise<void> {
+  const op = async () => {
+    const current = await getCoreSettings();
+
+    let activeSourceIds = partial.activeSourceIds ?? current.activeSourceIds;
+    if (!Array.isArray(activeSourceIds) || activeSourceIds.length === 0) {
+      activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
+    }
+
+    const photoFrequency = partial.photoFrequency ?? current.photoFrequency;
+
+    await chrome.storage.sync.set({
+      [CORE_SETTINGS_KEY]: {
+        version: 1,
+        activeSourceIds,
+        photoFrequency,
+      } satisfies CoreSettings,
+    });
+  };
+
+  const next = coreSettingsQueue.then(op, op);
+  coreSettingsQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return next;
+}
+
+async function getActiveImageSourceIds(): Promise<string[]> {
+  const settings = await getCoreSettings();
+
+  return settings.activeSourceIds;
+}
+
+async function setActiveImageSourceIds(sourceIds: string[]): Promise<void> {
+  await setCoreSettings({ activeSourceIds: sourceIds });
+}
+
+async function getPhotoFrequency(): Promise<PhotoFrequency> {
+  const settings = await getCoreSettings();
+
+  return settings.photoFrequency;
+}
+
+async function setPhotoFrequency(frequency: PhotoFrequency): Promise<void> {
+  await setCoreSettings({ photoFrequency: frequency });
+}
+
+async function migrateCoreSettings(): Promise<void> {
   const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
-  const current = parseCoreSettings(values[CORE_SETTINGS_KEY]);
+  const raw = values[CORE_SETTINGS_KEY];
+
+  if (!raw || typeof raw !== "object") return;
+
+  const rawObj = raw as {
+    activeSourceId?: unknown;
+    activeSourceIds?: unknown;
+    photoFrequency?: unknown;
+  };
+
+  if (Array.isArray(rawObj.activeSourceIds)) return;
+
+  let sourceId =
+    typeof rawObj.activeSourceId === "string"
+      ? rawObj.activeSourceId
+      : "unsplash";
+  if (sourceId === "official") sourceId = "unsplash";
+
+  let frequency: PhotoFrequency = DEFAULT_PHOTO_FREQUENCY;
+  if (isPhotoFrequency(rawObj.photoFrequency)) {
+    frequency = rawObj.photoFrequency;
+  }
 
   await chrome.storage.sync.set({
     [CORE_SETTINGS_KEY]: {
-      ...(current ?? DEFAULT_CORE_SETTINGS),
-      activeSourceId: sourceId,
+      version: 1,
+      activeSourceIds: [sourceId],
+      photoFrequency: frequency,
     } satisfies CoreSettings,
   });
 }
 
-export async function getDisplaySettings(): Promise<DisplaySettings> {
+async function getDisplaySettings(): Promise<DisplaySettings> {
   const values = await chrome.storage.sync.get(DISPLAY_SETTINGS_KEY);
   const settings = parseDisplaySettings(values[DISPLAY_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_DISPLAY_SETTINGS;
 }
 
-let displaySettingsQueue: Promise<void> = Promise.resolve();
-
-export async function setDisplaySettings(
+async function setDisplaySettings(
   partial: Partial<Omit<DisplaySettings, "version">>,
 ): Promise<void> {
   const op = async () => {
@@ -85,19 +163,46 @@ export async function setDisplaySettings(
 function parseCoreSettings(value: unknown): CoreSettings | null {
   if (!value || typeof value !== "object") return null;
 
-  const settings = value as Partial<CoreSettings>;
+  const settings = value as Partial<CoreSettings & { activeSourceId?: string }>;
 
-  if (typeof settings.version === "number" && settings.version > 1)
+  if (typeof settings.version === "number" && settings.version > 1) {
     throw new Error(`Unsupported core settings version: ${settings.version}`);
+  }
 
+  let activeSourceIds: string[];
   if (
-    settings.version !== 1 ||
-    typeof settings.activeSourceId !== "string" ||
-    !settings.activeSourceId
-  )
-    return null;
+    Array.isArray(settings.activeSourceIds) &&
+    settings.activeSourceIds.length > 0
+  ) {
+    activeSourceIds = settings.activeSourceIds.filter(
+      (id): id is string => typeof id === "string" && Boolean(id),
+    );
+  } else if (
+    typeof settings.activeSourceId === "string" &&
+    settings.activeSourceId
+  ) {
+    const id =
+      settings.activeSourceId === "official"
+        ? "unsplash"
+        : settings.activeSourceId;
+    activeSourceIds = [id];
+  } else {
+    activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
+  }
 
-  return settings as CoreSettings;
+  if (activeSourceIds.length === 0) {
+    activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
+  }
+
+  const photoFrequency = isPhotoFrequency(settings.photoFrequency)
+    ? settings.photoFrequency
+    : DEFAULT_CORE_SETTINGS.photoFrequency;
+
+  return {
+    version: 1,
+    activeSourceIds,
+    photoFrequency,
+  };
 }
 
 function parseDisplaySettings(value: unknown): DisplaySettings | null {
@@ -137,3 +242,22 @@ function parseDisplaySettings(value: unknown): DisplaySettings | null {
 function isPhotoDisplayMode(value: unknown): value is PhotoDisplayMode {
   return value === "cover" || value === "contain-blur";
 }
+
+export type { CoreSettings, DisplaySettings, PhotoDisplayMode };
+export {
+  CORE_SETTINGS_KEY,
+  DEFAULT_CORE_SETTINGS,
+  DEFAULT_DISPLAY_SETTINGS,
+  DISPLAY_SETTINGS_KEY,
+  getActiveImageSourceIds,
+  getCoreSettings,
+  getDisplaySettings,
+  getPhotoFrequency,
+  migrateCoreSettings,
+  parseCoreSettings,
+  parseDisplaySettings,
+  setActiveImageSourceIds,
+  setCoreSettings,
+  setDisplaySettings,
+  setPhotoFrequency,
+};

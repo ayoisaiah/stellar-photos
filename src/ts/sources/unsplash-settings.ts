@@ -1,8 +1,3 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
-import { isPhotoFrequency } from "./photo-frequency";
-
-import type { PhotoFrequency } from "./photo-frequency";
-
 type ImageResolution = "standard" | "high" | "max";
 
 type PhotoOrientation = "landscape" | "portrait" | "squarish";
@@ -12,7 +7,6 @@ type ContentFilter = "low" | "high";
 interface UnsplashSettings {
   version: 1;
   imageQuality: ImageResolution;
-  photoFrequency: PhotoFrequency;
   collections: string;
   topics: string;
   username: string;
@@ -33,7 +27,6 @@ const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
 const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = {
   version: 1,
   imageQuality: "standard",
-  photoFrequency: "newtab",
   collections: STELLAR_COLLECTION,
   topics: "",
   username: "",
@@ -61,12 +54,6 @@ async function setUnsplashSettings(
       version: 1,
     } satisfies UnsplashSettings,
   });
-}
-
-async function getPhotoFrequency(): Promise<PhotoFrequency> {
-  const settings = await getUnsplashSettings();
-
-  return settings.photoFrequency;
 }
 
 async function getUnsplashAccessKey(): Promise<string> {
@@ -110,9 +97,6 @@ function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
   if (settings.version !== 1 || !isImageResolution(settings.imageQuality))
     return null;
 
-  const photoFrequency = isPhotoFrequency(settings.photoFrequency)
-    ? settings.photoFrequency
-    : DEFAULT_UNSPLASH_SETTINGS.photoFrequency;
   const collections =
     typeof settings.collections === "string"
       ? settings.collections
@@ -139,7 +123,6 @@ function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
   return {
     version: 1,
     imageQuality: settings.imageQuality,
-    photoFrequency,
     collections,
     topics,
     username,
@@ -188,13 +171,11 @@ function isContentFilter(value: unknown): value is ContentFilter {
 export type {
   ContentFilter,
   ImageResolution,
-  PhotoFrequency,
   PhotoOrientation,
   UnsplashSettings,
 };
 export {
   DEFAULT_UNSPLASH_SETTINGS,
-  getPhotoFrequency,
   getUnsplashAccessKey,
   getUnsplashSettings,
   resolveAccessKey,

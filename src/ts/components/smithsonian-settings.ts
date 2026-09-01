@@ -6,9 +6,7 @@ import styles from "../../css/components/settings-form.css?inline";
 import {
   getSmithsonianCategory,
   setSmithsonianCategory,
-  SMITHSONIAN_SETTINGS_KEY,
 } from "../sources/smithsonian";
-import "./frequency-settings";
 
 import type { SmithsonianCategory } from "../sources/smithsonian";
 
@@ -84,10 +82,6 @@ class SmithsonianSettings extends LitElement {
           )}
         </div>
       </fieldset>
-
-      <stellar-frequency-settings
-        .settingsKey=${SMITHSONIAN_SETTINGS_KEY}
-      ></stellar-frequency-settings>
 
       <p class="status" aria-live="polite">
         ${this.error ? "Couldn’t save this setting." : ""}

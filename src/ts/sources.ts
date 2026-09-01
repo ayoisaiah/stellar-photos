@@ -1,5 +1,5 @@
 import type { BackgroundAsset, UncachedBackgroundAsset } from "./assets";
-import { getImageSourceId } from "./settings";
+import { getActiveImageSourceIds } from "./settings";
 import { earthviewSource } from "./sources/earthview";
 import { localSource } from "./sources/local";
 import { smithsonianSource } from "./sources/smithsonian";
@@ -11,7 +11,6 @@ interface ImageSource {
   readonly supportsDownload?: boolean;
   readonly supportsInfo?: boolean;
   isSupported?(): boolean;
-  shouldRotate?(current: BackgroundAsset): Promise<boolean>;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
   downloadFullAsset?(asset: BackgroundAsset): Promise<Response>;
@@ -24,9 +23,11 @@ const bundledImageSources: readonly ImageSource[] = [
   smithsonianSource,
   localSource,
 ];
+
 const imageSources: ReadonlyMap<string, ImageSource> = new Map(
   bundledImageSources.map((source) => [source.id, source] as const),
 );
+
 const defaultImageSource = unsplashSource;
 
 function isSourceSupported(source: ImageSource): boolean {
@@ -44,11 +45,14 @@ function getImageSource(sourceId: string): ImageSource | null {
   return source;
 }
 
-async function getActiveImageSource(): Promise<ImageSource> {
-  const sourceId = await getImageSourceId();
+async function getActiveImageSources(): Promise<ImageSource[]> {
+  const activeIds = await getActiveImageSourceIds();
+  const sources = activeIds
+    .map((id) => getImageSource(id))
+    .filter((source): source is ImageSource => Boolean(source));
 
-  return getImageSource(sourceId) ?? defaultImageSource;
+  return sources.length > 0 ? sources : [defaultImageSource];
 }
 
 export type { ImageSource };
-export { getActiveImageSource, getImageSource, listImageSources };
+export { getActiveImageSources, getImageSource, listImageSources };

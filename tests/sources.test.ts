@@ -1,25 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  getActiveImageSource,
+  getActiveImageSources,
   getImageSource,
   listImageSources,
 } from "../src/ts/sources";
 
-let selectedSource: unknown;
+let selectedSources: unknown;
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 beforeEach(() => {
-  selectedSource = undefined;
+  selectedSources = undefined;
   vi.stubGlobal("chrome", {
     runtime: { lastError: undefined },
     storage: {
       sync: {
         get: (_keys: unknown, callback?: (value: unknown) => void) => {
-          const res = { imageSource: selectedSource };
+          const res = {
+            coreSettings:
+              selectedSources !== undefined
+                ? typeof selectedSources === "string"
+                  ? { version: 1, activeSourceId: selectedSources }
+                  : { version: 1, activeSourceIds: selectedSources }
+                : undefined,
+          };
           if (callback) callback(res);
           return Promise.resolve(res);
         },
@@ -30,7 +37,9 @@ beforeEach(() => {
 
 describe("image source registry", () => {
   it("lists all bundled sources and defaults to unsplash", async () => {
-    expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
+    expect(await getActiveImageSources()).toEqual([
+      expect.objectContaining({ id: "unsplash" }),
+    ]);
     expect(listImageSources()).toEqual([
       expect.objectContaining({
         id: "unsplash",
@@ -70,18 +79,33 @@ describe("image source registry", () => {
     expect(getImageSource("future-source")).toBeNull();
   });
 
-  it("maps the legacy official selection to Unsplash", async () => {
-    selectedSource = "official";
+  it("resolves multiple active sources", async () => {
+    selectedSources = ["unsplash", "earthview", "smithsonian"];
 
-    expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
+    const active = await getActiveImageSources();
+    expect(active.map((s) => s.id)).toEqual([
+      "unsplash",
+      "earthview",
+      "smithsonian",
+    ]);
+  });
+
+  it("maps the legacy official selection to Unsplash", async () => {
+    selectedSources = "official";
+
+    expect(await getActiveImageSources()).toEqual([
+      expect.objectContaining({ id: "unsplash" }),
+    ]);
   });
 
   it.each(["custom", "future-source"])(
     "falls back for an unavailable %s selection",
     async (sourceId) => {
-      selectedSource = sourceId;
+      selectedSources = [sourceId];
 
-      expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
+      expect(await getActiveImageSources()).toEqual([
+        expect.objectContaining({ id: "unsplash" }),
+      ]);
     },
   );
 
@@ -100,7 +124,9 @@ describe("image source registry", () => {
     ]);
     expect(getImageSource("local")).toBeNull();
 
-    selectedSource = "local";
-    expect(await getActiveImageSource()).toMatchObject({ id: "unsplash" });
+    selectedSources = ["local"];
+    expect(await getActiveImageSources()).toEqual([
+      expect.objectContaining({ id: "unsplash" }),
+    ]);
   });
 });

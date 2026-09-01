@@ -9,8 +9,9 @@ import {
   putCachedThumbnail,
   readCachedImage,
 } from "./cache";
-import { setImageSourceId } from "./settings";
-import { getActiveImageSource, getImageSource } from "./sources";
+import { getPhotoFrequency } from "./settings";
+import { getActiveImageSources, getImageSource } from "./sources";
+import { shouldRotateAtFrequency } from "./sources/photo-frequency";
 import {
   readHistory,
   readPinnedAsset,
@@ -52,7 +53,7 @@ async function ensureCurrent(): Promise<BackgroundAsset | null> {
       await writeHistory(state);
     }
 
-    return state.history[0] ?? acquireAsset(state);
+    return acquireAsset(state);
   });
 }
 
@@ -65,7 +66,7 @@ function rotate(): Promise<BackgroundAsset | null> {
   activeRotation = (async () => {
     pendingRotation = false;
 
-    const acquire = () => acquireAsset();
+    const acquire = () => acquireAsset(undefined, { forceRotate: true });
     let current = await enqueue(acquire);
 
     while (pendingRotation) {
@@ -80,21 +81,6 @@ function rotate(): Promise<BackgroundAsset | null> {
   });
 
   return activeRotation;
-}
-
-async function switchSource(sourceId: string): Promise<BackgroundAsset> {
-  const source = getImageSource(sourceId);
-
-  if (!source) throw new Error("Unknown image source");
-
-  return enqueue(async () => {
-    const current = await fetchAndPromote(source, { respectPin: false });
-
-    await setImageSourceId(source.id);
-    await writePinnedAsset(null);
-
-    return current;
-  });
 }
 
 async function trackDownload(asset: BackgroundAsset): Promise<void> {
@@ -177,19 +163,58 @@ async function cacheAndRecordImage(
 
 async function acquireAsset(
   state?: HistoryState,
+  options: { forceRotate?: boolean } = {},
 ): Promise<BackgroundAsset | null> {
   state ??= await readHistory();
-  const source = await getActiveImageSource();
   const current = state.history[0];
   const pinned = await readPinnedAsset();
 
-  if (pinned) return pinned;
+  if (pinned && !options.forceRotate) return pinned;
 
-  if (current && source.shouldRotate && !(await source.shouldRotate(current))) {
+  const activeSources = await getActiveImageSources();
+  const activeSourceIds = activeSources.map((s) => s.id);
+  const frequency = await getPhotoFrequency();
+
+  if (
+    !options.forceRotate &&
+    current &&
+    activeSourceIds.includes(current.sourceId) &&
+    !shouldRotateAtFrequency(current, frequency)
+  ) {
     return current;
   }
 
-  return fetchAndPromote(source);
+  return fetchAndPromoteRandom(activeSources);
+}
+
+function shuffleSources(sources: readonly ImageSource[]): ImageSource[] {
+  const result = [...sources];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = result[i]!;
+    result[i] = result[j]!;
+    result[j] = temp;
+  }
+
+  return result;
+}
+
+async function fetchAndPromoteRandom(
+  activeSources: ImageSource[],
+): Promise<BackgroundAsset> {
+  const shuffled = shuffleSources(activeSources);
+  let lastError: unknown;
+
+  for (const source of shuffled) {
+    try {
+      return await fetchAndPromote(source);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError ?? new Error("Failed to fetch image from any active source");
 }
 
 async function fetchAndPromote(
@@ -234,4 +259,4 @@ async function appendToHistory(
   return { next, evicted };
 }
 
-export { ensureCurrent, rotate, switchSource, trackDownload };
+export { ensureCurrent, rotate, trackDownload };

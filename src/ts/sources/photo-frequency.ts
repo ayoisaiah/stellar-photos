@@ -13,16 +13,13 @@ function isPhotoFrequency(value: unknown): value is PhotoFrequency {
   );
 }
 
-async function shouldRotateAtFrequency(
+function shouldRotateAtFrequency(
   current: BackgroundAsset,
-  sourceId: string,
-  getFrequency: () => Promise<PhotoFrequency>,
-): Promise<boolean> {
-  if (current.sourceId !== sourceId) return true;
-
+  frequency: PhotoFrequency,
+): boolean {
   const elapsed = Date.now() - current.createdAt;
 
-  switch (await getFrequency()) {
+  switch (frequency) {
     case "every15minutes":
       return elapsed >= 15 * 60 * 1000;
     case "everyhour":
@@ -34,34 +31,5 @@ async function shouldRotateAtFrequency(
   }
 }
 
-async function getStoredPhotoFrequency(key: string): Promise<PhotoFrequency> {
-  const values = await chrome.storage.sync.get(key);
-  const settings = values[key] as
-    | { photoFrequency?: unknown; version?: unknown }
-    | undefined;
-
-  if (typeof settings?.version === "number" && settings.version > 1) {
-    throw new Error(`Unsupported source settings version: ${settings.version}`);
-  }
-
-  return isPhotoFrequency(settings?.photoFrequency)
-    ? settings.photoFrequency
-    : DEFAULT_PHOTO_FREQUENCY;
-}
-
-async function setStoredPhotoFrequency(
-  key: string,
-  photoFrequency: PhotoFrequency,
-): Promise<void> {
-  await chrome.storage.sync.set({
-    [key]: { version: 1, photoFrequency },
-  });
-}
-
 export type { PhotoFrequency };
-export {
-  getStoredPhotoFrequency,
-  isPhotoFrequency,
-  setStoredPhotoFrequency,
-  shouldRotateAtFrequency,
-};
+export { DEFAULT_PHOTO_FREQUENCY, isPhotoFrequency, shouldRotateAtFrequency };

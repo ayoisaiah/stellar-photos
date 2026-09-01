@@ -2,10 +2,6 @@ import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import type { ImageSource } from "../sources";
-import {
-  getStoredPhotoFrequency,
-  shouldRotateAtFrequency,
-} from "./photo-frequency";
 
 interface EarthViewGeocode {
   country?: string;
@@ -37,7 +33,6 @@ interface EarthViewPayload {
 }
 
 const GSTATIC_ORIGIN = new Set(["https://www.gstatic.com"]);
-const EARTHVIEW_SETTINGS_KEY = "sourceSettings:earthview";
 
 const EARTH_VIEW_PHOTO_IDS: readonly number[] = [
   1003, 1004, 1006, 1007, 1008, 1010, 1012, 1014, 1017, 1018, 1019, 1021, 1022,
@@ -164,7 +159,6 @@ const earthviewSource: ImageSource = {
   name: "Google Earth View",
   supportsDownload: true,
   supportsInfo: true,
-  shouldRotate: shouldRotateEarthView,
   getRandomAsset: getRandomEarthViewAsset,
   downloadAsset: downloadEarthViewAsset,
   downloadFullAsset: downloadEarthViewAsset,
@@ -192,14 +186,6 @@ function trustedEarthViewUrl(value: string): URL {
   }
 
   return url;
-}
-
-async function shouldRotateEarthView(
-  current: BackgroundAsset,
-): Promise<boolean> {
-  return shouldRotateAtFrequency(current, earthviewSource.id, () =>
-    getStoredPhotoFrequency(EARTHVIEW_SETTINGS_KEY),
-  );
 }
 
 async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
@@ -280,7 +266,6 @@ async function fetchEarthViewDetails(
 export type { EarthViewDetailsData, EarthViewGeocode, EarthViewPayload };
 export {
   buildEarthViewImageUrl,
-  EARTHVIEW_SETTINGS_KEY,
   earthviewSource,
   fetchEarthViewDetails,
   getEarthViewPhotoIds,

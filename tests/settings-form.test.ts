@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  getExtensionVersion,
-  getWebstoreReviewUrl,
-} from "../src/ts/components/settings-drawer";
+import { getWebstoreReviewUrl } from "../src/ts/components/settings-drawer";
 import {
   readFrequency,
   statusMessage,
@@ -27,16 +24,6 @@ describe("settings form", () => {
     expect(statusMessage("saved")).toBe("Saved");
     expect(statusMessage("error")).toBe("Couldn’t save this setting.");
     expect(statusMessage("idle")).toBe("");
-  });
-
-  it("reads extension version from manifest with fallback", () => {
-    vi.stubGlobal("chrome", {
-      runtime: {
-        getManifest: () => ({ version: "5.0.0" }),
-      },
-    });
-
-    expect(getExtensionVersion()).toBe("5.0.0");
   });
 
   it("resolves dynamic webstore review URLs by browser", () => {

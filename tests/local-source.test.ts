@@ -13,10 +13,8 @@ import {
 } from "../src/ts/sources/local-db";
 import {
   DEFAULT_LOCAL_SETTINGS,
-  getLocalPhotoFrequency,
   getLocalSettings,
   LOCAL_SETTINGS_KEY,
-  setLocalPhotoFrequency,
   setLocalSettings,
 } from "../src/ts/sources/local-settings";
 
@@ -374,14 +372,11 @@ describe("local source settings", () => {
     expect(await getLocalSettings()).toEqual(DEFAULT_LOCAL_SETTINGS);
 
     await setLocalSettings({ folderName: "My Photos" });
-    await setLocalPhotoFrequency("everyhour");
 
     expect(await getLocalSettings()).toEqual({
       version: 1,
       folderName: "My Photos",
-      photoFrequency: "everyhour",
     });
-    expect(await getLocalPhotoFrequency()).toBe("everyhour");
   });
 });
 
@@ -404,39 +399,6 @@ describe("local source image rotation and retrieval", () => {
     const response = await localSource.downloadAsset(asset);
     expect(response.headers.get("content-type")).toBe("image/jpeg");
     expect(await response.text()).toBe("image-bytes");
-  });
-
-  it("determines rotation based on photoFrequency", async () => {
-    const asset: BackgroundAsset = {
-      sourceId: "local",
-      sourceAssetId: "stars_jpg",
-      cacheKey: "cache-1",
-      width: 0,
-      height: 0,
-      color: null,
-      description: "stars.jpg",
-      attribution: null,
-      payloadVersion: 1,
-      sourcePayload: {},
-      createdAt: Date.now() - 20 * 60 * 1000,
-    };
-
-    expect(await localSource.shouldRotate?.(asset)).toBe(true);
-
-    sync[LOCAL_SETTINGS_KEY] = {
-      version: 1,
-      photoFrequency: "everyhour",
-      folderName: "Space",
-    };
-
-    expect(await localSource.shouldRotate?.(asset)).toBe(false);
-
-    expect(
-      await localSource.shouldRotate?.({
-        ...asset,
-        createdAt: Date.now() - 70 * 60 * 1000,
-      }),
-    ).toBe(true);
   });
 
   it("computes distinct deterministic asset IDs across folders with identical file names", async () => {

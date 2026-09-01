@@ -2,44 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BackgroundAsset } from "../src/ts/assets";
 import {
   buildEarthViewImageUrl,
-  EARTHVIEW_SETTINGS_KEY,
   earthviewSource,
   fetchEarthViewDetails,
   getEarthViewPhotoIds,
 } from "../src/ts/sources/earthview";
-
-const sync: Record<string, unknown> = {};
-
-beforeEach(() => {
-  for (const key of Object.keys(sync)) {
-    delete sync[key];
-  }
-
-  vi.stubGlobal("chrome", {
-    runtime: { lastError: undefined },
-    storage: {
-      sync: {
-        get: (
-          keys: string | string[] | null,
-          cb?: (res: Record<string, unknown>) => void,
-        ) => {
-          const keyList = Array.isArray(keys) ? keys : [keys as string];
-          const res: Record<string, unknown> = {};
-          for (const k of keyList) {
-            if (k in sync) res[k] = sync[k];
-          }
-          if (cb) cb(res);
-          return Promise.resolve(res);
-        },
-        set: (data: Record<string, unknown>, cb?: () => void) => {
-          Object.assign(sync, data);
-          if (cb) cb();
-          return Promise.resolve();
-        },
-      },
-    },
-  });
-});
 
 describe("earthview catalog and image helper", () => {
   it("provides a curated list of Earth View photo IDs", () => {
@@ -92,61 +58,6 @@ describe("earthview source retrieval and rotation", () => {
       expect.objectContaining({ redirect: "follow" }),
     );
     expect(await response.text()).toBe("image-bytes");
-  });
-
-  it("evaluates shouldRotate based on frequency setting", async () => {
-    sync[EARTHVIEW_SETTINGS_KEY] = {
-      version: 1,
-      photoFrequency: "every15minutes",
-    };
-
-    const asset: BackgroundAsset = {
-      sourceId: "earthview",
-      sourceAssetId: "1003",
-      cacheKey: "cache-key",
-      width: 1800,
-      height: 1200,
-      color: null,
-      description: "Earth View",
-      attribution: null,
-      payloadVersion: 1,
-      sourcePayload: {},
-      createdAt: Date.now() - 10 * 60 * 1000, // 10 minutes ago
-    };
-
-    expect(await earthviewSource.shouldRotate!(asset)).toBe(false);
-
-    // 20 minutes ago -> should rotate
-    const olderAsset = {
-      ...asset,
-      createdAt: Date.now() - 20 * 60 * 1000,
-    };
-    expect(await earthviewSource.shouldRotate!(olderAsset)).toBe(true);
-
-    // Frequency = newtab -> always rotates
-    sync[EARTHVIEW_SETTINGS_KEY] = { version: 1, photoFrequency: "newtab" };
-    expect(await earthviewSource.shouldRotate!(asset)).toBe(true);
-  });
-
-  it("rejects unsupported settings versions", async () => {
-    sync[EARTHVIEW_SETTINGS_KEY] = { version: 2 };
-    const asset: BackgroundAsset = {
-      sourceId: "earthview",
-      sourceAssetId: "1003",
-      cacheKey: "cache-key",
-      width: 1800,
-      height: 1200,
-      color: null,
-      description: null,
-      attribution: null,
-      payloadVersion: 1,
-      sourcePayload: {},
-      createdAt: Date.now(),
-    };
-
-    await expect(earthviewSource.shouldRotate!(asset)).rejects.toThrow(
-      "Unsupported source settings version: 2",
-    );
   });
 
   it("fetches Earth View satellite metadata details", async () => {

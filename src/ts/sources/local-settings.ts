@@ -1,30 +1,23 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
-import { isPhotoFrequency } from "./photo-frequency";
-
-import type { PhotoFrequency } from "./photo-frequency";
-
-export interface LocalSettings {
+interface LocalSettings {
   version: 1;
-  photoFrequency: PhotoFrequency;
   folderName: string;
 }
 
-export const LOCAL_SETTINGS_KEY = "sourceSettings:local";
+const LOCAL_SETTINGS_KEY = "sourceSettings:local";
 
-export const DEFAULT_LOCAL_SETTINGS: Readonly<LocalSettings> = {
+const DEFAULT_LOCAL_SETTINGS: Readonly<LocalSettings> = {
   version: 1,
-  photoFrequency: "newtab",
   folderName: "",
 };
 
-export async function getLocalSettings(): Promise<LocalSettings> {
+async function getLocalSettings(): Promise<LocalSettings> {
   const values = await chrome.storage.sync.get(LOCAL_SETTINGS_KEY);
   const settings = parseLocalSettings(values[LOCAL_SETTINGS_KEY]);
 
   return settings ?? DEFAULT_LOCAL_SETTINGS;
 }
 
-export async function setLocalSettings(
+async function setLocalSettings(
   partial: Partial<Omit<LocalSettings, "version">>,
 ): Promise<void> {
   const current = await getLocalSettings();
@@ -36,18 +29,6 @@ export async function setLocalSettings(
       version: 1,
     } satisfies LocalSettings,
   });
-}
-
-export async function getLocalPhotoFrequency(): Promise<PhotoFrequency> {
-  const settings = await getLocalSettings();
-
-  return settings.photoFrequency;
-}
-
-export async function setLocalPhotoFrequency(
-  photoFrequency: PhotoFrequency,
-): Promise<void> {
-  await setLocalSettings({ photoFrequency });
 }
 
 function parseLocalSettings(value: unknown): LocalSettings | null {
@@ -63,10 +44,6 @@ function parseLocalSettings(value: unknown): LocalSettings | null {
 
   if (settings.version !== 1) return null;
 
-  const photoFrequency = isPhotoFrequency(settings.photoFrequency)
-    ? settings.photoFrequency
-    : DEFAULT_LOCAL_SETTINGS.photoFrequency;
-
   const folderName =
     typeof settings.folderName === "string"
       ? settings.folderName
@@ -74,7 +51,14 @@ function parseLocalSettings(value: unknown): LocalSettings | null {
 
   return {
     version: 1,
-    photoFrequency,
     folderName,
   };
 }
+
+export type { LocalSettings };
+export {
+  DEFAULT_LOCAL_SETTINGS,
+  getLocalSettings,
+  LOCAL_SETTINGS_KEY,
+  setLocalSettings,
+};
