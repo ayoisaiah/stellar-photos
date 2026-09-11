@@ -1,6 +1,5 @@
 import { ensureCurrent, rotate, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
-import { migrateCoreSettings } from "./settings";
 
 type WorkerCommand =
   | { command: "ensure-current" }
@@ -13,7 +12,6 @@ type WorkerResult =
 
 function startServiceWorker(): void {
   chrome.runtime.onInstalled.addListener(() => {
-    void migrateCoreSettings();
     if (typeof navigator !== "undefined" && navigator.storage?.persist) {
       void navigator.storage.persist();
     }

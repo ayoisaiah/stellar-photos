@@ -48,7 +48,6 @@ const {
   getCoreSettings,
   getDisplaySettings,
   getPhotoFrequency,
-  migrateCoreSettings,
   setActiveImageSourceIds,
   setCoreSettings,
   setDisplaySettings,
@@ -193,22 +192,6 @@ describe("settings", () => {
       activeSourceId: "future-source",
     };
     expect(await getActiveImageSourceIds()).toEqual(["future-source"]);
-  });
-
-  it("migrates legacy core settings to activeSourceIds format", async () => {
-    sync[CORE_SETTINGS_KEY] = {
-      version: 1,
-      activeSourceId: "earthview",
-      photoFrequency: "everyhour",
-    };
-
-    await migrateCoreSettings();
-
-    expect(sync[CORE_SETTINGS_KEY]).toEqual({
-      version: 1,
-      activeSourceIds: ["earthview"],
-      photoFrequency: "everyhour",
-    });
   });
 
   it("persists source-owned and application-owned settings", async () => {

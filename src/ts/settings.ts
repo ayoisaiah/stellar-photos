@@ -95,40 +95,6 @@ async function setPhotoFrequency(frequency: PhotoFrequency): Promise<void> {
   await setCoreSettings({ photoFrequency: frequency });
 }
 
-async function migrateCoreSettings(): Promise<void> {
-  const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
-  const raw = values[CORE_SETTINGS_KEY];
-
-  if (!raw || typeof raw !== "object") return;
-
-  const rawObj = raw as {
-    activeSourceId?: unknown;
-    activeSourceIds?: unknown;
-    photoFrequency?: unknown;
-  };
-
-  if (Array.isArray(rawObj.activeSourceIds)) return;
-
-  let sourceId =
-    typeof rawObj.activeSourceId === "string"
-      ? rawObj.activeSourceId
-      : "unsplash";
-  if (sourceId === "official") sourceId = "unsplash";
-
-  let frequency: PhotoFrequency = DEFAULT_PHOTO_FREQUENCY;
-  if (isPhotoFrequency(rawObj.photoFrequency)) {
-    frequency = rawObj.photoFrequency;
-  }
-
-  await chrome.storage.sync.set({
-    [CORE_SETTINGS_KEY]: {
-      version: 1,
-      activeSourceIds: [sourceId],
-      photoFrequency: frequency,
-    } satisfies CoreSettings,
-  });
-}
-
 async function getDisplaySettings(): Promise<DisplaySettings> {
   const values = await chrome.storage.sync.get(DISPLAY_SETTINGS_KEY);
   const settings = parseDisplaySettings(values[DISPLAY_SETTINGS_KEY]);
@@ -253,7 +219,6 @@ export {
   getCoreSettings,
   getDisplaySettings,
   getPhotoFrequency,
-  migrateCoreSettings,
   parseCoreSettings,
   parseDisplaySettings,
   setActiveImageSourceIds,
