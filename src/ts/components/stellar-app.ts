@@ -17,8 +17,8 @@ import { keyed } from "lit/directives/keyed.js";
 import styles from "../../css/components/stellar-app.css?inline";
 import { assetIdentity } from "../assets";
 import { attributionUrl } from "../attribution";
-import { readCachedImage } from "../cache";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
+import { readImage } from "../image-reader";
 import { dispatch } from "../service-worker";
 import {
   DEFAULT_CORE_SETTINGS,
@@ -56,8 +56,7 @@ class StellarApp extends LitElement {
 
   private controlsTimer: number | undefined;
   private lastWheelTime = 0;
-  private objectUrl: string | null = null;
-  private requestInFlight = false;
+  private currentPhotoURL: string | null = null;
 
   constructor() {
     super();
@@ -106,7 +105,7 @@ class StellarApp extends LitElement {
   private accessor pinnedAsset: BackgroundAsset | null = null;
 
   @state()
-  private accessor phase: EmptyStatePhase = "ready";
+  private accessor photoLoadState: EmptyStatePhase = "ready";
 
   @state()
   private accessor settingsOpen = false;
@@ -120,8 +119,15 @@ class StellarApp extends LitElement {
   private accessor photoFrequency: PhotoFrequency =
     DEFAULT_CORE_SETTINGS.photoFrequency;
 
-  @state()
-  private accessor historyIndex = 0;
+  private get historyIndex(): number {
+    if (!this.currentAsset) return 0;
+
+    return this.historyAssets.findIndex(
+      (asset) =>
+        asset.cacheKey === this.currentAsset?.cacheKey &&
+        asset.createdAt === this.currentAsset?.createdAt,
+    );
+  }
 
   private get hasNext(): boolean {
     return (
@@ -160,7 +166,6 @@ class StellarApp extends LitElement {
   }
 
   override disconnectedCallback(): void {
-    this.requestInFlight = false;
     window.clearTimeout(this.controlsTimer);
     window.removeEventListener("wheel", this.handleWheel);
     window.removeEventListener("click", this.handleViewportClick);
@@ -198,17 +203,17 @@ class StellarApp extends LitElement {
         @pointerleave=${this.showControls}
       >
         ${
-          this.objectUrl
-            ? this.renderPhotoStage(this.objectUrl, this.currentAsset)
+          this.currentPhotoURL
+            ? this.renderPhotoStage(this.currentPhotoURL, this.currentAsset)
             : null
         }
         <stellar-empty-state
-          .phase=${this.phase}
-          @retry=${this.ensureAndRender}
+          .phase=${this.photoLoadState}
+          @retry=${this.initializeState}
         ></stellar-empty-state>
         ${this.renderPhotoCredit()}
         ${
-          this.phase === "ready" && this.currentAsset
+          this.photoLoadState === "ready" && this.currentAsset
             ? html`
               ${
                 this.hasPrevious
@@ -336,7 +341,7 @@ class StellarApp extends LitElement {
   }
 
   private renderPhotoCredit() {
-    if (!this.currentAsset?.attribution || !this.objectUrl) return null;
+    if (!this.currentAsset?.attribution || !this.currentPhotoURL) return null;
 
     const isEarthView = this.currentAsset.sourceId === "earthview";
     const info = isEarthView ? null : getUnsplashPhotoInfo(this.currentAsset);
@@ -463,77 +468,50 @@ class StellarApp extends LitElement {
   private async preparePhoto(
     metadata: BackgroundAsset,
   ): Promise<{ url: string; asset: BackgroundAsset } | null> {
-    let response = await readCachedImage(metadata.cacheKey);
+    const response = await readImage(metadata.cacheKey);
 
-    if (!response) {
-      await new Promise((resolve) => setTimeout(resolve, 80));
-      response = await readCachedImage(metadata.cacheKey);
-    }
-
-    if (!response || !this.isConnected) return null;
+    if (!response) return null;
 
     const blob = await response.blob();
     const nextUrl = URL.createObjectURL(blob);
-
-    if (!this.isConnected) {
-      URL.revokeObjectURL(nextUrl);
-      return null;
-    }
 
     return { url: nextUrl, asset: metadata };
   }
 
   private applyPhoto(nextUrl: string, asset: BackgroundAsset | null): void {
-    if (this.objectUrl === nextUrl) {
-      this.currentAsset = asset;
-      return;
+    if (this.currentPhotoURL) {
+      URL.revokeObjectURL(this.currentPhotoURL);
     }
 
-    if (this.objectUrl) {
-      URL.revokeObjectURL(this.objectUrl);
-    }
-
-    this.objectUrl = nextUrl;
+    this.currentPhotoURL = nextUrl;
     this.currentAsset = asset;
   }
 
-  private ensureAndRender = async (): Promise<void> => {
-    if (this.requestInFlight) return;
-
-    this.requestInFlight = true;
-    if (!this.objectUrl) this.phase = "loading";
+  private loadCurrentPhoto = async (
+    current?: BackgroundAsset,
+  ): Promise<void> => {
+    if (!this.currentPhotoURL) this.photoLoadState = "loading";
 
     try {
-      const result = await sendCommand({ command: "ensure-current" });
-
-      if (!this.isConnected) return;
-      if (!result.ok) throw new Error(result.error.message);
-
-      const prepared =
-        result.current && (await this.preparePhoto(result.current));
-
-      if (prepared) {
-        if (this.isConnected) {
-          this.applyPhoto(prepared.url, prepared.asset);
-          this.phase = "ready";
-          await this.loadHistoryAssets();
-          if (!this.isPinned) {
-            void sendCommand({ command: "rotate" });
-          }
-        } else {
-          URL.revokeObjectURL(prepared.url);
-        }
-      } else {
-        throw new Error("No usable image is available yet");
+      if (!current) {
+        const [pinned, { history }] = await Promise.all([
+          readPinnedAsset(),
+          readHistory(),
+        ]);
+        this.pinnedAsset = pinned;
+        this.historyAssets = history;
+        current = pinned ?? history[0];
       }
-    } catch {
-      if (this.isConnected && !this.objectUrl) {
-        this.phase = "error";
-      }
-    } finally {
-      if (this.isConnected) {
-        this.requestInFlight = false;
-      }
+
+      const prepared = current && (await this.preparePhoto(current));
+
+      if (!prepared) throw new Error("No usable image is available yet");
+
+      this.applyPhoto(prepared.url, prepared.asset);
+      this.photoLoadState = "ready";
+    } catch (err) {
+      console.error(err);
+      if (!this.currentPhotoURL) this.photoLoadState = "error";
     }
   };
 
@@ -547,8 +525,6 @@ class StellarApp extends LitElement {
           readHistory().catch(() => ({ history: [] })),
         ]);
 
-      if (!this.isConnected) return;
-
       this.displaySettings = displaySettings;
       this.activeSourceIds = coreSettings.activeSourceIds;
       this.photoFrequency = coreSettings.photoFrequency;
@@ -556,29 +532,19 @@ class StellarApp extends LitElement {
       this.historyAssets = historyState.history;
 
       const current = pinned ?? historyState.history[0] ?? null;
-      let rendered = false;
 
-      if (current) {
-        const prepared = await this.preparePhoto(current);
-        if (prepared) {
-          if (this.isConnected) {
-            this.applyPhoto(prepared.url, prepared.asset);
-            this.phase = "ready";
-            rendered = true;
-            if (!this.isPinned) {
-              void sendCommand({ command: "rotate" });
-            }
-          } else {
-            URL.revokeObjectURL(prepared.url);
-          }
-        }
+      if (!current) {
+        this.photoLoadState = "loading";
+
+        const result = await sendCommand({ command: "nextImage" });
+        if (!result.ok) throw new Error(result.error.message);
       }
 
-      if (!rendered) {
-        await this.ensureAndRender();
-      }
+      await this.loadCurrentPhoto(current ?? undefined);
+
+      void sendCommand({ command: "nextImage" });
     } catch {
-      await this.ensureAndRender();
+      await this.loadCurrentPhoto();
     }
   }
 
@@ -597,7 +563,6 @@ class StellarApp extends LitElement {
         const validated = validateHistoryState(newValue);
         if (validated) {
           this.historyAssets = validated.history;
-          this.reconcileHistoryIndex();
         } else {
           void this.loadHistoryAssets();
         }
@@ -605,27 +570,10 @@ class StellarApp extends LitElement {
     }
   };
 
-  private reconcileHistoryIndex(): void {
-    if (!this.currentAsset) {
-      this.historyIndex = 0;
-      return;
-    }
-
-    const index = this.historyAssets.findIndex(
-      (asset) =>
-        asset.cacheKey === this.currentAsset?.cacheKey &&
-        asset.createdAt === this.currentAsset?.createdAt,
-    );
-
-    this.historyIndex = index;
-  }
-
   private async loadHistoryAssets(): Promise<void> {
     try {
       const state = await readHistory();
-      if (!this.isConnected) return;
       this.historyAssets = state.history;
-      this.reconcileHistoryIndex();
     } catch {
       // Graceful fallback
     }
@@ -636,7 +584,7 @@ class StellarApp extends LitElement {
     await this.setPinnedState(nextPinned);
 
     if (!nextPinned) {
-      void sendCommand({ command: "rotate" });
+      void sendCommand({ command: "nextImage" });
     }
   };
 
@@ -675,7 +623,6 @@ class StellarApp extends LitElement {
       if (!targetAsset) break;
 
       if (await this.showHistoryAsset(targetAsset)) {
-        this.historyIndex = targetIndex;
         return;
       }
 
@@ -691,7 +638,7 @@ class StellarApp extends LitElement {
       const source = getImageSource(asset.sourceId);
       const response = source?.downloadFullAsset
         ? await source.downloadFullAsset(asset)
-        : await readCachedImage(asset.cacheKey);
+        : await readImage(asset.cacheKey);
 
       if (!response) throw new Error("Image response unavailable");
 
@@ -751,11 +698,6 @@ class StellarApp extends LitElement {
     const selectedAsset = event.detail.asset;
     if (!(await this.showHistoryAsset(selectedAsset))) return;
 
-    if (typeof event.detail.index === "number") {
-      this.historyIndex = event.detail.index;
-    } else {
-      this.reconcileHistoryIndex();
-    }
     if (!this.isPinned) {
       await this.setPinnedState(selectedAsset);
     }
@@ -877,14 +819,14 @@ class StellarApp extends LitElement {
       this.currentAsset &&
       !event.detail.sourceIds.includes(this.currentAsset.sourceId)
     ) {
-      void this.ensureAndRender();
+      void this.loadCurrentPhoto();
     }
   };
 
   private releaseObjectUrl(): void {
-    if (this.objectUrl) {
-      URL.revokeObjectURL(this.objectUrl);
-      this.objectUrl = null;
+    if (this.currentPhotoURL) {
+      URL.revokeObjectURL(this.currentPhotoURL);
+      this.currentPhotoURL = null;
     }
 
     this.currentAsset = null;
@@ -893,10 +835,7 @@ class StellarApp extends LitElement {
 
 async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
   const activeSourceIds = await getActiveImageSourceIds();
-  if (
-    activeSourceIds.includes("local") &&
-    (command.command === "rotate" || command.command === "ensure-current")
-  ) {
+  if (activeSourceIds.includes("local") && command.command === "nextImage") {
     return dispatch(command);
   }
 
@@ -906,8 +845,6 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
       | undefined;
 
     if (!response) {
-      if (command.command === "ensure-current") return dispatch(command);
-
       return {
         ok: false,
         error: {
@@ -922,8 +859,6 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
 
     return response;
   } catch (error) {
-    if (command.command === "ensure-current") return dispatch(command);
-
     return {
       ok: false,
       error: {

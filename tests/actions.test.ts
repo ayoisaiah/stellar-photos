@@ -41,9 +41,7 @@ vi.mock("../src/ts/storage", () => ({
   writePinnedAsset,
 }));
 
-const { ensureCurrent, rotate, trackDownload } = await import(
-  "../src/ts/actions"
-);
+const { nextImage, trackDownload } = await import("../src/ts/actions");
 
 const candidate = {
   sourceId: "unsplash",
@@ -71,7 +69,8 @@ const prepared: BackgroundAsset = {
 let source: ImageSource;
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
+  createThumbnail.mockResolvedValue(null);
   source = {
     id: "unsplash",
     name: "Unsplash",
@@ -90,18 +89,7 @@ beforeEach(() => {
 });
 
 describe("source activation and multi-source rotation", () => {
-  it("reacquires when stored assets are missing from cache", async () => {
-    readPinnedAsset.mockResolvedValueOnce(current).mockResolvedValueOnce(null);
-    readCachedImage.mockResolvedValue(undefined);
-
-    await expect(ensureCurrent()).resolves.toEqual(prepared);
-
-    expect(writeHistory).toHaveBeenCalledWith({ history: [] });
-    expect(writePinnedAsset).toHaveBeenCalledWith(null);
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
-  });
-
-  it("rotates on ensureCurrent when current photo source is no longer active", async () => {
+  it("fetches a new image when current photo source is no longer active", async () => {
     const earthviewSource: ImageSource = {
       id: "earthview",
       name: "Google Earth View",
@@ -114,9 +102,15 @@ describe("source activation and multi-source rotation", () => {
     };
     getActiveImageSources.mockResolvedValue([earthviewSource]);
 
-    await expect(ensureCurrent()).resolves.toMatchObject({
-      sourceId: "earthview",
-      sourceAssetId: "earth-1",
+    await expect(nextImage()).resolves.toBeUndefined();
+    expect(writeHistory).toHaveBeenCalledWith({
+      history: [
+        expect.objectContaining({
+          sourceId: "earthview",
+          sourceAssetId: "earth-1",
+        }),
+        current,
+      ],
     });
 
     expect(earthviewSource.getRandomAsset).toHaveBeenCalledOnce();
@@ -127,7 +121,7 @@ describe("source activation and multi-source rotation", () => {
     const freshAsset = { ...current, createdAt: Date.now() };
     readHistory.mockResolvedValue({ history: [freshAsset] });
 
-    await expect(ensureCurrent()).resolves.toEqual(freshAsset);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(source.getRandomAsset).not.toHaveBeenCalled();
   });
@@ -137,13 +131,13 @@ describe("source activation and multi-source rotation", () => {
     const oldAsset = { ...current, createdAt: Date.now() - 20 * 60 * 1000 };
     readHistory.mockResolvedValue({ history: [oldAsset] });
 
-    await expect(ensureCurrent()).resolves.toEqual(prepared);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
   });
 
   it("rotates when rotation is explicitly triggered", async () => {
-    await expect(rotate()).resolves.toEqual(prepared);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
     expect(writeHistory).toHaveBeenCalledWith({
@@ -161,19 +155,26 @@ describe("source activation and multi-source rotation", () => {
     };
     getActiveImageSources.mockResolvedValue([failingSource, source]);
 
-    await expect(rotate()).resolves.toEqual(prepared);
+    await expect(nextImage()).resolves.toBeUndefined();
     expect(failingSource.getRandomAsset).toHaveBeenCalled();
     expect(source.getRandomAsset).toHaveBeenCalled();
   });
 
-  it("does not ingest a download when an asset becomes pinned", async () => {
-    readPinnedAsset.mockResolvedValueOnce(null).mockResolvedValueOnce(current);
+  it("finishes caching an in-progress download when a photo becomes pinned", async () => {
+    vi.mocked(source.downloadAsset).mockImplementation(async () => {
+      readPinnedAsset.mockResolvedValue(current);
+      return new Response("image");
+    });
 
-    await expect(rotate()).resolves.toEqual(current);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(source.downloadAsset).toHaveBeenCalledWith(candidate);
-    expect(putCachedImage).not.toHaveBeenCalled();
-    expect(writeHistory).not.toHaveBeenCalled();
+    expect(putCachedImage).toHaveBeenCalledWith(
+      prepared.cacheKey,
+      expect.any(Response),
+    );
+    expect(writeHistory).toHaveBeenCalledWith({ history: [prepared, current] });
+    expect(writePinnedAsset).not.toHaveBeenCalled();
   });
 
   it("notifies the source when tracking a user download for a supported source", async () => {
@@ -202,19 +203,56 @@ describe("source activation and multi-source rotation", () => {
     expect(didDownload).not.toHaveBeenCalled();
   });
 
-  it("coalesces concurrent rotate requests and drains pending rotation", async () => {
-    const [first, second] = await Promise.all([rotate(), rotate()]);
+  it("serializes concurrent nextImage requests", async () => {
+    let history = [current];
+    readHistory.mockImplementation(async () => ({ history: [...history] }));
+    writeHistory.mockImplementation(async (state) => {
+      history = state.history;
+    });
 
-    expect(first).toEqual(prepared);
-    expect(second).toEqual(prepared);
+    const [first, second] = await Promise.all([nextImage(), nextImage()]);
+
+    expect(first).toBeUndefined();
+    expect(second).toBeUndefined();
     expect(source.getRandomAsset).toHaveBeenCalledTimes(2);
+    expect(history).toEqual([prepared, prepared, current]);
+  });
+
+  it("stops when pinned without reading the image cache or clearing the pin", async () => {
+    readPinnedAsset.mockResolvedValue(current);
+
+    await expect(nextImage()).resolves.toBeUndefined();
+    expect(readCachedImage).not.toHaveBeenCalled();
+    expect(writePinnedAsset).not.toHaveBeenCalled();
+    expect(source.getRandomAsset).not.toHaveBeenCalled();
+  });
+
+  it("waits for the deadline even if the image is missing and its source is disabled", async () => {
+    getPhotoFrequency.mockResolvedValue("everyhour");
+    readHistory.mockResolvedValue({
+      history: [{ ...current, createdAt: Date.now() }],
+    });
+    readCachedImage.mockResolvedValue(undefined);
+    getActiveImageSources.mockResolvedValue([]);
+
+    await expect(nextImage()).resolves.toBeUndefined();
+    expect(readCachedImage).not.toHaveBeenCalled();
+    expect(getActiveImageSources).not.toHaveBeenCalled();
+    expect(source.downloadAsset).not.toHaveBeenCalled();
+  });
+
+  it("allows the next request to proceed after a failed download", async () => {
+    vi.mocked(source.downloadAsset).mockRejectedValueOnce(new Error("Offline"));
+
+    await expect(nextImage()).rejects.toThrow("Offline");
+    await expect(nextImage()).resolves.toBeUndefined();
   });
 
   it("generates and caches thumbnail derivative when image is rotated", async () => {
     const fakeThumbBlob = new Blob(["fake-webp"], { type: "image/webp" });
     createThumbnail.mockResolvedValueOnce(fakeThumbBlob);
 
-    await expect(rotate()).resolves.toEqual(prepared);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(createThumbnail).toHaveBeenCalled();
     expect(putCachedThumbnail).toHaveBeenCalledWith(
@@ -232,7 +270,7 @@ describe("source activation and multi-source rotation", () => {
     }));
     readHistory.mockResolvedValue({ history: tenItems });
 
-    await expect(rotate()).resolves.toEqual(prepared);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(deleteCachedImage).toHaveBeenCalledWith("cache-old-9");
     expect(deleteCachedThumbnail).toHaveBeenCalledWith("cache-old-9");
@@ -249,7 +287,7 @@ describe("source activation and multi-source rotation", () => {
 
     readHistory.mockResolvedValue({ history: tenItems });
 
-    await expect(rotate()).resolves.toEqual(prepared);
+    await expect(nextImage()).resolves.toBeUndefined();
 
     expect(deleteCachedImage).not.toHaveBeenCalledWith("shared-cache-key");
     expect(deleteCachedThumbnail).not.toHaveBeenCalledWith("shared-cache-key");

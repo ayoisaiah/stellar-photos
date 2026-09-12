@@ -5,7 +5,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
 import { attributionUrl } from "../attribution";
-import { readCachedImage, readCachedThumbnail } from "../cache";
+import { readImage } from "../image-reader";
 import { getImageSource } from "../sources";
 import "./lucide-icon";
 
@@ -183,9 +183,7 @@ class HistoryPanel extends LitElement {
             return { key: asset.cacheKey, url: existing, isNew: false };
           }
 
-          const cachedThumbnail = await readCachedThumbnail(asset.cacheKey);
-          const response =
-            cachedThumbnail ?? (await readCachedImage(asset.cacheKey));
+          const response = await readImage(asset.cacheKey, true);
 
           if (response) {
             const blob = await response.blob();
