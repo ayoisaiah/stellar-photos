@@ -490,8 +490,6 @@ class StellarApp extends LitElement {
   private loadCurrentPhoto = async (
     current?: BackgroundAsset,
   ): Promise<void> => {
-    if (!this.currentPhotoURL) this.photoLoadState = "loading";
-
     try {
       if (!current) {
         const [pinned, { history }] = await Promise.all([
