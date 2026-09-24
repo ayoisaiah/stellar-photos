@@ -148,3 +148,48 @@ it.each([null, asset])(
     app["releaseObjectUrl"]();
   },
 );
+
+it("caches the history index until the displayed asset or history changes", () => {
+  const app = new StellarApp();
+  const older = { ...asset, createdAt: 0 };
+  app["historyAssets"] = [asset, older];
+  app["currentAsset"] = older;
+  const findIndex = vi.spyOn(app["historyAssets"], "findIndex");
+
+  try {
+    app.willUpdate(new Map([["currentAsset", null]]));
+    expect(app["currentSource"]?.id).toBe("unsplash");
+    expect(app["isInfoAvailable"]).toBe(true);
+    expect(app["isDownloadable"]).toBe(true);
+    expect(app["historyIndex"]).toBe(1);
+    expect(app["hasNext"]).toBe(true);
+    expect(app["hasPrevious"]).toBe(false);
+    app.willUpdate(new Map([["openPanel", null]]));
+    expect(app["hasNext"]).toBe(true);
+    expect(findIndex).toHaveBeenCalledOnce();
+
+    app["historyAssets"] = [asset];
+    app.willUpdate(new Map([["historyAssets", [asset, older]]]));
+    expect(app["historyIndex"]).toBe(-1);
+    expect(app["hasNext"]).toBe(true);
+    expect(app["hasPrevious"]).toBe(false);
+
+    app["currentAsset"] = asset;
+    app.willUpdate(new Map([["currentAsset", older]]));
+    expect(app["historyIndex"]).toBe(0);
+    expect(app["hasNext"]).toBe(false);
+    expect(app["hasPrevious"]).toBe(false);
+
+    app["currentAsset"] = null;
+    app["historyAssets"] = [];
+    app.willUpdate(new Map([["currentAsset", asset]]));
+    expect(app["currentSource"]).toBeNull();
+    expect(app["isInfoAvailable"]).toBe(false);
+    expect(app["isDownloadable"]).toBe(false);
+    expect(app["historyIndex"]).toBe(0);
+    expect(app["hasNext"]).toBe(false);
+    expect(app["hasPrevious"]).toBe(false);
+  } finally {
+    findIndex.mockRestore();
+  }
+});

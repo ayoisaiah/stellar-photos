@@ -61,3 +61,73 @@ it("switches panels exclusively, refreshes on opening, and restores focus on clo
   expect(history).toHaveBeenCalledOnce();
   expect(settings).toHaveBeenCalledOnce();
 });
+
+it("keeps history wheel navigation separate from passive window gestures", () => {
+  const app = new StellarApp();
+  app["loadHistoryAssets"] = vi.fn(async () => undefined);
+  app["showControls"] = vi.fn();
+  const navigate = vi.fn(async () => undefined);
+  app["navigateHistory"] = navigate;
+  vi.spyOn(Date, "now").mockReturnValue(1000);
+  const wheel = (deltaY: number) =>
+    Object.assign(new Event("wheel", { cancelable: true }), {
+      deltaX: 0,
+      deltaY,
+    }) as WheelEvent;
+
+  const open = wheel(-40);
+  app["handleWheel"](open);
+  expect(app["openPanel"]).toBe("history");
+  expect(open.defaultPrevented).toBe(false);
+
+  const scroll = wheel(40);
+  app["handleHistoryWheel"](scroll);
+  app["handleWheel"](scroll);
+  expect(scroll.defaultPrevented).toBe(true);
+  expect(navigate).toHaveBeenCalledExactlyOnceWith(1);
+  expect(app["openPanel"]).toBe("history");
+  app["handleHistoryWheel"](wheel(40));
+  expect(navigate).toHaveBeenCalledOnce();
+
+  vi.mocked(Date.now).mockReturnValue(1300);
+  app["handleHistoryWheel"](wheel(-40));
+  expect(navigate).toHaveBeenLastCalledWith(-1);
+
+  const close = wheel(40);
+  app["handleWheel"](close);
+  expect(app["openPanel"]).toBeNull();
+  expect(close.defaultPrevented).toBe(false);
+
+  for (const panel of ["settings", "info"] as const) {
+    app["openPanel"] = panel;
+    const event = wheel(-40);
+    app["handleHistoryWheel"](event);
+    app["handleWheel"](event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(app["openPanel"]).toBe(panel);
+  }
+});
+
+it.each([true, false])(
+  "reads history on demand only without storage notifications (listener: %s)",
+  async (hasListener) => {
+    vi.stubGlobal("chrome", {
+      storage: {
+        onChanged: hasListener ? { addListener: vi.fn() } : undefined,
+      },
+    });
+    const app = new StellarApp();
+    const loadHistory = vi.fn(async () => undefined);
+    app["loadHistoryAssets"] = loadHistory;
+    Object.defineProperty(app, "updateComplete", {
+      value: Promise.resolve(true),
+    });
+
+    app["togglePanel"]("history");
+    expect(loadHistory).toHaveBeenCalledTimes(hasListener ? 0 : 1);
+
+    loadHistory.mockClear();
+    await app["navigateHistory"](1);
+    expect(loadHistory).toHaveBeenCalledTimes(hasListener ? 0 : 1);
+  },
+);

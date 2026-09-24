@@ -10,7 +10,7 @@ import {
   Settings,
 } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, eventOptions, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
@@ -44,6 +44,7 @@ import "./settings-drawer";
 import type { BackgroundAsset } from "../assets";
 import type { WorkerCommand, WorkerResult } from "../service-worker";
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
+import type { ImageSource } from "../sources";
 import type { PhotoFrequency } from "../sources/photo-frequency";
 import type { EmptyStatePhase } from "./empty-state";
 
@@ -53,6 +54,8 @@ class StellarApp extends LitElement {
 
   private controlsTimer: number | undefined;
   private lastWheelTime = 0;
+  private historyIndex = 0;
+  private currentSource: ImageSource | null = null;
   private currentPhotoURL: string | null = null;
 
   @state()
@@ -101,16 +104,6 @@ class StellarApp extends LitElement {
     });
   }
 
-  private get historyIndex(): number {
-    if (!this.currentAsset) return 0;
-
-    return this.historyAssets.findIndex(
-      (asset) =>
-        asset.cacheKey === this.currentAsset?.cacheKey &&
-        asset.createdAt === this.currentAsset?.createdAt,
-    );
-  }
-
   private get hasNext(): boolean {
     return (
       this.historyAssets.length > 0 &&
@@ -135,23 +128,17 @@ class StellarApp extends LitElement {
   }
 
   private get isInfoAvailable(): boolean {
-    return (
-      this.currentAsset !== null &&
-      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsInfo)
-    );
+    return Boolean(this.currentSource?.supportsInfo);
   }
 
   private get isDownloadable(): boolean {
-    return (
-      this.currentAsset !== null &&
-      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsDownload)
-    );
+    return Boolean(this.currentSource?.supportsDownload);
   }
 
   override connectedCallback(): void {
     super.connectedCallback();
 
-    window.addEventListener("wheel", this.handleWheel, { passive: false });
+    window.addEventListener("wheel", this.handleWheel, { passive: true });
     window.addEventListener("click", this.handleViewportClick);
 
     if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
@@ -174,13 +161,36 @@ class StellarApp extends LitElement {
     super.disconnectedCallback();
   }
 
+  override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
+    if (changedProperties.has("currentAsset")) {
+      this.currentSource = this.currentAsset
+        ? getImageSource(this.currentAsset.sourceId)
+        : null;
+    }
+
+    if (
+      !changedProperties.has("currentAsset") &&
+      !changedProperties.has("historyAssets")
+    )
+      return;
+
+    const current = this.currentAsset;
+    const identity = current && assetIdentity(current);
+    this.historyIndex = current
+      ? this.historyAssets.findIndex(
+          (asset) =>
+            assetIdentity(asset) === identity &&
+            asset.createdAt === current.createdAt,
+        )
+      : 0;
+  }
+
   override render() {
     const controlsShown = this.controlsVisible || this.controlsLocked;
 
     return html`
       <div
         class="app-viewport ${this.openPanel === "history" ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
-        @click=${this.handleViewportClick}
         @pointermove=${this.showControls}
         @pointerleave=${this.showControls}
       >
@@ -302,6 +312,7 @@ class StellarApp extends LitElement {
           @select-photo=${this.handleSelectHistoryPhoto}
           @download-photo=${this.handleDownloadHistoryPhoto}
           @close-history=${this.closePanel}
+          @wheel=${this.handleHistoryWheel}
         ></stellar-history-panel>
       </div>
       <stellar-photo-info
@@ -325,9 +336,7 @@ class StellarApp extends LitElement {
   private renderPhotoCredit() {
     if (!this.currentAsset || !this.currentPhotoURL) return null;
 
-    const credit = getImageSource(this.currentAsset.sourceId)?.getCredit?.(
-      this.currentAsset,
-    );
+    const credit = this.currentSource?.getCredit?.(this.currentAsset);
     if (!credit) return null;
 
     return html`
@@ -385,7 +394,9 @@ class StellarApp extends LitElement {
 
     this.openPanel = name;
     if (name === "history") {
-      void this.loadHistoryAssets();
+      if (typeof chrome === "undefined" || !chrome.storage?.onChanged) {
+        void this.loadHistoryAssets();
+      }
     } else if (name === "settings") {
       void this.loadCoreSettings();
     }
@@ -582,9 +593,13 @@ class StellarApp extends LitElement {
   };
 
   private navigateHistory = async (step: -1 | 1): Promise<void> => {
-    if (this.historyAssets.length === 0) {
+    if (
+      this.historyAssets.length === 0 &&
+      (typeof chrome === "undefined" || !chrome.storage?.onChanged)
+    ) {
       await this.loadHistoryAssets();
     }
+    await this.updateComplete;
     if (step === 1 ? !this.hasPrevious : !this.hasNext) return;
 
     const index = this.historyIndex;
@@ -656,30 +671,30 @@ class StellarApp extends LitElement {
     await this.downloadAsset(event.detail.asset);
   };
 
-  private handleWheel = (event: WheelEvent): void => {
-    if (this.openPanel === "settings" || this.openPanel === "info") return;
+  @eventOptions({ passive: false })
+  private handleHistoryWheel(event: WheelEvent): void {
+    if (this.openPanel !== "history") return;
 
-    const path = event.composedPath();
-    const isInsideHistory = path.some(
-      (el) =>
-        el instanceof HTMLElement &&
-        el.tagName.toLowerCase() === "stellar-history-panel",
-    );
-
-    if (isInsideHistory) {
-      event.preventDefault();
-      const now = Date.now();
-      if (now - this.lastWheelTime > 200) {
-        if (event.deltaX > 15 || event.deltaY > 15) {
-          this.lastWheelTime = now;
-          void this.navigateHistory(1);
-        } else if (event.deltaX < -15 || event.deltaY < -15) {
-          this.lastWheelTime = now;
-          void this.navigateHistory(-1);
-        }
+    event.preventDefault();
+    const now = Date.now();
+    if (now - this.lastWheelTime > 200) {
+      if (event.deltaX > 15 || event.deltaY > 15) {
+        this.lastWheelTime = now;
+        void this.navigateHistory(1);
+      } else if (event.deltaX < -15 || event.deltaY < -15) {
+        this.lastWheelTime = now;
+        void this.navigateHistory(-1);
       }
-      return;
     }
+  }
+
+  private handleWheel = (event: WheelEvent): void => {
+    if (
+      event.defaultPrevented ||
+      this.openPanel === "settings" ||
+      this.openPanel === "info"
+    )
+      return;
 
     if (event.deltaY < -30 && this.openPanel !== "history") {
       this.togglePanel("history");
@@ -761,8 +776,10 @@ class StellarApp extends LitElement {
 }
 
 async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
-  const activeSourceIds = await getActiveImageSourceIds();
-  if (activeSourceIds.includes("local") && command.command === "nextImage") {
+  if (
+    command.command === "nextImage" &&
+    (await getActiveImageSourceIds()).includes("local")
+  ) {
     return dispatch(command);
   }
 
