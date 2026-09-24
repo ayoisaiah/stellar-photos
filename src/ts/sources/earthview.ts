@@ -1,3 +1,4 @@
+import { MapPin } from "@lucide/icons";
 import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
@@ -159,6 +160,16 @@ const earthviewSource: ImageSource = {
   name: "Google Earth View",
   supportsDownload: true,
   supportsInfo: true,
+  getCredit(asset) {
+    if (!asset.attribution) return null;
+
+    return {
+      ...asset.attribution,
+      sourceUrl: asset.attribution.url || asset.attribution.sourceUrl,
+      sourceName: earthviewSource.name,
+      icon: MapPin,
+    };
+  },
   getRandomAsset: getRandomEarthViewAsset,
   downloadAsset: downloadEarthViewAsset,
   downloadFullAsset: downloadEarthViewAsset,

@@ -54,6 +54,11 @@ const smithsonianSource: ImageSource = {
   id: "smithsonian",
   name: "Smithsonian Open Access",
   supportsDownload: true,
+  getCredit(asset) {
+    if (!asset.attribution) return null;
+
+    return { ...asset.attribution, sourceName: smithsonianSource.name };
+  },
   getRandomAsset: getRandomSmithsonianAsset,
   downloadAsset: downloadSmithsonianAsset,
   downloadFullAsset: downloadSmithsonianAsset,

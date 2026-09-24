@@ -98,3 +98,53 @@ it("shows an error for an unavailable saved image without fetching", async () =>
   expect(sendMessage).not.toHaveBeenCalled();
   vi.restoreAllMocks();
 });
+
+it("preserves the displayed photo and pin until a history image is available", async () => {
+  const app = new StellarApp();
+  await app["loadCurrentPhoto"](asset);
+  app["pinnedAsset"] = asset;
+  const previousUrl = app["currentPhotoURL"];
+  const nextAsset = { ...asset, cacheKey: "next-image", createdAt: 2 };
+  const revoke = vi.spyOn(URL, "revokeObjectURL");
+
+  try {
+    readImage.mockResolvedValueOnce(undefined);
+    expect(await app["showHistoryAsset"](nextAsset)).toBe(false);
+    expect(app["currentPhotoURL"]).toBe(previousUrl);
+    expect(app["currentAsset"]).toBe(asset);
+    expect(writePinnedAsset).not.toHaveBeenCalled();
+    expect(revoke).not.toHaveBeenCalled();
+
+    expect(await app["showHistoryAsset"](nextAsset)).toBe(true);
+    expect(app["currentPhotoURL"]).not.toBe(previousUrl);
+    expect(app["currentAsset"]).toBe(nextAsset);
+    expect(writePinnedAsset).toHaveBeenCalledExactlyOnceWith(nextAsset);
+    expect(revoke).toHaveBeenCalledExactlyOnceWith(previousUrl);
+  } finally {
+    app["releaseObjectUrl"]();
+    revoke.mockRestore();
+  }
+});
+
+it.each([null, asset])(
+  "pins a history selection once with previous pin %j",
+  async (pinned) => {
+    const app = new StellarApp();
+    app["pinnedAsset"] = pinned;
+    const selectedAsset = { ...asset, cacheKey: "selected-image" };
+    const event = new CustomEvent("select-photo", {
+      detail: { asset: selectedAsset },
+    });
+
+    readImage.mockResolvedValueOnce(undefined);
+    await app["handleSelectHistoryPhoto"](event);
+    expect(writePinnedAsset).not.toHaveBeenCalled();
+    expect(app["pinnedAsset"]).toBe(pinned);
+
+    await app["handleSelectHistoryPhoto"](event);
+    expect(writePinnedAsset).toHaveBeenCalledExactlyOnceWith(selectedAsset);
+    expect(app["pinnedAsset"]).toBe(selectedAsset);
+    expect(app["currentAsset"]).toBe(selectedAsset);
+    app["releaseObjectUrl"]();
+  },
+);

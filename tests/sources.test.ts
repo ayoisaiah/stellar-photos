@@ -130,3 +130,74 @@ describe("image source registry", () => {
     ]);
   });
 });
+
+it("resolves source-specific credits and handles missing attribution", () => {
+  const attribution = {
+    name: "Stored name",
+    url: "https://example.com/author",
+    sourceUrl: "https://example.com/photo",
+  };
+  const asset = {
+    sourceId: "unsplash",
+    sourceAssetId: "photo",
+    cacheKey: "photo",
+    width: 1920,
+    height: 1080,
+    color: null,
+    description: null,
+    attribution,
+    payloadVersion: 1,
+    sourcePayload: {
+      info: {
+        user: {
+          name: "Profile name",
+          link: "https://unsplash.com/@author",
+          profileImage: "https://example.com/avatar.jpg",
+        },
+      },
+    },
+    createdAt: 1,
+  };
+  const unsplash = getImageSource("unsplash")!;
+  expect(unsplash.getCredit?.(asset)).toMatchObject({
+    name: "Profile name",
+    url: "https://unsplash.com/@author?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit",
+    avatar: "https://example.com/avatar.jpg",
+    sourceUrl:
+      "https://example.com/photo?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit",
+    sourceName: "Unsplash",
+  });
+  expect(unsplash.getCredit?.({ ...asset, sourcePayload: {} })).toMatchObject({
+    name: attribution.name,
+    url: `${attribution.url}?utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit`,
+  });
+
+  const earthview = getImageSource("earthview")!;
+  expect(
+    earthview.getCredit?.({ ...asset, sourceId: "earthview" }),
+  ).toMatchObject({
+    ...attribution,
+    sourceUrl: attribution.url,
+    sourceName: "Google Earth View",
+    icon: expect.anything(),
+  });
+  expect(
+    earthview.getCredit?.({
+      ...asset,
+      sourceId: "earthview",
+      attribution: { ...attribution, url: "" },
+    })?.sourceUrl,
+  ).toBe(attribution.sourceUrl);
+
+  const smithsonian = getImageSource("smithsonian")!;
+  expect(
+    smithsonian.getCredit?.({ ...asset, sourceId: "smithsonian" }),
+  ).toEqual({
+    ...attribution,
+    sourceName: "Smithsonian Open Access",
+  });
+  for (const source of [unsplash, earthview, smithsonian]) {
+    expect(source.getCredit?.({ ...asset, attribution: null })).toBeNull();
+  }
+  expect(getImageSource("local")?.getCredit?.(asset)).toBeUndefined();
+});

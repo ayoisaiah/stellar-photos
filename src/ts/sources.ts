@@ -1,3 +1,4 @@
+import type { LucideIconData } from "@lucide/icons";
 import type { BackgroundAsset, UncachedBackgroundAsset } from "./assets";
 import { getActiveImageSourceIds } from "./settings";
 import { earthviewSource } from "./sources/earthview";
@@ -5,11 +6,21 @@ import { localSource } from "./sources/local";
 import { smithsonianSource } from "./sources/smithsonian";
 import { unsplashSource } from "./sources/unsplash";
 
+interface PhotoCredit {
+  name: string;
+  url: string;
+  avatar?: string | null;
+  icon?: LucideIconData;
+  sourceUrl: string;
+  sourceName: string;
+}
+
 interface ImageSource {
   readonly id: string;
   readonly name: string;
   readonly supportsDownload?: boolean;
   readonly supportsInfo?: boolean;
+  getCredit?(asset: BackgroundAsset): PhotoCredit | null;
   isSupported?(): boolean;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
@@ -54,5 +65,9 @@ async function getActiveImageSources(): Promise<ImageSource[]> {
   return sources.length > 0 ? sources : [defaultImageSource];
 }
 
-export type { ImageSource };
-export { getActiveImageSources, getImageSource, listImageSources };
+export {
+  getActiveImageSources,
+  getImageSource,
+  type ImageSource,
+  listImageSources,
+};

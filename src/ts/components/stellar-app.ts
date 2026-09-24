@@ -5,7 +5,6 @@ import {
   Download,
   History,
   Info,
-  MapPin,
   Pin,
   PinOff,
   Settings,
@@ -16,7 +15,6 @@ import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
 import { assetIdentity } from "../assets";
-import { attributionUrl } from "../attribution";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
 import { readImage } from "../image-reader";
 import { dispatch } from "../service-worker";
@@ -28,7 +26,6 @@ import {
   getDisplaySettings,
 } from "../settings";
 import { getImageSource } from "../sources";
-import { getUnsplashPhotoInfo } from "../sources/unsplash";
 import {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
@@ -58,28 +55,6 @@ class StellarApp extends LitElement {
   private lastWheelTime = 0;
   private currentPhotoURL: string | null = null;
 
-  constructor() {
-    super();
-
-    new KeyboardShortcutsController(this, {
-      isLocked: () => this.settingsOpen || this.infoOpen,
-      onPrev: () => void this.navigateHistory(1),
-      onNext: () => void this.navigateHistory(-1),
-      onTogglePin: () => void this.togglePin(),
-      onEscape: () => {
-        if (this.historyOpen) {
-          this.closeHistory();
-        }
-        if (this.infoOpen) {
-          this.closeInfo();
-        }
-        if (this.settingsOpen) {
-          this.closeSettings();
-        }
-      },
-    });
-  }
-
   @state()
   private accessor controlsVisible = false;
 
@@ -96,19 +71,13 @@ class StellarApp extends LitElement {
   private accessor historyAssets: BackgroundAsset[] = [];
 
   @state()
-  private accessor historyOpen = false;
-
-  @state()
-  private accessor infoOpen = false;
+  private accessor openPanel: "history" | "info" | "settings" | null = null;
 
   @state()
   private accessor pinnedAsset: BackgroundAsset | null = null;
 
   @state()
   private accessor photoLoadState: EmptyStatePhase = "ready";
-
-  @state()
-  private accessor settingsOpen = false;
 
   @state()
   private accessor activeSourceIds: string[] = [
@@ -118,6 +87,19 @@ class StellarApp extends LitElement {
   @state()
   private accessor photoFrequency: PhotoFrequency =
     DEFAULT_CORE_SETTINGS.photoFrequency;
+
+  constructor() {
+    super();
+
+    new KeyboardShortcutsController(this, {
+      isLocked: () =>
+        this.openPanel === "settings" || this.openPanel === "info",
+      onPrev: () => void this.navigateHistory(1),
+      onNext: () => void this.navigateHistory(-1),
+      onTogglePin: () => void this.togglePin(),
+      onEscape: this.closePanel,
+    });
+  }
 
   private get historyIndex(): number {
     if (!this.currentAsset) return 0;
@@ -145,11 +127,25 @@ class StellarApp extends LitElement {
   }
 
   private get controlsLocked(): boolean {
-    return this.historyOpen || this.settingsOpen || this.infoOpen;
+    return this.openPanel !== null;
   }
 
   private get isPinned(): boolean {
     return this.pinnedAsset !== null;
+  }
+
+  private get isInfoAvailable(): boolean {
+    return (
+      this.currentAsset !== null &&
+      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsInfo)
+    );
+  }
+
+  private get isDownloadable(): boolean {
+    return (
+      this.currentAsset !== null &&
+      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsDownload)
+    );
   }
 
   override connectedCallback(): void {
@@ -178,26 +174,12 @@ class StellarApp extends LitElement {
     super.disconnectedCallback();
   }
 
-  private get isInfoAvailable(): boolean {
-    return (
-      this.currentAsset !== null &&
-      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsInfo)
-    );
-  }
-
-  private get isDownloadable(): boolean {
-    return (
-      this.currentAsset !== null &&
-      Boolean(getImageSource(this.currentAsset.sourceId)?.supportsDownload)
-    );
-  }
-
   override render() {
     const controlsShown = this.controlsVisible || this.controlsLocked;
 
     return html`
       <div
-        class="app-viewport ${this.historyOpen ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
+        class="app-viewport ${this.openPanel === "history" ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
         @click=${this.handleViewportClick}
         @pointermove=${this.showControls}
         @pointerleave=${this.showControls}
@@ -263,12 +245,12 @@ class StellarApp extends LitElement {
             this.isInfoAvailable
               ? html`
                 <button
-                  class="action-button info-button ${this.infoOpen ? "active" : ""}"
+                  class="action-button info-button ${this.openPanel === "info" ? "active" : ""}"
                   type="button"
-                  aria-label=${this.infoOpen ? "Close photo info" : "Photo info"}
-                  aria-expanded=${this.infoOpen}
+                  aria-label=${this.openPanel === "info" ? "Close photo info" : "Photo info"}
+                  aria-expanded=${this.openPanel === "info"}
                   title="Photo info"
-                  @click=${this.toggleInfo}
+                  @click=${() => this.togglePanel("info")}
                 >
                   <stellar-icon .icon=${Info}></stellar-icon>
                 </button>
@@ -292,47 +274,47 @@ class StellarApp extends LitElement {
               : null
           }
           <button
-            class="action-button history-toggle ${this.historyOpen ? "active" : ""}"
+            class="action-button history-toggle ${this.openPanel === "history" ? "active" : ""}"
             type="button"
-            aria-label=${this.historyOpen ? "Close history" : "Photo history"}
-            aria-expanded=${this.historyOpen}
+            aria-label=${this.openPanel === "history" ? "Close history" : "Photo history"}
+            aria-expanded=${this.openPanel === "history"}
             title="Photo history"
-            @click=${this.toggleHistory}
+            @click=${() => this.togglePanel("history")}
           >
             <stellar-icon .icon=${History}></stellar-icon>
           </button>
           <button
-            class="action-button settings-toggle ${this.settingsOpen ? "active" : ""}"
+            class="action-button settings-toggle ${this.openPanel === "settings" ? "active" : ""}"
             type="button"
-            aria-label=${this.settingsOpen ? "Close settings" : "Open settings"}
-            aria-expanded=${this.settingsOpen}
+            aria-label=${this.openPanel === "settings" ? "Close settings" : "Open settings"}
+            aria-expanded=${this.openPanel === "settings"}
             title="Settings"
-            @click=${this.toggleSettings}
+            @click=${() => this.togglePanel("settings")}
           >
             <stellar-icon .icon=${Settings}></stellar-icon>
           </button>
         </div>
         <stellar-history-panel
           class="history-panel"
-          .open=${this.historyOpen}
+          .open=${this.openPanel === "history"}
           .activeAsset=${this.currentAsset}
           .historyAssets=${this.historyAssets}
           @select-photo=${this.handleSelectHistoryPhoto}
           @download-photo=${this.handleDownloadHistoryPhoto}
-          @close-history=${this.closeHistory}
+          @close-history=${this.closePanel}
         ></stellar-history-panel>
       </div>
       <stellar-photo-info
-        .open=${this.infoOpen}
+        .open=${this.openPanel === "info"}
         .asset=${this.currentAsset}
-        @close-info=${this.closeInfo}
+        @close-info=${this.closePanel}
       ></stellar-photo-info>
       <stellar-settings-drawer
-        .open=${this.settingsOpen}
+        .open=${this.openPanel === "settings"}
         .activeSourceIds=${this.activeSourceIds}
         .photoFrequency=${this.photoFrequency}
         .displaySettings=${this.displaySettings}
-        @close-settings=${this.closeSettings}
+        @close-settings=${this.closePanel}
         @active-sources-changed=${this.handleActiveSourcesChanged}
         @frequency-changed=${this.handleFrequencyChanged}
         @display-settings-changed=${this.handleDisplaySettingsChanged}
@@ -341,62 +323,52 @@ class StellarApp extends LitElement {
   }
 
   private renderPhotoCredit() {
-    if (!this.currentAsset?.attribution || !this.currentPhotoURL) return null;
+    if (!this.currentAsset || !this.currentPhotoURL) return null;
 
-    const isEarthView = this.currentAsset.sourceId === "earthview";
-    const info = isEarthView ? null : getUnsplashPhotoInfo(this.currentAsset);
-    const photographerName =
-      info?.user?.name ?? this.currentAsset.attribution.name;
-    const photographerUrl =
-      info?.user?.link || this.currentAsset.attribution.url;
-    const photographerImage = info?.user?.profileImage;
-    const sourceUrl =
-      isEarthView && this.currentAsset.attribution.url
-        ? this.currentAsset.attribution.url
-        : this.currentAsset.attribution.sourceUrl;
-    const source = getImageSource(this.currentAsset.sourceId);
-    const sourceDisplayName =
-      source?.name ?? (isEarthView ? "Google Earth View" : "Unsplash");
+    const credit = getImageSource(this.currentAsset.sourceId)?.getCredit?.(
+      this.currentAsset,
+    );
+    if (!credit) return null;
 
     return html`
       <div class="bottom-credit">
         <div class="photographer-card">
           ${
-            photographerImage
+            credit.avatar
               ? html`<img
                   class="photographer-avatar"
-                  src="${photographerImage}"
-                  alt="${photographerName}"
+                  src="${credit.avatar}"
+                  alt="${credit.name}"
                 />`
               : html`<div class="photographer-avatar-placeholder">
-                  <stellar-icon .icon=${isEarthView ? MapPin : Camera}></stellar-icon>
+                  <stellar-icon .icon=${credit.icon ?? Camera}></stellar-icon>
                 </div>`
           }
           <div class="photographer-details">
             ${
-              photographerUrl
+              credit.url
                 ? html`
                   <a
                     class="photographer-name"
-                    href="${attributionUrl(photographerUrl, this.currentAsset.sourceId)}"
+                    href="${credit.url}"
                     target="_blank"
                     rel="noopener"
                   >
-                    ${photographerName}
+                    ${credit.name}
                   </a>
                 `
                 : html`
-                  <span class="photographer-name">${photographerName}</span>
+                  <span class="photographer-name">${credit.name}</span>
                 `
             }
             <span class="photographer-meta">
               Photo on
               <a
-                href="${attributionUrl(sourceUrl, this.currentAsset.sourceId)}"
+                href="${credit.sourceUrl}"
                 target="_blank"
                 rel="noopener"
               >
-                ${sourceDisplayName}
+                ${credit.sourceName}
               </a>
             </span>
           </div>
@@ -405,20 +377,35 @@ class StellarApp extends LitElement {
     `;
   }
 
-  private toggleInfo = (): void => {
-    if (!this.infoOpen) {
-      this.historyOpen = false;
+  private togglePanel = (name: "history" | "info" | "settings"): void => {
+    if (this.openPanel === name) {
+      this.closePanel();
+      return;
     }
 
-    this.infoOpen = !this.infoOpen;
+    this.openPanel = name;
+    if (name === "history") {
+      void this.loadHistoryAssets();
+    } else if (name === "settings") {
+      void this.loadCoreSettings();
+    }
   };
 
-  private closeInfo = (): void => {
-    this.infoOpen = false;
+  private closePanel = (): void => {
+    const panel = this.openPanel;
+    if (panel === null) return;
+
+    this.openPanel = null;
     this.showControls();
 
+    if (panel === "history") return;
+
     void this.updateComplete.then(() => {
-      this.renderRoot.querySelector<HTMLButtonElement>(".info-button")?.focus();
+      this.renderRoot
+        .querySelector<HTMLButtonElement>(
+          panel === "info" ? ".info-button" : ".settings-toggle",
+        )
+        ?.focus();
     });
   };
 
@@ -426,10 +413,7 @@ class StellarApp extends LitElement {
     asset: BackgroundAsset | null,
   ): PhotoDisplayMode {
     const isPortrait =
-      asset !== null &&
-      asset.height > 0 &&
-      asset.width > 0 &&
-      asset.height > asset.width;
+      asset !== null && asset.width > 0 && asset.height > asset.width;
 
     return isPortrait
       ? this.displaySettings.portraitMode
@@ -439,7 +423,7 @@ class StellarApp extends LitElement {
   private renderPhotoStage(url: string, asset: BackgroundAsset | null) {
     const effectiveMode = this.getEffectiveDisplayMode(asset);
     const motionEnabled = this.displaySettings.motion;
-    const paused = this.settingsOpen || this.infoOpen;
+    const paused = this.openPanel === "settings" || this.openPanel === "info";
 
     return keyed(
       url,
@@ -465,30 +449,23 @@ class StellarApp extends LitElement {
     );
   }
 
-  private async preparePhoto(
-    metadata: BackgroundAsset,
-  ): Promise<{ url: string; asset: BackgroundAsset } | null> {
-    const response = await readImage(metadata.cacheKey);
+  private async showAsset(asset: BackgroundAsset): Promise<boolean> {
+    const response = await readImage(asset.cacheKey);
 
-    if (!response) return null;
+    if (!response) return false;
 
     const blob = await response.blob();
     const nextUrl = URL.createObjectURL(blob);
 
-    return { url: nextUrl, asset: metadata };
-  }
-
-  private applyPhoto(nextUrl: string, asset: BackgroundAsset | null): void {
-    if (this.currentPhotoURL) {
-      URL.revokeObjectURL(this.currentPhotoURL);
-    }
-
+    this.releaseObjectUrl();
     this.currentPhotoURL = nextUrl;
     this.currentAsset = asset;
+
+    return true;
   }
 
   private loadCurrentPhoto = async (
-    current?: BackgroundAsset,
+    current?: BackgroundAsset | null,
   ): Promise<void> => {
     try {
       if (!current) {
@@ -501,11 +478,10 @@ class StellarApp extends LitElement {
         current = pinned ?? history[0];
       }
 
-      const prepared = current && (await this.preparePhoto(current));
+      if (!current || !(await this.showAsset(current))) {
+        throw new Error("No usable image is available yet");
+      }
 
-      if (!prepared) throw new Error("No usable image is available yet");
-
-      this.applyPhoto(prepared.url, prepared.asset);
       this.photoLoadState = "ready";
     } catch (err) {
       console.error(err);
@@ -529,7 +505,7 @@ class StellarApp extends LitElement {
       this.pinnedAsset = pinned;
       this.historyAssets = historyState.history;
 
-      const current = pinned ?? historyState.history[0] ?? null;
+      const current = pinned ?? historyState.history[0];
 
       if (!current) {
         this.photoLoadState = "loading";
@@ -538,7 +514,7 @@ class StellarApp extends LitElement {
         if (!result.ok) throw new Error(result.error.message);
       }
 
-      await this.loadCurrentPhoto(current ?? undefined);
+      await this.loadCurrentPhoto(current);
 
       void sendCommand({ command: "nextImage" });
     } catch {
@@ -596,13 +572,10 @@ class StellarApp extends LitElement {
   private showHistoryAsset = async (
     asset: BackgroundAsset,
   ): Promise<boolean> => {
-    const prepared = await this.preparePhoto(asset);
+    if (!(await this.showAsset(asset))) return false;
 
-    if (!prepared) return false;
-
-    this.applyPhoto(prepared.url, prepared.asset);
     if (this.isPinned) {
-      await this.setPinnedState(prepared.asset);
+      await this.setPinnedState(asset);
     }
 
     return true;
@@ -614,17 +587,18 @@ class StellarApp extends LitElement {
     }
     if (step === 1 ? !this.hasPrevious : !this.hasNext) return;
 
-    let targetIndex =
-      this.historyIndex === -1 && step === -1 ? 0 : this.historyIndex + step;
-    while (targetIndex >= 0 && targetIndex < this.historyAssets.length) {
-      const targetAsset = this.historyAssets[targetIndex];
-      if (!targetAsset) break;
+    const index = this.historyIndex;
+    const start = index === -1 ? 0 : index + step;
+    for (
+      let targetIndex = start;
+      targetIndex >= 0 && targetIndex < this.historyAssets.length;
+      targetIndex += step
+    ) {
+      const targetAsset = this.historyAssets[targetIndex]!;
 
       if (await this.showHistoryAsset(targetAsset)) {
         return;
       }
-
-      targetIndex += step;
     }
   };
 
@@ -647,10 +621,7 @@ class StellarApp extends LitElement {
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
-      link.style.display = "none";
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       void sendCommand({
@@ -670,35 +641,13 @@ class StellarApp extends LitElement {
     await this.downloadAsset(this.currentAsset);
   };
 
-  private toggleHistory = (): void => {
-    if (this.historyOpen) {
-      this.closeHistory();
-    } else {
-      this.openHistory();
-    }
-  };
-
-  private openHistory = (): void => {
-    this.historyOpen = true;
-    this.infoOpen = false;
-    this.settingsOpen = false;
-    void this.loadHistoryAssets();
-  };
-
-  private closeHistory = (): void => {
-    this.historyOpen = false;
-    this.showControls();
-  };
-
   private handleSelectHistoryPhoto = async (
     event: CustomEvent<{ asset: BackgroundAsset; index?: number }>,
   ): Promise<void> => {
     const selectedAsset = event.detail.asset;
-    if (!(await this.showHistoryAsset(selectedAsset))) return;
+    if (!(await this.showAsset(selectedAsset))) return;
 
-    if (!this.isPinned) {
-      await this.setPinnedState(selectedAsset);
-    }
+    await this.setPinnedState(selectedAsset);
   };
 
   private handleDownloadHistoryPhoto = async (
@@ -708,7 +657,7 @@ class StellarApp extends LitElement {
   };
 
   private handleWheel = (event: WheelEvent): void => {
-    if (this.settingsOpen || this.infoOpen) return;
+    if (this.openPanel === "settings" || this.openPanel === "info") return;
 
     const path = event.composedPath();
     const isInsideHistory = path.some(
@@ -732,10 +681,10 @@ class StellarApp extends LitElement {
       return;
     }
 
-    if (event.deltaY < -30 && !this.historyOpen) {
-      this.openHistory();
-    } else if (event.deltaY > 30 && this.historyOpen) {
-      this.closeHistory();
+    if (event.deltaY < -30 && this.openPanel !== "history") {
+      this.togglePanel("history");
+    } else if (event.deltaY > 30 && this.openPanel === "history") {
+      this.closePanel();
     }
   };
 
@@ -751,7 +700,7 @@ class StellarApp extends LitElement {
   };
 
   private handleViewportClick = (event: MouseEvent): void => {
-    if (!this.historyOpen) return;
+    if (this.openPanel !== "history") return;
 
     const path = event.composedPath();
     const isInsideHistory = path.some(
@@ -762,7 +711,7 @@ class StellarApp extends LitElement {
     );
 
     if (!isInsideHistory) {
-      this.closeHistory();
+      this.closePanel();
     }
   };
 
@@ -775,26 +724,6 @@ class StellarApp extends LitElement {
       // Graceful fallback
     }
   }
-
-  private toggleSettings = (): void => {
-    if (!this.settingsOpen) {
-      this.historyOpen = false;
-      void this.loadCoreSettings();
-    }
-
-    this.settingsOpen = !this.settingsOpen;
-  };
-
-  private closeSettings = (): void => {
-    this.settingsOpen = false;
-    this.showControls();
-
-    void this.updateComplete.then(() => {
-      this.renderRoot
-        .querySelector<HTMLButtonElement>(".settings-toggle")
-        ?.focus();
-    });
-  };
 
   private handleDisplaySettingsChanged = (
     event: CustomEvent<{ displaySettings: DisplaySettings }>,

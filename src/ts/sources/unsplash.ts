@@ -1,4 +1,5 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { attributionUrl } from "../attribution";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import {
@@ -96,6 +97,22 @@ const unsplashSource: ImageSource = {
   name: "Unsplash",
   supportsDownload: true,
   supportsInfo: true,
+  getCredit(asset) {
+    if (!asset.attribution) return null;
+
+    const user = getUnsplashPhotoInfo(asset)?.user;
+
+    return {
+      name: user?.name ?? asset.attribution.name,
+      url: attributionUrl(
+        user?.link || asset.attribution.url,
+        unsplashSource.id,
+      ),
+      avatar: user?.profileImage,
+      sourceUrl: attributionUrl(asset.attribution.sourceUrl, unsplashSource.id),
+      sourceName: unsplashSource.name,
+    };
+  },
   getRandomAsset,
   downloadAsset,
   downloadFullAsset,
