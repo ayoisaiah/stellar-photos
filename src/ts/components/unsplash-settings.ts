@@ -74,7 +74,9 @@ class UnsplashSettings extends LitElement {
   private confirmedCustomAccessKey = "";
   private saveInFlight = false;
   private saveResetTimeout: number | undefined;
-  private validatingAccessKey = false;
+
+  @state()
+  private accessor validatingAccessKey = false;
 
   @state()
   private accessor loaded = false;
@@ -234,8 +236,8 @@ class UnsplashSettings extends LitElement {
 
       <fieldset>
         <legend>Custom access key</legend>
-        <p class="hint">Use your own Unsplash API application access key instead of the built-in key to guarantee higher usage limits.</p>
-        <div class="field">
+        <p class="hint">Use your own Unsplash API application access key instead of sharing the built-in key’s usage limit.</p>
+        <form class="field" @submit=${this.saveAccessKey}>
           <label for="unsplash-access-key">Access key</label>
           <input
             id="unsplash-access-key"
@@ -246,17 +248,20 @@ class UnsplashSettings extends LitElement {
             placeholder="Paste your Unsplash Access Key"
             .value=${this.customAccessKey}
             aria-invalid=${this.accessKeyError ? "true" : "false"}
+            aria-describedby="access-key-help access-key-error"
             ?disabled=${!this.loaded || this.validatingAccessKey}
             @input=${this.updateAccessKey}
-            @change=${this.saveAccessKey}
           />
-          <p class="field-help">Leave blank to use the built-in key.</p>
+          <p id="access-key-help" class="field-help">Leave blank and save to use the built-in key.</p>
+          <button type="submit" ?disabled=${!this.loaded || this.validatingAccessKey}>
+            ${this.validatingAccessKey ? "Validating…" : "Save and test"}
+          </button>
           ${
             this.accessKeyError
-              ? html`<p class="field-error" role="alert">${this.accessKeyError}</p>`
+              ? html`<p id="access-key-error" class="field-error" role="alert">${this.accessKeyError}</p>`
               : null
           }
-        </div>
+        </form>
       </fieldset>
       <p class="status" aria-live="polite">${statusMessage(this.saveState)}</p>
     `;
@@ -397,8 +402,9 @@ class UnsplashSettings extends LitElement {
   };
 
   private saveAccessKey = async (event: Event): Promise<void> => {
-    const target = event.currentTarget as HTMLInputElement;
-    const trimmed = target.value.trim();
+    event.preventDefault();
+
+    const trimmed = this.customAccessKey.trim();
 
     if (trimmed === this.confirmedCustomAccessKey || this.validatingAccessKey) {
       return;
@@ -407,36 +413,17 @@ class UnsplashSettings extends LitElement {
     window.clearTimeout(this.saveResetTimeout);
     this.accessKeyError = "";
 
-    if (!trimmed) {
-      this.saveState = "saving";
-
-      try {
-        await setUnsplashAccessKey("");
-        this.confirmedCustomAccessKey = "";
-        this.customAccessKey = "";
-        this.saveState = "saved";
-        this.saveResetTimeout = scheduleSavedReset(() => {
-          if (this.saveState === "saved") {
-            this.saveState = "idle";
-          }
-        });
-      } catch {
-        this.customAccessKey = this.confirmedCustomAccessKey;
-        this.saveState = "error";
-      }
-
-      return;
-    }
-
     this.validatingAccessKey = true;
     this.saveState = "saving";
 
     try {
-      const result = await verifyUnsplashAccessKey(trimmed);
+      const result = trimmed
+        ? await verifyUnsplashAccessKey(trimmed)
+        : { valid: true };
 
       if (!result.valid) {
         this.accessKeyError = result.error ?? "Invalid Unsplash access key.";
-        this.saveState = "error";
+        this.saveState = "idle";
         return;
       }
 
@@ -450,7 +437,6 @@ class UnsplashSettings extends LitElement {
         }
       });
     } catch {
-      this.customAccessKey = this.confirmedCustomAccessKey;
       this.saveState = "error";
     } finally {
       this.validatingAccessKey = false;

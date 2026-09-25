@@ -71,3 +71,25 @@
   font-size: 0.73rem;
   line-height: 1.35;
 }
+
+button {
+  justify-self: start;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 0.65rem;
+  background: #202329;
+  color: inherit;
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+button:focus-visible {
+  outline: 2px solid #eee7d8;
+  outline-offset: 2px;
+}

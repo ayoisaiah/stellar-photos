@@ -57,8 +57,13 @@ describe("UnsplashSettings component access key validation", () => {
 
     const el = new UnsplashSettings();
     const input = { value: "valid-user-key" } as HTMLInputElement;
-    const event = { currentTarget: input } as unknown as Event;
+    const event = {
+      currentTarget: input,
+      preventDefault: vi.fn(),
+    } as unknown as Event;
 
+    // @ts-expect-error accessing private method for testing
+    el.updateAccessKey(event);
     // @ts-expect-error accessing private method for testing
     await el.saveAccessKey(event);
 
@@ -94,8 +99,13 @@ describe("UnsplashSettings component access key validation", () => {
 
     const el = new UnsplashSettings();
     const input = { value: "invalid-user-key" } as HTMLInputElement;
-    const event = { currentTarget: input } as unknown as Event;
+    const event = {
+      currentTarget: input,
+      preventDefault: vi.fn(),
+    } as unknown as Event;
 
+    // @ts-expect-error accessing private method for testing
+    el.updateAccessKey(event);
     // @ts-expect-error accessing private method for testing
     await el.saveAccessKey(event);
 
@@ -104,7 +114,7 @@ describe("UnsplashSettings component access key validation", () => {
     // @ts-expect-error accessing private property for testing
     expect(el.accessKeyError).toBe("Invalid Unsplash access key.");
     // @ts-expect-error accessing private property for testing
-    expect(el.saveState).toBe("error");
+    expect(el.saveState).toBe("idle");
   });
 
   it("clears access key without pinging when empty string is entered", async () => {
@@ -121,8 +131,13 @@ describe("UnsplashSettings component access key validation", () => {
     await el.load();
 
     const input = { value: "   " } as HTMLInputElement;
-    const event = { currentTarget: input } as unknown as Event;
+    const event = {
+      currentTarget: input,
+      preventDefault: vi.fn(),
+    } as unknown as Event;
 
+    // @ts-expect-error accessing private method for testing
+    el.updateAccessKey(event);
     // @ts-expect-error accessing private method for testing
     await el.saveAccessKey(event);
 
@@ -137,6 +152,38 @@ describe("UnsplashSettings component access key validation", () => {
     expect(el.saveState).toBe("saved");
   });
 
+  it("submits and retries the same key after a network failure", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockResolvedValueOnce(new Response("[]"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const el = new UnsplashSettings();
+    // @ts-expect-error setting private property for testing
+    el.customAccessKey = "  retry-key  ";
+    const event = new Event("submit", { cancelable: true });
+
+    // @ts-expect-error accessing private method for testing
+    await el.saveAccessKey(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(localStore[UNSPLASH_SETTINGS_KEY]).toBeUndefined();
+    // @ts-expect-error accessing private property for testing
+    expect(el.customAccessKey).toBe("  retry-key  ");
+
+    // @ts-expect-error accessing private method for testing
+    await el.saveAccessKey(event);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(localStore[UNSPLASH_SETTINGS_KEY]).toEqual({
+      version: 1,
+      accessKeyOverride: "retry-key",
+    });
+    // @ts-expect-error accessing private property for testing
+    expect(el.validatingAccessKey).toBe(false);
+  });
+
   it("clears the error state when the user types in the input", () => {
     const el = new UnsplashSettings();
 
@@ -146,7 +193,10 @@ describe("UnsplashSettings component access key validation", () => {
     el.saveState = "error";
 
     const input = { value: "new-input" } as HTMLInputElement;
-    const event = { currentTarget: input } as unknown as Event;
+    const event = {
+      currentTarget: input,
+      preventDefault: vi.fn(),
+    } as unknown as Event;
 
     // @ts-expect-error accessing private method for testing
     el.updateAccessKey(event);
