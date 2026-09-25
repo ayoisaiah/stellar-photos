@@ -104,7 +104,12 @@ it("preserves the displayed photo and pin until a history image is available", a
   await app["loadCurrentPhoto"](asset);
   app["pinnedAsset"] = asset;
   const previousUrl = app["currentPhotoURL"];
-  const nextAsset = { ...asset, cacheKey: "next-image", createdAt: 2 };
+  const nextAsset = {
+    ...asset,
+    sourceAssetId: "photo-2",
+    cacheKey: "next-image",
+    createdAt: 2,
+  };
   const revoke = vi.spyOn(URL, "revokeObjectURL");
 
   try {
@@ -146,6 +151,32 @@ it.each([null, asset])(
     expect(app["pinnedAsset"]).toBe(selectedAsset);
     expect(app["currentAsset"]).toBe(selectedAsset);
     app["releaseObjectUrl"]();
+  },
+);
+
+it.each([asset, { ...asset }])(
+  "pins the displayed history photo without reloading it (%#)",
+  async (selectedAsset) => {
+    const app = new StellarApp();
+    await app["loadCurrentPhoto"]();
+    const previousUrl = app["currentPhotoURL"];
+    readImage.mockClear();
+    const revoke = vi.spyOn(URL, "revokeObjectURL");
+
+    try {
+      await app["handleSelectHistoryPhoto"](
+        new CustomEvent("select-photo", { detail: { asset: selectedAsset } }),
+      );
+
+      expect(readImage).not.toHaveBeenCalled();
+      expect(revoke).not.toHaveBeenCalled();
+      expect(app["currentPhotoURL"]).toBe(previousUrl);
+      expect(writePinnedAsset).toHaveBeenCalledExactlyOnceWith(selectedAsset);
+      expect(app["pinnedAsset"]).toBe(selectedAsset);
+    } finally {
+      app["releaseObjectUrl"]();
+      revoke.mockRestore();
+    }
   },
 );
 

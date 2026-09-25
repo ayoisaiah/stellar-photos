@@ -56,13 +56,15 @@ class StellarApp extends LitElement {
   private lastWheelTime = 0;
   private historyIndex = 0;
   private currentSource: ImageSource | null = null;
-  private currentPhotoURL: string | null = null;
 
   @state()
   private accessor controlsVisible = false;
 
   @state()
   private accessor currentAsset: BackgroundAsset | null = null;
+
+  @state()
+  private accessor currentPhotoURL: string | null = null;
 
   @state()
   private accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
@@ -461,6 +463,14 @@ class StellarApp extends LitElement {
   }
 
   private async showAsset(asset: BackgroundAsset): Promise<boolean> {
+    if (
+      this.currentPhotoURL &&
+      this.currentAsset &&
+      assetIdentity(asset) === assetIdentity(this.currentAsset)
+    ) {
+      return true;
+    }
+
     const response = await readImage(asset.cacheKey);
 
     if (!response) return false;
