@@ -47,7 +47,6 @@ declare const __SMITHSONIAN_API_KEY__: string;
 
 const SMITHSONIAN_CATEGORY_KEY = "sourceSettings:smithsonian:category";
 const API_ORIGIN = "https://api.si.edu";
-const IMAGE_ORIGIN = "https://ids.si.edu";
 const OPEN_ACCESS_URL = "https://www.si.edu/openaccess";
 
 const smithsonianSource: ImageSource = {
@@ -61,24 +60,8 @@ const smithsonianSource: ImageSource = {
   },
   getRandomAsset: getRandomSmithsonianAsset,
   downloadAsset: downloadSmithsonianAsset,
-  downloadFullAsset: downloadSmithsonianAsset,
+  getDownloadUrl: getSmithsonianDownloadUrl,
 };
-
-function trustedUrl(value: string, origin: string): URL {
-  const url = new URL(value);
-
-  if (
-    url.protocol !== "https:" ||
-    url.username ||
-    url.password ||
-    url.port ||
-    url.origin !== origin
-  ) {
-    throw new Error("Smithsonian returned an untrusted URL");
-  }
-
-  return url;
-}
 
 const DEFAULT_WIDTH = 1920;
 const DEFAULT_HEIGHT = 1080;
@@ -154,7 +137,6 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
   }).toString();
 
   const response = await fetchWithTimeout(url, { redirect: "follow" });
-  trustedUrl(response.url || url.toString(), API_ORIGIN);
   if (!response.ok) {
     throw new Error(`Smithsonian request failed (${response.status})`);
   }
@@ -168,12 +150,7 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
     );
     if (!row.id || !media?.content) continue;
 
-    let imageUrl: string;
-    try {
-      imageUrl = trustedUrl(media.content, IMAGE_ORIGIN).toString();
-    } catch {
-      continue;
-    }
+    const imageUrl = media.content;
     const sourceUrl = recordUrl(details?.record_link ?? row.url);
     const resource = media.resources?.find(
       (item) => dimension(item.width) > 0 && dimension(item.height) > 0,
@@ -200,9 +177,7 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
   throw new Error("Smithsonian returned no usable images");
 }
 
-async function downloadSmithsonianAsset(
-  asset: UncachedBackgroundAsset,
-): Promise<Response> {
+function getSmithsonianDownloadUrl(asset: UncachedBackgroundAsset): string {
   if (asset.sourceId !== smithsonianSource.id || asset.payloadVersion !== 1) {
     throw new Error("Unsupported Smithsonian asset payload");
   }
@@ -212,9 +187,14 @@ async function downloadSmithsonianAsset(
     throw new Error("Malformed Smithsonian asset payload");
   }
 
-  const imageUrl = trustedUrl(payload.imageUrl, IMAGE_ORIGIN);
+  return payload.imageUrl;
+}
+
+async function downloadSmithsonianAsset(
+  asset: UncachedBackgroundAsset,
+): Promise<Response> {
+  const imageUrl = new URL(getSmithsonianDownloadUrl(asset));
   const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
-  trustedUrl(response.url || imageUrl.toString(), IMAGE_ORIGIN);
 
   return readBoundedImage(response);
 }

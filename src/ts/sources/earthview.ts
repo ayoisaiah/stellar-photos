@@ -33,8 +33,6 @@ interface EarthViewPayload {
   imageUrl: string;
 }
 
-const GSTATIC_ORIGIN = new Set(["https://www.gstatic.com"]);
-
 const EARTH_VIEW_PHOTO_IDS: readonly number[] = [
   1003, 1004, 1006, 1007, 1008, 1010, 1012, 1014, 1017, 1018, 1019, 1021, 1022,
   1023, 1024, 1026, 1027, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040,
@@ -172,7 +170,7 @@ const earthviewSource: ImageSource = {
   },
   getRandomAsset: getRandomEarthViewAsset,
   downloadAsset: downloadEarthViewAsset,
-  downloadFullAsset: downloadEarthViewAsset,
+  getDownloadUrl: (asset) => buildEarthViewImageUrl(asset.sourceAssetId),
 };
 
 function getEarthViewPhotoIds(): readonly number[] {
@@ -181,22 +179,6 @@ function getEarthViewPhotoIds(): readonly number[] {
 
 function buildEarthViewImageUrl(id: number | string): string {
   return `https://www.gstatic.com/prettyearth/assets/full/${encodeURIComponent(String(id))}.jpg`;
-}
-
-function trustedEarthViewUrl(value: string): URL {
-  const url = new URL(value);
-
-  if (
-    url.protocol !== "https:" ||
-    url.username ||
-    url.password ||
-    url.port ||
-    !GSTATIC_ORIGIN.has(url.origin)
-  ) {
-    throw new Error("Earth View returned an untrusted URL");
-  }
-
-  return url;
 }
 
 async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
@@ -227,14 +209,8 @@ async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
 async function downloadEarthViewAsset(
   asset: UncachedBackgroundAsset,
 ): Promise<Response> {
-  const imageUrl = trustedEarthViewUrl(
-    buildEarthViewImageUrl(asset.sourceAssetId),
-  );
+  const imageUrl = new URL(buildEarthViewImageUrl(asset.sourceAssetId));
   const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
-
-  if (response.url) {
-    trustedEarthViewUrl(response.url);
-  }
 
   return readBoundedImage(response);
 }
@@ -245,15 +221,11 @@ async function fetchEarthViewDetails(
   if (asset.sourceId !== earthviewSource.id) return null;
 
   try {
-    const url = trustedEarthViewUrl(
+    const url = new URL(
       `https://www.gstatic.com/prettyearth/assets/data/v3/${encodeURIComponent(asset.sourceAssetId)}.json`,
     );
     const response = await fetchWithTimeout(url, { redirect: "follow" });
     if (!response.ok) return null;
-
-    if (response.url) {
-      trustedEarthViewUrl(response.url);
-    }
 
     const data = (await response.json()) as EarthViewDetailsData;
 

@@ -24,7 +24,7 @@ interface ImageSource {
   isSupported?(): boolean;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
-  downloadFullAsset?(asset: BackgroundAsset): Promise<Response>;
+  getDownloadUrl?(asset: BackgroundAsset): string;
   didDownload?(asset: BackgroundAsset): Promise<void>;
 }
 

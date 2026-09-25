@@ -20,7 +20,7 @@ export default defineConfig({
       64: "64.png",
       128: "128.png",
     },
-    permissions: ["storage", "unlimitedStorage"],
+    permissions: ["storage", "unlimitedStorage", "downloads"],
     host_permissions: [
       "https://api.unsplash.com/*",
       "https://images.unsplash.com/*",

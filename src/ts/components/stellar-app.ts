@@ -641,28 +641,21 @@ class StellarApp extends LitElement {
     this.downloading = true;
     try {
       const source = getImageSource(asset.sourceId);
-      const response = source?.downloadFullAsset
-        ? await source.downloadFullAsset(asset)
-        : await readImage(asset.cacheKey);
+      if (!source?.supportsDownload || !source.getDownloadUrl) {
+        throw new Error("This image source does not support downloads");
+      }
 
-      if (!response) throw new Error("Image response unavailable");
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const filename = `${assetIdentity(asset)}.jpg`;
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
+      await chrome.downloads.download({
+        url: source.getDownloadUrl(asset),
+        filename: `${assetIdentity(asset).replace(":", "-")}.jpg`,
+      });
 
       void sendCommand({
         command: "track-download",
         asset,
       });
     } catch {
-      // Graceful fallback
+      window.alert("Couldn’t start the download. Please try again.");
     } finally {
       this.downloading = false;
     }

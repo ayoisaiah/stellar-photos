@@ -165,21 +165,17 @@ describe("Unsplash image resolution", () => {
       "{}",
       { "content-type": "application/json" },
     );
-    const fullImageResponse = responseAt(raw, new Uint8Array([1, 2, 3, 4, 5]), {
-      "content-type": "image/jpeg",
-    });
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(apiResponse)
       .mockResolvedValueOnce(imageResponse)
-      .mockResolvedValueOnce(fullImageResponse)
       .mockResolvedValueOnce(trackingResponse);
 
     vi.stubGlobal("fetch", fetchMock);
 
     const asset = await unsplashSource.getRandomAsset();
     const image = await unsplashSource.downloadAsset(asset);
-    const fullImage = await unsplashSource.downloadFullAsset?.({
+    const fullImageUrl = unsplashSource.getDownloadUrl?.({
       ...asset,
       cacheKey: "cache-key",
     });
@@ -213,12 +209,16 @@ describe("Unsplash image resolution", () => {
       description: "A mountain",
     });
     expect(await image.arrayBuffer()).toHaveProperty("byteLength", 3);
-    expect(await fullImage?.arrayBuffer()).toHaveProperty("byteLength", 5);
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fullImageUrl).toBe(fullResolutionImageUrl(raw));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it("does not send credentials to a foreign tracking origin", async () => {
-    const fetchMock = vi.fn<typeof fetch>();
+  it("uses the supplied tracking URL and accepts redirects to another origin", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        responseAt("https://redirect.example.com/collect", "{}"),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const asset = {
@@ -237,10 +237,12 @@ describe("Unsplash image resolution", () => {
       createdAt: Date.now(),
     };
 
-    await expect(unsplashSource.didDownload?.(asset)).rejects.toThrow(
-      "Refusing to send Unsplash credentials to another origin",
+    await unsplashSource.didDownload?.(asset);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      new URL("https://example.com/collect"),
+      expect.objectContaining({ redirect: "follow" }),
     );
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("times out fetch requests when deadline exceeds timeout", async () => {

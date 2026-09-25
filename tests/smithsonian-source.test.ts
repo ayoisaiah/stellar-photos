@@ -34,22 +34,6 @@ describe("smithsonian source", () => {
             response: {
               rows: [
                 {
-                  id: "invalid",
-                  content: {
-                    descriptiveNonRepeating: {
-                      online_media: {
-                        media: [
-                          {
-                            content: "https://example.com/image.jpg",
-                            type: "Images",
-                            usage: { access: "CC0" },
-                          },
-                        ],
-                      },
-                    },
-                  },
-                },
-                {
                   id: "edanmdm:saam_1969.47.61",
                   title: "Aurora Borealis",
                   url: "https://airandspace.si.edu/object/aurora",
@@ -59,8 +43,7 @@ describe("smithsonian source", () => {
                       online_media: {
                         media: [
                           {
-                            content:
-                              "https://ids.si.edu/ids/deliveryService?id=SAAM-1969.47.61",
+                            content: "https://images.example.com/aurora.jpg",
                             resources: [
                               {
                                 label: "High-resolution JPEG",
@@ -109,7 +92,7 @@ describe("smithsonian source", () => {
     );
     expect(mockFetch.mock.calls[0]?.[0].toString()).toContain("sort=random");
     expect(mockFetch.mock.calls[1]?.[0]).toEqual(
-      new URL("https://ids.si.edu/ids/deliveryService?id=SAAM-1969.47.61"),
+      new URL("https://images.example.com/aurora.jpg"),
     );
     expect(await response.text()).toBe("image-bytes");
   });

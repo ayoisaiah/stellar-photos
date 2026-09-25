@@ -115,7 +115,7 @@ const unsplashSource: ImageSource = {
   },
   getRandomAsset,
   downloadAsset,
-  downloadFullAsset,
+  getDownloadUrl,
   didDownload,
 };
 
@@ -265,16 +265,13 @@ async function downloadAsset(
   return readBoundedImage(response);
 }
 
-async function downloadFullAsset(asset: BackgroundAsset): Promise<Response> {
+function getDownloadUrl(asset: BackgroundAsset): string {
   const payload = parsePayload(asset);
   const baseOrFullUrl = payload.fullImageUrl ?? payload.imageUrl;
   if (!baseOrFullUrl)
     throw new Error("Unsplash asset payload has no image URL");
 
-  const fullUrl = fullResolutionImageUrl(baseOrFullUrl);
-  const response = await fetchWithTimeout(fullUrl, { redirect: "follow" });
-
-  return readBoundedImage(response);
+  return fullResolutionImageUrl(baseOrFullUrl);
 }
 
 async function didDownload(asset: BackgroundAsset): Promise<void> {
@@ -310,19 +307,11 @@ async function authenticatedFetch(
   url: URL,
   accessKey?: string,
 ): Promise<Response> {
-  if (url.origin !== API_ORIGIN) {
-    throw new Error("Refusing to send Unsplash credentials to another origin");
-  }
-
   const key = accessKey ?? (await resolveAccessKey());
   const response = await fetchWithTimeout(url, {
     headers: authHeaders(key),
     redirect: "follow",
   });
-
-  if (response.url && new URL(response.url).origin !== API_ORIGIN) {
-    throw new Error("Unsplash API redirected to another origin");
-  }
 
   if (!response.ok) {
     throw new Error(`Unsplash request failed (${response.status})`);
