@@ -76,7 +76,10 @@ class StellarApp extends LitElement {
   private accessor historyAssets: BackgroundAsset[] = [];
 
   @state()
-  private accessor openPanel: "history" | "info" | "settings" | null = null;
+  private accessor historyOpen = false;
+
+  @state()
+  private accessor openPanel: "info" | "settings" | null = null;
 
   @state()
   private accessor pinnedAsset: BackgroundAsset | null = null;
@@ -122,7 +125,7 @@ class StellarApp extends LitElement {
   }
 
   private get controlsLocked(): boolean {
-    return this.openPanel !== null;
+    return this.historyOpen || this.openPanel !== null;
   }
 
   private get isPinned(): boolean {
@@ -141,7 +144,6 @@ class StellarApp extends LitElement {
     super.connectedCallback();
 
     window.addEventListener("wheel", this.handleWheel, { passive: true });
-    window.addEventListener("click", this.handleViewportClick);
 
     if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
       chrome.storage.onChanged.addListener(this.handleStorageChange);
@@ -153,7 +155,6 @@ class StellarApp extends LitElement {
   override disconnectedCallback(): void {
     window.clearTimeout(this.controlsTimer);
     window.removeEventListener("wheel", this.handleWheel);
-    window.removeEventListener("click", this.handleViewportClick);
 
     if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
       chrome.storage.onChanged.removeListener(this.handleStorageChange);
@@ -192,7 +193,7 @@ class StellarApp extends LitElement {
 
     return html`
       <div
-        class="app-viewport ${this.openPanel === "history" ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
+        class="app-viewport ${this.historyOpen ? "history-open" : ""} ${controlsShown ? "controls-visible" : ""}"
         @pointermove=${this.showControls}
         @pointerleave=${this.showControls}
       >
@@ -286,10 +287,10 @@ class StellarApp extends LitElement {
               : null
           }
           <button
-            class="action-button history-toggle ${this.openPanel === "history" ? "active" : ""}"
+            class="action-button history-toggle ${this.historyOpen ? "active" : ""}"
             type="button"
-            aria-label=${this.openPanel === "history" ? "Close history" : "Photo history"}
-            aria-expanded=${this.openPanel === "history"}
+            aria-label=${this.historyOpen ? "Close history" : "Photo history"}
+            aria-expanded=${this.historyOpen}
             title="Photo history"
             @click=${() => this.togglePanel("history")}
           >
@@ -308,12 +309,11 @@ class StellarApp extends LitElement {
         </div>
         <stellar-history-panel
           class="history-panel"
-          .open=${this.openPanel === "history"}
+          .open=${this.historyOpen}
           .activeAsset=${this.currentAsset}
           .historyAssets=${this.historyAssets}
           @select-photo=${this.handleSelectHistoryPhoto}
           @download-photo=${this.handleDownloadHistoryPhoto}
-          @close-history=${this.closePanel}
           @wheel=${this.handleHistoryWheel}
         ></stellar-history-panel>
       </div>
@@ -389,17 +389,25 @@ class StellarApp extends LitElement {
   }
 
   private togglePanel = (name: "history" | "info" | "settings"): void => {
+    if (name === "history") {
+      this.historyOpen = !this.historyOpen;
+      if (this.historyOpen) {
+        if (typeof chrome === "undefined" || !chrome.storage?.onChanged) {
+          void this.loadHistoryAssets();
+        }
+      } else {
+        this.showControls();
+      }
+      return;
+    }
+
     if (this.openPanel === name) {
       this.closePanel();
       return;
     }
 
     this.openPanel = name;
-    if (name === "history") {
-      if (typeof chrome === "undefined" || !chrome.storage?.onChanged) {
-        void this.loadHistoryAssets();
-      }
-    } else if (name === "settings") {
+    if (name === "settings") {
       void this.loadCoreSettings();
     }
   };
@@ -410,8 +418,6 @@ class StellarApp extends LitElement {
 
     this.openPanel = null;
     this.showControls();
-
-    if (panel === "history") return;
 
     void this.updateComplete.then(() => {
       this.renderRoot
@@ -683,7 +689,7 @@ class StellarApp extends LitElement {
 
   @eventOptions({ passive: false })
   private handleHistoryWheel(event: WheelEvent): void {
-    if (this.openPanel !== "history") return;
+    if (!this.historyOpen || this.openPanel !== null) return;
 
     event.preventDefault();
     const now = Date.now();
@@ -706,10 +712,10 @@ class StellarApp extends LitElement {
     )
       return;
 
-    if (event.deltaY < -30 && this.openPanel !== "history") {
+    if (event.deltaY < -30 && !this.historyOpen) {
       this.togglePanel("history");
-    } else if (event.deltaY > 30 && this.openPanel === "history") {
-      this.closePanel();
+    } else if (event.deltaY > 30 && this.historyOpen) {
+      this.togglePanel("history");
     }
   };
 
@@ -722,22 +728,6 @@ class StellarApp extends LitElement {
     this.controlsTimer = window.setTimeout(() => {
       this.controlsVisible = false;
     }, 2500);
-  };
-
-  private handleViewportClick = (event: MouseEvent): void => {
-    if (this.openPanel !== "history") return;
-
-    const path = event.composedPath();
-    const isInsideHistory = path.some(
-      (el) =>
-        el instanceof HTMLElement &&
-        (el.tagName.toLowerCase() === "stellar-history-panel" ||
-          el.classList.contains("history-toggle")),
-    );
-
-    if (!isInsideHistory) {
-      this.closePanel();
-    }
   };
 
   private async loadCoreSettings(): Promise<void> {

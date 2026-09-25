@@ -25,8 +25,8 @@ it("switches panels exclusively, refreshes on opening, and restores focus on clo
   expect(app["openPanel"]).toBeNull();
   expect(app["controlsLocked"]).toBe(false);
 
-  for (const from of ["history", "info", "settings"] as const) {
-    for (const to of ["history", "info", "settings"] as const) {
+  for (const from of ["info", "settings"] as const) {
+    for (const to of ["info", "settings"] as const) {
       app["openPanel"] = null;
       app["togglePanel"](from);
       app["togglePanel"](to);
@@ -38,7 +38,7 @@ it("switches panels exclusively, refreshes on opening, and restores focus on clo
 
   history.mockClear();
   settings.mockClear();
-  for (const panel of ["history", "info", "settings"] as const) {
+  for (const panel of ["info", "settings"] as const) {
     app["openPanel"] = null;
     app["togglePanel"](panel);
     querySelector.mockClear();
@@ -49,16 +49,12 @@ it("switches panels exclusively, refreshes on opening, and restores focus on clo
 
     expect(app["openPanel"]).toBeNull();
     expect(showControls).toHaveBeenCalledOnce();
-    if (panel === "history") {
-      expect(querySelector).not.toHaveBeenCalled();
-    } else {
-      expect(querySelector).toHaveBeenCalledWith(
-        panel === "info" ? ".info-button" : ".settings-toggle",
-      );
-      expect(focus).toHaveBeenCalled();
-    }
+    expect(querySelector).toHaveBeenCalledWith(
+      panel === "info" ? ".info-button" : ".settings-toggle",
+    );
+    expect(focus).toHaveBeenCalled();
   }
-  expect(history).toHaveBeenCalledOnce();
+  expect(history).not.toHaveBeenCalled();
   expect(settings).toHaveBeenCalledOnce();
 });
 
@@ -77,7 +73,7 @@ it("keeps history wheel navigation separate from passive window gestures", () =>
 
   const open = wheel(-40);
   app["handleWheel"](open);
-  expect(app["openPanel"]).toBe("history");
+  expect(app["historyOpen"]).toBe(true);
   expect(open.defaultPrevented).toBe(false);
 
   const scroll = wheel(40);
@@ -85,7 +81,7 @@ it("keeps history wheel navigation separate from passive window gestures", () =>
   app["handleWheel"](scroll);
   expect(scroll.defaultPrevented).toBe(true);
   expect(navigate).toHaveBeenCalledExactlyOnceWith(1);
-  expect(app["openPanel"]).toBe("history");
+  expect(app["historyOpen"]).toBe(true);
   app["handleHistoryWheel"](wheel(40));
   expect(navigate).toHaveBeenCalledOnce();
 
@@ -96,10 +92,12 @@ it("keeps history wheel navigation separate from passive window gestures", () =>
   const close = wheel(40);
   app["handleWheel"](close);
   expect(app["openPanel"]).toBeNull();
+  expect(app["historyOpen"]).toBe(false);
   expect(close.defaultPrevented).toBe(false);
 
   for (const panel of ["settings", "info"] as const) {
     app["openPanel"] = panel;
+    app["historyOpen"] = true;
     const event = wheel(-40);
     app["handleHistoryWheel"](event);
     app["handleWheel"](event);
@@ -131,3 +129,32 @@ it.each([true, false])(
     expect(loadHistory).toHaveBeenCalledTimes(hasListener ? 0 : 1);
   },
 );
+
+it("keeps history open when dismissing or switching other panels", async () => {
+  const app = new StellarApp();
+  app["loadHistoryAssets"] = vi.fn(async () => undefined);
+  app["loadCoreSettings"] = vi.fn(async () => undefined);
+  app["showControls"] = vi.fn();
+  Object.defineProperty(app, "renderRoot", {
+    value: { querySelector: () => null },
+  });
+  Object.defineProperty(app, "updateComplete", {
+    value: Promise.resolve(true),
+  });
+
+  app["togglePanel"]("history");
+  app["closePanel"]();
+  expect(app["historyOpen"]).toBe(true);
+  for (const panel of ["info", "settings"] as const) {
+    app["togglePanel"](panel);
+    expect(app["historyOpen"]).toBe(true);
+    app["closePanel"]();
+    await Promise.resolve();
+    expect(app["historyOpen"]).toBe(true);
+  }
+  expect(app["controlsLocked"]).toBe(true);
+
+  app["togglePanel"]("history");
+  expect(app["historyOpen"]).toBe(false);
+  expect(app["controlsLocked"]).toBe(false);
+});
