@@ -8,6 +8,7 @@ import {
   getUnsplashPhotoInfo,
   imageUrlForResolution,
   unsplashSource,
+  verifyUnsplashAccessKey,
   verifyUnsplashCollection,
   verifyUnsplashTopic,
 } from "../src/ts/sources/unsplash";
@@ -435,6 +436,86 @@ describe("Unsplash collection and topic verification", () => {
     expect((await verifyUnsplashCollection("   ")).valid).toBe(false);
     expect((await verifyUnsplashTopic("")).valid).toBe(false);
     expect((await verifyUnsplashTopic("   ")).valid).toBe(false);
+  });
+});
+
+describe("Unsplash access key verification", () => {
+  it("verifies valid access key with authorization header", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/photos?per_page=1",
+      JSON.stringify([{ id: "photo-1" }]),
+      { "content-type": "application/json" },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashAccessKey("valid-key-123");
+
+    expect(result).toEqual({ valid: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        href: "https://api.unsplash.com/photos?per_page=1",
+      }),
+      expect.objectContaining({
+        headers: {
+          Authorization: "Client-ID valid-key-123",
+          "Accept-Version": "v1",
+        },
+      }),
+    );
+  });
+
+  it("fails when access key is invalid (401)", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/photos?per_page=1",
+      JSON.stringify({ errors: ["OAuth error: The access token is invalid"] }),
+      { status: 401 },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashAccessKey("invalid-key");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("Invalid Unsplash access key.");
+  });
+
+  it("fails when API access is denied or rate limited (403)", async () => {
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/photos?per_page=1",
+      "Rate Limit Exceeded",
+      { status: 403 },
+    );
+    const fetchMock = vi.fn().mockResolvedValue(apiResponse);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashAccessKey("rate-limited-key");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("API access denied or rate limit reached.");
+  });
+
+  it("fails on network failure", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("Failed to fetch"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await verifyUnsplashAccessKey("some-key");
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("Could not verify access key");
+  });
+
+  it("rejects empty or whitespace-only access keys without network request", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const emptyResult = await verifyUnsplashAccessKey("");
+    const whitespaceResult = await verifyUnsplashAccessKey("   ");
+
+    expect(emptyResult.valid).toBe(false);
+    expect(emptyResult.error).toContain("valid access key");
+    expect(whitespaceResult.valid).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

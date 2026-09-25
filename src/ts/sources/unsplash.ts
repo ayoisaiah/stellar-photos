@@ -306,13 +306,17 @@ function authHeaders(key: string): HeadersInit {
   return { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" };
 }
 
-async function authenticatedFetch(url: URL): Promise<Response> {
+async function authenticatedFetch(
+  url: URL,
+  accessKey?: string,
+): Promise<Response> {
   if (url.origin !== API_ORIGIN) {
     throw new Error("Refusing to send Unsplash credentials to another origin");
   }
 
+  const key = accessKey ?? (await resolveAccessKey());
   const response = await fetchWithTimeout(url, {
-    headers: authHeaders(await resolveAccessKey()),
+    headers: authHeaders(key),
     redirect: "follow",
   });
 
@@ -320,8 +324,9 @@ async function authenticatedFetch(url: URL): Promise<Response> {
     throw new Error("Unsplash API redirected to another origin");
   }
 
-  if (!response.ok)
+  if (!response.ok) {
     throw new Error(`Unsplash request failed (${response.status})`);
+  }
 
   return response;
 }
@@ -548,6 +553,45 @@ async function verifyUnsplashTopic(
   }
 }
 
+async function verifyUnsplashAccessKey(
+  accessKey: string,
+): Promise<{ valid: boolean; error?: string }> {
+  const key = accessKey.trim();
+
+  if (!key) {
+    return { valid: false, error: "Please enter a valid access key." };
+  }
+
+  try {
+    const url = new URL("/photos?per_page=1", API_ORIGIN);
+    await authenticatedFetch(url, key);
+
+    return { valid: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes("401")) {
+      return {
+        valid: false,
+        error: "Invalid Unsplash access key.",
+      };
+    }
+
+    if (message.includes("403") || message.includes("429")) {
+      return {
+        valid: false,
+        error: "API access denied or rate limit reached.",
+      };
+    }
+
+    return {
+      valid: false,
+      error:
+        "Could not verify access key. Please check your network connection.",
+    };
+  }
+}
+
 function clearVerificationCache(): void {
   verifiedCollections.clear();
   verifiedCollections.add(STELLAR_COLLECTION);
@@ -571,6 +615,7 @@ export {
   imageUrlForResolution,
   normalizeCsv,
   unsplashSource,
+  verifyUnsplashAccessKey,
   verifyUnsplashCollection,
   verifyUnsplashTopic,
 };
