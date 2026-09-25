@@ -13,11 +13,11 @@
 - Always use braces for every branch in an `if`/`else` chain.
 - A single-statement `if` may omit braces only when it has no `else`, such as a guard clause that returns or throws.
 
-## Git Hooks
+## Git
 
-Pre-commit runs `biome check --write` on staged `.ts` files, `tsc --noEmit`, and the full test suite.
-
-Never bypass hooks with `--no-verify` or `SKIP_SIMPLE_GIT_HOOKS=1`.
+- Pre-commit runs `biome check --write` on staged `.ts` files, `tsc --noEmit`, and the full test suite.
+- Never bypass hooks with `--no-verify` or `SKIP_SIMPLE_GIT_HOOKS=1`.
+- When committing, always follow existing repo conventions.
 
 ## Issue and PR Guidelines
 
