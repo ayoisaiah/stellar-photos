@@ -223,9 +223,7 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   const photo = (await (
     await authenticatedFetch(endpoint)
   ).json()) as UnsplashPhotoResponse;
-  const fullImageUrl = fullResolutionImageUrl(
-    photo.urls.full ?? photo.urls.raw,
-  );
+  const fullImageUrl = photo.urls.raw;
   const imageUrl = imageUrlForResolution(photo.urls.raw, settings.imageQuality);
 
   return {
@@ -267,7 +265,7 @@ async function downloadAsset(
 
 function getDownloadUrl(asset: BackgroundAsset): string {
   const payload = parsePayload(asset);
-  const baseOrFullUrl = payload.fullImageUrl ?? payload.imageUrl;
+  const baseOrFullUrl = payload.imageUrl ?? payload.fullImageUrl;
   if (!baseOrFullUrl)
     throw new Error("Unsplash asset payload has no image URL");
 

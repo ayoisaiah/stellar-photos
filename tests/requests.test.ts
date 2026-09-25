@@ -125,6 +125,28 @@ describe("Unsplash image resolution", () => {
     );
   });
 
+  it("uses the raw-derived URL for cached photos instead of compressed full URLs", () => {
+    const url = unsplashSource.getDownloadUrl?.({
+      sourceId: "unsplash",
+      sourceAssetId: "photo-1",
+      cacheKey: "cache-key",
+      width: 1600,
+      height: 900,
+      color: null,
+      description: null,
+      attribution: null,
+      payloadVersion: 1,
+      sourcePayload: {
+        downloadLocation: "https://api.unsplash.com/photos/photo-1/download",
+        imageUrl: `${raw}&w=2000&fit=max`,
+        fullImageUrl: `${raw}&q=85&auto=format`,
+      },
+      createdAt: 0,
+    });
+
+    expect(url).toBe(raw);
+  });
+
   it("owns its metadata payload, image download, and tracking lifecycle", async () => {
     const apiResponse = responseAt(
       "https://api.unsplash.com/photos/random",
@@ -135,7 +157,7 @@ describe("Unsplash image resolution", () => {
         color: "#123456",
         description: null,
         alt_description: "A mountain",
-        urls: { raw },
+        urls: { raw, full: `${raw}&q=85&auto=format&fit=crop` },
         links: {
           html: "https://unsplash.com/photos/photo-1",
           download_location: "https://api.unsplash.com/photos/photo-1/download",
