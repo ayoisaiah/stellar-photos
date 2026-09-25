@@ -609,6 +609,8 @@ class StellarApp extends LitElement {
   };
 
   private navigateHistory = async (step: -1 | 1): Promise<void> => {
+    this.showControls();
+
     if (
       this.historyAssets.length === 0 &&
       (typeof chrome === "undefined" || !chrome.storage?.onChanged)

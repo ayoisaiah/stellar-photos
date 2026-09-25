@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { StellarApp } from "../src/ts/components/stellar-app";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -109,6 +110,7 @@ it("keeps history wheel navigation separate from passive window gestures", () =>
 it.each([true, false])(
   "reads history on demand only without storage notifications (listener: %s)",
   async (hasListener) => {
+    vi.stubGlobal("window", { clearTimeout, setTimeout });
     vi.stubGlobal("chrome", {
       storage: {
         onChanged: hasListener ? { addListener: vi.fn() } : undefined,
@@ -129,6 +131,24 @@ it.each([true, false])(
     expect(loadHistory).toHaveBeenCalledTimes(hasListener ? 0 : 1);
   },
 );
+
+it("restarts the controls timer on each navigation action", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("window", { clearTimeout, setTimeout });
+  const app = new StellarApp();
+  app["loadHistoryAssets"] = vi.fn(async () => undefined);
+  Object.defineProperty(app, "updateComplete", {
+    value: Promise.resolve(true),
+  });
+
+  await app["navigateHistory"](1);
+  vi.advanceTimersByTime(2000);
+  await app["navigateHistory"](-1);
+  vi.advanceTimersByTime(2000);
+  expect(app["controlsVisible"]).toBe(true);
+  vi.advanceTimersByTime(500);
+  expect(app["controlsVisible"]).toBe(false);
+});
 
 it("keeps history open when dismissing or switching other panels", async () => {
   const app = new StellarApp();
