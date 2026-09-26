@@ -90,4 +90,55 @@ describe("SettingsDrawer component", () => {
       }),
     );
   });
+
+  it("shows no status for a successful source", () => {
+    vi.stubGlobal("__APP_VERSION__", "test");
+    const drawer = new SettingsDrawer();
+    drawer.sourceHealthMap = {
+      unsplash: "",
+    };
+
+    const rendered = JSON.stringify(drawer.render());
+    expect(rendered).not.toContain("badge-up");
+    expect(rendered).not.toContain("source-down");
+    expect(rendered).not.toContain("source-error");
+    expect(rendered).not.toContain("Last retrieved");
+
+    drawer.sourceHealthMap = {};
+    expect(JSON.stringify(drawer.render())).not.toContain("badge-up");
+  });
+
+  it("hides all status for disabled sources and sources without a result", () => {
+    vi.stubGlobal("__APP_VERSION__", "test");
+    const drawer = new SettingsDrawer();
+    drawer.activeSourceIds = ["earthview"];
+    drawer.willUpdate(new Map([["activeSourceIds", undefined]]));
+
+    for (const error of ["", "Timed out"]) {
+      drawer.sourceHealthMap = {
+        unsplash: error,
+      };
+
+      const rendered = JSON.stringify(drawer.render());
+      expect(rendered).not.toContain("badge-up");
+      expect(rendered).not.toContain("badge-down");
+      expect(rendered).not.toContain("source-error");
+      expect(rendered).not.toContain("Not checked yet");
+    }
+  });
+
+  it("shows a source failure without a separate retry control", () => {
+    vi.stubGlobal("__APP_VERSION__", "test");
+    const drawer = new SettingsDrawer();
+    drawer.sourceHealthMap = {
+      unsplash: "Timed out",
+    };
+
+    const rendered = JSON.stringify(drawer.render());
+    expect(rendered).toContain("Timed out");
+    expect(rendered).toContain("source-down");
+    expect(rendered).not.toContain("badge-down");
+    expect(rendered).not.toContain("Never retrieved");
+    expect(rendered).not.toContain("Retry now");
+  });
 });

@@ -11,6 +11,7 @@ import {
 import { getPhotoFrequency } from "./settings";
 import { getActiveImageSources, getImageSource } from "./sources";
 import { shouldRotateAtFrequency } from "./sources/photo-frequency";
+import { setSourceError } from "./sources/source-health";
 import { readHistory, readPinnedAsset, writeHistory } from "./storage";
 
 import type { BackgroundAsset } from "./assets";
@@ -35,22 +36,36 @@ function nextImage(): Promise<void> {
     let lastError: unknown;
 
     for (const source of shuffleSources(sources)) {
+      let retrieved = false;
+
       try {
         const candidate = await source.getRandomAsset();
-        if (candidate.sourceId !== source.id)
+        if (candidate.sourceId !== source.id) {
           throw new Error("Image source returned an asset for another source");
+        }
 
         const image = await source.downloadAsset(candidate);
+        retrieved = true;
+        await setSourceError(source.id, "").catch(console.error);
+
         const asset: BackgroundAsset = {
           ...candidate,
           cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
         };
+
         await cacheAndRecordImage(asset, image);
 
         return;
       } catch (error) {
         console.error(error);
         lastError = error;
+
+        if (!retrieved) {
+          await setSourceError(
+            source.id,
+            error instanceof Error ? error.message : String(error),
+          ).catch(console.error);
+        }
       }
     }
 

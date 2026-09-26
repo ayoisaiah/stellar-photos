@@ -226,8 +226,29 @@ button:focus-visible {
   line-height: 1.35;
 }
 
+.source-card.source-down {
+  border-color: rgb(239 68 68 / 60%);
+}
+
+.source-card.source-down:hover {
+  border-color: rgb(239 68 68 / 80%);
+}
+
+.source-text-block {
+  min-width: 0;
+}
+
+.source-error {
+  margin: 0.3rem 0 0;
+  color: #f87171;
+  font-size: 0.72rem;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
 .source-expand-btn {
   display: grid;
+  flex-shrink: 0;
   width: 1.85rem;
   height: 1.85rem;
   place-items: center;

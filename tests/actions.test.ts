@@ -41,7 +41,24 @@ vi.mock("../src/ts/storage", () => ({
   writePinnedAsset,
 }));
 
+let fakeStorage: Record<string, unknown> = {};
+
+vi.stubGlobal("chrome", {
+  storage: {
+    local: {
+      get: vi.fn((key: string) => Promise.resolve({ [key]: fakeStorage[key] })),
+      set: vi.fn((items: Record<string, unknown>) => {
+        fakeStorage = { ...fakeStorage, ...items };
+        return Promise.resolve();
+      }),
+    },
+  },
+});
+
 const { nextImage, trackDownload } = await import("../src/ts/actions");
+const { SOURCE_HEALTH_STORAGE_KEY } = await import(
+  "../src/ts/sources/source-health"
+);
 
 const candidate = {
   sourceId: "unsplash",
@@ -70,6 +87,7 @@ let source: ImageSource;
 
 beforeEach(() => {
   vi.resetAllMocks();
+  fakeStorage = {};
   createThumbnail.mockResolvedValue(null);
   source = {
     id: "unsplash",
@@ -291,5 +309,120 @@ describe("source activation and multi-source rotation", () => {
 
     expect(deleteCachedImage).not.toHaveBeenCalledWith("shared-cache-key");
     expect(deleteCachedThumbnail).not.toHaveBeenCalledWith("shared-cache-key");
+  });
+});
+
+describe("source status reporting without behavior changes", () => {
+  it("keeps failed sources in normal rotation alongside healthy sources", async () => {
+    fakeStorage[SOURCE_HEALTH_STORAGE_KEY] = {
+      unsplash: "Couldn’t connect",
+    };
+
+    const earthviewSource: ImageSource = {
+      id: "earthview",
+      name: "Google Earth View",
+      getRandomAsset: vi.fn().mockResolvedValue({
+        ...candidate,
+        sourceId: "earthview",
+        sourceAssetId: "earth-1",
+      }),
+      downloadAsset: vi.fn().mockResolvedValue(new Response("image")),
+    };
+
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    getActiveImageSources.mockResolvedValue([source, earthviewSource]);
+
+    await expect(nextImage()).resolves.toBeUndefined();
+
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(earthviewSource.getRandomAsset).not.toHaveBeenCalled();
+  });
+
+  it("clears the warning on the next successful normal request", async () => {
+    fakeStorage[SOURCE_HEALTH_STORAGE_KEY] = {
+      unsplash: "Couldn’t connect",
+    };
+
+    getActiveImageSources.mockResolvedValue([source]);
+
+    await expect(nextImage()).resolves.toBeUndefined();
+
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+
+    const healthMap = fakeStorage[SOURCE_HEALTH_STORAGE_KEY] as Record<
+      string,
+      string
+    >;
+    expect(healthMap.unsplash).toBeUndefined();
+  });
+
+  it("does not mark source as failed when caching or storage throws", async () => {
+    putCachedImage.mockRejectedValueOnce(
+      new Error("Disk full / Quota exceeded"),
+    );
+
+    await expect(nextImage()).rejects.toThrow("Disk full / Quota exceeded");
+
+    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+
+    const healthMap = fakeStorage[SOURCE_HEALTH_STORAGE_KEY] as Record<
+      string,
+      string
+    >;
+    expect(healthMap.unsplash).toBeUndefined();
+  });
+
+  it.each([
+    new Error("Network timeout"),
+    new Error("Request failed: https://example.com?api_key=test-key"),
+    "Raw failure text",
+  ])("preserves the raw failure message: %s", async (error) => {
+    source.getRandomAsset = vi.fn().mockRejectedValueOnce(error);
+
+    await expect(nextImage()).rejects.toBe(error);
+
+    const healthMap = fakeStorage[SOURCE_HEALTH_STORAGE_KEY] as Record<
+      string,
+      string
+    >;
+    expect(healthMap.unsplash).toBe(
+      error instanceof Error ? error.message : error,
+    );
+  });
+
+  it.each(["get", "set"] as const)(
+    "ignores status storage %s failures",
+    async (operation) => {
+      vi.mocked(chrome.storage.local[operation]).mockRejectedValueOnce(
+        new Error("Status storage unavailable"),
+      );
+
+      await expect(nextImage()).resolves.toBeUndefined();
+      expect(writeHistory).toHaveBeenCalled();
+    },
+  );
+
+  it("propagates history errors without marking the source as failed", async () => {
+    writeHistory.mockRejectedValueOnce(new Error("History unavailable"));
+
+    await expect(nextImage()).rejects.toThrow("History unavailable");
+    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY]).toEqual({});
+  });
+
+  it("preserves fallback after a cache failure", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+    const fallback = {
+      ...source,
+      id: "earthview",
+      getRandomAsset: vi
+        .fn()
+        .mockResolvedValue({ ...candidate, sourceId: "earthview" }),
+    };
+    getActiveImageSources.mockResolvedValue([source, fallback]);
+    putCachedImage.mockRejectedValueOnce(new Error("Cache write failed"));
+
+    await expect(nextImage()).resolves.toBeUndefined();
+    expect(fallback.getRandomAsset).toHaveBeenCalledOnce();
+    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY]).toEqual({});
   });
 });

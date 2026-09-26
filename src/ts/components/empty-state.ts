@@ -12,6 +12,9 @@ class EmptyState extends LitElement {
   @property({ reflect: true })
   accessor phase: EmptyStatePhase = "ready";
 
+  @property({ type: Boolean })
+  accessor allSourcesDown = false;
+
   override render() {
     const isError = this.phase === "error";
 
@@ -27,14 +30,18 @@ class EmptyState extends LitElement {
         <h1>
           ${
             isError
-              ? "We couldn’t find a photo just yet."
+              ? this.allSourcesDown
+                ? "Unable to retrieve new photos."
+                : "We couldn’t find a photo just yet."
               : "Your first photo is on its way."
           }
         </h1>
         <p>
           ${
             isError
-              ? "Check your connection and try again."
+              ? this.allSourcesDown
+                ? "All enabled photo sources are temporarily unavailable. Check your source settings or try again later."
+                : "Check your connection and try again."
               : "We’re finding something beautiful for your new tab. This first one may take a moment—after that, your photos will be ready when you are."
           }
         </p>
@@ -63,3 +70,4 @@ declare global {
 }
 
 export type { EmptyStatePhase };
+export { EmptyState };

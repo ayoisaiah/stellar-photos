@@ -21,6 +21,7 @@ import "./lucide-icon";
 
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import type { PhotoFrequency } from "../sources/photo-frequency";
+import type { SourceHealthMap } from "../sources/source-health";
 
 declare const __APP_VERSION__: string;
 
@@ -64,6 +65,9 @@ class SettingsDrawer extends LitElement {
   @property({ attribute: false })
   accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
 
+  @property({ attribute: false })
+  accessor sourceHealthMap: SourceHealthMap = {};
+
   @state()
   private accessor localSourceIds: string[] = [
     ...DEFAULT_CORE_SETTINGS.activeSourceIds,
@@ -79,6 +83,11 @@ class SettingsDrawer extends LitElement {
   @state()
   private accessor localDisplaySettings: DisplaySettings =
     DEFAULT_DISPLAY_SETTINGS;
+
+  override disconnectedCallback(): void {
+    window.removeEventListener("keydown", this.handleKeydown);
+    super.disconnectedCallback();
+  }
 
   override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
     if (changedProperties.has("activeSourceIds")) {
@@ -97,11 +106,6 @@ class SettingsDrawer extends LitElement {
     if (changedProperties.has("displaySettings")) {
       this.localDisplaySettings = this.displaySettings;
     }
-  }
-
-  override disconnectedCallback(): void {
-    window.removeEventListener("keydown", this.handleKeydown);
-    super.disconnectedCallback();
   }
 
   override render() {
@@ -149,9 +153,13 @@ class SettingsDrawer extends LitElement {
                   isActive && this.localSourceIds.length === 1;
                 const canConfigure = hasSourceSettings(source.id);
                 const isExpanded = this.expandedSourceIds.has(source.id);
+                const error = isActive
+                  ? this.sourceHealthMap[source.id]
+                  : undefined;
+                const isDown = Boolean(error);
 
                 return html`
-                  <div class="source-card ${isActive ? "active" : ""}">
+                  <div class="source-card ${isActive ? "active" : ""} ${isDown ? "source-down" : ""}">
                     <div class="source-card-header">
                       <label class="source-toggle-label">
                         <input
@@ -163,10 +171,11 @@ class SettingsDrawer extends LitElement {
                         <span class="checkbox-control" aria-hidden="true">
                           <stellar-icon .icon=${Check}></stellar-icon>
                         </span>
-                        <span>
+                        <div class="source-text-block">
                           <strong>${source.name}</strong>
-                          <small>${SOURCE_DESCRIPTIONS[source.id] ?? ""}</small>
-                        </span>
+                          <small class="source-desc">${SOURCE_DESCRIPTIONS[source.id] ?? ""}</small>
+                          ${error ? html`<p class="source-error">${error}</p>` : null}
+                        </div>
                       </label>
                       ${
                         canConfigure

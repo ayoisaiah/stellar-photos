@@ -115,6 +115,35 @@
   }
 }
 
+.all-sources-down-banner {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgb(239 68 68 / 40%);
+  background: rgb(24 16 16 / 75%);
+  backdrop-filter: blur(16px);
+  color: #fca5a5;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: 0 0.5rem 1.75rem rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+
+.all-sources-down-banner stellar-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: #ef4444;
+}
+
 .bottom-credit {
   position: absolute;
   left: 1.25rem;
@@ -258,6 +287,7 @@
 }
 
 .action-button {
+  position: relative;
   display: grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -274,6 +304,20 @@
     border-color 160ms ease,
     transform 160ms ease;
   backdrop-filter: blur(14px);
+}
+
+.action-button.has-warning::after {
+  content: "";
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  border: 1.5px solid rgb(14 16 20);
+  box-shadow: 0 0 4px rgb(245 158 11 / 60%);
+  pointer-events: none;
 }
 
 .action-button:hover:not(:disabled) {

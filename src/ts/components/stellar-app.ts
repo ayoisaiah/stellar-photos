@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Camera,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,11 @@ import {
 } from "../settings";
 import { getImageSource } from "../sources";
 import {
+  getSourceHealthMap,
+  parseSourceHealth,
+  SOURCE_HEALTH_STORAGE_KEY,
+} from "../sources/source-health";
+import {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
   PINNED_STORAGE_KEY,
@@ -46,6 +52,7 @@ import type { WorkerCommand, WorkerResult } from "../service-worker";
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import type { ImageSource } from "../sources";
 import type { PhotoFrequency } from "../sources/photo-frequency";
+import type { SourceHealthMap } from "../sources/source-health";
 import type { EmptyStatePhase } from "./empty-state";
 
 @customElement("stellar-app")
@@ -95,6 +102,9 @@ class StellarApp extends LitElement {
   @state()
   private accessor photoFrequency: PhotoFrequency =
     DEFAULT_CORE_SETTINGS.photoFrequency;
+
+  @state()
+  private accessor sourceHealthMap: SourceHealthMap = {};
 
   constructor() {
     super();
@@ -190,6 +200,13 @@ class StellarApp extends LitElement {
 
   override render() {
     const controlsShown = this.controlsVisible || this.controlsLocked;
+    const failedSources = this.activeSourceIds.filter(
+      (id) => this.sourceHealthMap[id],
+    );
+    const allSourcesDown =
+      failedSources.length > 0 &&
+      failedSources.length === this.activeSourceIds.length;
+    const hasSourceWarning = failedSources.length > 0;
 
     return html`
       <div
@@ -202,8 +219,19 @@ class StellarApp extends LitElement {
             ? this.renderPhotoStage(this.currentPhotoURL, this.currentAsset)
             : null
         }
+        ${
+          allSourcesDown && this.currentPhotoURL
+            ? html`
+              <div class="all-sources-down-banner" role="status" aria-live="polite">
+                <stellar-icon .icon=${AlertTriangle}></stellar-icon>
+                <span>Unable to retrieve new photos. See source settings</span>
+              </div>
+            `
+            : null
+        }
         <stellar-empty-state
           .phase=${this.photoLoadState}
+          .allSourcesDown=${allSourcesDown}
           @retry=${this.initializeState}
         ></stellar-empty-state>
         ${this.renderPhotoCredit()}
@@ -297,11 +325,11 @@ class StellarApp extends LitElement {
             <stellar-icon .icon=${History}></stellar-icon>
           </button>
           <button
-            class="action-button settings-toggle ${this.openPanel === "settings" ? "active" : ""}"
+            class="action-button settings-toggle ${this.openPanel === "settings" ? "active" : ""} ${hasSourceWarning ? "has-warning" : ""}"
             type="button"
             aria-label=${this.openPanel === "settings" ? "Close settings" : "Open settings"}
             aria-expanded=${this.openPanel === "settings"}
-            title="Settings"
+            title=${hasSourceWarning ? "Settings (source warning)" : "Settings"}
             @click=${() => this.togglePanel("settings")}
           >
             <stellar-icon .icon=${Settings}></stellar-icon>
@@ -327,6 +355,7 @@ class StellarApp extends LitElement {
         .activeSourceIds=${this.activeSourceIds}
         .photoFrequency=${this.photoFrequency}
         .displaySettings=${this.displaySettings}
+        .sourceHealthMap=${this.sourceHealthMap}
         @close-settings=${this.closePanel}
         @active-sources-changed=${this.handleActiveSourcesChanged}
         @frequency-changed=${this.handleFrequencyChanged}
@@ -518,19 +547,26 @@ class StellarApp extends LitElement {
 
   private async initializeState(): Promise<void> {
     try {
-      const [displaySettings, coreSettings, pinned, historyState] =
-        await Promise.all([
-          getDisplaySettings().catch(() => DEFAULT_DISPLAY_SETTINGS),
-          getCoreSettings().catch(() => DEFAULT_CORE_SETTINGS),
-          readPinnedAsset().catch(() => null),
-          readHistory().catch(() => ({ history: [] })),
-        ]);
+      const [
+        displaySettings,
+        coreSettings,
+        pinned,
+        historyState,
+        sourceHealthMap,
+      ] = await Promise.all([
+        getDisplaySettings().catch(() => DEFAULT_DISPLAY_SETTINGS),
+        getCoreSettings().catch(() => DEFAULT_CORE_SETTINGS),
+        readPinnedAsset().catch(() => null),
+        readHistory().catch(() => ({ history: [] })),
+        getSourceHealthMap().catch(() => ({})),
+      ]);
 
       this.displaySettings = displaySettings;
       this.activeSourceIds = coreSettings.activeSourceIds;
       this.photoFrequency = coreSettings.photoFrequency;
       this.pinnedAsset = pinned;
       this.historyAssets = historyState.history;
+      this.sourceHealthMap = sourceHealthMap;
 
       const current = pinned ?? historyState.history[0];
 
@@ -567,6 +603,11 @@ class StellarApp extends LitElement {
         } else {
           void this.loadHistoryAssets();
         }
+      }
+
+      if (SOURCE_HEALTH_STORAGE_KEY in changes) {
+        const newValue = changes[SOURCE_HEALTH_STORAGE_KEY]?.newValue;
+        this.sourceHealthMap = parseSourceHealth(newValue);
       }
     }
   };

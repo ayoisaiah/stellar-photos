@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BackgroundAsset } from "../src/ts/assets";
+import { StellarApp } from "../src/ts/components/stellar-app";
 import {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
@@ -252,5 +253,76 @@ describe("history synchronization & reconciliation logic", () => {
       sampleAssetB,
       sampleAssetA,
     ]);
+  });
+});
+
+describe("source down banner and settings warning indicator", () => {
+  it("updates sourceHealthMap when sourceHealth storage changes", () => {
+    const app = new StellarApp();
+    const updatedMap = {
+      unsplash: "Couldn’t connect",
+    };
+
+    // @ts-expect-error accessing private method for test
+    app.handleStorageChange(
+      {
+        sourceHealth: {
+          newValue: updatedMap,
+          oldValue: {},
+        },
+      },
+      "local",
+    );
+
+    // @ts-expect-error accessing private property for test
+    expect(app.sourceHealthMap).toEqual(updatedMap);
+  });
+
+  it("renders all-sources-down banner when all active sources are down and photo is displayed", () => {
+    const app = new StellarApp();
+    // @ts-expect-error accessing private property
+    app.activeSourceIds = ["unsplash"];
+    // @ts-expect-error accessing private property
+    app.sourceHealthMap = {
+      unsplash: "Couldn’t connect",
+    };
+    // @ts-expect-error accessing private property
+    app.currentPhotoURL = "blob:fake-photo-url";
+
+    const rendered = app.render();
+    const renderedString = JSON.stringify(rendered);
+    expect(renderedString).toContain("all-sources-down-banner");
+    expect(renderedString).toContain("Unable to retrieve new photos.");
+  });
+
+  it("does not render all-sources-down banner when at least one active source is healthy", () => {
+    const app = new StellarApp();
+    // @ts-expect-error accessing private property
+    app.activeSourceIds = ["unsplash", "earthview"];
+    // @ts-expect-error accessing private property
+    app.sourceHealthMap = {
+      unsplash: "Couldn’t connect",
+      earthview: "",
+    };
+    // @ts-expect-error accessing private property
+    app.currentPhotoURL = "blob:fake-photo-url";
+
+    const rendered = app.render();
+    const renderedString = JSON.stringify(rendered);
+    expect(renderedString).not.toContain("all-sources-down-banner");
+  });
+
+  it("marks settings toggle with has-warning when an active source has failed", () => {
+    const app = new StellarApp();
+    // @ts-expect-error accessing private property
+    app.activeSourceIds = ["unsplash"];
+    // @ts-expect-error accessing private property
+    app.sourceHealthMap = {
+      unsplash: "Couldn’t connect",
+    };
+
+    const rendered = app.render();
+    const renderedString = JSON.stringify(rendered);
+    expect(renderedString).toContain("has-warning");
   });
 });
