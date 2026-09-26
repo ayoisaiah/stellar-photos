@@ -16,8 +16,10 @@ import {
   verifyHandlePermission,
 } from "../sources/local-db";
 import { readFrequency, renderFrequencySelector } from "./settings-form";
-import { hasSourceSettings, renderSourceSettings } from "./source-settings";
+import "./local-settings";
 import "./lucide-icon";
+import "./smithsonian-settings";
+import "./unsplash-settings";
 
 import type { DisplaySettings, PhotoDisplayMode } from "../settings";
 import type { PhotoFrequency } from "../sources/photo-frequency";
@@ -523,6 +525,24 @@ class SettingsDrawer extends LitElement {
   private handleKeydown = (event: KeyboardEvent): void => {
     if (event.key === "Escape" && this.open) this.close();
   };
+}
+
+function hasSourceSettings(sourceId: string): boolean {
+  return (
+    sourceId === "unsplash" ||
+    sourceId === "smithsonian" ||
+    sourceId === "local"
+  );
+}
+
+function renderSourceSettings(sourceId: string) {
+  if (sourceId === "unsplash") return html`<stellar-unsplash-settings />`;
+  if (sourceId === "smithsonian") {
+    return html`<stellar-smithsonian-settings />`;
+  }
+  if (sourceId === "local") return html`<stellar-local-settings />`;
+
+  return null;
 }
 
 declare global {

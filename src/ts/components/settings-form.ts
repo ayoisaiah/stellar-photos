@@ -1,37 +1,16 @@
 import { html } from "lit";
-
 import type { PhotoFrequency } from "../sources/photo-frequency";
+import { FREQUENCIES } from "../sources/photo-frequency";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const SAVED_RESET_DELAY_MS = 2500;
 
-const FREQUENCIES: readonly {
-  value: PhotoFrequency;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "newtab",
-    label: "Every new tab",
-    description: "Load a new photo whenever you open a tab",
-  },
-  {
-    value: "every15minutes",
-    label: "Every 15 minutes",
-    description: "Keep the same photo for 15 minutes",
-  },
-  {
-    value: "everyhour",
-    label: "Every hour",
-    description: "Keep the same photo for 1 hour",
-  },
-  {
-    value: "everyday",
-    label: "Every 24 hours",
-    description: "Keep the same photo for 24 hours",
-  },
-];
+const STATUS_MESSAGES: Record<string, string> = {
+  saving: "Saving…",
+  saved: "Saved",
+  error: "Couldn’t save this setting.",
+};
 
 function renderFrequencySelector(
   value: PhotoFrequency,
@@ -71,11 +50,7 @@ function readFrequency(event: Event): PhotoFrequency | undefined {
 }
 
 function statusMessage(saveState: SaveState): string {
-  if (saveState === "saving") return "Saving…";
-  if (saveState === "saved") return "Saved";
-  if (saveState === "error") return "Couldn’t save this setting.";
-
-  return "";
+  return STATUS_MESSAGES[saveState] ?? "";
 }
 
 function scheduleSavedReset(reset: () => void): number {

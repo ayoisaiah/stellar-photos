@@ -4,12 +4,12 @@ import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/photo-info.css?inline";
 import type { BackgroundAsset } from "../assets";
-import { attributionUrl } from "../attribution";
 import {
   type EarthViewDetailsData,
   fetchEarthViewDetails,
 } from "../sources/earthview";
 import {
+  attributionUrl,
   fetchUnsplashPhotoDetails,
   getUnsplashPhotoInfo,
   type UnsplashInfoData,
@@ -32,31 +32,21 @@ interface PhotographerCardParams {
 }
 
 function formatCoordinates(lat?: number, lng?: number): string {
-  if (
-    typeof lat !== "number" ||
-    typeof lng !== "number" ||
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lng)
-  ) {
-    return "—";
-  }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "—";
 
-  const latDir = lat >= 0 ? "N" : "S";
-  const lngDir = lng >= 0 ? "E" : "W";
-
-  return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
+  return `${Math.abs(lat!).toFixed(4)}° ${lat! >= 0 ? "N" : "S"}, ${Math.abs(lng!).toFixed(4)}° ${lng! >= 0 ? "E" : "W"}`;
 }
 
 function formatElevation(meters?: number): string {
-  if (typeof meters !== "number" || !Number.isFinite(meters)) return "—";
-
-  return `${Math.round(meters).toLocaleString()} m`;
+  return Number.isFinite(meters)
+    ? `${Math.round(meters!).toLocaleString()} m`
+    : "—";
 }
 
 function formatDimensions(width?: number, height?: number): string {
-  if (!width || !height || width <= 0 || height <= 0) return "—";
-
-  return `${width} × ${height}`;
+  return width && height && width > 0 && height > 0
+    ? `${width} × ${height}`
+    : "—";
 }
 
 function renderPhotographerCard(

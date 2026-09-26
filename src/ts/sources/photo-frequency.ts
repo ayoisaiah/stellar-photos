@@ -2,15 +2,39 @@ import type { BackgroundAsset } from "../assets";
 
 type PhotoFrequency = "newtab" | "every15minutes" | "everyhour" | "everyday";
 
+interface FrequencyOption {
+  value: PhotoFrequency;
+  label: string;
+  description: string;
+}
+
 const DEFAULT_PHOTO_FREQUENCY: PhotoFrequency = "newtab";
 
+const FREQUENCIES: readonly FrequencyOption[] = [
+  {
+    value: "newtab",
+    label: "Every new tab",
+    description: "Load a new photo whenever you open a tab",
+  },
+  {
+    value: "every15minutes",
+    label: "Every 15 minutes",
+    description: "Keep the same photo for 15 minutes",
+  },
+  {
+    value: "everyhour",
+    label: "Every hour",
+    description: "Keep the same photo for 1 hour",
+  },
+  {
+    value: "everyday",
+    label: "Every 24 hours",
+    description: "Keep the same photo for 24 hours",
+  },
+];
+
 function isPhotoFrequency(value: unknown): value is PhotoFrequency {
-  return (
-    value === "newtab" ||
-    value === "every15minutes" ||
-    value === "everyhour" ||
-    value === "everyday"
-  );
+  return FREQUENCIES.some((frequency) => frequency.value === value);
 }
 
 function shouldRotateAtFrequency(
@@ -31,5 +55,10 @@ function shouldRotateAtFrequency(
   }
 }
 
-export type { PhotoFrequency };
-export { DEFAULT_PHOTO_FREQUENCY, isPhotoFrequency, shouldRotateAtFrequency };
+export type { FrequencyOption, PhotoFrequency };
+export {
+  DEFAULT_PHOTO_FREQUENCY,
+  FREQUENCIES,
+  isPhotoFrequency,
+  shouldRotateAtFrequency,
+};

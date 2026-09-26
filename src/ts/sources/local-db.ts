@@ -296,44 +296,10 @@ async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
   );
 }
 
-function pickRandomByCumulativeCount(
-  records: LocalFolderRecord[],
-  totalCount: number,
-): { record: LocalFolderRecord; path: string } | null {
-  if (totalCount === 0) return null;
-
-  let target = Math.floor(Math.random() * totalCount);
-
-  for (const record of records) {
-    if (target < record.imagePaths.length) {
-      const path = record.imagePaths[target];
-      return path ? { record, path } : null;
-    }
-    target -= record.imagePaths.length;
-  }
-
-  return null;
-}
-
 function pickRandomCandidate(
   records: LocalFolderRecord[],
   excludedSet: Set<string>,
 ): { record: LocalFolderRecord; path: string } | null {
-  const totalPhotos = records.reduce((sum, r) => sum + r.imagePaths.length, 0);
-  if (totalPhotos === 0) return null;
-
-  const maxTrials = Math.min(20, totalPhotos);
-
-  for (let trial = 0; trial < maxTrials; trial += 1) {
-    const candidate = pickRandomByCumulativeCount(records, totalPhotos);
-    if (candidate) {
-      const fileName = candidate.path.split("/").pop() || candidate.path;
-      if (!excludedSet.has(candidate.path) && !excludedSet.has(fileName)) {
-        return candidate;
-      }
-    }
-  }
-
   const available: { record: LocalFolderRecord; path: string }[] = [];
 
   for (const record of records) {

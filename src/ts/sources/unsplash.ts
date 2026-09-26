@@ -1,5 +1,4 @@
 // biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
-import { attributionUrl } from "../attribution";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import {
@@ -87,6 +86,8 @@ interface UnsplashPhotoResponse {
   };
 }
 
+const UTM_PARAMS =
+  "utm_source=stellar-photos&utm_medium=referral&utm_campaign=api-credit";
 const API_ORIGIN = "https://api.unsplash.com";
 const verifiedCollections = new Set<string>([STELLAR_COLLECTION]);
 const verifiedTopics = new Map<string, string>();
@@ -393,120 +394,65 @@ function normalizeCsv(value?: string | null): string {
     .join(",");
 }
 
-async function verifyUnsplashCollection(
-  idOrUrl: string,
-): Promise<{ valid: boolean; normalized?: string; error?: string }> {
-  const id = cleanIdentifier(idOrUrl);
+function attributionUrl(rawUrl: string, sourceId: string): string {
+  if (!rawUrl || sourceId !== "unsplash") return rawUrl;
 
-  if (!id) {
-    return { valid: false, error: "Please enter a valid collection ID." };
-  }
+  const separator = rawUrl.includes("?") ? "&" : "?";
 
-  if (verifiedCollections.has(id)) {
-    return { valid: true, normalized: id };
-  }
-
-  try {
-    const url = new URL(`/collections/${encodeURIComponent(id)}`, API_ORIGIN);
-    const response = await authenticatedFetch(url);
-    const data = (await response.json()) as { total_photos?: number };
-
-    if (typeof data.total_photos === "number" && data.total_photos === 0) {
-      return {
-        valid: false,
-        error: `Collection "${id}" contains no photos.`,
-      };
-    }
-
-    verifiedCollections.add(id);
-
-    return { valid: true, normalized: id };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    if (message.includes("404")) {
-      return {
-        valid: false,
-        error: `Collection "${id}" was not found on Unsplash.`,
-      };
-    }
-
-    if (
-      message.includes("401") ||
-      message.includes("403") ||
-      message.includes("429")
-    ) {
-      return {
-        valid: false,
-        error:
-          "Unable to verify collection: API access denied or rate limit reached.",
-      };
-    }
-
-    if (message.includes("No Unsplash access key")) {
-      return {
-        valid: false,
-        error: "No Unsplash access key configured.",
-      };
-    }
-
-    return {
-      valid: false,
-      error: `Could not verify collection "${id}". Please check your network connection.`,
-    };
-  }
+  return `${rawUrl}${separator}${UTM_PARAMS}`;
 }
 
-async function verifyUnsplashTopic(
-  slugOrUrl: string,
-): Promise<{ valid: boolean; normalized?: string; error?: string }> {
-  const slugOrId = cleanIdentifier(slugOrUrl);
+interface UnsplashValidationResult {
+  valid: boolean;
+  normalized?: string;
+  error?: string;
+}
 
-  if (!slugOrId) {
-    return { valid: false, error: "Please enter a valid topic slug or ID." };
+async function verifyUnsplashResource(
+  type: "collection" | "topic",
+  idOrUrl: string,
+  cacheCheck: (id: string) => string | undefined,
+  cacheStore: (id: string, data: { id?: string; slug?: string }) => string,
+): Promise<UnsplashValidationResult> {
+  const id = cleanIdentifier(idOrUrl);
+  const typeLabel =
+    type === "collection" ? "collection ID" : "topic slug or ID";
+
+  if (!id) {
+    return { valid: false, error: `Please enter a valid ${typeLabel}.` };
   }
 
-  const cachedId = verifiedTopics.get(slugOrId);
-
-  if (cachedId) {
-    return { valid: true, normalized: cachedId };
+  const cached = cacheCheck(id);
+  if (cached) {
+    return { valid: true, normalized: cached };
   }
+
+  const endpoint = type === "collection" ? "collections" : "topics";
+  const name = type === "collection" ? "Collection" : "Topic";
 
   try {
-    const url = new URL(`/topics/${encodeURIComponent(slugOrId)}`, API_ORIGIN);
+    const url = new URL(`/${endpoint}/${encodeURIComponent(id)}`, API_ORIGIN);
     const response = await authenticatedFetch(url);
     const data = (await response.json()) as {
       id?: string;
       slug?: string;
       total_photos?: number;
-      status?: string;
     };
 
     if (typeof data.total_photos === "number" && data.total_photos === 0) {
-      return {
-        valid: false,
-        error: `Topic "${slugOrId}" contains no photos.`,
-      };
+      return { valid: false, error: `${name} "${id}" contains no photos.` };
     }
 
-    const topicId = data.id || slugOrId;
+    const normalized = cacheStore(id, data);
 
-    verifiedTopics.set(slugOrId, topicId);
-    if (data.slug) {
-      verifiedTopics.set(data.slug, topicId);
-    }
-    if (data.id) {
-      verifiedTopics.set(data.id, topicId);
-    }
-
-    return { valid: true, normalized: topicId };
+    return { valid: true, normalized };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
     if (message.includes("404")) {
       return {
         valid: false,
-        error: `Topic "${slugOrId}" was not found on Unsplash.`,
+        error: `${name} "${id}" was not found on Unsplash.`,
       };
     }
 
@@ -517,23 +463,50 @@ async function verifyUnsplashTopic(
     ) {
       return {
         valid: false,
-        error:
-          "Unable to verify topic: API access denied or rate limit reached.",
+        error: `Unable to verify ${type}: API access denied or rate limit reached.`,
       };
     }
 
     if (message.includes("No Unsplash access key")) {
-      return {
-        valid: false,
-        error: "No Unsplash access key configured.",
-      };
+      return { valid: false, error: "No Unsplash access key configured." };
     }
 
     return {
       valid: false,
-      error: `Could not verify topic "${slugOrId}". Please check your network connection.`,
+      error: `Could not verify ${type} "${id}". Please check your network connection.`,
     };
   }
+}
+
+async function verifyUnsplashCollection(
+  idOrUrl: string,
+): Promise<UnsplashValidationResult> {
+  return verifyUnsplashResource(
+    "collection",
+    idOrUrl,
+    (id) => (verifiedCollections.has(id) ? id : undefined),
+    (id) => {
+      verifiedCollections.add(id);
+      return id;
+    },
+  );
+}
+
+async function verifyUnsplashTopic(
+  slugOrUrl: string,
+): Promise<UnsplashValidationResult> {
+  return verifyUnsplashResource(
+    "topic",
+    slugOrUrl,
+    (id) => verifiedTopics.get(id),
+    (id, data) => {
+      const topicId = data.id || id;
+      verifiedTopics.set(id, topicId);
+      if (data.slug) verifiedTopics.set(data.slug, topicId);
+      if (data.id) verifiedTopics.set(data.id, topicId);
+      return topicId;
+    },
+  );
 }
 
 async function verifyUnsplashAccessKey(
@@ -589,6 +562,7 @@ export type {
   UnsplashUser,
 };
 export {
+  attributionUrl,
   buildRandomPhotoUrl,
   cleanIdentifier,
   clearVerificationCache,
