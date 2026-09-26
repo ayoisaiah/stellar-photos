@@ -224,7 +224,7 @@ describe("directory handle storage", () => {
       "sunset.jpg",
     ]).toContain(random?.name);
 
-    const file = await readDirectoryFile("Vacation/beach.jpg");
+    const file = await readDirectoryFile("Vacation/beach.jpg", record.id);
     expect(await file.text()).toBe("beach-data");
   });
 

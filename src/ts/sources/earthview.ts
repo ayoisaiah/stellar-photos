@@ -163,7 +163,6 @@ const earthviewSource: ImageSource = {
 
     return {
       ...asset.attribution,
-      sourceUrl: asset.attribution.url || asset.attribution.sourceUrl,
       sourceName: earthviewSource.name,
       icon: MapPin,
     };

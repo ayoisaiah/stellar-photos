@@ -183,17 +183,6 @@ describe("settings", () => {
     expect(await getPhotoFrequency()).toBe("newtab");
   });
 
-  it("resolves the internal source selection and its legacy value", async () => {
-    expect(await getActiveImageSourceIds()).toEqual(["unsplash"]);
-    sync[CORE_SETTINGS_KEY] = { version: 1, activeSourceId: "official" };
-    expect(await getActiveImageSourceIds()).toEqual(["unsplash"]);
-    sync[CORE_SETTINGS_KEY] = {
-      version: 1,
-      activeSourceId: "future-source",
-    };
-    expect(await getActiveImageSourceIds()).toEqual(["future-source"]);
-  });
-
   it("persists source-owned and application-owned settings", async () => {
     await setUnsplashSettings({
       imageQuality: "max",

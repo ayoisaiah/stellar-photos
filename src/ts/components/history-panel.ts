@@ -81,10 +81,7 @@ class HistoryPanel extends LitElement {
     const thumbnailUrl = this.thumbnailUrls.get(asset.cacheKey);
     const description = asset.description || "photo";
     const isEarthView = asset.sourceId === "earthview";
-    const sourceUrl =
-      isEarthView && asset.attribution?.url
-        ? asset.attribution.url
-        : (asset.attribution?.sourceUrl ?? "");
+    const sourceUrl = asset.attribution?.sourceUrl ?? "";
     const sourceTitle =
       asset.sourceId === "unsplash"
         ? "View photo on Unsplash"

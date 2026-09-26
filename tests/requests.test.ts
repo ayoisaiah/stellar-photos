@@ -139,7 +139,6 @@ describe("Unsplash image resolution", () => {
       sourcePayload: {
         downloadLocation: "https://api.unsplash.com/photos/photo-1/download",
         imageUrl: `${raw}&w=2000&fit=max`,
-        fullImageUrl: `${raw}&q=85&auto=format`,
       },
       createdAt: 0,
     });

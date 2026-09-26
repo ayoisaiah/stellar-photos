@@ -265,12 +265,9 @@ class PhotoInfo extends LitElement {
     const secondaryLocation =
       landmark && localityText !== landmark ? localityText : null;
     const mapUrl =
-      (details?.lat !== undefined && details?.lng !== undefined
+      details?.lat !== undefined && details?.lng !== undefined
         ? `https://www.google.com/maps/@${details.lat},${details.lng},${details.zoom || 12}z/data=!3m1!1e3`
-        : asset.attribution?.url) ||
-      asset.attribution?.url ||
-      asset.attribution?.sourceUrl ||
-      "https://earth.google.com/";
+        : asset.attribution?.sourceUrl || "https://earth.google.com/";
     const satelliteProvider =
       details?.attribution || "Google Earth View Satellite Imagery";
 

@@ -46,8 +46,7 @@ interface UnsplashInfoData {
 
 interface UnsplashPayload {
   downloadLocation: string;
-  imageUrl?: string;
-  fullImageUrl?: string;
+  imageUrl: string;
   info?: UnsplashInfoData;
 }
 
@@ -223,7 +222,6 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   const photo = (await (
     await authenticatedFetch(endpoint)
   ).json()) as UnsplashPhotoResponse;
-  const fullImageUrl = photo.urls.raw;
   const imageUrl = imageUrlForResolution(photo.urls.raw, settings.imageQuality);
 
   return {
@@ -242,7 +240,6 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
     sourcePayload: {
       downloadLocation: photo.links.download_location,
       imageUrl,
-      fullImageUrl,
       info: extractPhotoInfo(photo),
     } satisfies UnsplashPayload,
     createdAt: Date.now(),
@@ -265,11 +262,10 @@ async function downloadAsset(
 
 function getDownloadUrl(asset: BackgroundAsset): string {
   const payload = parsePayload(asset);
-  const baseOrFullUrl = payload.imageUrl ?? payload.fullImageUrl;
-  if (!baseOrFullUrl)
+  if (!payload.imageUrl)
     throw new Error("Unsplash asset payload has no image URL");
 
-  return fullResolutionImageUrl(baseOrFullUrl);
+  return fullResolutionImageUrl(payload.imageUrl);
 }
 
 async function didDownload(asset: BackgroundAsset): Promise<void> {

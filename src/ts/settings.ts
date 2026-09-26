@@ -129,7 +129,7 @@ async function setDisplaySettings(
 function parseCoreSettings(value: unknown): CoreSettings | null {
   if (!value || typeof value !== "object") return null;
 
-  const settings = value as Partial<CoreSettings & { activeSourceId?: string }>;
+  const settings = value as Partial<CoreSettings>;
 
   if (typeof settings.version === "number" && settings.version > 1) {
     throw new Error(`Unsupported core settings version: ${settings.version}`);
@@ -143,15 +143,6 @@ function parseCoreSettings(value: unknown): CoreSettings | null {
     activeSourceIds = settings.activeSourceIds.filter(
       (id): id is string => typeof id === "string" && Boolean(id),
     );
-  } else if (
-    typeof settings.activeSourceId === "string" &&
-    settings.activeSourceId
-  ) {
-    const id =
-      settings.activeSourceId === "official"
-        ? "unsplash"
-        : settings.activeSourceId;
-    activeSourceIds = [id];
   } else {
     activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
   }

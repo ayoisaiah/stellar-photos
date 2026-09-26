@@ -393,7 +393,7 @@ async function getRandomDirectoryImage(
 
 async function readDirectoryFile(
   relativePath: string,
-  folderId?: string,
+  folderId: string,
 ): Promise<File> {
   const records = await listStoredFolderRecords();
 
@@ -403,9 +403,7 @@ async function readDirectoryFile(
     );
   }
 
-  const folderRecord = folderId
-    ? records.find((r) => r.id === folderId)
-    : records[0];
+  const folderRecord = records.find((r) => r.id === folderId);
 
   if (!folderRecord) {
     throw new Error("Target folder not found.");

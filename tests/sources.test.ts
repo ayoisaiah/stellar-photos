@@ -6,7 +6,7 @@ import {
   listImageSources,
 } from "../src/ts/sources";
 
-let selectedSources: unknown;
+let selectedSources: string[] | undefined;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -25,9 +25,7 @@ beforeEach(() => {
           const res = {
             coreSettings:
               selectedSources !== undefined
-                ? typeof selectedSources === "string"
-                  ? { version: 1, activeSourceId: selectedSources }
-                  : { version: 1, activeSourceIds: selectedSources }
+                ? { version: 1, activeSourceIds: selectedSources }
                 : undefined,
           };
           if (callback) callback(res);
@@ -90,14 +88,6 @@ describe("image source registry", () => {
       "unsplash",
       "earthview",
       "smithsonian",
-    ]);
-  });
-
-  it("maps the legacy official selection to Unsplash", async () => {
-    selectedSources = "official";
-
-    expect(await getActiveImageSources()).toEqual([
-      expect.objectContaining({ id: "unsplash" }),
     ]);
   });
 
@@ -194,17 +184,9 @@ it("resolves source-specific credits and handles missing attribution", () => {
     earthview.getCredit?.({ ...asset, sourceId: "earthview" }),
   ).toMatchObject({
     ...attribution,
-    sourceUrl: attribution.url,
     sourceName: "Google Earth View",
     icon: expect.anything(),
   });
-  expect(
-    earthview.getCredit?.({
-      ...asset,
-      sourceId: "earthview",
-      attribution: { ...attribution, url: "" },
-    })?.sourceUrl,
-  ).toBe(attribution.sourceUrl);
 
   const smithsonian = getImageSource("smithsonian")!;
   expect(

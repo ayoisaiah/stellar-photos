@@ -7,9 +7,9 @@ import {
 } from "./local-db";
 
 interface LocalPayload {
-  folderId?: string;
-  folderName?: string;
-  relativePath?: string;
+  folderId: string;
+  folderName: string;
+  relativePath: string;
   name: string;
   size: number;
   type: string;
@@ -33,8 +33,8 @@ const localSource: ImageSource = {
 };
 
 async function computeLocalAssetId(
-  folderId = "folder",
-  relativePath = "photo",
+  folderId: string,
+  relativePath: string,
 ): Promise<string> {
   const raw = `${folderId}:${relativePath}`;
 
@@ -66,7 +66,7 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
       const file = await photo.handle.getFile();
       const sourceAssetId = await computeLocalAssetId(
         photo.folderId,
-        photo.relativePath || photo.name,
+        photo.relativePath,
       );
 
       let width = 0;
@@ -108,7 +108,7 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
         throw error;
       }
 
-      triedPaths.push(photo.relativePath || photo.name);
+      triedPaths.push(photo.relativePath);
     }
   }
 
@@ -119,12 +119,11 @@ async function downloadLocalAsset(
   asset: UncachedBackgroundAsset,
 ): Promise<Response> {
   const payload = asset.sourcePayload as LocalPayload | undefined;
-  const path = payload?.relativePath || payload?.name;
-  if (!path) {
+  if (!payload?.relativePath || !payload.folderId) {
     throw new Error("Local asset has no file path");
   }
 
-  const file = await readDirectoryFile(path, payload?.folderId);
+  const file = await readDirectoryFile(payload.relativePath, payload.folderId);
 
   return new Response(file, {
     headers: {
