@@ -17,7 +17,7 @@ interface RandomLocalImageResult {
 }
 
 const DB_NAME = "stellar-photos-local";
-const DB_VERSION = 1;
+const DB_VERSION = 4;
 const FOLDERS_STORE = "folders";
 
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "avif"]);
@@ -58,7 +58,28 @@ function openLocalDb(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result;
 
-      db.createObjectStore(FOLDERS_STORE, { keyPath: "id" });
+      if (db.objectStoreNames.contains(FOLDERS_STORE)) return;
+
+      const folders = db.createObjectStore(FOLDERS_STORE, { keyPath: "id" });
+      if (!db.objectStoreNames.contains("handles")) return;
+
+      const legacyRecords = request
+        .transaction!.objectStore("handles")
+        .getAll();
+      legacyRecords.onsuccess = () => {
+        for (const record of legacyRecords.result) {
+          const imagePaths = record.imagePaths ?? [];
+          folders.put({
+            id: record.id ?? crypto.randomUUID(),
+            folderName: record.folderName,
+            handle: record.handle,
+            imagePaths,
+            photoCount: imagePaths.length,
+            lastScannedAt: record.lastScannedAt ?? 0,
+            updatedAt: record.updatedAt,
+          } satisfies LocalFolderRecord);
+        }
+      };
     };
 
     request.onblocked = () => {

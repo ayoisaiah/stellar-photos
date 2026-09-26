@@ -89,21 +89,43 @@ let currentDbVersion = 0;
 
 const mockIdb = {
   open(_name: string, version: number) {
+    const isDowngrade = version < currentDbVersion;
     const isUpgrade = version > currentDbVersion;
     if (isUpgrade) {
       currentDbVersion = version;
     }
 
     const req = {
+      error: isDowngrade
+        ? new DOMException("Cannot downgrade database", "VersionError")
+        : null,
+      transaction: {
+        objectStore: (name: string) => ({
+          getAll: () => {
+            const request = {
+              result: [...dbStores.get(name)!.values()],
+              onsuccess: null as (() => void) | null,
+            };
+            queueMicrotask(() => request.onsuccess?.());
+            return request;
+          },
+        }),
+      },
       result: {
+        objectStoreNames: { contains: (name: string) => dbStores.has(name) },
         createObjectStore: (storeName: string) => {
-          if (!dbStores.has(storeName)) dbStores.set(storeName, new Map());
+          if (dbStores.has(storeName))
+            throw new DOMException("Store exists", "ConstraintError");
+          const store = new Map<string, unknown>();
+          dbStores.set(storeName, store);
+          return { put: (value: { id: string }) => store.set(value.id, value) };
         },
         close: vi.fn(),
         transaction: (_storeNames: string | string[]) => {
           return {
             objectStore: (storeName: string) => {
-              if (!dbStores.has(storeName)) dbStores.set(storeName, new Map());
+              if (!dbStores.has(storeName))
+                throw new DOMException("Missing store", "NotFoundError");
               const map = dbStores.get(storeName)!;
 
               return {
@@ -145,10 +167,15 @@ const mockIdb = {
     };
 
     queueMicrotask(() => {
+      if (isDowngrade) {
+        req.onerror?.();
+        return;
+      }
+
       if (isUpgrade) {
         req.onupgradeneeded?.();
       }
-      req.onsuccess?.();
+      queueMicrotask(() => req.onsuccess?.());
     });
 
     return req;
@@ -213,6 +240,66 @@ describe("local image file detection", () => {
 });
 
 describe("directory handle storage", () => {
+  it.each([1, 2, 3])(
+    "adds folders without losing existing records from database version %i",
+    async (version) => {
+      const handle = createMockDirHandle("Saved", { "old.jpg": "old" });
+      const saved = {
+        id: "saved-folder",
+        folderName: "Saved",
+        handle,
+        imagePaths: ["old.jpg"],
+        photoCount: 1,
+        lastScannedAt: 100,
+        updatedAt: 100,
+      };
+      currentDbVersion = version;
+      dbStores.set(
+        version === 1 ? "folders" : "handles",
+        new Map([[saved.id, saved]]),
+      );
+
+      await addDirectoryHandle(
+        createMockDirHandle("New", { "new.jpg": "new" }),
+      );
+
+      const records = await listStoredFolderRecords();
+      expect(records).toHaveLength(2);
+      expect(records).toContainEqual(saved);
+      expect(records.some((record) => record.folderName === "New")).toBe(true);
+    },
+  );
+
+  it("preserves a version 2 single-folder handle for rescanning", async () => {
+    const handle = createMockDirHandle("Legacy", { "old.jpg": "old" });
+    currentDbVersion = 2;
+    dbStores.set(
+      "handles",
+      new Map([
+        [
+          "handle",
+          {
+            key: "handle",
+            folderName: "Legacy",
+            handle,
+            updatedAt: 100,
+          },
+        ],
+      ]),
+    );
+
+    const records = await listStoredFolderRecords();
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      folderName: "Legacy",
+      handle,
+      imagePaths: [],
+    });
+
+    const rescanned = await rescanAllFolders();
+    expect(rescanned[0]?.imagePaths).toEqual(["old.jpg"]);
+  });
+
   it("saves directory handle and reads image metadata directly", async () => {
     const handle = createMockDirHandle("Wallpapers", {
       "nature.jpg": "data1",
