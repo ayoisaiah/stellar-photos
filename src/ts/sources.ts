@@ -50,10 +50,7 @@ function listImageSources(): readonly ImageSource[] {
 }
 
 function getImageSource(sourceId: string): ImageSource | null {
-  const source = imageSources.get(sourceId);
-  if (!source || !isSourceSupported(source)) return null;
-
-  return source;
+  return imageSources.get(sourceId) ?? null;
 }
 
 async function getActiveImageSources(): Promise<ImageSource[]> {

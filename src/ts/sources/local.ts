@@ -1,8 +1,10 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
-import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
-
 import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
 import type { ImageSource } from "../sources";
+import {
+  getRandomDirectoryImage,
+  isLocalPermissionError,
+  readDirectoryFile,
+} from "./local-db";
 
 interface LocalPayload {
   folderId?: string;
@@ -15,14 +17,11 @@ interface LocalPayload {
 }
 
 function isLocalSupported(): boolean {
-  if (
-    typeof navigator !== "undefined" &&
-    /firefox/i.test(navigator.userAgent)
-  ) {
-    return false;
-  }
-
-  return true;
+  return (
+    typeof window !== "undefined" &&
+    typeof (window as { showDirectoryPicker?: unknown }).showDirectoryPicker ===
+      "function"
+  );
 }
 
 const localSource: ImageSource = {
@@ -70,11 +69,25 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
         photo.relativePath || photo.name,
       );
 
+      let width = 0;
+      let height = 0;
+
+      if (typeof createImageBitmap === "function") {
+        try {
+          const bitmap = await createImageBitmap(file);
+          width = bitmap.width;
+          height = bitmap.height;
+          bitmap.close();
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
       return {
         sourceId: localSource.id,
         sourceAssetId,
-        width: 0,
-        height: 0,
+        width,
+        height,
         color: null,
         description: photo.name,
         attribution: null,
@@ -91,12 +104,10 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
         createdAt: Date.now(),
       };
     } catch (error) {
-      if (
-        (error as { name?: string })?.name === "LocalPermissionError" ||
-        (error as { code?: string })?.code === "NEEDS_PAGE_CONTEXT"
-      ) {
+      if (isLocalPermissionError(error)) {
         throw error;
       }
+
       triedPaths.push(photo.relativePath || photo.name);
     }
   }

@@ -1,6 +1,7 @@
 import { nextImage, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
 import { readCachedImage, readCachedThumbnail } from "./cache";
+import { isLocalPermissionError } from "./sources/local-db";
 
 type WorkerCommand =
   | { command: "nextImage" }
@@ -69,12 +70,7 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
     await nextImage();
     return { ok: true };
   } catch (error) {
-    const isPageContextError =
-      (error as { code?: string })?.code === "NEEDS_PAGE_CONTEXT" ||
-      (error instanceof Error &&
-        (error.name === "LocalPermissionError" ||
-          error.message.includes("getFileHandle") ||
-          error.message.includes("not allowed")));
+    const isPageContextError = isLocalPermissionError(error);
 
     const message =
       error instanceof Error ? error.message : "Unexpected extension error";

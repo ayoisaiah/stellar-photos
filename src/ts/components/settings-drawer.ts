@@ -271,20 +271,6 @@ class SettingsDrawer extends LitElement {
                   <input
                     type="radio"
                     name="portraitMode"
-                    value="contain-blur"
-                    .checked=${this.localDisplaySettings.portraitMode === "contain-blur"}
-                    @change=${this.changePortraitMode}
-                  />
-                  <span class="control" aria-hidden="true"></span>
-                  <span>
-                    <strong>Contain with blur</strong>
-                    <small>Shows full photo with blurred background</small>
-                  </span>
-                </label>
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="portraitMode"
                     value="cover"
                     .checked=${this.localDisplaySettings.portraitMode === "cover"}
                     @change=${this.changePortraitMode}
@@ -293,6 +279,20 @@ class SettingsDrawer extends LitElement {
                   <span>
                     <strong>Cover</strong>
                     <small>Fills screen (centered, cropped edges)</small>
+                  </span>
+                </label>
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="portraitMode"
+                    value="contain-blur"
+                    .checked=${this.localDisplaySettings.portraitMode === "contain-blur"}
+                    @change=${this.changePortraitMode}
+                  />
+                  <span class="control" aria-hidden="true"></span>
+                  <span>
+                    <strong>Contain with blur</strong>
+                    <small>Shows full photo with blurred background</small>
                   </span>
                 </label>
               </div>

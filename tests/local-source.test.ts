@@ -11,14 +11,6 @@ import {
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../src/ts/sources/local-db";
-import {
-  DEFAULT_LOCAL_SETTINGS,
-  getLocalSettings,
-  LOCAL_SETTINGS_KEY,
-  setLocalSettings,
-} from "../src/ts/sources/local-settings";
-
-const sync: Record<string, unknown> = {};
 
 async function localPhotoCount(): Promise<number> {
   return (await listStoredFolderRecords()).reduce(
@@ -85,37 +77,17 @@ function createMockDirHandle(
 }
 
 const dbStores = new Map<string, Map<string, unknown>>();
-let currentDbVersion = 0;
 
 const mockIdb = {
-  open(_name: string, version: number) {
-    const isDowngrade = version < currentDbVersion;
-    const isUpgrade = version > currentDbVersion;
-    if (isUpgrade) {
-      currentDbVersion = version;
-    }
-
+  open(_name: string, _version: number) {
     const req = {
-      error: isDowngrade
-        ? new DOMException("Cannot downgrade database", "VersionError")
-        : null,
-      transaction: {
-        objectStore: (name: string) => ({
-          getAll: () => {
-            const request = {
-              result: [...dbStores.get(name)!.values()],
-              onsuccess: null as (() => void) | null,
-            };
-            queueMicrotask(() => request.onsuccess?.());
-            return request;
-          },
-        }),
-      },
+      error: null as DOMException | null,
       result: {
         objectStoreNames: { contains: (name: string) => dbStores.has(name) },
         createObjectStore: (storeName: string) => {
-          if (dbStores.has(storeName))
+          if (dbStores.has(storeName)) {
             throw new DOMException("Store exists", "ConstraintError");
+          }
           const store = new Map<string, unknown>();
           dbStores.set(storeName, store);
           return { put: (value: { id: string }) => store.set(value.id, value) };
@@ -124,8 +96,9 @@ const mockIdb = {
         transaction: (_storeNames: string | string[]) => {
           return {
             objectStore: (storeName: string) => {
-              if (!dbStores.has(storeName))
+              if (!dbStores.has(storeName)) {
                 throw new DOMException("Missing store", "NotFoundError");
+              }
               const map = dbStores.get(storeName)!;
 
               return {
@@ -167,14 +140,7 @@ const mockIdb = {
     };
 
     queueMicrotask(() => {
-      if (isDowngrade) {
-        req.onerror?.();
-        return;
-      }
-
-      if (isUpgrade) {
-        req.onupgradeneeded?.();
-      }
+      req.onupgradeneeded?.();
       queueMicrotask(() => req.onsuccess?.());
     });
 
@@ -184,8 +150,6 @@ const mockIdb = {
 
 beforeEach(() => {
   dbStores.clear();
-  currentDbVersion = 0;
-  for (const key of Object.keys(sync)) delete sync[key];
 
   vi.stubGlobal(
     "createImageBitmap",
@@ -198,30 +162,6 @@ beforeEach(() => {
   vi.stubGlobal("indexedDB", mockIdb);
   vi.stubGlobal("chrome", {
     runtime: { lastError: undefined },
-    storage: {
-      sync: {
-        get: (
-          keys: string | string[] | null,
-          callback?: (result: Record<string, unknown>) => void,
-        ) => {
-          const selected =
-            keys === null
-              ? sync
-              : Object.fromEntries(
-                  (Array.isArray(keys) ? keys : [keys])
-                    .filter((key) => key in sync)
-                    .map((key) => [key, sync[key]]),
-                );
-          if (callback) callback(selected);
-          return Promise.resolve(selected);
-        },
-        set: (data: Record<string, unknown>, callback?: () => void) => {
-          Object.assign(sync, data);
-          if (callback) callback();
-          return Promise.resolve();
-        },
-      },
-    },
   });
 });
 
@@ -240,66 +180,6 @@ describe("local image file detection", () => {
 });
 
 describe("directory handle storage", () => {
-  it.each([1, 2, 3])(
-    "adds folders without losing existing records from database version %i",
-    async (version) => {
-      const handle = createMockDirHandle("Saved", { "old.jpg": "old" });
-      const saved = {
-        id: "saved-folder",
-        folderName: "Saved",
-        handle,
-        imagePaths: ["old.jpg"],
-        photoCount: 1,
-        lastScannedAt: 100,
-        updatedAt: 100,
-      };
-      currentDbVersion = version;
-      dbStores.set(
-        version === 1 ? "folders" : "handles",
-        new Map([[saved.id, saved]]),
-      );
-
-      await addDirectoryHandle(
-        createMockDirHandle("New", { "new.jpg": "new" }),
-      );
-
-      const records = await listStoredFolderRecords();
-      expect(records).toHaveLength(2);
-      expect(records).toContainEqual(saved);
-      expect(records.some((record) => record.folderName === "New")).toBe(true);
-    },
-  );
-
-  it("preserves a version 2 single-folder handle for rescanning", async () => {
-    const handle = createMockDirHandle("Legacy", { "old.jpg": "old" });
-    currentDbVersion = 2;
-    dbStores.set(
-      "handles",
-      new Map([
-        [
-          "handle",
-          {
-            key: "handle",
-            folderName: "Legacy",
-            handle,
-            updatedAt: 100,
-          },
-        ],
-      ]),
-    );
-
-    const records = await listStoredFolderRecords();
-    expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({
-      folderName: "Legacy",
-      handle,
-      imagePaths: [],
-    });
-
-    const rescanned = await rescanAllFolders();
-    expect(rescanned[0]?.imagePaths).toEqual(["old.jpg"]);
-  });
-
   it("saves directory handle and reads image metadata directly", async () => {
     const handle = createMockDirHandle("Wallpapers", {
       "nature.jpg": "data1",
@@ -454,19 +334,6 @@ describe("directory handle storage", () => {
   });
 });
 
-describe("local source settings", () => {
-  it("defaults settings and allows updates", async () => {
-    expect(await getLocalSettings()).toEqual(DEFAULT_LOCAL_SETTINGS);
-
-    await setLocalSettings({ folderName: "My Photos" });
-
-    expect(await getLocalSettings()).toEqual({
-      version: 1,
-      folderName: "My Photos",
-    });
-  });
-});
-
 describe("local source image rotation and retrieval", () => {
   it("retrieves a random asset directly from folder and downloads it", async () => {
     const handle = createMockDirHandle("Space", {
@@ -478,14 +345,35 @@ describe("local source image rotation and retrieval", () => {
     expect(asset).toMatchObject({
       sourceId: "local",
       description: "stars.jpg",
-      width: 0,
-      height: 0,
+      width: 1920,
+      height: 1080,
       payloadVersion: 1,
     });
 
     const response = await localSource.downloadAsset(asset);
     expect(response.headers.get("content-type")).toBe("image/jpeg");
     expect(await response.text()).toBe("image-bytes");
+  });
+
+  it("falls back to zero dimensions when createImageBitmap fails", async () => {
+    vi.stubGlobal(
+      "createImageBitmap",
+      vi.fn().mockRejectedValue(new Error("Decoding failed")),
+    );
+
+    const handle = createMockDirHandle("Space", {
+      "broken.jpg": "bad-bytes",
+    });
+    await addDirectoryHandle(handle);
+
+    const asset = await localSource.getRandomAsset();
+    expect(asset).toMatchObject({
+      sourceId: "local",
+      description: "broken.jpg",
+      width: 0,
+      height: 0,
+      payloadVersion: 1,
+    });
   });
 
   it("computes distinct deterministic asset IDs across folders with identical file names", async () => {

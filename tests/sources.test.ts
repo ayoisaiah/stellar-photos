@@ -14,6 +14,9 @@ afterEach(() => {
 
 beforeEach(() => {
   selectedSources = undefined;
+  vi.stubGlobal("window", {
+    showDirectoryPicker: vi.fn(),
+  });
   vi.stubGlobal("chrome", {
     runtime: { lastError: undefined },
     storage: {
@@ -109,11 +112,8 @@ describe("image source registry", () => {
     },
   );
 
-  it("disables the local folder source in Firefox", async () => {
-    vi.stubGlobal("navigator", {
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
-    });
+  it("disables the local folder source when showDirectoryPicker is unsupported", () => {
+    vi.stubGlobal("window", {});
 
     const sources = listImageSources();
     expect(sources.some((s) => s.id === "local")).toBe(false);
@@ -122,11 +122,28 @@ describe("image source registry", () => {
       "earthview",
       "smithsonian",
     ]);
-    expect(getImageSource("local")).toBeNull();
+  });
+
+  it("enables the local folder source when showDirectoryPicker is supported", () => {
+    vi.stubGlobal("window", {
+      showDirectoryPicker: vi.fn(),
+    });
+
+    const sources = listImageSources();
+    expect(sources.some((s) => s.id === "local")).toBe(true);
+    expect(getImageSource("local")).not.toBeNull();
+  });
+
+  it("preserves local source lookup and active selection in workers without window", async () => {
+    vi.stubGlobal("window", undefined);
+
+    expect(getImageSource("local")).toEqual(
+      expect.objectContaining({ id: "local" }),
+    );
 
     selectedSources = ["local"];
     expect(await getActiveImageSources()).toEqual([
-      expect.objectContaining({ id: "unsplash" }),
+      expect.objectContaining({ id: "local" }),
     ]);
   });
 });

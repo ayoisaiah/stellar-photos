@@ -9,7 +9,6 @@ import {
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../sources/local-db";
-import { setLocalSettings } from "../sources/local-settings";
 import { scheduleSavedReset, statusMessage } from "./settings-form";
 import "./lucide-icon";
 
@@ -217,11 +216,7 @@ class LocalSettingsComponent extends LitElement {
       this.saveState = "saving";
 
       await addDirectoryHandle(dirHandle);
-      const updatedFolders = await listStoredFolderRecords();
-      const folderNames = updatedFolders.map((f) => f.folderName).join(", ");
-      await setLocalSettings({ folderName: folderNames });
-
-      this.folders = updatedFolders;
+      this.folders = await listStoredFolderRecords();
       this.saveState = "saved";
 
       window.clearTimeout(this.saveResetTimeout);
@@ -247,11 +242,7 @@ class LocalSettingsComponent extends LitElement {
 
     try {
       await removeDirectoryHandle(id);
-      const updatedFolders = await listStoredFolderRecords();
-      const folderNames = updatedFolders.map((f) => f.folderName).join(", ");
-      await setLocalSettings({ folderName: folderNames });
-
-      this.folders = updatedFolders;
+      this.folders = await listStoredFolderRecords();
     } catch (err: unknown) {
       this.errorMessage =
         (err as Error).message || "Failed to remove the folder";

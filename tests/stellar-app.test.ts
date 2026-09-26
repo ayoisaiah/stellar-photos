@@ -326,3 +326,32 @@ describe("source down banner and settings warning indicator", () => {
     expect(renderedString).toContain("has-warning");
   });
 });
+
+describe("photo display mode orientation", () => {
+  it("applies portraitMode to portrait images and landscapeMode to landscape images", () => {
+    const app = new StellarApp();
+    // @ts-expect-error accessing private property
+    app.displaySettings = {
+      version: 1,
+      landscapeMode: "cover",
+      portraitMode: "contain-blur",
+      motion: false,
+    };
+
+    const portraitAsset: BackgroundAsset = {
+      ...sampleAssetA,
+      width: 1080,
+      height: 1920,
+    };
+    const landscapeAsset: BackgroundAsset = {
+      ...sampleAssetA,
+      width: 1920,
+      height: 1080,
+    };
+
+    // @ts-expect-error accessing private method
+    expect(app.getEffectiveDisplayMode(portraitAsset)).toBe("contain-blur");
+    // @ts-expect-error accessing private method
+    expect(app.getEffectiveDisplayMode(landscapeAsset)).toBe("cover");
+  });
+});
