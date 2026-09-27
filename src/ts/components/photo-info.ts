@@ -1,16 +1,12 @@
 import { Camera, Globe, MapPin, X } from "@lucide/icons";
 import { html, LitElement, type TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-
 import styles from "../../css/components/photo-info.css?inline";
 import type { BackgroundAsset } from "../assets";
+import { attributionUrl } from "../attribution";
+import { getImageSource } from "../sources";
+import type { EarthViewDetailsData } from "../sources/earthview";
 import {
-  type EarthViewDetailsData,
-  fetchEarthViewDetails,
-} from "../sources/earthview";
-import {
-  attributionUrl,
-  fetchUnsplashPhotoDetails,
   getUnsplashPhotoInfo,
   type UnsplashInfoData,
 } from "../sources/unsplash";
@@ -32,21 +28,31 @@ interface PhotographerCardParams {
 }
 
 function formatCoordinates(lat?: number, lng?: number): string {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "—";
+  if (
+    typeof lat !== "number" ||
+    typeof lng !== "number" ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return "—";
+  }
 
-  return `${Math.abs(lat!).toFixed(4)}° ${lat! >= 0 ? "N" : "S"}, ${Math.abs(lng!).toFixed(4)}° ${lng! >= 0 ? "E" : "W"}`;
+  const latDir = lat >= 0 ? "N" : "S";
+  const lngDir = lng >= 0 ? "E" : "W";
+
+  return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
 }
 
 function formatElevation(meters?: number): string {
-  return Number.isFinite(meters)
-    ? `${Math.round(meters!).toLocaleString()} m`
-    : "—";
+  if (typeof meters !== "number" || !Number.isFinite(meters)) return "—";
+
+  return `${Math.round(meters).toLocaleString()} m`;
 }
 
 function formatDimensions(width?: number, height?: number): string {
-  return width && height && width > 0 && height > 0
-    ? `${width} × ${height}`
-    : "—";
+  if (!width || !height || width <= 0 || height <= 0) return "—";
+
+  return `${width} × ${height}`;
 }
 
 function renderPhotographerCard(
@@ -137,10 +143,7 @@ class PhotoInfo extends LitElement {
   accessor asset: BackgroundAsset | null = null;
 
   @state()
-  private accessor fetchedUnsplashInfo: UnsplashInfoData | null = null;
-
-  @state()
-  private accessor fetchedEarthViewInfo: EarthViewDetailsData | null = null;
+  private accessor fetchedDetails: unknown = null;
 
   @state()
   private accessor loadingDetails = false;
@@ -152,22 +155,19 @@ class PhotoInfo extends LitElement {
     this.detailsGeneration += 1;
 
     if (this.open) {
-      window.addEventListener("keydown", this.handleKeyDown);
       void this.loadDetailsIfNeeded();
     }
   }
 
   override disconnectedCallback(): void {
     this.detailsGeneration += 1;
-    window.removeEventListener("keydown", this.handleKeyDown);
     super.disconnectedCallback();
   }
 
   override updated(changedProperties: Map<string, unknown>): void {
     if (changedProperties.has("asset")) {
       this.detailsGeneration += 1;
-      this.fetchedUnsplashInfo = null;
-      this.fetchedEarthViewInfo = null;
+      this.fetchedDetails = null;
 
       if (this.open) {
         void this.loadDetailsIfNeeded();
@@ -175,7 +175,6 @@ class PhotoInfo extends LitElement {
     }
 
     if (changedProperties.has("open") && this.open) {
-      window.addEventListener("keydown", this.handleKeyDown);
       void this.loadDetailsIfNeeded();
 
       void this.updateComplete.then(() => {
@@ -183,14 +182,13 @@ class PhotoInfo extends LitElement {
           .querySelector<HTMLButtonElement>(".close-button")
           ?.focus();
       });
-    } else if (changedProperties.has("open")) {
-      window.removeEventListener("keydown", this.handleKeyDown);
     }
   }
 
   override render() {
     if (!this.asset) return null;
 
+    const source = getImageSource(this.asset.sourceId);
     const isEarthView = this.asset.sourceId === "earthview";
 
     return html`
@@ -208,7 +206,7 @@ class PhotoInfo extends LitElement {
       >
         <header>
           <h2 id="info-title">
-            ${isEarthView ? "About this view" : "About this photo"}
+            ${source?.infoTitle ?? "About this photo"}
           </h2>
           <button
             class="close-button"
@@ -222,8 +220,14 @@ class PhotoInfo extends LitElement {
 
         ${
           isEarthView
-            ? this.renderEarthView(this.asset)
-            : this.renderPhoto(this.asset)
+            ? this.renderEarthView(
+                this.asset,
+                this.fetchedDetails as EarthViewDetailsData | null,
+              )
+            : this.renderPhoto(
+                this.asset,
+                this.fetchedDetails as UnsplashInfoData | null,
+              )
         }
 
         ${
@@ -237,8 +241,10 @@ class PhotoInfo extends LitElement {
     `;
   }
 
-  private renderEarthView(asset: BackgroundAsset) {
-    const details = this.fetchedEarthViewInfo;
+  private renderEarthView(
+    asset: BackgroundAsset,
+    details: EarthViewDetailsData | null,
+  ) {
     const geocode = details?.geocode;
     const landmark = geocode?.establishment || geocode?.route || null;
     const localityParts = [
@@ -294,10 +300,13 @@ class PhotoInfo extends LitElement {
     `;
   }
 
-  private renderPhoto(asset: BackgroundAsset) {
+  private renderPhoto(
+    asset: BackgroundAsset,
+    details: UnsplashInfoData | null,
+  ) {
     const info =
       asset.sourceId === "unsplash"
-        ? (this.fetchedUnsplashInfo ?? getUnsplashPhotoInfo(asset))
+        ? (details ?? getUnsplashPhotoInfo(asset))
         : null;
     const attribution = asset.attribution;
     const photographerName = info?.user?.name ?? attribution?.name ?? "Unknown";
@@ -371,41 +380,28 @@ class PhotoInfo extends LitElement {
 
     const currentAsset = this.asset;
     const generation = this.detailsGeneration;
+    const source = getImageSource(currentAsset.sourceId);
+    if (!source?.fetchDetails) return;
 
     if (currentAsset.sourceId === "unsplash") {
-      if (
-        this.fetchedUnsplashInfo ||
-        getUnsplashPhotoInfo(currentAsset)?.exif
-      ) {
+      if (this.fetchedDetails || getUnsplashPhotoInfo(currentAsset)?.exif) {
         return;
       }
-
-      await this.fetchDetails(generation, async () => {
-        const details = await fetchUnsplashPhotoDetails(currentAsset);
-        if (
-          details &&
-          this.isConnected &&
-          this.detailsGeneration === generation &&
-          this.asset === currentAsset
-        ) {
-          this.fetchedUnsplashInfo = details;
-        }
-      });
-    } else if (currentAsset.sourceId === "earthview") {
-      if (this.fetchedEarthViewInfo) return;
-
-      await this.fetchDetails(generation, async () => {
-        const details = await fetchEarthViewDetails(currentAsset);
-        if (
-          details &&
-          this.isConnected &&
-          this.detailsGeneration === generation &&
-          this.asset === currentAsset
-        ) {
-          this.fetchedEarthViewInfo = details;
-        }
-      });
+    } else if (this.fetchedDetails) {
+      return;
     }
+
+    await this.fetchDetails(generation, async () => {
+      const details = await source.fetchDetails!(currentAsset);
+      if (
+        details &&
+        this.isConnected &&
+        this.detailsGeneration === generation &&
+        this.asset === currentAsset
+      ) {
+        this.fetchedDetails = details;
+      }
+    });
   }
 
   private async fetchDetails(
@@ -425,12 +421,6 @@ class PhotoInfo extends LitElement {
 
   private close = (): void => {
     this.dispatchEvent(new CustomEvent("close-info"));
-  };
-
-  private handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === "Escape" && this.open) {
-      this.close();
-    }
   };
 }
 

@@ -17,15 +17,11 @@ class KeyboardShortcutsController implements ReactiveController {
   }
 
   hostConnected(): void {
-    if (typeof window !== "undefined") {
-      window.addEventListener("keydown", this.handleKeyDown);
-    }
+    window.addEventListener("keydown", this.handleKeyDown);
   }
 
   hostDisconnected(): void {
-    if (typeof window !== "undefined") {
-      window.removeEventListener("keydown", this.handleKeyDown);
-    }
+    window.removeEventListener("keydown", this.handleKeyDown);
   }
 
   private handleKeyDown = (event: KeyboardEvent): void => {

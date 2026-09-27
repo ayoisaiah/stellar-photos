@@ -84,7 +84,6 @@ describe("UnsplashSettings component access key validation", () => {
     });
     // @ts-expect-error accessing private property for testing
     expect(el.accessKeyError).toBe("");
-    // @ts-expect-error accessing private property for testing
     expect(el.saveState).toBe("saved");
   });
 
@@ -113,7 +112,6 @@ describe("UnsplashSettings component access key validation", () => {
     expect(localStore[UNSPLASH_SETTINGS_KEY]).toBeUndefined();
     // @ts-expect-error accessing private property for testing
     expect(el.accessKeyError).toBe("Invalid Unsplash access key.");
-    // @ts-expect-error accessing private property for testing
     expect(el.saveState).toBe("idle");
   });
 
@@ -148,7 +146,6 @@ describe("UnsplashSettings component access key validation", () => {
     });
     // @ts-expect-error accessing private property for testing
     expect(el.accessKeyError).toBe("");
-    // @ts-expect-error accessing private property for testing
     expect(el.saveState).toBe("saved");
   });
 
@@ -189,7 +186,6 @@ describe("UnsplashSettings component access key validation", () => {
 
     // @ts-expect-error setting private properties for testing
     el.accessKeyError = "Invalid Unsplash access key.";
-    // @ts-expect-error setting private properties for testing
     el.saveState = "error";
 
     const input = { value: "new-input" } as HTMLInputElement;
@@ -203,7 +199,6 @@ describe("UnsplashSettings component access key validation", () => {
 
     // @ts-expect-error accessing private property for testing
     expect(el.accessKeyError).toBe("");
-    // @ts-expect-error accessing private property for testing
     expect(el.saveState).toBe("idle");
     // @ts-expect-error accessing private property for testing
     expect(el.customAccessKey).toBe("new-input");

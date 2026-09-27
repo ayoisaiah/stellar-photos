@@ -1,13 +1,21 @@
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+import {
+  type BackgroundAsset,
+  makeAsset,
+  type UncachedBackgroundAsset,
+} from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import type { ImageSource } from "../sources";
+import { oneOf, serialized } from "../store";
 
-type SmithsonianCategory =
-  | "all"
-  | "art_design"
-  | "history_culture"
-  | "science_technology";
+const SMITHSONIAN_CATEGORIES = [
+  "art_design",
+  "history_culture",
+  "science_technology",
+  "all",
+] as const;
+
+type SmithsonianCategory = (typeof SMITHSONIAN_CATEGORIES)[number];
 
 interface SmithsonianResource {
   height?: number | string;
@@ -52,7 +60,11 @@ const OPEN_ACCESS_URL = "https://www.si.edu/openaccess";
 const smithsonianSource: ImageSource = {
   id: "smithsonian",
   name: "Smithsonian Open Access",
-  supportsDownload: true,
+  description: "High-resolution open access museum collections",
+  settingsTag: "stellar-smithsonian-settings",
+  get supportsDownload() {
+    return Boolean(this.getDownloadUrl);
+  },
   getCredit(asset) {
     if (!asset.attribution) return null;
 
@@ -72,14 +84,7 @@ function dimension(value: number | string | undefined, fallback = 0): number {
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
-function isSmithsonianCategory(value: unknown): value is SmithsonianCategory {
-  return (
-    value === "all" ||
-    value === "art_design" ||
-    value === "history_culture" ||
-    value === "science_technology"
-  );
-}
+const isSmithsonianCategory = oneOf(SMITHSONIAN_CATEGORIES);
 
 async function getSmithsonianCategory(): Promise<SmithsonianCategory> {
   const values = await chrome.storage.sync.get(SMITHSONIAN_CATEGORY_KEY);
@@ -91,7 +96,9 @@ async function getSmithsonianCategory(): Promise<SmithsonianCategory> {
 async function setSmithsonianCategory(
   category: SmithsonianCategory,
 ): Promise<void> {
-  await chrome.storage.sync.set({ [SMITHSONIAN_CATEGORY_KEY]: category });
+  await serialized(SMITHSONIAN_CATEGORY_KEY, () =>
+    chrome.storage.sync.set({ [SMITHSONIAN_CATEGORY_KEY]: category }),
+  );
 }
 
 function recordUrl(value: string | undefined): string {
@@ -156,22 +163,19 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
       (item) => dimension(item.width) > 0 && dimension(item.height) > 0,
     );
 
-    return {
+    return makeAsset({
       sourceId: smithsonianSource.id,
       sourceAssetId: row.id,
       width: dimension(resource?.width ?? media.width, DEFAULT_WIDTH),
       height: dimension(resource?.height ?? media.height, DEFAULT_HEIGHT),
-      color: null,
       description: row.title ?? null,
       attribution: {
         name: "Smithsonian Open Access",
         url: OPEN_ACCESS_URL,
         sourceUrl,
       },
-      payloadVersion: 1,
       sourcePayload: { imageUrl } satisfies SmithsonianPayload,
-      createdAt: Date.now(),
-    };
+    });
   }
 
   throw new Error("Smithsonian returned no usable images");
@@ -200,4 +204,9 @@ async function downloadSmithsonianAsset(
 }
 
 export type { SmithsonianCategory };
-export { getSmithsonianCategory, setSmithsonianCategory, smithsonianSource };
+export {
+  getSmithsonianCategory,
+  SMITHSONIAN_CATEGORIES,
+  setSmithsonianCategory,
+  smithsonianSource,
+};

@@ -1,5 +1,9 @@
 import { MapPin } from "@lucide/icons";
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
+import {
+  type BackgroundAsset,
+  makeAsset,
+  type UncachedBackgroundAsset,
+} from "../assets";
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import type { ImageSource } from "../sources";
@@ -27,10 +31,6 @@ interface EarthViewDetailsData {
 
 interface EarthViewPayload {
   id: number;
-  country?: string;
-  region?: string;
-  mapUrl?: string;
-  imageUrl: string;
 }
 
 const EARTH_VIEW_PHOTO_IDS: readonly number[] = [
@@ -156,7 +156,11 @@ const EARTH_VIEW_PHOTO_IDS: readonly number[] = [
 const earthviewSource: ImageSource = {
   id: "earthview",
   name: "Google Earth View",
-  supportsDownload: true,
+  description: "Satellite imagery from around the world",
+  infoTitle: "About this view",
+  get supportsDownload() {
+    return Boolean(this.getDownloadUrl);
+  },
   supportsInfo: true,
   getCredit(asset) {
     if (!asset.attribution) return null;
@@ -170,6 +174,7 @@ const earthviewSource: ImageSource = {
   getRandomAsset: getRandomEarthViewAsset,
   downloadAsset: downloadEarthViewAsset,
   getDownloadUrl: (asset) => buildEarthViewImageUrl(asset.sourceAssetId),
+  fetchDetails: fetchEarthViewDetails,
 };
 
 function getEarthViewPhotoIds(): readonly number[] {
@@ -184,25 +189,19 @@ async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
   const randomIndex = Math.floor(Math.random() * EARTH_VIEW_PHOTO_IDS.length);
   const id = EARTH_VIEW_PHOTO_IDS[randomIndex]!;
 
-  return {
+  return makeAsset({
     sourceId: earthviewSource.id,
     sourceAssetId: String(id),
     width: 1800,
     height: 1200,
-    color: null,
     description: "Earth",
     attribution: {
       name: "Google Earth View",
       url: "https://earth.google.com/",
       sourceUrl: "https://earth.google.com/",
     },
-    payloadVersion: 1,
-    sourcePayload: {
-      id,
-      imageUrl: buildEarthViewImageUrl(id),
-    } satisfies EarthViewPayload,
-    createdAt: Date.now(),
-  };
+    sourcePayload: { id } satisfies EarthViewPayload,
+  });
 }
 
 async function downloadEarthViewAsset(

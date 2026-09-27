@@ -1,14 +1,13 @@
-// biome-ignore assist/source/organizeImports: Side-effect and type imports are grouped separately per AGENTS.md.
 import { html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/settings-form.css?inline";
+import type { SmithsonianCategory } from "../sources/smithsonian";
 import {
   getSmithsonianCategory,
   setSmithsonianCategory,
 } from "../sources/smithsonian";
-
-import type { SmithsonianCategory } from "../sources/smithsonian";
+import { renderRadioGroup } from "./settings-form";
 
 const CATEGORIES: readonly {
   value: SmithsonianCategory;
@@ -60,27 +59,13 @@ class SmithsonianSettings extends LitElement {
       <fieldset>
         <legend>Smithsonian category</legend>
         <p class="hint">Choose which part of the collection to explore.</p>
-        <div class="options">
-          ${CATEGORIES.map(
-            (category) => html`
-              <label>
-                <input
-                  type="radio"
-                  name="smithsonian-category"
-                  value=${category.value}
-                  .checked=${this.category === category.value}
-                  ?disabled=${!this.loaded}
-                  @change=${this.changeCategory}
-                />
-                <span class="control" aria-hidden="true"></span>
-                <span>
-                  <strong>${category.label}</strong>
-                  <small>${category.description}</small>
-                </span>
-              </label>
-            `,
-          )}
-        </div>
+        ${renderRadioGroup(
+          "smithsonian-category",
+          CATEGORIES,
+          this.category,
+          (cat) => void this.selectCategory(cat),
+          !this.loaded,
+        )}
       </fieldset>
 
       <p class="status" aria-live="polite">
@@ -99,11 +84,10 @@ class SmithsonianSettings extends LitElement {
     }
   }
 
-  private changeCategory = async (event: Event): Promise<void> => {
-    const value = (event.currentTarget as HTMLInputElement).value;
-    const category = CATEGORIES.find((item) => item.value === value)?.value;
-
-    if (!category || category === this.category) return;
+  private selectCategory = async (
+    category: SmithsonianCategory,
+  ): Promise<void> => {
+    if (category === this.category) return;
 
     const previous = this.category;
     this.category = category;

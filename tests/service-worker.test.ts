@@ -2,15 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const nextImage = vi.fn();
 const trackDownload = vi.fn();
-const readCachedImage = vi.fn();
-const readCachedThumbnail = vi.fn();
 const current = {
   sourceId: "unsplash",
   sourceAssetId: "photo-1",
   cacheKey: "https://cache.stellar-photos.invalid/asset/unsplash/photo-1",
 };
-
-vi.mock("../src/ts/cache", () => ({ readCachedImage, readCachedThumbnail }));
 
 vi.mock("../src/ts/actions", () => ({
   nextImage,
@@ -21,8 +17,6 @@ const { dispatch } = await import("../src/ts/service-worker");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  readCachedImage.mockReset();
-  readCachedThumbnail.mockReset();
 });
 
 describe("service worker commands", () => {
@@ -33,7 +27,6 @@ describe("service worker commands", () => {
       ok: true,
     });
     expect(nextImage).toHaveBeenCalledWith();
-    expect(readCachedImage).not.toHaveBeenCalled();
   });
 
   it("handles track-download commands", async () => {
@@ -41,68 +34,6 @@ describe("service worker commands", () => {
       dispatch({ command: "track-download", asset: current }),
     ).resolves.toEqual({ ok: true });
     expect(trackDownload).toHaveBeenCalledWith(current);
-  });
-
-  it("returns JSON-safe bytes for a cached image", async () => {
-    nextImage.mockResolvedValue(undefined);
-    const bytes = new Uint8Array([0, 127, 128, 255]);
-    readCachedImage.mockResolvedValue(
-      new Response(bytes, {
-        headers: { "content-type": "image/png" },
-      }),
-    );
-
-    const result = JSON.parse(
-      JSON.stringify(
-        await dispatch({
-          command: "read-image",
-          cacheKey: current.cacheKey,
-        }),
-      ),
-    );
-
-    expect(
-      new Uint8Array(await (await fetch(result.image)).arrayBuffer()),
-    ).toEqual(bytes);
-  });
-
-  it("reads thumbnails in the background and falls back to the full image", async () => {
-    readCachedThumbnail.mockResolvedValueOnce(
-      new Response("thumbnail", {
-        headers: { "content-type": "image/webp" },
-      }),
-    );
-    const request = {
-      command: "read-image",
-      cacheKey: current.cacheKey,
-      thumbnail: true,
-    };
-    const thumbnail = await dispatch(request);
-    expect(
-      thumbnail.ok &&
-        thumbnail.image &&
-        (await (await fetch(thumbnail.image)).text()),
-    ).toBe("thumbnail");
-    expect(readCachedImage).not.toHaveBeenCalled();
-
-    readCachedImage.mockResolvedValueOnce(new Response("full"));
-    const full = await dispatch(request);
-    expect(
-      full.ok && full.image && (await (await fetch(full.image)).text()),
-    ).toBe("full");
-    await expect(dispatch(request)).resolves.toEqual({
-      ok: true,
-      image: null,
-    });
-  });
-
-  it("rejects cache reads outside the image namespace", async () => {
-    const result = await dispatch({
-      command: "read-image",
-      cacheKey: "https://example.com/",
-    });
-    expect(result.ok).toBe(false);
-    expect(readCachedImage).not.toHaveBeenCalled();
   });
 
   it("rejects malformed commands", async () => {

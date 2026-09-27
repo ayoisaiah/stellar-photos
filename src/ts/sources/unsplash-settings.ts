@@ -1,8 +1,10 @@
-type ImageResolution = "standard" | "high" | "max";
+import { defineStore, oneOf } from "../store";
 
-type PhotoOrientation = "landscape" | "portrait" | "squarish";
+type ImageResolution = (typeof RESOLUTIONS)[number]["value"];
 
-type ContentFilter = "low" | "high";
+type PhotoOrientation = Exclude<(typeof ORIENTATIONS)[number]["value"], "">;
+
+type ContentFilter = (typeof CONTENT_FILTERS)[number]["value"];
 
 interface UnsplashSettings {
   version: 1;
@@ -22,8 +24,39 @@ interface UnsplashLocalSettings {
 
 declare const __UNSPLASH_ACCESS_KEY__: string;
 
+const RESOLUTIONS = [
+  {
+    value: "standard",
+    label: "Standard",
+    description: "Up to 2000px · faster and lighter",
+  },
+  {
+    value: "high",
+    label: "High",
+    description: "Up to 4000px · sharper on large displays",
+  },
+  {
+    value: "max",
+    label: "Original",
+    description: "Full size · uses the most bandwidth",
+  },
+] as const;
+
+const ORIENTATIONS = [
+  { value: "", label: "Any orientation" },
+  { value: "landscape", label: "Landscape" },
+  { value: "portrait", label: "Portrait" },
+  { value: "squarish", label: "Square" },
+] as const;
+
+const CONTENT_FILTERS = [
+  { value: "low", label: "Standard (low)" },
+  { value: "high", label: "Stricter filtering (high)" },
+] as const;
+
 const STELLAR_COLLECTION = "998309";
 const UNSPLASH_SETTINGS_KEY = "sourceSettings:unsplash";
+
 const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = {
   version: 1,
   imageQuality: "standard",
@@ -35,43 +68,58 @@ const DEFAULT_UNSPLASH_SETTINGS: Readonly<UnsplashSettings> = {
   contentFilter: "low",
 };
 
-async function getUnsplashSettings(): Promise<UnsplashSettings> {
-  const values = await chrome.storage.sync.get(UNSPLASH_SETTINGS_KEY);
-  const settings = parseUnsplashSettings(values[UNSPLASH_SETTINGS_KEY]);
+const DEFAULT_UNSPLASH_LOCAL_SETTINGS: Readonly<UnsplashLocalSettings> = {
+  version: 1,
+  accessKeyOverride: "",
+};
 
-  return settings ?? DEFAULT_UNSPLASH_SETTINGS;
-}
+const unsplashSyncStore = defineStore(
+  "sync",
+  UNSPLASH_SETTINGS_KEY,
+  DEFAULT_UNSPLASH_SETTINGS,
+  {
+    version: (v): v is 1 => v === 1,
+    imageQuality: oneOf(RESOLUTIONS.map((option) => option.value)),
+    collections: (v): v is string => typeof v === "string",
+    topics: (v): v is string => typeof v === "string",
+    username: (v): v is string => typeof v === "string",
+    query: (v): v is string => typeof v === "string",
+    orientation: oneOf(ORIENTATIONS.map((option) => option.value)),
+    contentFilter: oneOf(CONTENT_FILTERS.map((option) => option.value)),
+  },
+  "Unsplash settings",
+);
 
-async function setUnsplashSettings(
-  partial: Partial<Omit<UnsplashSettings, "version">>,
-): Promise<void> {
-  const current = await getUnsplashSettings();
+const unsplashLocalStore = defineStore(
+  "local",
+  UNSPLASH_SETTINGS_KEY,
+  DEFAULT_UNSPLASH_LOCAL_SETTINGS,
+  {
+    version: (v): v is 1 => v === 1,
+    accessKeyOverride: (v): v is string => typeof v === "string",
+  },
+  "local Unsplash settings",
+);
 
-  await chrome.storage.sync.set({
-    [UNSPLASH_SETTINGS_KEY]: {
-      ...current,
-      ...partial,
-      version: 1,
-    } satisfies UnsplashSettings,
-  });
-}
+const getUnsplashSettings = unsplashSyncStore.get;
+const setUnsplashSettings = unsplashSyncStore.set;
+const parseUnsplashSettings = unsplashSyncStore.parse;
 
 async function getUnsplashAccessKey(): Promise<string> {
-  const values = await chrome.storage.local.get(UNSPLASH_SETTINGS_KEY);
-  const settings = parseUnsplashLocalSettings(values[UNSPLASH_SETTINGS_KEY]);
+  const settings = await unsplashLocalStore.get();
 
-  return settings?.accessKeyOverride ?? "";
+  return settings.accessKeyOverride;
 }
 
 async function setUnsplashAccessKey(accessKey: string): Promise<void> {
-  const trimmed = accessKey.trim();
+  await unsplashLocalStore.set({ accessKeyOverride: accessKey.trim() });
+}
 
-  await chrome.storage.local.set({
-    [UNSPLASH_SETTINGS_KEY]: {
-      version: 1,
-      accessKeyOverride: trimmed,
-    } satisfies UnsplashLocalSettings,
-  });
+class MissingKeyError extends Error {
+  constructor(message = "No Unsplash access key is configured") {
+    super(message);
+    this.name = "MissingKeyError";
+  }
 }
 
 async function resolveAccessKey(): Promise<string> {
@@ -80,92 +128,7 @@ async function resolveAccessKey(): Promise<string> {
   if (override.trim()) return override.trim();
   if (__UNSPLASH_ACCESS_KEY__.trim()) return __UNSPLASH_ACCESS_KEY__.trim();
 
-  throw new Error("No Unsplash access key is configured");
-}
-
-function parseUnsplashSettings(value: unknown): UnsplashSettings | null {
-  if (!value || typeof value !== "object") return null;
-
-  const settings = value as Partial<UnsplashSettings>;
-
-  if (typeof settings.version === "number" && settings.version > 1) {
-    throw new Error(
-      `Unsupported Unsplash settings version: ${settings.version}`,
-    );
-  }
-
-  if (settings.version !== 1 || !isImageResolution(settings.imageQuality))
-    return null;
-
-  const collections =
-    typeof settings.collections === "string"
-      ? settings.collections
-      : DEFAULT_UNSPLASH_SETTINGS.collections;
-  const topics =
-    typeof settings.topics === "string"
-      ? settings.topics
-      : DEFAULT_UNSPLASH_SETTINGS.topics;
-  const username =
-    typeof settings.username === "string"
-      ? settings.username
-      : DEFAULT_UNSPLASH_SETTINGS.username;
-  const query =
-    typeof settings.query === "string"
-      ? settings.query
-      : DEFAULT_UNSPLASH_SETTINGS.query;
-  const orientation = isPhotoOrientation(settings.orientation)
-    ? settings.orientation
-    : DEFAULT_UNSPLASH_SETTINGS.orientation;
-  const contentFilter = isContentFilter(settings.contentFilter)
-    ? settings.contentFilter
-    : DEFAULT_UNSPLASH_SETTINGS.contentFilter;
-
-  return {
-    version: 1,
-    imageQuality: settings.imageQuality,
-    collections,
-    topics,
-    username,
-    query,
-    orientation,
-    contentFilter,
-  };
-}
-
-function parseUnsplashLocalSettings(
-  value: unknown,
-): UnsplashLocalSettings | null {
-  if (!value || typeof value !== "object") return null;
-
-  const settings = value as Partial<UnsplashLocalSettings>;
-
-  if (typeof settings.version === "number" && settings.version > 1) {
-    throw new Error(
-      `Unsupported local Unsplash settings version: ${settings.version}`,
-    );
-  }
-
-  if (settings.version !== 1 || typeof settings.accessKeyOverride !== "string")
-    return null;
-
-  return settings as UnsplashLocalSettings;
-}
-
-function isImageResolution(value: unknown): value is ImageResolution {
-  return value === "standard" || value === "high" || value === "max";
-}
-
-function isPhotoOrientation(value: unknown): value is PhotoOrientation | "" {
-  return (
-    value === "" ||
-    value === "landscape" ||
-    value === "portrait" ||
-    value === "squarish"
-  );
-}
-
-function isContentFilter(value: unknown): value is ContentFilter {
-  return value === "low" || value === "high";
+  throw new MissingKeyError();
 }
 
 export type {
@@ -175,9 +138,14 @@ export type {
   UnsplashSettings,
 };
 export {
+  CONTENT_FILTERS,
   DEFAULT_UNSPLASH_SETTINGS,
   getUnsplashAccessKey,
   getUnsplashSettings,
+  MissingKeyError,
+  ORIENTATIONS,
+  parseUnsplashSettings,
+  RESOLUTIONS,
   resolveAccessKey,
   STELLAR_COLLECTION,
   setUnsplashAccessKey,

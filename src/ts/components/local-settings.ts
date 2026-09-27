@@ -9,11 +9,10 @@ import {
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../sources/local-db";
-import { scheduleSavedReset, statusMessage } from "./settings-form";
+import { SaveStatusController } from "./settings-form";
 import "./lucide-icon";
 
 import type { LocalFolderRecord } from "../sources/local-db";
-import type { SaveState } from "./settings-form";
 
 interface DirectoryPickerWindow {
   showDirectoryPicker?: (options?: {
@@ -26,7 +25,7 @@ interface DirectoryPickerWindow {
 class LocalSettingsComponent extends LitElement {
   static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
-  private saveResetTimeout: number | undefined;
+  private saveStatus = new SaveStatusController(this);
 
   @state()
   private accessor loading = true;
@@ -40,22 +39,14 @@ class LocalSettingsComponent extends LitElement {
   @state()
   private accessor errorMessage = "";
 
-  @state()
-  private accessor saveState: SaveState = "idle";
-
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
   }
 
-  override disconnectedCallback(): void {
-    window.clearTimeout(this.saveResetTimeout);
-    super.disconnectedCallback();
-  }
-
   override render() {
     const totalPhotos = this.folders.reduce(
-      (sum, f) => sum + (f.photoCount || 0),
+      (sum, f) => sum + (f.imagePaths?.length || 0),
       0,
     );
 
@@ -80,7 +71,7 @@ class LocalSettingsComponent extends LitElement {
                         <div class="folder-details">
                           <p class="folder-name">${folder.folderName}</p>
                           <p class="folder-count">
-                            ${folder.photoCount} photo${folder.photoCount === 1 ? "" : "s"}
+                            ${folder.imagePaths.length} photo${folder.imagePaths.length === 1 ? "" : "s"}
                           </p>
                         </div>
                       </div>
@@ -157,7 +148,7 @@ class LocalSettingsComponent extends LitElement {
       </fieldset>
 
       <p class="status" aria-live="polite">
-        ${this.loading ? "Reading folder photos…" : statusMessage(this.saveState)}
+        ${this.loading ? "Reading folder photos…" : this.saveStatus.message}
       </p>
     `;
   }
@@ -166,7 +157,7 @@ class LocalSettingsComponent extends LitElement {
     try {
       this.folders = await listStoredFolderRecords();
     } catch {
-      this.saveState = "error";
+      this.saveStatus.set("error");
     } finally {
       this.loading = false;
     }
@@ -181,14 +172,7 @@ class LocalSettingsComponent extends LitElement {
     try {
       const updated = await rescanAllFolders();
       this.folders = updated;
-      this.saveState = "saved";
-
-      window.clearTimeout(this.saveResetTimeout);
-      this.saveResetTimeout = scheduleSavedReset(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      });
+      this.saveStatus.set("saved");
     } catch (err: unknown) {
       this.errorMessage = (err as Error).message || "Failed to rescan folders";
     } finally {
@@ -213,24 +197,17 @@ class LocalSettingsComponent extends LitElement {
 
       this.loading = true;
       this.errorMessage = "";
-      this.saveState = "saving";
+      this.saveStatus.set("saving");
 
       await addDirectoryHandle(dirHandle);
       this.folders = await listStoredFolderRecords();
-      this.saveState = "saved";
-
-      window.clearTimeout(this.saveResetTimeout);
-      this.saveResetTimeout = scheduleSavedReset(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      });
+      this.saveStatus.set("saved");
     } catch (err: unknown) {
       if ((err as Error).name === "AbortError") return;
 
       this.errorMessage =
         (err as Error).message || "Failed to access the selected folder";
-      this.saveState = "error";
+      this.saveStatus.set("error");
     } finally {
       this.loading = false;
     }

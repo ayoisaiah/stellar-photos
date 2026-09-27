@@ -15,16 +15,19 @@ import { customElement, eventOptions, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
-import { assetIdentity } from "../assets";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
 import { readImage } from "../image-reader";
 import { dispatch } from "../service-worker";
 import {
+  CORE_SETTINGS_KEY,
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
+  DISPLAY_SETTINGS_KEY,
   getActiveImageSourceIds,
   getCoreSettings,
   getDisplaySettings,
+  parseCoreSettings,
+  parseDisplaySettings,
 } from "../settings";
 import { getImageSource } from "../sources";
 import {
@@ -154,10 +157,7 @@ class StellarApp extends LitElement {
     super.connectedCallback();
 
     window.addEventListener("wheel", this.handleWheel, { passive: true });
-
-    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
-      chrome.storage.onChanged.addListener(this.handleStorageChange);
-    }
+    chrome.storage.onChanged.addListener(this.handleStorageChange);
 
     void this.initializeState();
   }
@@ -165,10 +165,7 @@ class StellarApp extends LitElement {
   override disconnectedCallback(): void {
     window.clearTimeout(this.controlsTimer);
     window.removeEventListener("wheel", this.handleWheel);
-
-    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
-      chrome.storage.onChanged.removeListener(this.handleStorageChange);
-    }
+    chrome.storage.onChanged.removeListener(this.handleStorageChange);
 
     this.releaseObjectUrl();
     super.disconnectedCallback();
@@ -188,11 +185,11 @@ class StellarApp extends LitElement {
       return;
 
     const current = this.currentAsset;
-    const identity = current && assetIdentity(current);
+    const identity = current?.cacheKey;
     this.historyIndex = current
       ? this.historyAssets.findIndex(
           (asset) =>
-            assetIdentity(asset) === identity &&
+            asset.cacheKey === identity &&
             asset.createdAt === current.createdAt,
         )
       : 0;
@@ -357,9 +354,6 @@ class StellarApp extends LitElement {
         .displaySettings=${this.displaySettings}
         .sourceHealthMap=${this.sourceHealthMap}
         @close-settings=${this.closePanel}
-        @active-sources-changed=${this.handleActiveSourcesChanged}
-        @frequency-changed=${this.handleFrequencyChanged}
-        @display-settings-changed=${this.handleDisplaySettingsChanged}
       ></stellar-settings-drawer>
     `;
   }
@@ -420,11 +414,7 @@ class StellarApp extends LitElement {
   private togglePanel = (name: "history" | "info" | "settings"): void => {
     if (name === "history") {
       this.historyOpen = !this.historyOpen;
-      if (this.historyOpen) {
-        if (typeof chrome === "undefined" || !chrome.storage?.onChanged) {
-          void this.loadHistoryAssets();
-        }
-      } else {
+      if (!this.historyOpen) {
         this.showControls();
       }
       return;
@@ -436,9 +426,6 @@ class StellarApp extends LitElement {
     }
 
     this.openPanel = name;
-    if (name === "settings") {
-      void this.loadCoreSettings();
-    }
   };
 
   private closePanel = (): void => {
@@ -501,7 +488,7 @@ class StellarApp extends LitElement {
     if (
       this.currentPhotoURL &&
       this.currentAsset &&
-      assetIdentity(asset) === assetIdentity(this.currentAsset)
+      asset.cacheKey === this.currentAsset.cacheKey
     ) {
       return true;
     }
@@ -610,6 +597,27 @@ class StellarApp extends LitElement {
         this.sourceHealthMap = parseSourceHealth(newValue);
       }
     }
+
+    if (area === "sync") {
+      if (CORE_SETTINGS_KEY in changes) {
+        const core = parseCoreSettings(changes[CORE_SETTINGS_KEY]?.newValue);
+        this.activeSourceIds = core.activeSourceIds;
+        this.photoFrequency = core.photoFrequency;
+
+        if (
+          this.currentAsset &&
+          !core.activeSourceIds.includes(this.currentAsset.sourceId)
+        ) {
+          void this.loadCurrentPhoto();
+        }
+      }
+
+      if (DISPLAY_SETTINGS_KEY in changes) {
+        this.displaySettings = parseDisplaySettings(
+          changes[DISPLAY_SETTINGS_KEY]?.newValue,
+        );
+      }
+    }
   };
 
   private async loadHistoryAssets(): Promise<void> {
@@ -651,13 +659,6 @@ class StellarApp extends LitElement {
 
   private navigateHistory = async (step: -1 | 1): Promise<void> => {
     this.showControls();
-
-    if (
-      this.historyAssets.length === 0 &&
-      (typeof chrome === "undefined" || !chrome.storage?.onChanged)
-    ) {
-      await this.loadHistoryAssets();
-    }
     await this.updateComplete;
     if (step === 1 ? !this.hasPrevious : !this.hasNext) return;
 
@@ -688,7 +689,7 @@ class StellarApp extends LitElement {
 
       await chrome.downloads.download({
         url: source.getDownloadUrl(asset),
-        filename: `${assetIdentity(asset).replace(":", "-")}.jpg`,
+        filename: `${asset.sourceId}-${asset.sourceAssetId}.jpg`,
       });
 
       void sendCommand({
@@ -764,41 +765,6 @@ class StellarApp extends LitElement {
     this.controlsTimer = window.setTimeout(() => {
       this.controlsVisible = false;
     }, 2500);
-  };
-
-  private async loadCoreSettings(): Promise<void> {
-    try {
-      const settings = await getCoreSettings();
-      this.activeSourceIds = settings.activeSourceIds;
-      this.photoFrequency = settings.photoFrequency;
-    } catch {
-      // Graceful fallback
-    }
-  }
-
-  private handleDisplaySettingsChanged = (
-    event: CustomEvent<{ displaySettings: DisplaySettings }>,
-  ): void => {
-    this.displaySettings = event.detail.displaySettings;
-  };
-
-  private handleFrequencyChanged = (
-    event: CustomEvent<{ frequency: PhotoFrequency }>,
-  ): void => {
-    this.photoFrequency = event.detail.frequency;
-  };
-
-  private handleActiveSourcesChanged = (
-    event: CustomEvent<{ sourceIds: string[] }>,
-  ): void => {
-    this.activeSourceIds = event.detail.sourceIds;
-
-    if (
-      this.currentAsset &&
-      !event.detail.sourceIds.includes(this.currentAsset.sourceId)
-    ) {
-      void this.loadCurrentPhoto();
-    }
   };
 
   private releaseObjectUrl(): void {

@@ -4,9 +4,9 @@ import { customElement, property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
+import { attributionUrl } from "../attribution";
 import { readImage } from "../image-reader";
 import { getImageSource } from "../sources";
-import { attributionUrl } from "../sources/unsplash";
 import "./lucide-icon";
 
 @customElement("stellar-history-panel")
@@ -60,11 +60,7 @@ class HistoryPanel extends LitElement {
         : this.activeAsset
           ? [this.activeAsset]
           : [];
-    const assetsWithIndex = rawAssets.map((asset, index) => ({
-      asset,
-      index,
-    }));
-    const reversedAssets = [...assetsWithIndex].reverse();
+    const reversedAssets = [...rawAssets].reverse();
 
     return html`
       <ul
@@ -72,25 +68,20 @@ class HistoryPanel extends LitElement {
         role="region"
         aria-label="Photo history"
       >
-        ${reversedAssets.map(({ asset, index }) => this.renderCard(asset, index))}
+        ${reversedAssets.map((asset) => this.renderCard(asset))}
       </ul>
     `;
   }
 
-  private renderCard(asset: BackgroundAsset, index: number) {
+  private renderCard(asset: BackgroundAsset) {
     const thumbnailUrl = this.thumbnailUrls.get(asset.cacheKey);
     const description = asset.description || "photo";
-    const isEarthView = asset.sourceId === "earthview";
+    const source = getImageSource(asset.sourceId);
     const sourceUrl = asset.attribution?.sourceUrl ?? "";
-    const sourceTitle =
-      asset.sourceId === "unsplash"
-        ? "View photo on Unsplash"
-        : isEarthView
-          ? "View on Google Earth View"
-          : "View photo on source";
-    const supportsDownload = Boolean(
-      getImageSource(asset.sourceId)?.supportsDownload,
-    );
+    const sourceTitle = source
+      ? `View on ${source.name}`
+      : "View photo on source";
+    const supportsDownload = Boolean(source?.supportsDownload);
     const isActive =
       this.activeAsset !== null &&
       this.activeAsset.cacheKey === asset.cacheKey &&
@@ -103,9 +94,9 @@ class HistoryPanel extends LitElement {
         tabindex="0"
         role="button"
         aria-label="Set ${description} as background"
-        @click=${() => this.selectAsset(asset, index)}
+        @click=${() => this.selectAsset(asset)}
         @keydown=${(event: KeyboardEvent) =>
-          this.handleCardKeydown(event, asset, index)}
+          this.handleCardKeydown(event, asset)}
       >
         ${
           thumbnailUrl
@@ -197,7 +188,7 @@ class HistoryPanel extends LitElement {
 
       if (generation !== this.loadGeneration || !this.isConnected) {
         for (const item of results) {
-          if (item?.isNew && item.url.startsWith("blob:")) {
+          if (item?.isNew) {
             URL.revokeObjectURL(item.url);
           }
         }
@@ -212,7 +203,7 @@ class HistoryPanel extends LitElement {
       }
 
       for (const [key, url] of this.thumbnailUrls) {
-        if (!nextUrls.has(key) && url.startsWith("blob:")) {
+        if (!nextUrls.has(key)) {
           URL.revokeObjectURL(url);
         }
       }
@@ -225,18 +216,16 @@ class HistoryPanel extends LitElement {
 
   private cleanupThumbnailUrls(): void {
     for (const url of this.thumbnailUrls.values()) {
-      if (url.startsWith("blob:")) {
-        URL.revokeObjectURL(url);
-      }
+      URL.revokeObjectURL(url);
     }
 
     this.thumbnailUrls.clear();
   }
 
-  private selectAsset(asset: BackgroundAsset, index: number): void {
+  private selectAsset(asset: BackgroundAsset): void {
     this.dispatchEvent(
       new CustomEvent("select-photo", {
-        detail: { asset, index },
+        detail: { asset },
         bubbles: true,
         composed: true,
       }),
@@ -256,11 +245,10 @@ class HistoryPanel extends LitElement {
   private handleCardKeydown(
     event: KeyboardEvent,
     asset: BackgroundAsset,
-    index: number,
   ): void {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      this.selectAsset(asset, index);
+      this.selectAsset(asset);
     }
   }
 }

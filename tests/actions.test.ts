@@ -13,8 +13,6 @@ const getActiveImageSources = vi.fn();
 const getImageSource = vi.fn();
 const readPinnedAsset = vi.fn();
 const writePinnedAsset = vi.fn();
-const deleteCachedThumbnail = vi.fn();
-const putCachedThumbnail = vi.fn();
 const createThumbnail = vi.fn().mockResolvedValue(null);
 
 vi.mock("../src/ts/settings", () => ({
@@ -24,9 +22,7 @@ vi.mock("../src/ts/cache", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/ts/cache")>()),
   createThumbnail,
   deleteCachedImage,
-  deleteCachedThumbnail,
   putCachedImage,
-  putCachedThumbnail,
   readCachedImage,
 }));
 vi.mock("../src/ts/sources", () => ({
@@ -92,6 +88,7 @@ beforeEach(() => {
   source = {
     id: "unsplash",
     name: "Unsplash",
+    description: "High quality photos",
     getRandomAsset: vi.fn().mockResolvedValue(candidate),
     downloadAsset: vi.fn().mockResolvedValue(new Response("image")),
   };
@@ -111,6 +108,7 @@ describe("source activation and multi-source rotation", () => {
     const earthviewSource: ImageSource = {
       id: "earthview",
       name: "Google Earth View",
+      description: "Satellite imagery",
       getRandomAsset: vi.fn().mockResolvedValue({
         ...candidate,
         sourceId: "earthview",
@@ -168,6 +166,7 @@ describe("source activation and multi-source rotation", () => {
     const failingSource: ImageSource = {
       id: "local",
       name: "Local folder",
+      description: "Local photos",
       getRandomAsset: vi.fn().mockRejectedValue(new Error("Folder empty")),
       downloadAsset: vi.fn(),
     };
@@ -268,14 +267,19 @@ describe("source activation and multi-source rotation", () => {
 
   it("generates and caches thumbnail derivative when image is rotated", async () => {
     const fakeThumbBlob = new Blob(["fake-webp"], { type: "image/webp" });
-    createThumbnail.mockResolvedValueOnce(fakeThumbBlob);
+    createThumbnail.mockResolvedValueOnce({
+      blob: fakeThumbBlob,
+      width: 1920,
+      height: 1080,
+    });
 
     await expect(nextImage()).resolves.toBeUndefined();
 
     expect(createThumbnail).toHaveBeenCalled();
-    expect(putCachedThumbnail).toHaveBeenCalledWith(
+    expect(putCachedImage).toHaveBeenCalledWith(
       prepared.cacheKey,
       expect.any(Response),
+      "thumbnail",
     );
   });
 
@@ -291,7 +295,7 @@ describe("source activation and multi-source rotation", () => {
     await expect(nextImage()).resolves.toBeUndefined();
 
     expect(deleteCachedImage).toHaveBeenCalledWith("cache-old-9");
-    expect(deleteCachedThumbnail).toHaveBeenCalledWith("cache-old-9");
+    expect(deleteCachedImage).toHaveBeenCalledWith("cache-old-9", "thumbnail");
   });
 
   it("does not delete cached thumbnail if duplicate cacheKey remains in history after eviction", async () => {
@@ -308,7 +312,10 @@ describe("source activation and multi-source rotation", () => {
     await expect(nextImage()).resolves.toBeUndefined();
 
     expect(deleteCachedImage).not.toHaveBeenCalledWith("shared-cache-key");
-    expect(deleteCachedThumbnail).not.toHaveBeenCalledWith("shared-cache-key");
+    expect(deleteCachedImage).not.toHaveBeenCalledWith(
+      "shared-cache-key",
+      "thumbnail",
+    );
   });
 });
 
@@ -321,6 +328,7 @@ describe("source status reporting without behavior changes", () => {
     const earthviewSource: ImageSource = {
       id: "earthview",
       name: "Google Earth View",
+      description: "Satellite imagery",
       getRandomAsset: vi.fn().mockResolvedValue({
         ...candidate,
         sourceId: "earthview",
@@ -425,4 +433,43 @@ describe("source status reporting without behavior changes", () => {
     expect(fallback.getRandomAsset).toHaveBeenCalledOnce();
     expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY]).toEqual({});
   });
+});
+
+it("visits every source once with uniformly shuffled orders", async () => {
+  const order: string[] = [];
+  const sources: ImageSource[] = ["a", "b", "c", "d"].map((id) => ({
+    ...source,
+    id,
+    getRandomAsset: async () => {
+      order.push(id);
+      throw new Error("Unavailable");
+    },
+  }));
+  getActiveImageSources.mockResolvedValue(sources);
+  const random = vi.spyOn(Math, "random");
+  const orders = new Set<string>();
+
+  try {
+    for (let a = 0; a < 4; a++) {
+      for (let b = 0; b < 3; b++) {
+        for (let c = 0; c < 2; c++) {
+          order.length = 0;
+          random.mockReset().mockReturnValue(0);
+          random
+            .mockReturnValueOnce(a / 4)
+            .mockReturnValueOnce(b / 3)
+            .mockReturnValueOnce(c / 2);
+
+          await expect(nextImage()).rejects.toThrow("Unavailable");
+          expect(order).toHaveLength(4);
+          expect(new Set(order).size).toBe(4);
+          orders.add(order.join(""));
+        }
+      }
+    }
+
+    expect(orders.size).toBe(24);
+  } finally {
+    random.mockRestore();
+  }
 });

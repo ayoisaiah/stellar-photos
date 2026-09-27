@@ -1,8 +1,6 @@
 import type { PhotoFrequency } from "./sources/photo-frequency";
-import {
-  DEFAULT_PHOTO_FREQUENCY,
-  isPhotoFrequency,
-} from "./sources/photo-frequency";
+import { FREQUENCIES } from "./sources/photo-frequency";
+import { defineStore, oneOf } from "./store";
 
 interface CoreSettings {
   version: 1;
@@ -10,7 +8,7 @@ interface CoreSettings {
   photoFrequency: PhotoFrequency;
 }
 
-type PhotoDisplayMode = "cover" | "contain-blur";
+type PhotoDisplayMode = (typeof DISPLAY_MODE_OPTIONS)[number]["value"];
 
 interface DisplaySettings {
   version: 1;
@@ -19,14 +17,25 @@ interface DisplaySettings {
   motion: boolean;
 }
 
-const CORE_SETTINGS_KEY = "coreSettings";
+const DISPLAY_MODE_OPTIONS = [
+  {
+    value: "cover",
+    label: "Cover",
+    description: "Fills screen (centered, cropped edges)",
+  },
+  {
+    value: "contain-blur",
+    label: "Contain with blur",
+    description: "Shows full photo with blurred background",
+  },
+] as const;
+
 const DEFAULT_CORE_SETTINGS: Readonly<CoreSettings> = {
   version: 1,
   activeSourceIds: ["unsplash"],
-  photoFrequency: DEFAULT_PHOTO_FREQUENCY,
+  photoFrequency: "newtab",
 };
 
-const DISPLAY_SETTINGS_KEY = "displaySettings";
 const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> = {
   version: 1,
   landscapeMode: "cover",
@@ -34,46 +43,48 @@ const DEFAULT_DISPLAY_SETTINGS: Readonly<DisplaySettings> = {
   motion: false,
 };
 
-let coreSettingsQueue: Promise<void> = Promise.resolve();
-let displaySettingsQueue: Promise<void> = Promise.resolve();
+const isPhotoDisplayMode = oneOf(
+  DISPLAY_MODE_OPTIONS.map((option) => option.value),
+);
 
-async function getCoreSettings(): Promise<CoreSettings> {
-  const values = await chrome.storage.sync.get(CORE_SETTINGS_KEY);
-  const settings = parseCoreSettings(values[CORE_SETTINGS_KEY]);
+const coreStore = defineStore(
+  "sync",
+  "coreSettings",
+  DEFAULT_CORE_SETTINGS,
+  {
+    version: (v): v is 1 => v === 1,
+    activeSourceIds: (v): v is string[] =>
+      Array.isArray(v) &&
+      v.length > 0 &&
+      v.every((id) => typeof id === "string" && Boolean(id)),
+    photoFrequency: oneOf(FREQUENCIES.map((f) => f.value)),
+  },
+  "core settings",
+);
 
-  return settings ?? DEFAULT_CORE_SETTINGS;
-}
+const displayStore = defineStore(
+  "sync",
+  "displaySettings",
+  DEFAULT_DISPLAY_SETTINGS,
+  {
+    version: (v): v is 1 => v === 1,
+    landscapeMode: isPhotoDisplayMode,
+    portraitMode: isPhotoDisplayMode,
+    motion: (v): v is boolean => typeof v === "boolean",
+  },
+  "display settings",
+);
 
-async function setCoreSettings(
-  partial: Partial<Omit<CoreSettings, "version">>,
-): Promise<void> {
-  const op = async () => {
-    const current = await getCoreSettings();
+const CORE_SETTINGS_KEY = coreStore.key;
+const DISPLAY_SETTINGS_KEY = displayStore.key;
 
-    let activeSourceIds = partial.activeSourceIds ?? current.activeSourceIds;
-    if (!Array.isArray(activeSourceIds) || activeSourceIds.length === 0) {
-      activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
-    }
+const getCoreSettings = coreStore.get;
+const setCoreSettings = coreStore.set;
+const parseCoreSettings = coreStore.parse;
 
-    const photoFrequency = partial.photoFrequency ?? current.photoFrequency;
-
-    await chrome.storage.sync.set({
-      [CORE_SETTINGS_KEY]: {
-        version: 1,
-        activeSourceIds,
-        photoFrequency,
-      } satisfies CoreSettings,
-    });
-  };
-
-  const next = coreSettingsQueue.then(op, op);
-  coreSettingsQueue = next.then(
-    () => undefined,
-    () => undefined,
-  );
-
-  return next;
-}
+const getDisplaySettings = displayStore.get;
+const setDisplaySettings = displayStore.set;
+const parseDisplaySettings = displayStore.parse;
 
 async function getActiveImageSourceIds(): Promise<string[]> {
   const settings = await getCoreSettings();
@@ -95,117 +106,15 @@ async function setPhotoFrequency(frequency: PhotoFrequency): Promise<void> {
   await setCoreSettings({ photoFrequency: frequency });
 }
 
-async function getDisplaySettings(): Promise<DisplaySettings> {
-  const values = await chrome.storage.sync.get(DISPLAY_SETTINGS_KEY);
-  const settings = parseDisplaySettings(values[DISPLAY_SETTINGS_KEY]);
-
-  return settings ?? DEFAULT_DISPLAY_SETTINGS;
-}
-
-async function setDisplaySettings(
-  partial: Partial<Omit<DisplaySettings, "version">>,
-): Promise<void> {
-  const op = async () => {
-    const current = await getDisplaySettings();
-
-    await chrome.storage.sync.set({
-      [DISPLAY_SETTINGS_KEY]: {
-        ...current,
-        ...partial,
-        version: 1,
-      } satisfies DisplaySettings,
-    });
-  };
-
-  const next = displaySettingsQueue.then(op, op);
-  displaySettingsQueue = next.then(
-    () => undefined,
-    () => undefined,
-  );
-
-  return next;
-}
-
-function parseCoreSettings(value: unknown): CoreSettings | null {
-  if (!value || typeof value !== "object") return null;
-
-  const settings = value as Partial<CoreSettings>;
-
-  if (typeof settings.version === "number" && settings.version > 1) {
-    throw new Error(`Unsupported core settings version: ${settings.version}`);
-  }
-
-  let activeSourceIds: string[];
-  if (
-    Array.isArray(settings.activeSourceIds) &&
-    settings.activeSourceIds.length > 0
-  ) {
-    activeSourceIds = settings.activeSourceIds.filter(
-      (id): id is string => typeof id === "string" && Boolean(id),
-    );
-  } else {
-    activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
-  }
-
-  if (activeSourceIds.length === 0) {
-    activeSourceIds = [...DEFAULT_CORE_SETTINGS.activeSourceIds];
-  }
-
-  const photoFrequency = isPhotoFrequency(settings.photoFrequency)
-    ? settings.photoFrequency
-    : DEFAULT_CORE_SETTINGS.photoFrequency;
-
-  return {
-    version: 1,
-    activeSourceIds,
-    photoFrequency,
-  };
-}
-
-function parseDisplaySettings(value: unknown): DisplaySettings | null {
-  if (!value || typeof value !== "object") return null;
-
-  const settings = value as Partial<DisplaySettings>;
-
-  if (typeof settings.version === "number" && settings.version > 1) {
-    throw new Error(
-      `Unsupported display settings version: ${settings.version}`,
-    );
-  }
-
-  if (settings.version !== 1) return null;
-
-  const landscapeMode = isPhotoDisplayMode(settings.landscapeMode)
-    ? settings.landscapeMode
-    : DEFAULT_DISPLAY_SETTINGS.landscapeMode;
-
-  const portraitMode = isPhotoDisplayMode(settings.portraitMode)
-    ? settings.portraitMode
-    : DEFAULT_DISPLAY_SETTINGS.portraitMode;
-
-  const motion =
-    typeof settings.motion === "boolean"
-      ? settings.motion
-      : DEFAULT_DISPLAY_SETTINGS.motion;
-
-  return {
-    version: 1,
-    landscapeMode,
-    portraitMode,
-    motion,
-  };
-}
-
-function isPhotoDisplayMode(value: unknown): value is PhotoDisplayMode {
-  return value === "cover" || value === "contain-blur";
-}
-
 export type { CoreSettings, DisplaySettings, PhotoDisplayMode };
 export {
   CORE_SETTINGS_KEY,
+  coreStore,
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
+  DISPLAY_MODE_OPTIONS,
   DISPLAY_SETTINGS_KEY,
+  displayStore,
   getActiveImageSourceIds,
   getCoreSettings,
   getDisplaySettings,

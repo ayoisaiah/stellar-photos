@@ -23,61 +23,48 @@ async function activeCache(): Promise<Cache> {
   return caches.open(ACTIVE_CACHE_NAME);
 }
 
+type CacheKind = "image" | "thumbnail";
+
+function resolveCacheKey(key: string, kind: CacheKind = "image"): string {
+  return kind === "thumbnail" ? assetThumbnailCacheKey(key) : key;
+}
+
 async function readCachedImage(
   cacheKey: string,
+  kind: CacheKind = "image",
 ): Promise<Response | undefined> {
-  return (await activeCache()).match(cacheKey);
+  return (await activeCache()).match(resolveCacheKey(cacheKey, kind));
 }
 
 async function putCachedImage(
   cacheKey: string,
   response: Response,
+  kind: CacheKind = "image",
 ): Promise<void> {
-  await (await activeCache()).put(cacheKey, response);
+  await (await activeCache()).put(resolveCacheKey(cacheKey, kind), response);
 }
 
-async function deleteCachedImage(cacheKey: string): Promise<boolean> {
-  return (await activeCache()).delete(cacheKey);
-}
-
-async function readCachedThumbnail(
+async function deleteCachedImage(
   cacheKey: string,
-): Promise<Response | undefined> {
-  const thumbKey = assetThumbnailCacheKey(cacheKey);
-
-  return (await activeCache()).match(thumbKey);
+  kind: CacheKind = "image",
+): Promise<boolean> {
+  return (await activeCache()).delete(resolveCacheKey(cacheKey, kind));
 }
 
-async function putCachedThumbnail(
-  cacheKey: string,
-  response: Response,
-): Promise<void> {
-  const thumbKey = assetThumbnailCacheKey(cacheKey);
-
-  await (await activeCache()).put(thumbKey, response);
+interface ThumbnailResult {
+  blob: Blob;
+  width: number;
+  height: number;
 }
 
-async function deleteCachedThumbnail(cacheKey: string): Promise<boolean> {
-  const thumbKey = assetThumbnailCacheKey(cacheKey);
-
-  return (await activeCache()).delete(thumbKey);
-}
-
-async function createThumbnail(blob: Blob): Promise<Blob | null> {
+async function createThumbnail(blob: Blob): Promise<ThumbnailResult | null> {
   try {
-    if (
-      typeof createImageBitmap !== "function" ||
-      typeof OffscreenCanvas !== "function"
-    ) {
-      return null;
-    }
-
-    const initialBitmap = await createImageBitmap(blob);
-    const origWidth = initialBitmap.width;
-    const origHeight = initialBitmap.height;
-    initialBitmap.close();
+    const bitmap = await createImageBitmap(blob);
+    const origWidth = bitmap.width;
+    const origHeight = bitmap.height;
 
     if (origWidth <= 0 || origHeight <= 0) {
+      bitmap.close();
       return null;
     }
 
@@ -85,14 +72,8 @@ async function createThumbnail(blob: Blob): Promise<Blob | null> {
       THUMBNAIL_WIDTH / origWidth,
       THUMBNAIL_HEIGHT / origHeight,
     );
-    const resizeWidth = Math.max(1, Math.round(origWidth * scale));
-    const resizeHeight = Math.max(1, Math.round(origHeight * scale));
-
-    const bitmap = await createImageBitmap(blob, {
-      resizeWidth,
-      resizeHeight,
-      resizeQuality: "high",
-    });
+    const drawWidth = Math.max(1, Math.round(origWidth * scale));
+    const drawHeight = Math.max(1, Math.round(origHeight * scale));
 
     const canvas = new OffscreenCanvas(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
     const ctx = canvas.getContext("2d");
@@ -101,15 +82,21 @@ async function createThumbnail(blob: Blob): Promise<Blob | null> {
       return null;
     }
 
-    const offsetX = Math.round((THUMBNAIL_WIDTH - bitmap.width) / 2);
-    const offsetY = Math.round((THUMBNAIL_HEIGHT - bitmap.height) / 2);
-    ctx.drawImage(bitmap, offsetX, offsetY, bitmap.width, bitmap.height);
+    const offsetX = Math.round((THUMBNAIL_WIDTH - drawWidth) / 2);
+    const offsetY = Math.round((THUMBNAIL_HEIGHT - drawHeight) / 2);
+    ctx.drawImage(bitmap, offsetX, offsetY, drawWidth, drawHeight);
     bitmap.close();
 
-    return await canvas.convertToBlob({
+    const thumbBlob = await canvas.convertToBlob({
       type: "image/webp",
       quality: THUMBNAIL_QUALITY,
     });
+
+    return {
+      blob: thumbBlob,
+      width: origWidth,
+      height: origHeight,
+    };
   } catch {
     return null;
   }
@@ -168,17 +155,15 @@ function validateIdentifier(id: string, label: string): string {
   return id;
 }
 
+export type { CacheKind, ThumbnailResult };
 export {
   ACTIVE_CACHE_NAME,
   assetCacheKey,
   assetThumbnailCacheKey,
   createThumbnail,
   deleteCachedImage,
-  deleteCachedThumbnail,
   MAX_IMAGE_BYTES,
   putCachedImage,
-  putCachedThumbnail,
   readBoundedImage,
   readCachedImage,
-  readCachedThumbnail,
 };

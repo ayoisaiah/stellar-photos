@@ -26,10 +26,22 @@ interface HistoryState {
 
 const HISTORY_LIMIT = 10;
 
-function assetIdentity(
-  asset: Pick<BackgroundAsset, "sourceId" | "sourceAssetId">,
-): string {
-  return `${encodeURIComponent(asset.sourceId)}:${encodeURIComponent(asset.sourceAssetId)}`;
+function makeAsset(
+  props: Omit<
+    UncachedBackgroundAsset,
+    "color" | "payloadVersion" | "createdAt"
+  > & {
+    color?: string | null;
+    createdAt?: number;
+    payloadVersion?: number;
+  },
+): UncachedBackgroundAsset {
+  return {
+    color: null,
+    payloadVersion: 1,
+    createdAt: Date.now(),
+    ...props,
+  };
 }
 
 export type {
@@ -38,4 +50,4 @@ export type {
   HistoryState,
   UncachedBackgroundAsset,
 };
-export { assetIdentity, HISTORY_LIMIT };
+export { HISTORY_LIMIT, makeAsset };

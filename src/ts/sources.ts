@@ -18,6 +18,9 @@ interface PhotoCredit {
 interface ImageSource {
   readonly id: string;
   readonly name: string;
+  readonly description: string;
+  readonly settingsTag?: string;
+  readonly infoTitle?: string;
   readonly supportsDownload?: boolean;
   readonly supportsInfo?: boolean;
   getCredit?(asset: BackgroundAsset): PhotoCredit | null;
@@ -26,6 +29,7 @@ interface ImageSource {
   downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
   getDownloadUrl?(asset: BackgroundAsset): string;
   didDownload?(asset: BackgroundAsset): Promise<void>;
+  fetchDetails?(asset: BackgroundAsset): Promise<unknown>;
 }
 
 const bundledImageSources: readonly ImageSource[] = [

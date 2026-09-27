@@ -1,40 +1,91 @@
-import { html } from "lit";
+import {
+  html,
+  type ReactiveController,
+  type ReactiveControllerHost,
+  type TemplateResult,
+} from "lit";
 import type { PhotoFrequency } from "../sources/photo-frequency";
 import { FREQUENCIES } from "../sources/photo-frequency";
 
-type SaveState = "idle" | "saving" | "saved" | "error";
+type SaveState = keyof typeof STATUS_MESSAGES;
+
+interface RadioOption<T extends string = string> {
+  value: T;
+  label: string;
+  description?: string;
+}
 
 const SAVED_RESET_DELAY_MS = 2500;
 
-const STATUS_MESSAGES: Record<string, string> = {
+const STATUS_MESSAGES = {
+  idle: "",
   saving: "Saving…",
   saved: "Saved",
   error: "Couldn’t save this setting.",
 };
 
-function renderFrequencySelector(
-  value: PhotoFrequency,
-  disabled: boolean,
-  change: (event: Event) => void,
+class SaveStatusController implements ReactiveController {
+  private timeoutId?: number;
+  state: SaveState = "idle";
+
+  constructor(private host: ReactiveControllerHost) {
+    host.addController(this);
+  }
+
+  hostDisconnected(): void {
+    if (this.timeoutId !== undefined) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = undefined;
+    }
+  }
+
+  set(nextState: SaveState): void {
+    if (this.timeoutId !== undefined) {
+      window.clearTimeout(this.timeoutId);
+      this.timeoutId = undefined;
+    }
+
+    this.state = nextState;
+    this.host.requestUpdate();
+
+    if (nextState === "saved") {
+      this.timeoutId = window.setTimeout(() => {
+        this.state = "idle";
+        this.host.requestUpdate();
+      }, SAVED_RESET_DELAY_MS);
+    }
+  }
+
+  get message(): string {
+    return STATUS_MESSAGES[this.state];
+  }
+}
+
+function renderRadioGroup<T extends string>(
+  name: string,
+  options: readonly RadioOption<T>[],
+  value: T,
+  onChange: (value: T, event: Event) => void,
+  disabled = false,
   labelClass = "radio-label",
-) {
+): TemplateResult {
   return html`
     <div class="options">
-      ${FREQUENCIES.map(
-        (frequency) => html`
+      ${options.map(
+        (opt) => html`
           <label class=${labelClass}>
             <input
               type="radio"
-              name="frequency"
-              value=${frequency.value}
-              .checked=${value === frequency.value}
+              name=${name}
+              value=${opt.value}
+              .checked=${value === opt.value}
               ?disabled=${disabled}
-              @change=${change}
+              @change=${(e: Event) => onChange(opt.value, e)}
             />
             <span class="control" aria-hidden="true"></span>
             <span>
-              <strong>${frequency.label}</strong>
-              <small>${frequency.description}</small>
+              <strong>${opt.label}</strong>
+              ${opt.description ? html`<small>${opt.description}</small>` : null}
             </span>
           </label>
         `,
@@ -43,25 +94,33 @@ function renderFrequencySelector(
   `;
 }
 
+function renderFrequencySelector(
+  value: PhotoFrequency,
+  disabled: boolean,
+  change: (event: Event) => void,
+  labelClass = "radio-label",
+): TemplateResult {
+  return renderRadioGroup(
+    "frequency",
+    FREQUENCIES,
+    value,
+    (_, event) => change(event),
+    disabled,
+    labelClass,
+  );
+}
+
 function readFrequency(event: Event): PhotoFrequency | undefined {
   const value = (event.currentTarget as HTMLInputElement).value;
 
   return FREQUENCIES.find((frequency) => frequency.value === value)?.value;
 }
 
-function statusMessage(saveState: SaveState): string {
-  return STATUS_MESSAGES[saveState] ?? "";
-}
-
-function scheduleSavedReset(reset: () => void): number {
-  return window.setTimeout(reset, SAVED_RESET_DELAY_MS);
-}
-
-export type { SaveState };
+export type { RadioOption, SaveState };
 export {
   FREQUENCIES,
   readFrequency,
   renderFrequencySelector,
-  scheduleSavedReset,
-  statusMessage,
+  renderRadioGroup,
+  SaveStatusController,
 };

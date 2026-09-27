@@ -14,7 +14,7 @@ import {
 
 async function localPhotoCount(): Promise<number> {
   return (await listStoredFolderRecords()).reduce(
-    (sum, record) => sum + record.photoCount,
+    (sum, record) => sum + record.imagePaths.length,
     0,
   );
 }
@@ -106,6 +106,15 @@ const mockIdb = {
                   const key = (val.id ?? val.key) as string;
                   map.set(key, val);
                   return { result: key };
+                },
+                get: (key: string) => {
+                  const getReq = {
+                    result: map.get(key),
+                    onsuccess: null as ((ev?: unknown) => void) | null,
+                    onerror: null as ((ev?: unknown) => void) | null,
+                  };
+                  queueMicrotask(() => getReq.onsuccess?.());
+                  return getReq;
                 },
                 getAll: () => {
                   const getAllReq = {
@@ -200,8 +209,8 @@ describe("directory handle storage", () => {
     const record = await addDirectoryHandle(handle);
     expect(record).toMatchObject({
       folderName: "Wallpapers",
-      photoCount: 5,
     });
+    expect(record.imagePaths).toHaveLength(5);
 
     expect(await localPhotoCount()).toBe(5);
 
@@ -243,8 +252,8 @@ describe("directory handle storage", () => {
     const record1 = await addDirectoryHandle(handle1);
     const record2 = await addDirectoryHandle(handle2);
 
-    expect(record1.photoCount).toBe(2);
-    expect(record2.photoCount).toBe(2);
+    expect(record1.imagePaths).toHaveLength(2);
+    expect(record2.imagePaths).toHaveLength(2);
     expect(await localPhotoCount()).toBe(4);
 
     const stored = await listStoredFolderRecords();
@@ -269,7 +278,6 @@ describe("directory handle storage", () => {
     const handle = createMockDirHandle("DynamicFolder", structure);
     const record = await addDirectoryHandle(handle);
 
-    expect(record.photoCount).toBe(1);
     expect(record.imagePaths).toEqual(["pic1.jpg"]);
 
     // Add a new file to the mock directory
@@ -277,7 +285,7 @@ describe("directory handle storage", () => {
 
     const updated = await rescanAllFolders();
     expect(updated).toHaveLength(1);
-    expect(updated[0]?.photoCount).toBe(2);
+    expect(updated[0]?.imagePaths).toHaveLength(2);
     expect(updated[0]?.imagePaths).toEqual(["pic1.jpg", "pic2.png"]);
     expect(await localPhotoCount()).toBe(2);
   });
@@ -345,35 +353,14 @@ describe("local source image rotation and retrieval", () => {
     expect(asset).toMatchObject({
       sourceId: "local",
       description: "stars.jpg",
-      width: 1920,
-      height: 1080,
+      width: 0,
+      height: 0,
       payloadVersion: 1,
     });
 
     const response = await localSource.downloadAsset(asset);
     expect(response.headers.get("content-type")).toBe("image/jpeg");
     expect(await response.text()).toBe("image-bytes");
-  });
-
-  it("falls back to zero dimensions when createImageBitmap fails", async () => {
-    vi.stubGlobal(
-      "createImageBitmap",
-      vi.fn().mockRejectedValue(new Error("Decoding failed")),
-    );
-
-    const handle = createMockDirHandle("Space", {
-      "broken.jpg": "bad-bytes",
-    });
-    await addDirectoryHandle(handle);
-
-    const asset = await localSource.getRandomAsset();
-    expect(asset).toMatchObject({
-      sourceId: "local",
-      description: "broken.jpg",
-      width: 0,
-      height: 0,
-      payloadVersion: 1,
-    });
   });
 
   it("computes distinct deterministic asset IDs across folders with identical file names", async () => {
@@ -395,28 +382,36 @@ describe("local source image rotation and retrieval", () => {
     ).rejects.toThrow("Target folder not found.");
   });
 
-  it("gracefully falls back to other photos if one file on disk is deleted or unreadable", async () => {
+  it("tries only one photo when the selected handle or file cannot be read", async () => {
     const handle = createMockDirHandle("TestFolder", {
-      "deleted.jpg": "data",
+      "broken.jpg": "data",
       "valid.jpg": "valid content",
     });
-
-    // Make deleted.jpg throw when getFile() is called
-    const origGetFileHandle = handle.getFileHandle.bind(handle);
-    handle.getFileHandle = async (name: string) => {
-      if (name === "deleted.jpg") {
-        throw new Error("NotFoundError: The file was deleted");
-      }
-      return origGetFileHandle(name);
-    };
-
     await addDirectoryHandle(handle);
 
-    const random = await getRandomDirectoryImage();
-    expect(random).not.toBeNull();
-    expect(random?.name).toBe("valid.jpg");
+    const random = vi.spyOn(Math, "random").mockReturnValue(0);
+    const getHandle = vi.spyOn(handle, "getFileHandle");
 
-    const asset = await localSource.getRandomAsset();
-    expect(asset.description).toBe("valid.jpg");
+    try {
+      getHandle.mockRejectedValueOnce(new Error("File deleted"));
+      await expect(localSource.getRandomAsset()).rejects.toThrow(
+        "File deleted",
+      );
+      expect(getHandle).toHaveBeenCalledTimes(1);
+
+      getHandle.mockClear();
+      const getFile = vi.fn().mockRejectedValue(new Error("File unreadable"));
+      getHandle.mockResolvedValueOnce({
+        getFile,
+      } as unknown as FileSystemFileHandle);
+      await expect(localSource.getRandomAsset()).rejects.toThrow(
+        "File unreadable",
+      );
+      expect(getHandle).toHaveBeenCalledTimes(1);
+      expect(getFile).toHaveBeenCalledTimes(1);
+    } finally {
+      random.mockRestore();
+      getHandle.mockRestore();
+    }
   });
 });

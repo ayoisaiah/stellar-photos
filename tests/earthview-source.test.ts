@@ -36,7 +36,6 @@ describe("earthview source retrieval and rotation", () => {
     expect(asset.attribution?.sourceUrl).toBe("https://earth.google.com/");
     expect(asset.sourcePayload).toMatchObject({
       id: expect.any(Number),
-      imageUrl: expect.stringContaining("gstatic.com/prettyearth"),
     });
   });
 

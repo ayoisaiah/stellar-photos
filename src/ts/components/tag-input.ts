@@ -5,13 +5,11 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import styles from "../../css/components/tag-input.css?inline";
 import "./lucide-icon";
 
-type TagValidationResult =
-  | boolean
-  | {
-      valid: boolean;
-      normalized?: string;
-      error?: string;
-    };
+interface TagValidationResult {
+  valid: boolean;
+  normalized?: string;
+  error?: string;
+}
 
 type TagValidator = (
   tag: string,
@@ -29,9 +27,6 @@ class StellarTagInput extends LitElement {
 
   @property({ type: Boolean })
   accessor disabled = false;
-
-  @property({ type: String })
-  accessor inputId = "";
 
   @property({ attribute: false })
   accessor validate: TagValidator | null = null;
@@ -82,7 +77,6 @@ class StellarTagInput extends LitElement {
           `,
         )}
         <input
-          id=${this.inputId || nothing}
           type="text"
           class="native-input"
           placeholder=${tags.length === 0 ? this.placeholder : ""}
@@ -195,25 +189,14 @@ class StellarTagInput extends LitElement {
         for (const candidate of rawAdditions) {
           const result = await this.validate(candidate);
 
-          if (typeof result === "boolean") {
-            if (result) {
-              if (!next.includes(candidate)) {
-                next.push(candidate);
-              }
-            } else {
-              validationError = `"${candidate}" is invalid.`;
-              lastFailedCandidate = candidate;
+          if (result.valid) {
+            const tagToAdd = result.normalized ?? candidate;
+            if (!next.includes(tagToAdd)) {
+              next.push(tagToAdd);
             }
           } else {
-            if (result.valid) {
-              const tagToAdd = result.normalized ?? candidate;
-              if (!next.includes(tagToAdd)) {
-                next.push(tagToAdd);
-              }
-            } else {
-              validationError = result.error || `"${candidate}" is invalid.`;
-              lastFailedCandidate = candidate;
-            }
+            validationError = result.error || `"${candidate}" is invalid.`;
+            lastFailedCandidate = candidate;
           }
         }
       } catch (err) {

@@ -9,13 +9,20 @@ import {
   verifyUnsplashTopic,
 } from "../sources/unsplash";
 import {
+  CONTENT_FILTERS,
   DEFAULT_UNSPLASH_SETTINGS,
   getUnsplashAccessKey,
   getUnsplashSettings,
+  ORIENTATIONS,
+  RESOLUTIONS,
   setUnsplashAccessKey,
   setUnsplashSettings,
 } from "../sources/unsplash-settings";
-import { scheduleSavedReset, statusMessage } from "./settings-form";
+import {
+  renderRadioGroup,
+  type SaveState,
+  SaveStatusController,
+} from "./settings-form";
 import "./tag-input";
 
 import type {
@@ -24,56 +31,21 @@ import type {
   PhotoOrientation,
   UnsplashSettings as UnsplashSettingsData,
 } from "../sources/unsplash-settings";
-import type { SaveState } from "./settings-form";
-
-const RESOLUTIONS: readonly {
-  value: ImageResolution;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "standard",
-    label: "Standard",
-    description: "Up to 2000px · faster and lighter",
-  },
-  {
-    value: "high",
-    label: "High",
-    description: "Up to 4000px · sharper on large displays",
-  },
-  {
-    value: "max",
-    label: "Original",
-    description: "Full size · uses the most bandwidth",
-  },
-];
-
-const ORIENTATIONS: readonly {
-  value: PhotoOrientation | "";
-  label: string;
-}[] = [
-  { value: "", label: "Any orientation" },
-  { value: "landscape", label: "Landscape" },
-  { value: "portrait", label: "Portrait" },
-  { value: "squarish", label: "Square" },
-];
-
-const CONTENT_FILTERS: readonly {
-  value: ContentFilter;
-  label: string;
-}[] = [
-  { value: "low", label: "Standard (low)" },
-  { value: "high", label: "Stricter filtering (high)" },
-];
 
 @customElement("stellar-unsplash-settings")
 class UnsplashSettings extends LitElement {
   static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
-  private confirmedSettings: UnsplashSettingsData = DEFAULT_UNSPLASH_SETTINGS;
+  private saveStatus = new SaveStatusController(this);
   private confirmedCustomAccessKey = "";
-  private saveInFlight = false;
-  private saveResetTimeout: number | undefined;
+
+  get saveState(): SaveState {
+    return this.saveStatus.state;
+  }
+
+  set saveState(state: SaveState) {
+    this.saveStatus.set(state);
+  }
 
   @state()
   private accessor validatingAccessKey = false;
@@ -90,17 +62,9 @@ class UnsplashSettings extends LitElement {
   @state()
   private accessor accessKeyError = "";
 
-  @state()
-  private accessor saveState: SaveState = "idle";
-
   override connectedCallback(): void {
     super.connectedCallback();
     void this.load();
-  }
-
-  override disconnectedCallback(): void {
-    window.clearTimeout(this.saveResetTimeout);
-    super.disconnectedCallback();
   }
 
   override render() {
@@ -211,27 +175,13 @@ class UnsplashSettings extends LitElement {
       <fieldset>
         <legend>Image quality</legend>
         <p class="hint">Applies to the next photograph that is downloaded.</p>
-        <div class="options">
-          ${RESOLUTIONS.map(
-            ({ value, label, description }) => html`
-              <label>
-                <input
-                  type="radio"
-                  name="resolution"
-                  value=${value}
-                  .checked=${this.settings.imageQuality === value}
-                  ?disabled=${!this.loaded}
-                  @change=${this.changeResolution}
-                />
-                <span class="control" aria-hidden="true"></span>
-                <span>
-                  <strong>${label}</strong>
-                  <small>${description}</small>
-                </span>
-              </label>
-            `,
-          )}
-        </div>
+        ${renderRadioGroup(
+          "resolution",
+          RESOLUTIONS,
+          this.settings.imageQuality,
+          (val) => this.changeResolution(val),
+          !this.loaded,
+        )}
       </fieldset>
 
       <fieldset>
@@ -263,7 +213,7 @@ class UnsplashSettings extends LitElement {
           }
         </form>
       </fieldset>
-      <p class="status" aria-live="polite">${statusMessage(this.saveState)}</p>
+      <p class="status" aria-live="polite">${this.saveStatus.message}</p>
     `;
   }
 
@@ -274,14 +224,11 @@ class UnsplashSettings extends LitElement {
         getUnsplashAccessKey(),
       ]);
 
-      if (!this.saveInFlight) {
-        this.confirmedSettings = settings;
-        this.settings = settings;
-        this.confirmedCustomAccessKey = customAccessKey;
-        this.customAccessKey = customAccessKey;
-      }
+      this.settings = settings;
+      this.confirmedCustomAccessKey = customAccessKey;
+      this.customAccessKey = customAccessKey;
     } catch {
-      this.saveState = "error";
+      this.saveStatus.set("error");
     } finally {
       this.loaded = true;
     }
@@ -291,47 +238,21 @@ class UnsplashSettings extends LitElement {
     partial: Partial<Omit<UnsplashSettingsData, "version">>,
   ): Promise<void> => {
     this.settings = { ...this.settings, ...partial };
+    this.saveStatus.set("saving");
 
-    if (this.saveInFlight) return;
-
-    window.clearTimeout(this.saveResetTimeout);
-    this.saveInFlight = true;
-    this.saveState = "saving";
-
-    while (
-      JSON.stringify(this.settings) !== JSON.stringify(this.confirmedSettings)
-    ) {
-      const target = { ...this.settings };
-      try {
-        await setUnsplashSettings(target);
-        this.confirmedSettings = target;
-      } catch {
-        this.settings = { ...this.confirmedSettings };
-        this.saveState = "error";
-        this.saveInFlight = false;
-        return;
-      }
+    try {
+      await setUnsplashSettings(partial);
+      this.saveStatus.set("saved");
+    } catch {
+      this.settings = await getUnsplashSettings();
+      this.saveStatus.set("error");
     }
-
-    this.saveState = "saved";
-    this.saveResetTimeout = scheduleSavedReset(() => {
-      if (this.saveState === "saved") {
-        this.saveState = "idle";
-      }
-    });
-    this.saveInFlight = false;
   };
 
-  private changeResolution = (event: Event): void => {
-    const target = event.currentTarget as HTMLInputElement;
-    const nextResolution = RESOLUTIONS.find(
-      ({ value }) => value === target.value,
-    )?.value;
+  private changeResolution = (value: ImageResolution): void => {
+    if (value === this.settings.imageQuality) return;
 
-    if (!nextResolution || nextResolution === this.settings.imageQuality)
-      return;
-
-    void this.persist({ imageQuality: nextResolution });
+    void this.persist({ imageQuality: value });
   };
 
   private changeOrientation = (event: Event): void => {
@@ -366,7 +287,7 @@ class UnsplashSettings extends LitElement {
   ): void => {
     const nextValue = event.detail.value;
 
-    if (nextValue === this.confirmedSettings[field]) return;
+    if (nextValue === this.settings[field]) return;
 
     void this.persist({ [field]: nextValue });
   };
@@ -383,7 +304,7 @@ class UnsplashSettings extends LitElement {
     const target = event.currentTarget as HTMLInputElement;
     const trimmed = target.value.trim();
 
-    if (trimmed === this.confirmedSettings[field]) return;
+    if (trimmed === this.settings[field]) return;
 
     void this.persist({ [field]: trimmed });
   };
@@ -396,8 +317,8 @@ class UnsplashSettings extends LitElement {
       this.accessKeyError = "";
     }
 
-    if (this.saveState === "error") {
-      this.saveState = "idle";
+    if (this.saveStatus.state === "error") {
+      this.saveStatus.set("idle");
     }
   };
 
@@ -410,11 +331,9 @@ class UnsplashSettings extends LitElement {
       return;
     }
 
-    window.clearTimeout(this.saveResetTimeout);
     this.accessKeyError = "";
-
     this.validatingAccessKey = true;
-    this.saveState = "saving";
+    this.saveStatus.set("saving");
 
     try {
       const result = trimmed
@@ -423,21 +342,16 @@ class UnsplashSettings extends LitElement {
 
       if (!result.valid) {
         this.accessKeyError = result.error ?? "Invalid Unsplash access key.";
-        this.saveState = "idle";
+        this.saveStatus.set("idle");
         return;
       }
 
       await setUnsplashAccessKey(trimmed);
       this.confirmedCustomAccessKey = trimmed;
       this.customAccessKey = trimmed;
-      this.saveState = "saved";
-      this.saveResetTimeout = scheduleSavedReset(() => {
-        if (this.saveState === "saved") {
-          this.saveState = "idle";
-        }
-      });
+      this.saveStatus.set("saved");
     } catch {
-      this.saveState = "error";
+      this.saveStatus.set("error");
     } finally {
       this.validatingAccessKey = false;
     }

@@ -1,10 +1,10 @@
-import type { BackgroundAsset, UncachedBackgroundAsset } from "../assets";
-import type { ImageSource } from "../sources";
 import {
-  getRandomDirectoryImage,
-  isLocalPermissionError,
-  readDirectoryFile,
-} from "./local-db";
+  type BackgroundAsset,
+  makeAsset,
+  type UncachedBackgroundAsset,
+} from "../assets";
+import type { ImageSource } from "../sources";
+import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
 
 interface LocalPayload {
   folderId: string;
@@ -27,6 +27,11 @@ function isLocalSupported(): boolean {
 const localSource: ImageSource = {
   id: "local",
   name: "Local folder",
+  description: "Photographs from your local device",
+  settingsTag: "stellar-local-settings",
+  get supportsDownload() {
+    return Boolean(this.getDownloadUrl);
+  },
   isSupported: isLocalSupported,
   getRandomAsset: getRandomLocalAsset,
   downloadAsset: downloadLocalAsset,
@@ -51,68 +56,37 @@ async function computeLocalAssetId(
 }
 
 async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
-  const triedPaths: string[] = [];
+  const photo = await getRandomDirectoryImage();
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const photo = await getRandomDirectoryImage(triedPaths);
-
-    if (!photo) {
-      throw new Error(
-        "No folder selected or no photos found in the selected folder. Please choose a folder first.",
-      );
-    }
-
-    try {
-      const file = await photo.handle.getFile();
-      const sourceAssetId = await computeLocalAssetId(
-        photo.folderId,
-        photo.relativePath,
-      );
-
-      let width = 0;
-      let height = 0;
-
-      if (typeof createImageBitmap === "function") {
-        try {
-          const bitmap = await createImageBitmap(file);
-          width = bitmap.width;
-          height = bitmap.height;
-          bitmap.close();
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      return {
-        sourceId: localSource.id,
-        sourceAssetId,
-        width,
-        height,
-        color: null,
-        description: photo.name,
-        attribution: null,
-        payloadVersion: 1,
-        sourcePayload: {
-          folderId: photo.folderId,
-          folderName: photo.folderName,
-          relativePath: photo.relativePath,
-          name: photo.name,
-          size: file.size,
-          type: file.type,
-          lastModified: file.lastModified,
-        } satisfies LocalPayload,
-        createdAt: Date.now(),
-      };
-    } catch (error) {
-      if (isLocalPermissionError(error)) {
-        throw error;
-      }
-
-      triedPaths.push(photo.relativePath);
-    }
+  if (!photo) {
+    throw new Error(
+      "No folder selected or no photos found in the selected folder. Please choose a folder first.",
+    );
   }
 
-  throw new Error("No readable photos found in the selected folder.");
+  const file = await photo.handle.getFile();
+  const sourceAssetId = await computeLocalAssetId(
+    photo.folderId,
+    photo.relativePath,
+  );
+
+  return makeAsset({
+    sourceId: localSource.id,
+    sourceAssetId,
+    width: 0,
+    height: 0,
+    description: photo.name,
+    attribution: null,
+    sourcePayload: {
+      folderId: photo.folderId,
+      folderName: photo.folderName,
+      relativePath: photo.relativePath,
+      name: photo.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+    } satisfies LocalPayload,
+  });
 }
 
 async function downloadLocalAsset(

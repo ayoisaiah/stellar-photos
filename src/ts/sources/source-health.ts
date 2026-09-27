@@ -14,8 +14,6 @@ function parseSourceHealth(value: unknown): SourceHealthMap {
 }
 
 async function getSourceHealthMap(): Promise<SourceHealthMap> {
-  if (typeof chrome === "undefined" || !chrome.storage?.local) return {};
-
   const values = await chrome.storage.local.get(SOURCE_HEALTH_STORAGE_KEY);
   return parseSourceHealth(values[SOURCE_HEALTH_STORAGE_KEY]);
 }
@@ -24,8 +22,6 @@ async function setSourceError(
   sourceId: string,
   message: string,
 ): Promise<void> {
-  if (typeof chrome === "undefined" || !chrome.storage?.local) return;
-
   const errors = await getSourceHealthMap();
   if (message) {
     errors[sourceId] = message;

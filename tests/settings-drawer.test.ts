@@ -26,20 +26,21 @@ describe("SettingsDrawer component", () => {
     expect(drawer.photoFrequency).toBe("newtab");
   });
 
-  it("toggles source on and dispatches active-sources-changed", async () => {
+  it("toggles source on and saves to storage", async () => {
     const drawer = new SettingsDrawer();
     drawer.activeSourceIds = ["unsplash"];
     drawer.open = true;
 
-    const eventSpy = vi.fn();
-    drawer.addEventListener("active-sources-changed", eventSpy);
+    const setSpy = vi.spyOn(chrome.storage.sync, "set");
 
     // @ts-expect-error accessing private method for testing
     await drawer.toggleSource("earthview");
 
-    expect(eventSpy).toHaveBeenCalledWith(
+    expect(setSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        detail: { sourceIds: ["unsplash", "earthview"] },
+        coreSettings: expect.objectContaining({
+          activeSourceIds: ["unsplash", "earthview"],
+        }),
       }),
     );
   });
@@ -49,13 +50,13 @@ describe("SettingsDrawer component", () => {
     drawer.activeSourceIds = ["unsplash"];
     drawer.open = true;
 
-    const eventSpy = vi.fn();
-    drawer.addEventListener("active-sources-changed", eventSpy);
+    const setSpy = vi.spyOn(chrome.storage.sync, "set");
+    setSpy.mockClear();
 
     // @ts-expect-error accessing private method for testing
     await drawer.toggleSource("unsplash");
 
-    expect(eventSpy).not.toHaveBeenCalled();
+    expect(setSpy).not.toHaveBeenCalled();
   });
 
   it("toggles source expansion for configurable sources", () => {
@@ -71,12 +72,11 @@ describe("SettingsDrawer component", () => {
     expect(drawer["expandedSourceIds"].has("unsplash")).toBe(false);
   });
 
-  it("dispatches frequency-changed event when frequency is changed", async () => {
+  it("saves photo frequency to storage when frequency is changed", async () => {
     const drawer = new SettingsDrawer();
     drawer.photoFrequency = "newtab";
 
-    const eventSpy = vi.fn();
-    drawer.addEventListener("frequency-changed", eventSpy);
+    const setSpy = vi.spyOn(chrome.storage.sync, "set");
 
     const inputMock = { value: "everyhour" } as unknown as HTMLInputElement;
     const eventMock = { currentTarget: inputMock } as unknown as Event;
@@ -84,9 +84,11 @@ describe("SettingsDrawer component", () => {
     // @ts-expect-error accessing private method for testing
     await drawer.changeFrequency(eventMock);
 
-    expect(eventSpy).toHaveBeenCalledWith(
+    expect(setSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        detail: { frequency: "everyhour" },
+        coreSettings: expect.objectContaining({
+          photoFrequency: "everyhour",
+        }),
       }),
     );
   });
@@ -112,7 +114,6 @@ describe("SettingsDrawer component", () => {
     vi.stubGlobal("__APP_VERSION__", "test");
     const drawer = new SettingsDrawer();
     drawer.activeSourceIds = ["earthview"];
-    drawer.willUpdate(new Map([["activeSourceIds", undefined]]));
 
     for (const error of ["", "Timed out"]) {
       drawer.sourceHealthMap = {

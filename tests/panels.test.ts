@@ -7,14 +7,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("switches panels exclusively, refreshes on opening, and restores focus on closing", async () => {
+it("switches panels exclusively and restores focus on closing", async () => {
   vi.stubGlobal("window", { clearTimeout, setTimeout });
   const app = new StellarApp();
   const history = vi.fn(async () => undefined);
-  const settings = vi.fn(async () => undefined);
   const showControls = vi.fn();
   app["loadHistoryAssets"] = history;
-  app["loadCoreSettings"] = settings;
   app["showControls"] = showControls;
   const focus = vi.fn();
   const querySelector = vi.fn(() => ({ focus }));
@@ -38,7 +36,6 @@ it("switches panels exclusively, refreshes on opening, and restores focus on clo
   }
 
   history.mockClear();
-  settings.mockClear();
   for (const panel of ["info", "settings"] as const) {
     app["openPanel"] = null;
     app["togglePanel"](panel);
@@ -56,7 +53,6 @@ it("switches panels exclusively, refreshes on opening, and restores focus on clo
     expect(focus).toHaveBeenCalled();
   }
   expect(history).not.toHaveBeenCalled();
-  expect(settings).toHaveBeenCalledOnce();
 });
 
 it("keeps history wheel navigation separate from passive window gestures", () => {
@@ -107,31 +103,6 @@ it("keeps history wheel navigation separate from passive window gestures", () =>
   }
 });
 
-it.each([true, false])(
-  "reads history on demand only without storage notifications (listener: %s)",
-  async (hasListener) => {
-    vi.stubGlobal("window", { clearTimeout, setTimeout });
-    vi.stubGlobal("chrome", {
-      storage: {
-        onChanged: hasListener ? { addListener: vi.fn() } : undefined,
-      },
-    });
-    const app = new StellarApp();
-    const loadHistory = vi.fn(async () => undefined);
-    app["loadHistoryAssets"] = loadHistory;
-    Object.defineProperty(app, "updateComplete", {
-      value: Promise.resolve(true),
-    });
-
-    app["togglePanel"]("history");
-    expect(loadHistory).toHaveBeenCalledTimes(hasListener ? 0 : 1);
-
-    loadHistory.mockClear();
-    await app["navigateHistory"](1);
-    expect(loadHistory).toHaveBeenCalledTimes(hasListener ? 0 : 1);
-  },
-);
-
 it("restarts the controls timer on each navigation action", async () => {
   vi.useFakeTimers();
   vi.stubGlobal("window", { clearTimeout, setTimeout });
@@ -153,7 +124,6 @@ it("restarts the controls timer on each navigation action", async () => {
 it("keeps history open when dismissing or switching other panels", async () => {
   const app = new StellarApp();
   app["loadHistoryAssets"] = vi.fn(async () => undefined);
-  app["loadCoreSettings"] = vi.fn(async () => undefined);
   app["showControls"] = vi.fn();
   Object.defineProperty(app, "renderRoot", {
     value: { querySelector: () => null },

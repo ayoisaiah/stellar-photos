@@ -1,11 +1,13 @@
 import { Check, ChevronDown, X } from "@lucide/icons";
-import { html, LitElement, unsafeCSS } from "lit";
+import { LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-
+import { html, unsafeStatic } from "lit/static-html.js";
 import styles from "../../css/components/settings-drawer.css?inline";
+import formStyles from "../../css/components/settings-form.css?inline";
 import {
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
+  DISPLAY_MODE_OPTIONS,
   setActiveImageSourceIds,
   setDisplaySettings,
   setPhotoFrequency,
@@ -15,27 +17,24 @@ import {
   listStoredFolderRecords,
   verifyHandlePermission,
 } from "../sources/local-db";
-import { readFrequency, renderFrequencySelector } from "./settings-form";
+import {
+  readFrequency,
+  renderFrequencySelector,
+  renderRadioGroup,
+} from "./settings-form";
 import "./local-settings";
 import "./lucide-icon";
 import "./smithsonian-settings";
 import "./unsplash-settings";
 
-import type { DisplaySettings, PhotoDisplayMode } from "../settings";
+import type { DisplaySettings } from "../settings";
 import type { PhotoFrequency } from "../sources/photo-frequency";
 import type { SourceHealthMap } from "../sources/source-health";
 
 declare const __APP_VERSION__: string;
 
-const SOURCE_DESCRIPTIONS: Readonly<Record<string, string>> = {
-  unsplash: "Photography from the Unsplash community",
-  earthview: "Satellite imagery from around the world",
-  smithsonian: "High-resolution open access museum collections",
-  local: "Photographs from your local device",
-};
-
 function getWebstoreReviewUrl(): string {
-  const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const userAgent = navigator.userAgent;
 
   if (/firefox/i.test(userAgent)) {
     return "https://addons.mozilla.org/en-US/firefox/addon/stellar-photos/reviews/";
@@ -50,7 +49,7 @@ function getWebstoreReviewUrl(): string {
 
 @customElement("stellar-settings-drawer")
 class SettingsDrawer extends LitElement {
-  static override styles = unsafeCSS(styles);
+  static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
   @property({ type: Boolean, reflect: true })
   accessor open = false;
@@ -71,44 +70,7 @@ class SettingsDrawer extends LitElement {
   accessor sourceHealthMap: SourceHealthMap = {};
 
   @state()
-  private accessor localSourceIds: string[] = [
-    ...DEFAULT_CORE_SETTINGS.activeSourceIds,
-  ];
-
-  @state()
-  private accessor localPhotoFrequency: PhotoFrequency =
-    DEFAULT_CORE_SETTINGS.photoFrequency;
-
-  @state()
   private accessor expandedSourceIds: Set<string> = new Set();
-
-  @state()
-  private accessor localDisplaySettings: DisplaySettings =
-    DEFAULT_DISPLAY_SETTINGS;
-
-  override disconnectedCallback(): void {
-    window.removeEventListener("keydown", this.handleKeydown);
-    super.disconnectedCallback();
-  }
-
-  override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
-    if (changedProperties.has("activeSourceIds")) {
-      this.localSourceIds = this.activeSourceIds;
-    }
-
-    if (changedProperties.has("photoFrequency")) {
-      this.localPhotoFrequency = this.photoFrequency;
-    }
-
-    if (changedProperties.has("open") && this.open) {
-      this.localSourceIds = this.activeSourceIds;
-      this.localPhotoFrequency = this.photoFrequency;
-    }
-
-    if (changedProperties.has("displaySettings")) {
-      this.localDisplaySettings = this.displaySettings;
-    }
-  }
 
   override render() {
     const sources = listImageSources();
@@ -150,15 +112,18 @@ class SettingsDrawer extends LitElement {
             </p>
             <div class="source-list">
               ${sources.map((source) => {
-                const isActive = this.localSourceIds.includes(source.id);
+                const isActive = this.activeSourceIds.includes(source.id);
                 const isOnlyActive =
-                  isActive && this.localSourceIds.length === 1;
-                const canConfigure = hasSourceSettings(source.id);
+                  isActive && this.activeSourceIds.length === 1;
+                const canConfigure = Boolean(source.settingsTag);
                 const isExpanded = this.expandedSourceIds.has(source.id);
                 const error = isActive
                   ? this.sourceHealthMap[source.id]
                   : undefined;
                 const isDown = Boolean(error);
+                const tag = source.settingsTag
+                  ? unsafeStatic(source.settingsTag)
+                  : null;
 
                 return html`
                   <div class="source-card ${isActive ? "active" : ""} ${isDown ? "source-down" : ""}">
@@ -175,7 +140,7 @@ class SettingsDrawer extends LitElement {
                         </span>
                         <div class="source-text-block">
                           <strong>${source.name}</strong>
-                          <small class="source-desc">${SOURCE_DESCRIPTIONS[source.id] ?? ""}</small>
+                          <small class="source-desc">${source.description}</small>
                           ${error ? html`<p class="source-error">${error}</p>` : null}
                         </div>
                       </label>
@@ -196,10 +161,10 @@ class SettingsDrawer extends LitElement {
                       }
                     </div>
                     ${
-                      canConfigure && isExpanded && this.open
+                      canConfigure && isExpanded && this.open && tag
                         ? html`
                           <div class="source-card-body">
-                            ${renderSourceSettings(source.id)}
+                            <${tag}></${tag}>
                           </div>
                         `
                         : null
@@ -218,7 +183,7 @@ class SettingsDrawer extends LitElement {
               Choose how often Stellar Photos displays a new photo.
             </p>
             ${renderFrequencySelector(
-              this.localPhotoFrequency,
+              this.photoFrequency,
               false,
               this.changeFrequency,
             )}
@@ -232,73 +197,8 @@ class SettingsDrawer extends LitElement {
               Choose how photos fit your screen based on their orientation.
             </p>
 
-            <fieldset>
-              <legend>Landscape photos</legend>
-              <div class="options">
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="landscapeMode"
-                    value="cover"
-                    .checked=${this.localDisplaySettings.landscapeMode === "cover"}
-                    @change=${this.changeLandscapeMode}
-                  />
-                  <span class="control" aria-hidden="true"></span>
-                  <span>
-                    <strong>Cover</strong>
-                    <small>Fills screen (centered, cropped edges)</small>
-                  </span>
-                </label>
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="landscapeMode"
-                    value="contain-blur"
-                    .checked=${this.localDisplaySettings.landscapeMode === "contain-blur"}
-                    @change=${this.changeLandscapeMode}
-                  />
-                  <span class="control" aria-hidden="true"></span>
-                  <span>
-                    <strong>Contain with blur</strong>
-                    <small>Shows full photo with blurred background</small>
-                  </span>
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend>Portrait photos</legend>
-              <div class="options">
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="portraitMode"
-                    value="cover"
-                    .checked=${this.localDisplaySettings.portraitMode === "cover"}
-                    @change=${this.changePortraitMode}
-                  />
-                  <span class="control" aria-hidden="true"></span>
-                  <span>
-                    <strong>Cover</strong>
-                    <small>Fills screen (centered, cropped edges)</small>
-                  </span>
-                </label>
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="portraitMode"
-                    value="contain-blur"
-                    .checked=${this.localDisplaySettings.portraitMode === "contain-blur"}
-                    @change=${this.changePortraitMode}
-                  />
-                  <span class="control" aria-hidden="true"></span>
-                  <span>
-                    <strong>Contain with blur</strong>
-                    <small>Shows full photo with blurred background</small>
-                  </span>
-                </label>
-              </div>
-            </fieldset>
+            ${this.renderDisplayModeFieldset("Landscape photos", "landscapeMode")}
+            ${this.renderDisplayModeFieldset("Portrait photos", "portraitMode")}
 
             <fieldset>
               <legend>Motion</legend>
@@ -307,8 +207,11 @@ class SettingsDrawer extends LitElement {
                   <input
                     type="checkbox"
                     name="motion"
-                    .checked=${this.localDisplaySettings.motion}
-                    @change=${this.toggleMotion}
+                    .checked=${this.displaySettings.motion}
+                    @change=${(e: Event) =>
+                      void this.updateDisplay({
+                        motion: (e.currentTarget as HTMLInputElement).checked,
+                      })}
                   />
                   <span class="checkbox-control" aria-hidden="true">
                     <stellar-icon .icon=${Check}></stellar-icon>
@@ -387,15 +290,9 @@ class SettingsDrawer extends LitElement {
   protected override updated(
     changedProperties: Map<PropertyKey, unknown>,
   ): void {
-    if (!changedProperties.has("open")) return;
-
-    if (!this.open) {
-      window.removeEventListener("keydown", this.handleKeydown);
-      return;
+    if (changedProperties.has("open") && this.open) {
+      this.renderRoot.querySelector<HTMLButtonElement>(".close")?.focus();
     }
-
-    window.addEventListener("keydown", this.handleKeydown);
-    this.renderRoot.querySelector<HTMLButtonElement>(".close")?.focus();
   }
 
   private close = (): void => {
@@ -404,18 +301,9 @@ class SettingsDrawer extends LitElement {
 
   private changeFrequency = async (event: Event): Promise<void> => {
     const nextFrequency = readFrequency(event);
-    if (!nextFrequency || nextFrequency === this.localPhotoFrequency) return;
+    if (!nextFrequency || nextFrequency === this.photoFrequency) return;
 
-    this.localPhotoFrequency = nextFrequency;
     await setPhotoFrequency(nextFrequency);
-
-    this.dispatchEvent(
-      new CustomEvent("frequency-changed", {
-        detail: { frequency: nextFrequency },
-        bubbles: true,
-        composed: true,
-      }),
-    );
   };
 
   private toggleExpand = (sourceId: string): void => {
@@ -429,13 +317,13 @@ class SettingsDrawer extends LitElement {
   };
 
   private toggleSource = async (sourceId: string): Promise<void> => {
-    const isActive = this.localSourceIds.includes(sourceId);
+    const isActive = this.activeSourceIds.includes(sourceId);
 
-    if (isActive && this.localSourceIds.length === 1) return;
+    if (isActive && this.activeSourceIds.length === 1) return;
 
     let nextSourceIds: string[];
     if (isActive) {
-      nextSourceIds = this.localSourceIds.filter((id) => id !== sourceId);
+      nextSourceIds = this.activeSourceIds.filter((id) => id !== sourceId);
     } else {
       if (sourceId === "local") {
         const records = await listStoredFolderRecords().catch(() => []);
@@ -445,104 +333,36 @@ class SettingsDrawer extends LitElement {
           }
         }
       }
-      nextSourceIds = [...this.localSourceIds, sourceId];
+      nextSourceIds = [...this.activeSourceIds, sourceId];
     }
 
-    this.localSourceIds = nextSourceIds;
     await setActiveImageSourceIds(nextSourceIds);
-
-    this.dispatchEvent(
-      new CustomEvent("active-sources-changed", {
-        detail: { sourceIds: nextSourceIds },
-        bubbles: true,
-        composed: true,
-      }),
-    );
   };
 
-  private changeLandscapeMode = async (event: Event): Promise<void> => {
-    const target = event.currentTarget as HTMLInputElement;
-    const mode = target.value as PhotoDisplayMode;
-    if (mode !== "cover" && mode !== "contain-blur") return;
-
-    this.localDisplaySettings = {
-      ...this.localDisplaySettings,
-      landscapeMode: mode,
-    };
-
-    await setDisplaySettings({ landscapeMode: mode });
-
-    this.dispatchEvent(
-      new CustomEvent("display-settings-changed", {
-        detail: { displaySettings: this.localDisplaySettings },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+  private updateDisplay = async (
+    patch: Partial<Omit<DisplaySettings, "version">>,
+  ): Promise<void> => {
+    await setDisplaySettings(patch);
   };
 
-  private changePortraitMode = async (event: Event): Promise<void> => {
-    const target = event.currentTarget as HTMLInputElement;
-    const mode = target.value as PhotoDisplayMode;
-    if (mode !== "cover" && mode !== "contain-blur") return;
+  private renderDisplayModeFieldset(
+    legend: string,
+    name: "landscapeMode" | "portraitMode",
+  ) {
+    const currentMode = this.displaySettings[name];
 
-    this.localDisplaySettings = {
-      ...this.localDisplaySettings,
-      portraitMode: mode,
-    };
-
-    await setDisplaySettings({ portraitMode: mode });
-
-    this.dispatchEvent(
-      new CustomEvent("display-settings-changed", {
-        detail: { displaySettings: this.localDisplaySettings },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  };
-
-  private toggleMotion = async (event: Event): Promise<void> => {
-    const target = event.currentTarget as HTMLInputElement;
-    const motion = target.checked;
-
-    this.localDisplaySettings = {
-      ...this.localDisplaySettings,
-      motion,
-    };
-
-    await setDisplaySettings({ motion });
-
-    this.dispatchEvent(
-      new CustomEvent("display-settings-changed", {
-        detail: { displaySettings: this.localDisplaySettings },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  };
-
-  private handleKeydown = (event: KeyboardEvent): void => {
-    if (event.key === "Escape" && this.open) this.close();
-  };
-}
-
-function hasSourceSettings(sourceId: string): boolean {
-  return (
-    sourceId === "unsplash" ||
-    sourceId === "smithsonian" ||
-    sourceId === "local"
-  );
-}
-
-function renderSourceSettings(sourceId: string) {
-  if (sourceId === "unsplash") return html`<stellar-unsplash-settings />`;
-  if (sourceId === "smithsonian") {
-    return html`<stellar-smithsonian-settings />`;
+    return html`
+      <fieldset>
+        <legend>${legend}</legend>
+        ${renderRadioGroup(
+          name,
+          DISPLAY_MODE_OPTIONS,
+          currentMode,
+          (val) => void this.updateDisplay({ [name]: val }),
+        )}
+      </fieldset>
+    `;
   }
-  if (sourceId === "local") return html`<stellar-local-settings />`;
-
-  return null;
 }
 
 declare global {

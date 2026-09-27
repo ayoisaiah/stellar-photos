@@ -1,16 +1,12 @@
 import type { BackgroundAsset } from "../assets";
 
-type PhotoFrequency = "newtab" | "every15minutes" | "everyhour" | "everyday";
+type PhotoFrequency = (typeof FREQUENCIES)[number]["value"];
 
-interface FrequencyOption {
-  value: PhotoFrequency;
-  label: string;
-  description: string;
-}
+type FrequencyOption = (typeof FREQUENCIES)[number];
 
 const DEFAULT_PHOTO_FREQUENCY: PhotoFrequency = "newtab";
 
-const FREQUENCIES: readonly FrequencyOption[] = [
+const FREQUENCIES = [
   {
     value: "newtab",
     label: "Every new tab",
@@ -31,7 +27,7 @@ const FREQUENCIES: readonly FrequencyOption[] = [
     label: "Every 24 hours",
     description: "Keep the same photo for 24 hours",
   },
-];
+] as const;
 
 function isPhotoFrequency(value: unknown): value is PhotoFrequency {
   return FREQUENCIES.some((frequency) => frequency.value === value);

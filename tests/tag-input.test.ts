@@ -83,10 +83,10 @@ describe("StellarTagInput component", () => {
     expect(el.errorMessage).toBe('Collection "999" was not found on Unsplash.');
   });
 
-  it("handles boolean validation result", async () => {
+  it("handles validation failure result", async () => {
     const el = new StellarTagInput();
     el.value = "";
-    el.validate = (tag) => tag === "valid-tag";
+    el.validate = (tag) => ({ valid: tag === "valid-tag" });
 
     // @ts-expect-error accessing private method for unit testing
     await el.addTags(["valid-tag"]);
@@ -116,7 +116,7 @@ describe("StellarTagInput component", () => {
     const el = new StellarTagInput();
     el.value = "";
     el.validate = async () =>
-      new Promise((resolve) => setTimeout(() => resolve(true), 10));
+      new Promise((resolve) => setTimeout(() => resolve({ valid: true }), 10));
 
     const inputMock = {
       value: "nature,wallpapers",

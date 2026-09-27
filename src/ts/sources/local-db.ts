@@ -2,10 +2,7 @@ interface LocalFolderRecord {
   id: string;
   folderName: string;
   handle: FileSystemDirectoryHandle;
-  photoCount: number;
   imagePaths: string[];
-  lastScannedAt: number;
-  updatedAt: number;
 }
 
 interface RandomLocalImageResult {
@@ -38,14 +35,12 @@ function isLocalPermissionError(error: unknown): boolean {
 
   if (error instanceof LocalPermissionError) return true;
 
-  const err = error as { name?: string; code?: string; message?: string };
+  const err = error as { name?: string; code?: string };
 
   return (
     err.name === "LocalPermissionError" ||
-    err.code === "NEEDS_PAGE_CONTEXT" ||
-    (typeof err.message === "string" &&
-      (err.message.includes("getFileHandle") ||
-        err.message.includes("not allowed")))
+    err.name === "NotAllowedError" ||
+    err.code === "NEEDS_PAGE_CONTEXT"
   );
 }
 
@@ -218,35 +213,27 @@ async function addDirectoryHandle(
 
   const existingRecords = await listStoredFolderRecords();
   for (const existing of existingRecords) {
-    if (typeof handle.isSameEntry === "function") {
-      try {
-        if (await handle.isSameEntry(existing.handle)) {
-          const updated = {
-            ...existing,
-            handle,
-            photoCount: imagePaths.length,
-            imagePaths,
-            lastScannedAt: Date.now(),
-          };
-          await withFolderStore("readwrite", (store) => store.put(updated));
+    try {
+      if (await handle.isSameEntry(existing.handle)) {
+        const updated: LocalFolderRecord = {
+          ...existing,
+          handle,
+          imagePaths,
+        };
+        await withFolderStore("readwrite", (store) => store.put(updated));
 
-          return updated;
-        }
-      } catch {
-        // Fallback
+        return updated;
       }
+    } catch {
+      // Fallback
     }
   }
 
-  const now = Date.now();
   const record: LocalFolderRecord = {
     id: crypto.randomUUID(),
     folderName: handle.name,
     handle,
-    photoCount: imagePaths.length,
     imagePaths,
-    lastScannedAt: now,
-    updatedAt: now,
   };
 
   await withFolderStore("readwrite", (store) => store.put(record));
@@ -261,8 +248,6 @@ async function rescanFolderRecord(
   const updated: LocalFolderRecord = {
     ...record,
     imagePaths,
-    photoCount: imagePaths.length,
-    lastScannedAt: Date.now(),
   };
 
   await withFolderStore("readwrite", (store) => store.put(updated));
@@ -296,26 +281,6 @@ async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
   );
 }
 
-function pickRandomCandidate(
-  records: LocalFolderRecord[],
-  excludedSet: Set<string>,
-): { record: LocalFolderRecord; path: string } | null {
-  const available: { record: LocalFolderRecord; path: string }[] = [];
-
-  for (const record of records) {
-    for (const path of record.imagePaths) {
-      const fileName = path.split("/").pop() || path;
-      if (!excludedSet.has(path) && !excludedSet.has(fileName)) {
-        available.push({ record, path });
-      }
-    }
-  }
-
-  if (available.length === 0) return null;
-
-  return available[Math.floor(Math.random() * available.length)] ?? null;
-}
-
 async function getRandomDirectoryImage(
   excludePaths: string[] = [],
 ): Promise<RandomLocalImageResult | null> {
@@ -323,53 +288,49 @@ async function getRandomDirectoryImage(
   if (records.length === 0) return null;
 
   const excludedSet = new Set(excludePaths);
+  const candidates: { record: LocalFolderRecord; path: string }[] = [];
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    let candidate = pickRandomCandidate(records, excludedSet);
-
-    if (!candidate && excludedSet.size > 0) {
-      excludedSet.clear();
-      candidate = pickRandomCandidate(records, excludedSet);
-    }
-
-    if (!candidate) return null;
-
-    try {
-      const fileHandle = await getFileHandleByPath(
-        candidate.record.handle,
-        candidate.path,
-      );
-
-      return {
-        handle: fileHandle,
-        name: candidate.path.split("/").pop() || candidate.path,
-        relativePath: candidate.path,
-        folderId: candidate.record.id,
-        folderName: candidate.record.folderName,
-      };
-    } catch (error) {
-      if (error instanceof LocalPermissionError) throw error;
-
-      excludedSet.add(candidate.path);
+  for (const record of records) {
+    for (const path of record.imagePaths) {
+      if (!excludedSet.has(path)) {
+        candidates.push({ record, path });
+      }
     }
   }
 
-  return null;
+  if (candidates.length === 0 && excludedSet.size > 0) {
+    for (const record of records) {
+      for (const path of record.imagePaths) {
+        candidates.push({ record, path });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  const candidate = candidates[Math.floor(Math.random() * candidates.length)]!;
+  const fileHandle = await getFileHandleByPath(
+    candidate.record.handle,
+    candidate.path,
+  );
+
+  return {
+    handle: fileHandle,
+    name: candidate.path.split("/").pop() || candidate.path,
+    relativePath: candidate.path,
+    folderId: candidate.record.id,
+    folderName: candidate.record.folderName,
+  };
 }
 
 async function readDirectoryFile(
   relativePath: string,
   folderId: string,
 ): Promise<File> {
-  const records = await listStoredFolderRecords();
-
-  if (records.length === 0) {
-    throw new Error(
-      "No folder selected. Please choose a folder with images first.",
-    );
-  }
-
-  const folderRecord = records.find((r) => r.id === folderId);
+  const folderRecord = await withFolderStore<LocalFolderRecord | undefined>(
+    "readonly",
+    (store) => store.get(folderId) as IDBRequest<LocalFolderRecord | undefined>,
+  );
 
   if (!folderRecord) {
     throw new Error("Target folder not found.");

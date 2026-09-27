@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getWebstoreReviewUrl } from "../src/ts/components/settings-drawer";
 import {
   readFrequency,
-  statusMessage,
+  SaveStatusController,
 } from "../src/ts/components/settings-form";
 
 afterEach(() => {
@@ -20,10 +20,25 @@ describe("settings form", () => {
   });
 
   it("formats save states", () => {
-    expect(statusMessage("saving")).toBe("Saving…");
-    expect(statusMessage("saved")).toBe("Saved");
-    expect(statusMessage("error")).toBe("Couldn’t save this setting.");
-    expect(statusMessage("idle")).toBe("");
+    vi.stubGlobal("window", { setTimeout, clearTimeout });
+    const controller = new SaveStatusController({
+      addController: vi.fn(),
+      removeController: vi.fn(),
+      requestUpdate: vi.fn(),
+      updateComplete: Promise.resolve(true),
+    });
+
+    for (const [state, message] of [
+      ["saving", "Saving…"],
+      ["saved", "Saved"],
+      ["error", "Couldn’t save this setting."],
+      ["idle", ""],
+    ] as const) {
+      controller.set(state);
+      expect(controller.message).toBe(message);
+    }
+
+    controller.hostDisconnected();
   });
 
   it("resolves dynamic webstore review URLs by browser", () => {

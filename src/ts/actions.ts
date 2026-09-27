@@ -1,28 +1,24 @@
-// biome-ignore assist/source/organizeImports: Type-only imports are grouped separately per AGENTS.md.
+import { error } from "node:console";
+import type { BackgroundAsset } from "./assets";
 import { HISTORY_LIMIT } from "./assets";
 import {
   assetCacheKey,
   createThumbnail,
   deleteCachedImage,
-  deleteCachedThumbnail,
   putCachedImage,
-  putCachedThumbnail,
 } from "./cache";
 import { getPhotoFrequency } from "./settings";
+import type { ImageSource } from "./sources";
 import { getActiveImageSources, getImageSource } from "./sources";
 import { shouldRotateAtFrequency } from "./sources/photo-frequency";
 import { setSourceError } from "./sources/source-health";
 import { readHistory, readPinnedAsset, writeHistory } from "./storage";
-
-import type { BackgroundAsset } from "./assets";
-import type { ImageSource } from "./sources";
+import { serialized } from "./store";
 
 const LOCK_NAME = "stellar_actions_lock";
 
-let queueTail: Promise<void> = Promise.resolve();
-
 function nextImage(): Promise<void> {
-  return enqueue(async () => {
+  return serialized(LOCK_NAME, async () => {
     const pinned = await readPinnedAsset();
     if (pinned) return;
 
@@ -78,31 +74,10 @@ function nextImage(): Promise<void> {
 async function trackDownload(asset: BackgroundAsset): Promise<void> {
   const source = getImageSource(asset.sourceId);
 
-  if (!source || !source.supportsDownload) return;
-
-  try {
-    await source.didDownload?.(asset);
-  } catch {
-    // Ignore tracking errors
-  }
-}
-
-function enqueue<T>(operation: () => Promise<T>): Promise<T> {
-  const run = async () => {
-    if (typeof navigator !== "undefined" && navigator.locks?.request) {
-      return navigator.locks.request(LOCK_NAME, operation);
-    }
-    return operation();
-  };
-
-  const result = queueTail.then(run, run);
-
-  queueTail = result.then(
-    () => undefined,
-    () => undefined,
-  );
-
-  return result;
+  if (source && source.supportsDownload === false) return;
+  await source?.didDownload?.(asset).catch((error) => {
+    console.error(error);
+  });
 }
 
 async function cacheAndRecordImage(
@@ -112,26 +87,38 @@ async function cacheAndRecordImage(
   const imageForThumb = image.clone();
   await putCachedImage(asset.cacheKey, image);
 
+  let assetWithDimensions = asset;
+
   try {
     const blob = await imageForThumb.blob();
-    const thumbnailBlob = await createThumbnail(blob);
-    if (thumbnailBlob) {
-      await putCachedThumbnail(
+    const result = await createThumbnail(blob);
+
+    if (result) {
+      if ((!asset.width || !asset.height) && result.width && result.height) {
+        assetWithDimensions = {
+          ...asset,
+          width: result.width,
+          height: result.height,
+        };
+      }
+
+      await putCachedImage(
         asset.cacheKey,
-        new Response(thumbnailBlob, {
+        new Response(result.blob, {
           headers: {
             "content-type": "image/webp",
-            "content-length": String(thumbnailBlob.size),
+            "content-length": String(result.blob.size),
           },
         }),
+        "thumbnail",
       );
     }
-  } catch {
-    // Non-fatal thumbnail generation failure
+  } catch (error) {
+    console.error(error);
   }
 
   const { history } = await readHistory();
-  const nextHistory = [asset, ...history].slice(0, HISTORY_LIMIT);
+  const nextHistory = [assetWithDimensions, ...history].slice(0, HISTORY_LIMIT);
   const evicted = history.length >= HISTORY_LIMIT ? history.at(-1) : null;
   await writeHistory({ history: nextHistory });
 
@@ -141,19 +128,22 @@ async function cacheAndRecordImage(
   ) {
     try {
       await deleteCachedImage(evicted.cacheKey);
-    } catch {
-      // Ignore cache cleanup error
-    }
-    try {
-      await deleteCachedThumbnail(evicted.cacheKey);
-    } catch {
-      // Ignore thumbnail cleanup error
+      await deleteCachedImage(evicted.cacheKey, "thumbnail");
+    } catch (error) {
+      console.error(error);
     }
   }
 }
 
 function shuffleSources(sources: readonly ImageSource[]): ImageSource[] {
-  return [...sources].sort(() => Math.random() - 0.5);
+  const result = [...sources];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j]!, result[i]!];
+  }
+
+  return result;
 }
 
 export { nextImage, trackDownload };
