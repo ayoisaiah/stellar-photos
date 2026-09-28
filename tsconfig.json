@@ -15,6 +15,8 @@
     "entrypoints/**/*.ts",
     "src/**/*.ts",
     "tests/**/*.ts",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
     "wxt.config.ts"
   ],
   "exclude": ["old", "_src", "dist"]

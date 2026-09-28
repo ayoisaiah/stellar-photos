@@ -70,6 +70,21 @@ Stellar Photos is built with TypeScript, [Lit](https://lit.dev/), and [WXT](http
    npm test             # run Vitest test suite
    ```
 
+### Browser tests
+
+```bash
+npx playwright install chromium  # once; add --with-deps on Linux CI
+npm run test:e2e                  # build and test the Chrome extension
+npm run test:e2e -- --headed      # watch the test in Chromium
+```
+
+Playwright loads the built extension into a fresh Chromium profile for each
+test, following the [extension testing setup](https://playwright.dev/docs/chrome-extensions).
+The first test changes photo frequency through Settings and verifies it survives
+a reload, using real extension storage. It runs offline and needs no API keys.
+The test build goes into `.wxt-e2e-dist`; regular builds in `dist` are untouched.
+Vitest remains the unit test runner (`npm test`).
+
 ## Contribute
 
 Bug reports, feature requests, and pull requests are welcome! See [CONTRIBUTING.md](https://github.com/ayoisaiah/stellar-photos/blob/master/CONTRIBUTING.md) for guidelines.

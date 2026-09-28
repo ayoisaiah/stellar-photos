@@ -13,7 +13,9 @@
     "firefox:prod": "wxt build -b firefox --mv3",
     "chrome:prod": "wxt build -b chrome --mv3",
     "typecheck": "wxt prepare && tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run tests",
+    "pretest:e2e": "STELLAR_OUT_DIR=.wxt-e2e-dist UNSPLASH_ACCESS_KEY=test-key SMITHSONIAN_API_KEY=test-key wxt build -b chrome --mv3",
+    "test:e2e": "playwright test",
     "lint": "biome lint .",
     "fmt": "biome format --write .",
     "check": "biome check .",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
+    "@playwright/test": "^1.63.0",
     "@types/chrome": "^0.2.7",
     "@types/node": "^26.4.0",
     "lint-staged": "^17.4.1",

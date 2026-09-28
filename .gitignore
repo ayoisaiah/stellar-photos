@@ -6,10 +6,13 @@ node_modules
 # build
 dist
 .wxt-test-dist
+.wxt-e2e-dist
 .wxt
 
 # testing
 coverage
+playwright-report
+test-results
 
 # misc
 .DS_Store
