@@ -11,13 +11,12 @@ import {
   Settings,
 } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, eventOptions, state } from "lit/decorators.js";
+import { eventOptions, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
 import { readImage } from "../image-reader";
-import { dispatch } from "../service-worker";
 import {
   CORE_SETTINGS_KEY,
   DEFAULT_CORE_SETTINGS,
@@ -44,11 +43,9 @@ import {
   validateHistoryState,
   writePinnedAsset,
 } from "../storage";
+import { customElement } from "./custom-element";
 import "./empty-state";
-import "./history-panel";
 import "./lucide-icon";
-import "./photo-info";
-import "./settings-drawer";
 
 import type { BackgroundAsset } from "../assets";
 import type { WorkerCommand, WorkerResult } from "../service-worker";
@@ -57,6 +54,14 @@ import type { ImageSource } from "../sources";
 import type { PhotoFrequency } from "../sources/photo-frequency";
 import type { SourceHealthMap } from "../sources/source-health";
 import type { EmptyStatePhase } from "./empty-state";
+
+declare global {
+  interface Window {
+    __stellarDispatch?: (request: unknown) => Promise<WorkerResult>;
+  }
+}
+
+let panelsPromise: Promise<void> | null = null;
 
 @customElement("stellar-app")
 class StellarApp extends LitElement {
@@ -160,6 +165,17 @@ class StellarApp extends LitElement {
     chrome.storage.onChanged.addListener(this.handleStorageChange);
 
     void this.initializeState();
+
+    if (typeof window !== "undefined") {
+      const win = window as Window & {
+        requestIdleCallback?: (cb: () => void) => number;
+      };
+      if (typeof win.requestIdleCallback === "function") {
+        win.requestIdleCallback(() => void loadPanels());
+      } else {
+        setTimeout(() => void loadPanels(), 1000);
+      }
+    }
   }
 
   override disconnectedCallback(): void {
@@ -412,6 +428,8 @@ class StellarApp extends LitElement {
   }
 
   private togglePanel = (name: "history" | "info" | "settings"): void => {
+    void loadPanels();
+
     if (name === "history") {
       this.historyOpen = !this.historyOpen;
       if (!this.historyOpen) {
@@ -777,12 +795,51 @@ class StellarApp extends LitElement {
   }
 }
 
+function loadPanels(): Promise<void> {
+  if (typeof document === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (
+    typeof customElements !== "undefined" &&
+    customElements.get("stellar-settings-drawer")
+  ) {
+    return Promise.resolve();
+  }
+
+  if (!panelsPromise) {
+    panelsPromise = new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = chrome.runtime?.getURL
+        ? chrome.runtime.getURL("panels.js")
+        : "/panels.js";
+      script.onload = () => resolve();
+      script.onerror = () => {
+        panelsPromise = null;
+        reject(new Error("Failed to load panels script"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  return panelsPromise;
+}
+
 async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
   if (
     command.command === "nextImage" &&
     (await getActiveImageSourceIds()).includes("local")
   ) {
-    return dispatch(command);
+    await loadPanels();
+    return (
+      window.__stellarDispatch?.(command) ?? {
+        ok: false,
+        error: {
+          code: "DISPATCH_UNAVAILABLE",
+          message: "Page actions unavailable",
+        },
+      }
+    );
   }
 
   try {
@@ -800,8 +857,10 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
       };
     }
 
-    if (!response.ok && response.error.code === "NEEDS_PAGE_CONTEXT")
-      return dispatch(command);
+    if (!response.ok && response.error.code === "NEEDS_PAGE_CONTEXT") {
+      await loadPanels();
+      return window.__stellarDispatch?.(command) ?? response;
+    }
 
     return response;
   } catch (error) {
@@ -821,4 +880,4 @@ declare global {
   }
 }
 
-export { StellarApp };
+export { loadPanels, StellarApp };

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BackgroundAsset } from "../src/ts/assets";
-import { StellarApp } from "../src/ts/components/stellar-app";
+import { loadPanels, StellarApp } from "../src/ts/components/stellar-app";
 import {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
@@ -353,5 +353,48 @@ describe("photo display mode orientation", () => {
     expect(app.getEffectiveDisplayMode(portraitAsset)).toBe("contain-blur");
     // @ts-expect-error accessing private method
     expect(app.getEffectiveDisplayMode(landscapeAsset)).toBe("cover");
+  });
+});
+
+describe("loadPanels", () => {
+  it("injects panels script and is idempotent", async () => {
+    const appended: HTMLElement[] = [];
+    const fakeDoc = {
+      createElement: vi.fn((tag: string) => {
+        const el: Record<string, unknown> = { tagName: tag };
+        setTimeout(() => {
+          if (typeof el.onload === "function") {
+            (el.onload as () => void)();
+          }
+        }, 0);
+        return el;
+      }),
+      head: {
+        appendChild: vi.fn((el: HTMLElement) => {
+          appended.push(el);
+          return el;
+        }),
+      },
+    };
+    vi.stubGlobal("document", fakeDoc);
+    vi.stubGlobal("customElements", {
+      get: vi.fn(() => undefined),
+    });
+
+    const p1 = loadPanels();
+    const p2 = loadPanels();
+    expect(p1).toBe(p2);
+    await p1;
+
+    expect(fakeDoc.createElement).toHaveBeenCalledWith("script");
+    expect(fakeDoc.head.appendChild).toHaveBeenCalledTimes(1);
+
+    vi.stubGlobal("customElements", {
+      get: vi.fn((name: string) => name === "stellar-settings-drawer"),
+    });
+    await loadPanels();
+    expect(fakeDoc.head.appendChild).toHaveBeenCalledTimes(1);
+
+    vi.unstubAllGlobals();
   });
 });

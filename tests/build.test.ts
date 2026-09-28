@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { createContext, runInContext } from "node:vm";
 
+import { parseHTML } from "linkedom";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import config from "../wxt.config";
 
@@ -52,6 +54,7 @@ describe("browser packages", () => {
       expect(result.stderr).not.toContain("ERROR");
       const root = `${TEST_OUT_DIR}/${browser}`;
       await expect(stat(`${root}/init.js`)).resolves.toBeTruthy();
+      await expect(stat(`${root}/panels.js`)).resolves.toBeTruthy();
       await expect(stat(`${root}/background.js`)).resolves.toBeTruthy();
 
       const page = await readFile(`${root}/newtab.html`, "utf8");
@@ -68,6 +71,60 @@ describe("browser packages", () => {
       expect(initBundle).toContain("stellar-app");
       expect(initBundle).toContain("stellar-empty-state");
       expect(initBundle).toContain("Your first photo is on its way.");
+      expect(initBundle).not.toContain("stellar-tag-input");
+
+      const panelsBundle = await readFile(`${root}/panels.js`, "utf8");
+      expect(panelsBundle).toContain("stellar-tag-input");
+      expect(panelsBundle).toContain("__stellarDispatch");
+
+      const dom = parseHTML(
+        "<!DOCTYPE html><html><head></head><body></body></html>",
+      );
+      class CSSStyleSheet {}
+      const executionContext = createContext({
+        ...dom,
+        CSSStyleSheet,
+        window: dom.window,
+        document: dom.document,
+        customElements: dom.customElements,
+        HTMLElement: dom.HTMLElement,
+        chrome: {
+          runtime: {
+            getURL: (filePath: string) => `/${filePath}`,
+            sendMessage: () => Promise.resolve({ ok: true }),
+          },
+          storage: {
+            local: {
+              get: () => Promise.resolve({}),
+              onChanged: { addListener: () => undefined },
+            },
+            sync: {
+              get: () => Promise.resolve({}),
+              onChanged: { addListener: () => undefined },
+            },
+          },
+        },
+      });
+      executionContext.globalThis = executionContext;
+
+      expect(() => runInContext(initBundle, executionContext)).not.toThrow();
+      expect(executionContext.customElements.get("stellar-icon")).toBeDefined();
+      expect(executionContext.customElements.get("stellar-app")).toBeDefined();
+
+      expect(() => runInContext(panelsBundle, executionContext)).not.toThrow();
+      expect(
+        executionContext.customElements.get("stellar-settings-drawer"),
+      ).toBeDefined();
+      expect(
+        executionContext.customElements.get("stellar-photo-info"),
+      ).toBeDefined();
+      expect(
+        executionContext.customElements.get("stellar-history-panel"),
+      ).toBeDefined();
+      expect(
+        typeof (executionContext.window as Record<string, unknown>)
+          .__stellarDispatch,
+      ).toBe("function");
 
       const manifest = JSON.parse(
         await readFile(`${root}/manifest.json`, "utf8"),

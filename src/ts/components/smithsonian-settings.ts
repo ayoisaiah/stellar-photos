@@ -1,5 +1,5 @@
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { state } from "lit/decorators.js";
 
 import styles from "../../css/components/settings-form.css?inline";
 import type { SmithsonianCategory } from "../sources/smithsonian";
@@ -7,6 +7,7 @@ import {
   getSmithsonianCategory,
   setSmithsonianCategory,
 } from "../sources/smithsonian";
+import { customElement } from "./custom-element";
 import { renderRadioGroup } from "./settings-form";
 
 const CATEGORIES: readonly {

@@ -1,4 +1,3 @@
-import { error } from "node:console";
 import type { BackgroundAsset } from "./assets";
 import { HISTORY_LIMIT } from "./assets";
 import {

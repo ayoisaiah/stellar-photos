@@ -1,6 +1,7 @@
 import { Camera, Globe, MapPin, X } from "@lucide/icons";
 import { html, LitElement, type TemplateResult, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
+
 import styles from "../../css/components/photo-info.css?inline";
 import type { BackgroundAsset } from "../assets";
 import { attributionUrl } from "../attribution";
@@ -10,6 +11,7 @@ import {
   getUnsplashPhotoInfo,
   type UnsplashInfoData,
 } from "../sources/unsplash";
+import { customElement } from "./custom-element";
 import "./lucide-icon";
 
 interface SpecItem {

@@ -1,12 +1,13 @@
 import { Download, ExternalLink, Image } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 
 import styles from "../../css/components/history-panel.css?inline";
 import type { BackgroundAsset } from "../assets";
 import { attributionUrl } from "../attribution";
 import { readImage } from "../image-reader";
 import { getImageSource } from "../sources";
+import { customElement } from "./custom-element";
 import "./lucide-icon";
 
 @customElement("stellar-history-panel")

@@ -1,7 +1,8 @@
 import { html, LitElement, unsafeCSS } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
 
 import styles from "../../css/components/empty-state.css?inline";
+import { customElement } from "./custom-element";
 
 type EmptyStatePhase = "loading" | "ready" | "error";
 

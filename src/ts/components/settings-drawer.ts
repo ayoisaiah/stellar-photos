@@ -1,7 +1,8 @@
 import { Check, ChevronDown, X } from "@lucide/icons";
 import { LitElement, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { html, unsafeStatic } from "lit/static-html.js";
+
 import styles from "../../css/components/settings-drawer.css?inline";
 import formStyles from "../../css/components/settings-form.css?inline";
 import {
@@ -17,6 +18,7 @@ import {
   listStoredFolderRecords,
   verifyHandlePermission,
 } from "../sources/local-db";
+import { customElement } from "./custom-element";
 import {
   readFrequency,
   renderFrequencySelector,
