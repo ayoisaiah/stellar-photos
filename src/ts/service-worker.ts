@@ -1,13 +1,15 @@
 import { nextImage, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
+import { readCachedImage } from "./cache";
 import { isLocalPermissionError } from "./sources/local-db";
 
 type WorkerCommand =
   | { command: "nextImage" }
+  | { command: "read-image"; cacheKey: string; thumbnail?: boolean }
   | { command: "track-download"; asset: BackgroundAsset };
 
 type WorkerResult =
-  | { ok: true }
+  | { ok: true; image?: string | null }
   | { ok: false; error: { code: string; message: string } };
 
 function startServiceWorker(): void {
@@ -41,6 +43,13 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
   }
 
   try {
+    if (request.command === "read-image") {
+      return {
+        ok: true,
+        image: await cachedImageData(request.cacheKey, request.thumbnail),
+      };
+    }
+
     if (request.command === "track-download") {
       await trackDownload(request.asset);
       return { ok: true };
@@ -71,11 +80,56 @@ function isCommand(value: unknown): value is WorkerCommand {
 
   if (command === "nextImage") return true;
 
+  if (command === "read-image") {
+    const { cacheKey, thumbnail } = value as {
+      cacheKey?: unknown;
+      thumbnail?: unknown;
+    };
+
+    return (
+      typeof cacheKey === "string" &&
+      /^https:\/\/cache\.stellar-photos\.invalid\/asset\/[^/?#]+\/[^/?#]+$/.test(
+        cacheKey,
+      ) &&
+      (thumbnail === undefined || typeof thumbnail === "boolean")
+    );
+  }
+
   return (
     command === "track-download" &&
     !!(value as { asset?: unknown }).asset &&
     typeof (value as { asset?: unknown }).asset === "object"
   );
+}
+
+async function cachedImageData(
+  cacheKey: string,
+  thumbnail = false,
+): Promise<string | null> {
+  const response =
+    (thumbnail ? await readCachedImage(cacheKey, "thumbnail") : undefined) ??
+    (await readCachedImage(cacheKey));
+  if (!response) return null;
+
+  const blob = await response.blob();
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+
+  return `data:${blob.type || "application/octet-stream"};base64,${toBase64String(bytes)}`;
+}
+
+function toBase64String(bytes: Uint8Array): string {
+  if (typeof bytes.toBase64 === "function") {
+    return bytes.toBase64();
+  }
+
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+
+  return btoa(binary);
 }
 
 export type { WorkerCommand, WorkerResult };

@@ -19,17 +19,11 @@ import {
   setUnsplashSettings,
 } from "../sources/unsplash-settings";
 import { customElement } from "./custom-element";
-import {
-  renderRadioGroup,
-  type SaveState,
-  SaveStatusController,
-} from "./settings-form";
+import { renderRadioGroup, SaveStatusController } from "./settings-form";
 import "./tag-input";
 
 import type {
-  ContentFilter,
   ImageResolution,
-  PhotoOrientation,
   UnsplashSettings as UnsplashSettingsData,
 } from "../sources/unsplash-settings";
 
@@ -38,15 +32,10 @@ class UnsplashSettings extends LitElement {
   static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
   private saveStatus = new SaveStatusController(this);
+  private confirmedSettings = DEFAULT_UNSPLASH_SETTINGS;
   private confirmedCustomAccessKey = "";
-
-  get saveState(): SaveState {
-    return this.saveStatus.state;
-  }
-
-  set saveState(state: SaveState) {
-    this.saveStatus.set(state);
-  }
+  private editCounter = 0;
+  private fieldEditId: Partial<Record<keyof UnsplashSettingsData, number>> = {};
 
   @state()
   private accessor validatingAccessKey = false;
@@ -83,7 +72,6 @@ class UnsplashSettings extends LitElement {
               placeholder="e.g. nature, galaxy"
               .value=${this.settings.query}
               ?disabled=${!this.loaded}
-              @input=${(e: Event) => this.updateTextInput("query", e)}
               @change=${(e: Event) => this.saveTextInput("query", e)}
             />
             <p class="field-help">Find photos matching a search term. Note: overrides collections and topics.</p>
@@ -126,7 +114,6 @@ class UnsplashSettings extends LitElement {
               placeholder="e.g. nasa"
               .value=${this.settings.username}
               ?disabled=${!this.loaded}
-              @input=${(e: Event) => this.updateTextInput("username", e)}
               @change=${(e: Event) => this.saveTextInput("username", e)}
             />
             <p class="field-help">Limit selection to photos by a single Unsplash username.</p>
@@ -226,6 +213,7 @@ class UnsplashSettings extends LitElement {
       ]);
 
       this.settings = settings;
+      this.confirmedSettings = settings;
       this.confirmedCustomAccessKey = customAccessKey;
       this.customAccessKey = customAccessKey;
     } catch {
@@ -238,21 +226,49 @@ class UnsplashSettings extends LitElement {
   private persist = async (
     partial: Partial<Omit<UnsplashSettingsData, "version">>,
   ): Promise<void> => {
-    this.settings = { ...this.settings, ...partial };
+    const changed = Object.fromEntries(
+      Object.entries(partial).filter(
+        ([key, value]) =>
+          value !== this.settings[key as keyof UnsplashSettingsData],
+      ),
+    ) as Partial<Omit<UnsplashSettingsData, "version">>;
+
+    if (Object.keys(changed).length === 0) return;
+
+    this.settings = { ...this.settings, ...changed };
     this.saveStatus.set("saving");
 
+    const editIds: Partial<Record<keyof UnsplashSettingsData, number>> = {};
+    for (const key of Object.keys(changed) as (keyof UnsplashSettingsData)[]) {
+      const id = ++this.editCounter;
+      this.fieldEditId[key] = id;
+      editIds[key] = id;
+    }
+
     try {
-      await setUnsplashSettings(partial);
+      await setUnsplashSettings(changed);
+      this.confirmedSettings = { ...this.confirmedSettings, ...changed };
       this.saveStatus.set("saved");
     } catch {
-      this.settings = await getUnsplashSettings();
+      const rollback: Partial<UnsplashSettingsData> = {};
+      for (const [key, id] of Object.entries(editIds) as [
+        keyof UnsplashSettingsData,
+        number,
+      ][]) {
+        if (this.fieldEditId[key] === id) {
+          rollback[key] = this.confirmedSettings[key] as never;
+        }
+      }
+
+      if (Object.keys(rollback).length > 0) {
+        this.settings = { ...this.settings, ...rollback };
+      }
+
       this.saveStatus.set("error");
     }
   };
 
   private changeResolution = (value: ImageResolution): void => {
-    if (value === this.settings.imageQuality) return;
-
     void this.persist({ imageQuality: value });
   };
 
@@ -262,11 +278,7 @@ class UnsplashSettings extends LitElement {
       ({ value }) => value === target.value,
     )?.value;
 
-    if (
-      nextOrientation === undefined ||
-      nextOrientation === this.settings.orientation
-    )
-      return;
+    if (nextOrientation === undefined) return;
 
     void this.persist({ orientation: nextOrientation });
   };
@@ -277,7 +289,7 @@ class UnsplashSettings extends LitElement {
       ({ value }) => value === target.value,
     )?.value;
 
-    if (!nextFilter || nextFilter === this.settings.contentFilter) return;
+    if (!nextFilter) return;
 
     void this.persist({ contentFilter: nextFilter });
   };
@@ -286,28 +298,15 @@ class UnsplashSettings extends LitElement {
     field: "collections" | "topics",
     event: CustomEvent<{ value: string }>,
   ): void => {
-    const nextValue = event.detail.value;
-
-    if (nextValue === this.settings[field]) return;
-
-    void this.persist({ [field]: nextValue });
-  };
-
-  private updateTextInput = (
-    field: "username" | "query",
-    event: Event,
-  ): void => {
-    const target = event.currentTarget as HTMLInputElement;
-    this.settings = { ...this.settings, [field]: target.value };
+    void this.persist({ [field]: event.detail.value });
   };
 
   private saveTextInput = (field: "username" | "query", event: Event): void => {
     const target = event.currentTarget as HTMLInputElement;
-    const trimmed = target.value.trim();
+    const value = target.value.trim();
+    target.value = value;
 
-    if (trimmed === this.settings[field]) return;
-
-    void this.persist({ [field]: trimmed });
+    void this.persist({ [field]: value });
   };
 
   private updateAccessKey = (event: Event): void => {
