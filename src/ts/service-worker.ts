@@ -1,13 +1,15 @@
 import { nextImage, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
+import { readCachedImage } from "./cache";
 import { isLocalPermissionError } from "./sources/local-db";
 
 type WorkerCommand =
   | { command: "nextImage" }
+  | { command: "read-image"; cacheKey: string; thumbnail?: boolean }
   | { command: "track-download"; asset: BackgroundAsset };
 
 type WorkerResult =
-  | { ok: true }
+  | { ok: true; image?: Blob | null }
   | { ok: false; error: { code: string; message: string } };
 
 function startServiceWorker(): void {
@@ -41,6 +43,15 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
   }
 
   try {
+    if (request.command === "read-image") {
+      const response =
+        (request.thumbnail
+          ? await readCachedImage(request.cacheKey, "thumbnail")
+          : undefined) ?? (await readCachedImage(request.cacheKey));
+
+      return { ok: true, image: response ? await response.blob() : null };
+    }
+
     if (request.command === "track-download") {
       await trackDownload(request.asset);
       return { ok: true };
@@ -70,6 +81,21 @@ function isCommand(value: unknown): value is WorkerCommand {
   const command = (value as { command?: unknown }).command;
 
   if (command === "nextImage") return true;
+
+  if (command === "read-image") {
+    const { cacheKey, thumbnail } = value as {
+      cacheKey?: unknown;
+      thumbnail?: unknown;
+    };
+
+    return (
+      typeof cacheKey === "string" &&
+      /^https:\/\/cache\.stellar-photos\.invalid\/asset\/[^/?#]+\/[^/?#]+$/.test(
+        cacheKey,
+      ) &&
+      (thumbnail === undefined || typeof thumbnail === "boolean")
+    );
+  }
 
   return (
     command === "track-download" &&
