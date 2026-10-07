@@ -41,6 +41,12 @@ jobs:
       - name: Run Vitest test suite
         run: npm test
 
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright E2E tests
+        run: npm run test:e2e
+
       - name: Verify production build
         run: npm run build
         env:
