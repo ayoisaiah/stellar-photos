@@ -22,15 +22,15 @@
     "prepare": "wxt prepare && simple-git-hooks"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.11",
-    "@playwright/test": "^1.63.0",
-    "@types/chrome": "^0.2.7",
-    "@types/node": "^26.4.0",
-    "lint-staged": "^17.4.1",
-    "simple-git-hooks": "^2.13.1",
+    "@biomejs/biome": "2.5.15",
+    "@playwright/test": "^1.64.0",
+    "@types/chrome": "^0.3.4",
+    "@types/node": "^26.6.4",
+    "lint-staged": "^17.6.0",
+    "simple-git-hooks": "^2.14.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
-    "vitest": "^4.1.11",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3",
     "wxt": "^0.21.4"
   },
   "lint-staged": {
@@ -40,7 +40,7 @@
     "pre-commit": "npx lint-staged && npm run typecheck && npm test"
   },
   "dependencies": {
-    "@lucide/icons": "^1.35.0",
+    "@lucide/icons": "^1.53.0",
     "lit": "^3.3.3"
   }
 }
