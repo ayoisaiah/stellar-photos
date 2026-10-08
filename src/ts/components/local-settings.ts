@@ -1,6 +1,6 @@
 import { Folder, FolderOpen, Plus, RefreshCw, Trash2 } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
-import { state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 
 import styles from "../../css/components/local-settings.css?inline";
 import formStyles from "../../css/components/settings-form.css?inline";
@@ -10,7 +10,6 @@ import {
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../sources/local-db";
-import { customElement } from "./custom-element";
 import { SaveStatusController } from "./settings-form";
 import "./lucide-icon";
 

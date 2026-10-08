@@ -1,5 +1,5 @@
 import { html, LitElement, unsafeCSS } from "lit";
-import { state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 
 import formStyles from "../../css/components/settings-form.css?inline";
 import styles from "../../css/components/unsplash-settings.css?inline";
@@ -18,7 +18,6 @@ import {
   setUnsplashAccessKey,
   setUnsplashSettings,
 } from "../sources/unsplash-settings";
-import { customElement } from "./custom-element";
 import { renderRadioGroup, SaveStatusController } from "./settings-form";
 import "./tag-input";
 

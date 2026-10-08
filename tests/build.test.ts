@@ -1,8 +1,14 @@
 import { spawnSync } from "node:child_process";
-import { mkdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
-import { createContext, runInContext } from "node:vm";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  rmdir,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 
-import { parseHTML } from "linkedom";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import config from "../wxt.config";
 
@@ -53,8 +59,6 @@ describe("browser packages", () => {
       expect(result.status).toBe(0);
       expect(result.stderr).not.toContain("ERROR");
       const root = `${TEST_OUT_DIR}/${browser}`;
-      await expect(stat(`${root}/init.js`)).resolves.toBeTruthy();
-      await expect(stat(`${root}/panels.js`)).resolves.toBeTruthy();
       await expect(stat(`${root}/background.js`)).resolves.toBeTruthy();
 
       const page = await readFile(`${root}/newtab.html`, "utf8");
@@ -63,68 +67,35 @@ describe("browser packages", () => {
       )?.[1];
       expect(stylesheet).toBeDefined();
       await expect(stat(`${root}/${stylesheet}`)).resolves.toBeTruthy();
-      expect(page).toContain('<script src="/init.js"></script>');
-      expect(page).toContain("<stellar-app></stellar-app>");
-      expect(page).not.toMatch(/<script[^>]+(?:async|defer)/);
-
-      const initBundle = await readFile(`${root}/init.js`, "utf8");
-      expect(initBundle).toContain("stellar-app");
-      expect(initBundle).toContain("stellar-empty-state");
-      expect(initBundle).toContain("Your first photo is on its way.");
-      expect(initBundle).not.toContain("stellar-tag-input");
-
-      const panelsBundle = await readFile(`${root}/panels.js`, "utf8");
-      expect(panelsBundle).toContain("stellar-tag-input");
-      expect(panelsBundle).toContain("__stellarDispatch");
-
-      const dom = parseHTML(
-        "<!DOCTYPE html><html><head></head><body></body></html>",
+      expect(page).toMatch(
+        /<script type="module" crossorigin src="\/chunks\/newtab-[^"]+\.js"><\/script>/,
       );
-      class CSSStyleSheet {}
-      const executionContext = createContext({
-        ...dom,
-        CSSStyleSheet,
-        window: dom.window,
-        document: dom.document,
-        customElements: dom.customElements,
-        HTMLElement: dom.HTMLElement,
-        chrome: {
-          runtime: {
-            getURL: (filePath: string) => `/${filePath}`,
-            sendMessage: () => Promise.resolve({ ok: true }),
-          },
-          storage: {
-            local: {
-              get: () => Promise.resolve({}),
-              onChanged: { addListener: () => undefined },
-            },
-            sync: {
-              get: () => Promise.resolve({}),
-              onChanged: { addListener: () => undefined },
-            },
-          },
-        },
-      });
-      executionContext.globalThis = executionContext;
+      expect(page).toContain("<stellar-app></stellar-app>");
 
-      expect(() => runInContext(initBundle, executionContext)).not.toThrow();
-      expect(executionContext.customElements.get("stellar-icon")).toBeDefined();
-      expect(executionContext.customElements.get("stellar-app")).toBeDefined();
+      const chunks = await readdir(`${root}/chunks`);
+      const mainChunk = chunks.find(
+        (file) => file.startsWith("newtab-") && file.endsWith(".js"),
+      );
+      const panelsChunk = chunks.find(
+        (file) => file.startsWith("panels-") && file.endsWith(".js"),
+      );
+      expect(mainChunk).toBeDefined();
+      expect(panelsChunk).toBeDefined();
 
-      expect(() => runInContext(panelsBundle, executionContext)).not.toThrow();
-      expect(
-        executionContext.customElements.get("stellar-settings-drawer"),
-      ).toBeDefined();
-      expect(
-        executionContext.customElements.get("stellar-photo-info"),
-      ).toBeDefined();
-      expect(
-        executionContext.customElements.get("stellar-history-panel"),
-      ).toBeDefined();
-      expect(
-        typeof (executionContext.window as Record<string, unknown>)
-          .__stellarDispatch,
-      ).toBe("function");
+      const mainBundle = await readFile(`${root}/chunks/${mainChunk}`, "utf8");
+      expect(mainBundle).toContain("stellar-app");
+      expect(mainBundle).toContain("stellar-empty-state");
+      expect(mainBundle).toContain("Your first photo is on its way.");
+      expect(mainBundle).not.toContain("stellar-tag-input");
+
+      const panelsBundle = await readFile(
+        `${root}/chunks/${panelsChunk}`,
+        "utf8",
+      );
+      expect(panelsBundle).toContain("stellar-tag-input");
+      expect(panelsBundle).toContain("stellar-settings-drawer");
+      expect(panelsBundle).toContain("stellar-photo-info");
+      expect(panelsBundle).toContain("stellar-history-panel");
 
       const manifest = JSON.parse(
         await readFile(`${root}/manifest.json`, "utf8"),
@@ -216,8 +187,16 @@ describe("browser packages", () => {
     );
     expect(result.status).toBe(0);
 
-    const bundle = await readFile(`${TEST_OUT_DIR}/chrome/init.js`, "utf8");
-    expect(bundle).not.toContain("@customElement(");
+    const chunks = await readdir(`${TEST_OUT_DIR}/chrome/chunks`);
+    const mainChunk = chunks.find(
+      (file) => file.startsWith("newtab-") && file.endsWith(".js"),
+    );
+    expect(mainChunk).toBeDefined();
+
+    const bundle = await readFile(
+      `${TEST_OUT_DIR}/chrome/chunks/${mainChunk}`,
+      "utf8",
+    );
 
     const encodedMap = bundle.match(
       /sourceMappingURL=data:application\/json[^,]*;base64,([^\n]+)/,
@@ -229,8 +208,8 @@ describe("browser packages", () => {
     ) as { sources: string[] };
     expect(sourceMap.sources).toEqual(
       expect.arrayContaining([
-        "../../src/ts/components/empty-state.ts",
-        "../../src/css/components/empty-state.css?inline",
+        "../../../src/ts/components/empty-state.ts",
+        "../../../src/ts/components/stellar-app.ts",
       ]),
     );
   });

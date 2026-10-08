@@ -1,9 +1,8 @@
 import { Loader2, X } from "@lucide/icons";
 import { html, LitElement, nothing, unsafeCSS } from "lit";
-import { property, query, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 
 import styles from "../../css/components/tag-input.css?inline";
-import { customElement } from "./custom-element";
 import "./lucide-icon";
 
 interface TagValidationResult {

@@ -1,11 +1,10 @@
 import type { LucideIconData } from "@lucide/icons";
 import { buildLucideSvg } from "@lucide/icons/build";
 import { LitElement, unsafeCSS } from "lit";
-import { property } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 
 import styles from "../../css/components/lucide-icon.css?inline";
-import { customElement } from "./custom-element";
 
 @customElement("stellar-icon")
 class LucideIcon extends LitElement {

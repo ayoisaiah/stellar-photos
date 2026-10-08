@@ -11,7 +11,7 @@ import {
   Settings,
 } from "@lucide/icons";
 import { html, LitElement, unsafeCSS } from "lit";
-import { eventOptions, state } from "lit/decorators.js";
+import { customElement, eventOptions, state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
 
 import styles from "../../css/components/stellar-app.css?inline";
@@ -43,7 +43,6 @@ import {
   validateHistoryState,
   writePinnedAsset,
 } from "../storage";
-import { customElement } from "./custom-element";
 import "./empty-state";
 import "./lucide-icon";
 
@@ -54,14 +53,6 @@ import type { ImageSource } from "../sources";
 import type { PhotoFrequency } from "../sources/photo-frequency";
 import type { SourceHealthMap } from "../sources/source-health";
 import type { EmptyStatePhase } from "./empty-state";
-
-declare global {
-  interface Window {
-    __stellarDispatch?: (request: unknown) => Promise<WorkerResult>;
-  }
-}
-
-let panelsPromise: Promise<void> | null = null;
 
 @customElement("stellar-app")
 class StellarApp extends LitElement {
@@ -795,34 +786,8 @@ class StellarApp extends LitElement {
   }
 }
 
-function loadPanels(): Promise<void> {
-  if (typeof document === "undefined") {
-    return Promise.resolve();
-  }
-
-  if (
-    typeof customElements !== "undefined" &&
-    customElements.get("stellar-settings-drawer")
-  ) {
-    return Promise.resolve();
-  }
-
-  if (!panelsPromise) {
-    panelsPromise = new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = chrome.runtime?.getURL
-        ? chrome.runtime.getURL("panels.js")
-        : "/panels.js";
-      script.onload = () => resolve();
-      script.onerror = () => {
-        panelsPromise = null;
-        reject(new Error("Failed to load panels script"));
-      };
-      document.head.appendChild(script);
-    });
-  }
-
-  return panelsPromise;
+function loadPanels(): Promise<unknown> {
+  return import("./panels");
 }
 
 async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
@@ -830,16 +795,9 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
     command.command === "nextImage" &&
     (await getActiveImageSourceIds()).includes("local")
   ) {
-    await loadPanels();
-    return (
-      window.__stellarDispatch?.(command) ?? {
-        ok: false,
-        error: {
-          code: "DISPATCH_UNAVAILABLE",
-          message: "Page actions unavailable",
-        },
-      }
-    );
+    const { dispatch } = await import("../service-worker");
+
+    return dispatch(command);
   }
 
   try {
@@ -858,8 +816,9 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
     }
 
     if (!response.ok && response.error.code === "NEEDS_PAGE_CONTEXT") {
-      await loadPanels();
-      return window.__stellarDispatch?.(command) ?? response;
+      const { dispatch } = await import("../service-worker");
+
+      return dispatch(command);
     }
 
     return response;
