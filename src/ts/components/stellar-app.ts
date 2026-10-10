@@ -18,14 +18,10 @@ import styles from "../../css/components/stellar-app.css?inline";
 import { KeyboardShortcutsController } from "../controllers/keyboard-shortcuts";
 import { readImage } from "../image-reader";
 import {
-  CORE_SETTINGS_KEY,
+  coreStore,
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
-  DISPLAY_SETTINGS_KEY,
-  getCoreSettings,
-  getDisplaySettings,
-  parseCoreSettings,
-  parseDisplaySettings,
+  displayStore,
 } from "../settings";
 import { getImageSource } from "../sources";
 import {
@@ -559,8 +555,8 @@ class StellarApp extends LitElement {
         historyState,
         sourceHealthMap,
       ] = await Promise.all([
-        getDisplaySettings(),
-        getCoreSettings(),
+        displayStore.get(),
+        coreStore.get(),
         readPinnedAsset(),
         readHistory(),
         getSourceHealthMap(),
@@ -616,8 +612,8 @@ class StellarApp extends LitElement {
     }
 
     if (area === "sync") {
-      if (CORE_SETTINGS_KEY in changes) {
-        const core = parseCoreSettings(changes[CORE_SETTINGS_KEY]?.newValue);
+      if (coreStore.key in changes) {
+        const core = coreStore.parse(changes[coreStore.key]?.newValue);
         this.activeSourceIds = core.activeSourceIds;
         this.photoFrequency = core.photoFrequency;
 
@@ -629,9 +625,9 @@ class StellarApp extends LitElement {
         }
       }
 
-      if (DISPLAY_SETTINGS_KEY in changes) {
-        this.displaySettings = parseDisplaySettings(
-          changes[DISPLAY_SETTINGS_KEY]?.newValue,
+      if (displayStore.key in changes) {
+        this.displaySettings = displayStore.parse(
+          changes[displayStore.key]?.newValue,
         );
       }
     }

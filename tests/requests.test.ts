@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchWithTimeout } from "../src/ts/requests";
 import {
   buildRandomPhotoUrl,
-  clearVerificationCache,
   fullResolutionImageUrl,
   getUnsplashPhotoInfo,
   imageUrlForResolution,
@@ -303,10 +302,6 @@ describe("Unsplash image resolution", () => {
 });
 
 describe("Unsplash collection and topic verification", () => {
-  beforeEach(() => {
-    clearVerificationCache();
-  });
-
   it("verifies default collection without network request", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

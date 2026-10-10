@@ -1,7 +1,7 @@
 import type { LucideIconData } from "@lucide/icons";
 import type { BackgroundAsset, UncachedBackgroundAsset } from "./assets";
 import type { CoreSettings } from "./settings";
-import { getActiveImageSourceIds } from "./settings";
+import { coreStore } from "./settings";
 import { earthviewSource } from "./sources/earthview";
 import { localSource } from "./sources/local";
 import { smithsonianSource } from "./sources/smithsonian";
@@ -61,7 +61,7 @@ async function getActiveImageSources(
   settings?: CoreSettings,
 ): Promise<ImageSource[]> {
   const activeIds =
-    settings?.activeSourceIds ?? (await getActiveImageSourceIds());
+    settings?.activeSourceIds ?? (await coreStore.get()).activeSourceIds;
   const sources = activeIds
     .map((id) => getImageSource(id))
     .filter(

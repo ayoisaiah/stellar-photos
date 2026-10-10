@@ -522,12 +522,6 @@ async function verifyUnsplashAccessKey(
   }
 }
 
-function clearVerificationCache(): void {
-  verifiedCollections.clear();
-  verifiedCollections.add(STELLAR_COLLECTION);
-  verifiedTopics.clear();
-}
-
 export type {
   UnsplashExif,
   UnsplashInfoData,
@@ -538,7 +532,6 @@ export type {
 export {
   buildRandomPhotoUrl,
   cleanIdentifier,
-  clearVerificationCache,
   fetchUnsplashPhotoDetails,
   fullResolutionImageUrl,
   getUnsplashPhotoInfo,

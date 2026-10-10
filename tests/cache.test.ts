@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   assetCacheKey,
-  assetThumbnailCacheKey,
   createThumbnail,
-  MAX_IMAGE_BYTES,
   readBoundedImage,
 } from "../src/ts/cache";
 
@@ -15,13 +13,6 @@ describe("image cache contract", () => {
     );
     expect(assetCacheKey("source", "a/b")).toBe(
       "https://cache.stellar-photos.invalid/asset/source/a%2Fb",
-    );
-  });
-
-  it("derives thumbnail cache key from canonical asset cache key", () => {
-    const assetKey = assetCacheKey("unsplash", "photo-1");
-    expect(assetThumbnailCacheKey(assetKey)).toBe(
-      "https://cache.stellar-photos.invalid/thumbnail/unsplash/photo-1",
     );
   });
 
@@ -45,7 +36,7 @@ describe("image cache contract", () => {
     const response = new Response(new Uint8Array(1), {
       headers: {
         "content-type": "image/jpeg",
-        "content-length": String(MAX_IMAGE_BYTES + 1),
+        "content-length": String(20 * 1024 * 1024 + 1),
       },
     });
     await expect(readBoundedImage(response)).rejects.toThrow("20 MiB");

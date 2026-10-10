@@ -4,17 +4,9 @@ import {
   buildEarthViewImageUrl,
   earthviewSource,
   fetchEarthViewDetails,
-  getEarthViewPhotoIds,
 } from "../src/ts/sources/earthview";
 
 describe("earthview catalog and image helper", () => {
-  it("provides a curated list of Earth View photo IDs", () => {
-    const ids = getEarthViewPhotoIds();
-    expect(ids.length).toBeGreaterThan(1000);
-    expect(ids[0]).toBe(1003);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
   it("builds the correct gstatic image URL", () => {
     expect(buildEarthViewImageUrl(1003)).toBe(
       "https://www.gstatic.com/prettyearth/assets/full/1003.jpg",

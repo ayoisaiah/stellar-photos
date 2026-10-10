@@ -66,54 +66,11 @@ const displayStore = defineStore(
   },
 );
 
-const CORE_SETTINGS_KEY = coreStore.key;
-const DISPLAY_SETTINGS_KEY = displayStore.key;
-
-const getCoreSettings = coreStore.get;
-const setCoreSettings = coreStore.set;
-const parseCoreSettings = coreStore.parse;
-
-const getDisplaySettings = displayStore.get;
-const setDisplaySettings = displayStore.set;
-const parseDisplaySettings = displayStore.parse;
-
-async function getActiveImageSourceIds(): Promise<string[]> {
-  const settings = await getCoreSettings();
-
-  return settings.activeSourceIds;
-}
-
-async function setActiveImageSourceIds(sourceIds: string[]): Promise<void> {
-  await setCoreSettings({ activeSourceIds: sourceIds });
-}
-
-async function getPhotoFrequency(): Promise<PhotoFrequency> {
-  const settings = await getCoreSettings();
-
-  return settings.photoFrequency;
-}
-
-async function setPhotoFrequency(frequency: PhotoFrequency): Promise<void> {
-  await setCoreSettings({ photoFrequency: frequency });
-}
-
 export type { CoreSettings, DisplaySettings, PhotoDisplayMode };
 export {
-  CORE_SETTINGS_KEY,
   coreStore,
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
   DISPLAY_MODE_OPTIONS,
-  DISPLAY_SETTINGS_KEY,
   displayStore,
-  getActiveImageSourceIds,
-  getCoreSettings,
-  getDisplaySettings,
-  getPhotoFrequency,
-  parseCoreSettings,
-  parseDisplaySettings,
-  setActiveImageSourceIds,
-  setCoreSettings,
-  setDisplaySettings,
-  setPhotoFrequency,
 };

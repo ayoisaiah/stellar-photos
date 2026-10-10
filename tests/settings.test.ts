@@ -40,18 +40,10 @@ vi.stubGlobal("chrome", {
 });
 
 const {
-  CORE_SETTINGS_KEY,
+  coreStore,
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
-  DISPLAY_SETTINGS_KEY,
-  getActiveImageSourceIds,
-  getCoreSettings,
-  getDisplaySettings,
-  getPhotoFrequency,
-  setActiveImageSourceIds,
-  setCoreSettings,
-  setDisplaySettings,
-  setPhotoFrequency,
+  displayStore,
 } = await import("../src/ts/settings");
 const {
   DEFAULT_UNSPLASH_SETTINGS,
@@ -91,24 +83,18 @@ describe("settings", () => {
   });
 
   it("returns lazy defaults without writing storage", async () => {
-    expect(await getCoreSettings()).toEqual(DEFAULT_CORE_SETTINGS);
-    expect(await getActiveImageSourceIds()).toEqual(
-      DEFAULT_CORE_SETTINGS.activeSourceIds,
-    );
-    expect(await getPhotoFrequency()).toBe(
-      DEFAULT_CORE_SETTINGS.photoFrequency,
-    );
-    expect(await getDisplaySettings()).toEqual(DEFAULT_DISPLAY_SETTINGS);
+    expect(await coreStore.get()).toEqual(DEFAULT_CORE_SETTINGS);
+    expect(await displayStore.get()).toEqual(DEFAULT_DISPLAY_SETTINGS);
     expect(await getUnsplashSettings()).toEqual(DEFAULT_UNSPLASH_SETTINGS);
     expect(sync).toEqual({});
   });
 
-  it("updates core settings via setCoreSettings", async () => {
-    await setCoreSettings({
+  it("updates core settings via coreStore.set", async () => {
+    await coreStore.set({
       activeSourceIds: ["smithsonian"],
       photoFrequency: "everyday",
     });
-    expect(await getCoreSettings()).toEqual({
+    expect(await coreStore.get()).toEqual({
       version: 1,
       activeSourceIds: ["smithsonian"],
       photoFrequency: "everyday",
@@ -116,14 +102,14 @@ describe("settings", () => {
   });
 
   it("falls back to defaults when settings are written by a newer schema", async () => {
-    sync[CORE_SETTINGS_KEY] = {
+    sync[coreStore.key] = {
       version: 2,
       activeSourceIds: ["future-source"],
     };
 
-    expect(await getCoreSettings()).toEqual(DEFAULT_CORE_SETTINGS);
+    expect(await coreStore.get()).toEqual(DEFAULT_CORE_SETTINGS);
 
-    delete sync[CORE_SETTINGS_KEY];
+    delete sync[coreStore.key];
     sync[UNSPLASH_SETTINGS_KEY] = {
       version: 2,
       imageQuality: "future",
@@ -152,42 +138,44 @@ describe("settings", () => {
   });
 
   it("defaults invalid or missing photo frequency to newtab", async () => {
-    expect(await getPhotoFrequency()).toBe("newtab");
-    sync[CORE_SETTINGS_KEY] = {
+    expect((await coreStore.get()).photoFrequency).toBe("newtab");
+    sync[coreStore.key] = {
       version: 1,
       activeSourceIds: ["unsplash"],
       photoFrequency: "every15minutes",
     };
-    expect(await getPhotoFrequency()).toBe("every15minutes");
-    sync[CORE_SETTINGS_KEY] = {
+    expect((await coreStore.get()).photoFrequency).toBe("every15minutes");
+    sync[coreStore.key] = {
       version: 1,
       activeSourceIds: ["unsplash"],
       photoFrequency: "everyhour",
     };
-    expect(await getPhotoFrequency()).toBe("everyhour");
-    sync[CORE_SETTINGS_KEY] = {
+    expect((await coreStore.get()).photoFrequency).toBe("everyhour");
+    sync[coreStore.key] = {
       version: 1,
       activeSourceIds: ["unsplash"],
       photoFrequency: "everyday",
     };
-    expect(await getPhotoFrequency()).toBe("everyday");
-    sync[CORE_SETTINGS_KEY] = {
+    expect((await coreStore.get()).photoFrequency).toBe("everyday");
+    sync[coreStore.key] = {
       version: 1,
       activeSourceIds: ["unsplash"],
       photoFrequency: "unexpected",
     };
-    expect(await getPhotoFrequency()).toBe("newtab");
+    expect((await coreStore.get()).photoFrequency).toBe("newtab");
   });
 
   it("persists source-owned and application-owned settings", async () => {
     await setUnsplashSettings({
       imageQuality: "max",
     });
-    await setActiveImageSourceIds(["unsplash", "earthview"]);
-    await setPhotoFrequency("everyday");
+    await coreStore.set({
+      activeSourceIds: ["unsplash", "earthview"],
+      photoFrequency: "everyday",
+    });
 
     expect(sync).toEqual({
-      [CORE_SETTINGS_KEY]: {
+      [coreStore.key]: {
         version: 1,
         activeSourceIds: ["unsplash", "earthview"],
         photoFrequency: "everyday",
@@ -218,37 +206,37 @@ describe("settings", () => {
   });
 
   it("defaults and updates display customization settings", async () => {
-    expect(await getDisplaySettings()).toEqual(DEFAULT_DISPLAY_SETTINGS);
+    expect(await displayStore.get()).toEqual(DEFAULT_DISPLAY_SETTINGS);
 
-    await setDisplaySettings({
+    await displayStore.set({
       landscapeMode: "contain-blur",
       portraitMode: "cover",
     });
 
-    expect(await getDisplaySettings()).toEqual({
+    expect(await displayStore.get()).toEqual({
       version: 1,
       landscapeMode: "contain-blur",
       portraitMode: "cover",
       motion: false,
     });
-    expect(sync[DISPLAY_SETTINGS_KEY]).toEqual({
+    expect(sync[displayStore.key]).toEqual({
       version: 1,
       landscapeMode: "contain-blur",
       portraitMode: "cover",
       motion: false,
     });
 
-    await setDisplaySettings({
+    await displayStore.set({
       motion: true,
     });
 
-    expect(await getDisplaySettings()).toEqual({
+    expect(await displayStore.get()).toEqual({
       version: 1,
       landscapeMode: "contain-blur",
       portraitMode: "cover",
       motion: true,
     });
-    expect(sync[DISPLAY_SETTINGS_KEY]).toEqual({
+    expect(sync[displayStore.key]).toEqual({
       version: 1,
       landscapeMode: "contain-blur",
       portraitMode: "cover",

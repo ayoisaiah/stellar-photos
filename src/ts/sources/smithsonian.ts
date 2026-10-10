@@ -6,7 +6,7 @@ import {
 import { readBoundedImage } from "../cache";
 import { fetchWithTimeout } from "../requests";
 import type { ImageSource } from "../sources";
-import { oneOf, serialized } from "../store";
+import { oneOf } from "../store";
 
 const SMITHSONIAN_CATEGORIES = [
   "art_design",
@@ -93,9 +93,7 @@ async function getSmithsonianCategory(): Promise<SmithsonianCategory> {
 async function setSmithsonianCategory(
   category: SmithsonianCategory,
 ): Promise<void> {
-  await serialized(SMITHSONIAN_CATEGORY_KEY, () =>
-    chrome.storage.sync.set({ [SMITHSONIAN_CATEGORY_KEY]: category }),
-  );
+  await chrome.storage.sync.set({ [SMITHSONIAN_CATEGORY_KEY]: category });
 }
 
 function recordUrl(value: string | undefined): string {

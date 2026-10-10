@@ -174,10 +174,6 @@ const earthviewSource: ImageSource = {
   fetchDetails: fetchEarthViewDetails,
 };
 
-function getEarthViewPhotoIds(): readonly number[] {
-  return EARTH_VIEW_PHOTO_IDS;
-}
-
 function buildEarthViewImageUrl(id: number | string): string {
   return `https://www.gstatic.com/prettyearth/assets/full/${encodeURIComponent(String(id))}.jpg`;
 }
@@ -240,9 +236,4 @@ async function fetchEarthViewDetails(
 }
 
 export type { EarthViewDetailsData, EarthViewGeocode, EarthViewPayload };
-export {
-  buildEarthViewImageUrl,
-  earthviewSource,
-  fetchEarthViewDetails,
-  getEarthViewPhotoIds,
-};
+export { buildEarthViewImageUrl, earthviewSource, fetchEarthViewDetails };

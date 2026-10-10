@@ -154,10 +154,8 @@ export type { CacheKind, ThumbnailResult };
 export {
   ACTIVE_CACHE_NAME,
   assetCacheKey,
-  assetThumbnailCacheKey,
   createThumbnail,
   deleteCachedImage,
-  MAX_IMAGE_BYTES,
   putCachedImage,
   readBoundedImage,
   readCachedImage,

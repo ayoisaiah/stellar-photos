@@ -6,12 +6,11 @@ import { html, unsafeStatic } from "lit/static-html.js";
 import styles from "../../css/components/settings-drawer.css?inline";
 import formStyles from "../../css/components/settings-form.css?inline";
 import {
+  coreStore,
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
   DISPLAY_MODE_OPTIONS,
-  setActiveImageSourceIds,
-  setDisplaySettings,
-  setPhotoFrequency,
+  displayStore,
 } from "../settings";
 import { listImageSources } from "../sources";
 import {
@@ -302,7 +301,7 @@ class SettingsDrawer extends LitElement {
   ): Promise<void> => {
     if (nextFrequency === this.photoFrequency) return;
 
-    await setPhotoFrequency(nextFrequency);
+    await coreStore.set({ photoFrequency: nextFrequency });
   };
 
   private toggleExpand = (sourceId: string): void => {
@@ -335,13 +334,13 @@ class SettingsDrawer extends LitElement {
       nextSourceIds = [...this.activeSourceIds, sourceId];
     }
 
-    await setActiveImageSourceIds(nextSourceIds);
+    await coreStore.set({ activeSourceIds: nextSourceIds });
   };
 
   private updateDisplay = async (
     patch: Partial<Omit<DisplaySettings, "version">>,
   ): Promise<void> => {
-    await setDisplaySettings(patch);
+    await displayStore.set(patch);
   };
 
   private renderDisplayModeFieldset(

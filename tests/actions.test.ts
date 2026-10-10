@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BackgroundAsset } from "../src/ts/assets";
 import type { ImageSource } from "../src/ts/sources";
 
-const getPhotoFrequency = vi.fn();
 const deleteCachedImage = vi.fn();
 const putCachedImage = vi.fn();
 const readCachedImage = vi.fn();
@@ -21,7 +20,6 @@ const coreStore = {
 
 vi.mock("../src/ts/settings", () => ({
   coreStore,
-  getPhotoFrequency,
 }));
 vi.mock("../src/ts/cache", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/ts/cache")>()),
@@ -118,12 +116,11 @@ beforeEach(() => {
   };
   getImageSource.mockReturnValue(source);
   getActiveImageSources.mockResolvedValue([source]);
-  getPhotoFrequency.mockResolvedValue("newtab");
-  coreStore.get.mockImplementation(async () => ({
+  coreStore.get.mockResolvedValue({
     version: 1,
     activeSourceIds: ["unsplash"],
-    photoFrequency: (await getPhotoFrequency()) ?? "newtab",
-  }));
+    photoFrequency: "newtab",
+  });
   deleteCachedImage.mockResolvedValue(true);
   putCachedImage.mockResolvedValue(undefined);
   readCachedImage.mockResolvedValue(new Response("image"));
@@ -165,7 +162,11 @@ describe("source activation and multi-source rotation", () => {
   });
 
   it("skips rotation on newtab when current photo is fresh and frequency is hourly", async () => {
-    getPhotoFrequency.mockResolvedValue("everyhour");
+    coreStore.get.mockResolvedValue({
+      version: 1,
+      activeSourceIds: ["unsplash"],
+      photoFrequency: "everyhour",
+    });
     const freshAsset = { ...current, createdAt: Date.now() };
     readHistory.mockResolvedValue({ history: [freshAsset] });
 
@@ -175,7 +176,11 @@ describe("source activation and multi-source rotation", () => {
   });
 
   it("rotates when frequency expires", async () => {
-    getPhotoFrequency.mockResolvedValue("every15minutes");
+    coreStore.get.mockResolvedValue({
+      version: 1,
+      activeSourceIds: ["unsplash"],
+      photoFrequency: "every15minutes",
+    });
     const oldAsset = { ...current, createdAt: Date.now() - 20 * 60 * 1000 };
     readHistory.mockResolvedValue({ history: [oldAsset] });
 
@@ -272,7 +277,11 @@ describe("source activation and multi-source rotation", () => {
   });
 
   it("waits for the deadline even if the image is missing and its source is disabled", async () => {
-    getPhotoFrequency.mockResolvedValue("everyhour");
+    coreStore.get.mockResolvedValue({
+      version: 1,
+      activeSourceIds: ["unsplash"],
+      photoFrequency: "everyhour",
+    });
     readHistory.mockResolvedValue({
       history: [{ ...current, createdAt: Date.now() }],
     });
