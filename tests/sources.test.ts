@@ -124,7 +124,7 @@ describe("image source registry", () => {
     expect(getImageSource("local")).not.toBeNull();
   });
 
-  it("preserves local source lookup and active selection in workers without window", async () => {
+  it("preserves local source lookup but skips unsupported sources in workers without window", async () => {
     vi.stubGlobal("window", undefined);
 
     expect(getImageSource("local")).toEqual(
@@ -133,7 +133,12 @@ describe("image source registry", () => {
 
     selectedSources = ["local"];
     expect(await getActiveImageSources()).toEqual([
-      expect.objectContaining({ id: "local" }),
+      expect.objectContaining({ id: "unsplash" }),
+    ]);
+
+    selectedSources = ["unsplash", "local"];
+    expect(await getActiveImageSources()).toEqual([
+      expect.objectContaining({ id: "unsplash" }),
     ]);
   });
 });

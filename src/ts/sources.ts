@@ -65,7 +65,10 @@ async function getActiveImageSources(
     settings?.activeSourceIds ?? (await getActiveImageSourceIds());
   const sources = activeIds
     .map((id) => getImageSource(id))
-    .filter((source): source is ImageSource => Boolean(source));
+    .filter(
+      (source): source is ImageSource =>
+        source !== null && isSourceSupported(source),
+    );
 
   return sources.length > 0 ? sources : [defaultImageSource];
 }

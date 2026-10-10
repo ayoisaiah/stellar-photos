@@ -22,7 +22,6 @@ import {
   DEFAULT_CORE_SETTINGS,
   DEFAULT_DISPLAY_SETTINGS,
   DISPLAY_SETTINGS_KEY,
-  getActiveImageSourceIds,
   getCoreSettings,
   getDisplaySettings,
   parseCoreSettings,
@@ -588,13 +587,16 @@ class StellarApp extends LitElement {
       if (!current) {
         this.photoLoadState = "loading";
 
-        const result = await sendCommand({ command: "nextImage" });
+        const result = await sendCommand(
+          { command: "nextImage" },
+          this.activeSourceIds,
+        );
         if (!result.ok) throw new Error(result.error.message);
       }
 
       await this.loadCurrentPhoto(current);
 
-      void sendCommand({ command: "nextImage" });
+      void sendCommand({ command: "nextImage" }, this.activeSourceIds);
     } catch {
       await this.loadCurrentPhoto();
     }
@@ -662,7 +664,7 @@ class StellarApp extends LitElement {
     await this.setPinnedState(nextPinned);
 
     if (!nextPinned) {
-      void sendCommand({ command: "nextImage" });
+      void sendCommand({ command: "nextImage" }, this.activeSourceIds);
     }
   };
 
@@ -814,11 +816,11 @@ function loadPanels(): Promise<unknown> {
   return import("./panels");
 }
 
-async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
-  if (
-    command.command === "nextImage" &&
-    (await getActiveImageSourceIds()).includes("local")
-  ) {
+async function sendCommand(
+  command: WorkerCommand,
+  activeSourceIds: readonly string[] = [],
+): Promise<WorkerResult> {
+  if (command.command === "nextImage" && activeSourceIds.includes("local")) {
     const { dispatch } = await import("../service-worker");
 
     return dispatch(command);
@@ -837,12 +839,6 @@ async function sendCommand(command: WorkerCommand): Promise<WorkerResult> {
           message: "The background process did not respond",
         },
       };
-    }
-
-    if (!response.ok && response.error.code === "NEEDS_PAGE_CONTEXT") {
-      const { dispatch } = await import("../service-worker");
-
-      return dispatch(command);
     }
 
     return response;

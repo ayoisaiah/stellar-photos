@@ -16,8 +16,6 @@ vi.mock("../src/ts/actions", () => ({
 
 vi.mock("../src/ts/cache", () => ({ readCachedImage }));
 
-import { LocalPermissionError } from "../src/ts/sources/local-db";
-
 const { dispatch } = await import("../src/ts/service-worker");
 
 beforeEach(() => {
@@ -46,19 +44,6 @@ describe("service worker commands", () => {
     await expect(dispatch({ command: "unknown-cmd" })).resolves.toEqual({
       ok: false,
       error: { code: "INVALID_COMMAND", message: "Unknown command" },
-    });
-  });
-
-  it("returns NEEDS_PAGE_CONTEXT error code when local permission is required", async () => {
-    const error = new LocalPermissionError("Failed to execute 'getFileHandle'");
-    nextImage.mockRejectedValue(error);
-
-    await expect(dispatch({ command: "nextImage" })).resolves.toEqual({
-      ok: false,
-      error: {
-        code: "NEEDS_PAGE_CONTEXT",
-        message: "Failed to execute 'getFileHandle'",
-      },
     });
   });
 

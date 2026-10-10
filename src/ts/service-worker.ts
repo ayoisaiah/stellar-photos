@@ -1,7 +1,6 @@
 import { nextImage, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
 import { readCachedImage } from "./cache";
-import { isLocalPermissionError } from "./sources/local-db";
 
 type WorkerCommand =
   | { command: "nextImage" }
@@ -63,15 +62,13 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
         };
     }
   } catch (error) {
-    const isPageContextError = isLocalPermissionError(error);
-
     const message =
       error instanceof Error ? error.message : "Unexpected extension error";
 
     return {
       ok: false,
       error: {
-        code: isPageContextError ? "NEEDS_PAGE_CONTEXT" : "OPERATION_FAILED",
+        code: "OPERATION_FAILED",
         message,
       },
     };
