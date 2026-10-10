@@ -82,6 +82,9 @@ export default defineConfig({
           smithsonianApiKey || "DEMO_KEY",
         ),
       },
+      server: {
+        cors: true,
+      },
     };
   },
 });
