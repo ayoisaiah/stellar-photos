@@ -14,8 +14,13 @@ const getImageSource = vi.fn();
 const readPinnedAsset = vi.fn();
 const writePinnedAsset = vi.fn();
 const createThumbnail = vi.fn().mockResolvedValue(null);
+const coreStore = {
+  get: vi.fn(),
+  set: vi.fn(),
+};
 
 vi.mock("../src/ts/settings", () => ({
+  coreStore,
   getPhotoFrequency,
 }));
 vi.mock("../src/ts/cache", async (importOriginal) => ({
@@ -29,7 +34,8 @@ vi.mock("../src/ts/sources", () => ({
   getActiveImageSources,
   getImageSource,
 }));
-vi.mock("../src/ts/storage", () => ({
+vi.mock("../src/ts/storage", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/ts/storage")>()),
   HISTORY_LIMIT: 10,
   readHistory,
   writeHistory,
@@ -39,14 +45,31 @@ vi.mock("../src/ts/storage", () => ({
 
 let fakeStorage: Record<string, unknown> = {};
 
+const defaultStorageGet = async (key: string | string[]) => {
+  const result: Record<string, unknown> = { ...fakeStorage };
+  if (result.stellarPinned === undefined) {
+    const pinned = await readPinnedAsset();
+    if (pinned !== undefined) result.stellarPinned = pinned;
+  }
+  if (result.stellarHistory === undefined) {
+    const historyState = await readHistory();
+    if (historyState !== undefined) result.stellarHistory = historyState;
+  }
+  if (Array.isArray(key)) {
+    return Object.fromEntries(key.map((k) => [k, result[k]]));
+  }
+  return { [key]: result[key] };
+};
+
+const defaultStorageSet = async (items: Record<string, unknown>) => {
+  fakeStorage = { ...fakeStorage, ...items };
+};
+
 vi.stubGlobal("chrome", {
   storage: {
     local: {
-      get: vi.fn((key: string) => Promise.resolve({ [key]: fakeStorage[key] })),
-      set: vi.fn((items: Record<string, unknown>) => {
-        fakeStorage = { ...fakeStorage, ...items };
-        return Promise.resolve();
-      }),
+      get: vi.fn(defaultStorageGet),
+      set: vi.fn(defaultStorageSet),
     },
   },
 });
@@ -90,12 +113,20 @@ beforeEach(() => {
     name: "Unsplash",
     description: "High quality photos",
     getRandomAsset: vi.fn().mockResolvedValue(candidate),
-    downloadAsset: vi.fn().mockResolvedValue(new Response("image")),
+    downloadAsset: vi
+      .fn()
+      .mockResolvedValue(new Blob(["image"], { type: "image/jpeg" })),
   };
   getImageSource.mockReturnValue(source);
   getActiveImageSources.mockResolvedValue([source]);
   getPhotoFrequency.mockResolvedValue("newtab");
+  coreStore.get.mockImplementation(async () => ({
+    version: 1,
+    activeSourceIds: ["unsplash"],
+    photoFrequency: (await getPhotoFrequency()) ?? "newtab",
+  }));
   deleteCachedImage.mockResolvedValue(true);
+  putCachedImage.mockResolvedValue(undefined);
   readCachedImage.mockResolvedValue(new Response("image"));
   readHistory.mockResolvedValue({ history: [current] });
   writeHistory.mockResolvedValue(undefined);
@@ -114,7 +145,9 @@ describe("source activation and multi-source rotation", () => {
         sourceId: "earthview",
         sourceAssetId: "earth-1",
       }),
-      downloadAsset: vi.fn().mockResolvedValue(new Response("image")),
+      downloadAsset: vi
+        .fn()
+        .mockResolvedValue(new Blob(["image"], { type: "image/jpeg" })),
     };
     getActiveImageSources.mockResolvedValue([earthviewSource]);
 
@@ -180,7 +213,7 @@ describe("source activation and multi-source rotation", () => {
   it("finishes caching an in-progress download when a photo becomes pinned", async () => {
     vi.mocked(source.downloadAsset).mockImplementation(async () => {
       readPinnedAsset.mockResolvedValue(current);
-      return new Response("image");
+      return new Blob(["image"], { type: "image/jpeg" });
     });
 
     await expect(nextImage()).resolves.toBeUndefined();
@@ -334,7 +367,9 @@ describe("source status reporting without behavior changes", () => {
         sourceId: "earthview",
         sourceAssetId: "earth-1",
       }),
-      downloadAsset: vi.fn().mockResolvedValue(new Response("image")),
+      downloadAsset: vi
+        .fn()
+        .mockResolvedValue(new Blob(["image"], { type: "image/jpeg" })),
     };
 
     vi.spyOn(Math, "random").mockReturnValue(0.99);
@@ -373,7 +408,7 @@ describe("source status reporting without behavior changes", () => {
 
     expect(source.getRandomAsset).toHaveBeenCalledOnce();
 
-    const healthMap = fakeStorage[SOURCE_HEALTH_STORAGE_KEY] as Record<
+    const healthMap = (fakeStorage[SOURCE_HEALTH_STORAGE_KEY] ?? {}) as Record<
       string,
       string
     >;
@@ -401,9 +436,26 @@ describe("source status reporting without behavior changes", () => {
   it.each(["get", "set"] as const)(
     "ignores status storage %s failures",
     async (operation) => {
-      vi.mocked(chrome.storage.local[operation]).mockRejectedValueOnce(
-        new Error("Status storage unavailable"),
-      );
+      fakeStorage[SOURCE_HEALTH_STORAGE_KEY] = { unsplash: "Timed out" };
+      const original = vi.mocked(chrome.storage.local[operation]);
+      original.mockImplementation(async (arg: unknown) => {
+        if (
+          arg === SOURCE_HEALTH_STORAGE_KEY ||
+          (typeof arg === "object" &&
+            arg !== null &&
+            SOURCE_HEALTH_STORAGE_KEY in arg)
+        ) {
+          original.mockImplementation(
+            operation === "get"
+              ? (defaultStorageGet as never)
+              : (defaultStorageSet as never),
+          );
+          throw new Error("Status storage unavailable");
+        }
+        return operation === "get"
+          ? defaultStorageGet(arg as string | string[])
+          : defaultStorageSet(arg as Record<string, unknown>);
+      });
 
       await expect(nextImage()).resolves.toBeUndefined();
       expect(writeHistory).toHaveBeenCalled();
@@ -414,7 +466,7 @@ describe("source status reporting without behavior changes", () => {
     writeHistory.mockRejectedValueOnce(new Error("History unavailable"));
 
     await expect(nextImage()).rejects.toThrow("History unavailable");
-    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY]).toEqual({});
+    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY] ?? {}).toEqual({});
   });
 
   it("preserves fallback after a cache failure", async () => {
@@ -431,7 +483,7 @@ describe("source status reporting without behavior changes", () => {
 
     await expect(nextImage()).resolves.toBeUndefined();
     expect(fallback.getRandomAsset).toHaveBeenCalledOnce();
-    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY]).toEqual({});
+    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY] ?? {}).toEqual({});
   });
 });
 

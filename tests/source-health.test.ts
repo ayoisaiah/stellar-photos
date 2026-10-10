@@ -51,4 +51,20 @@ describe("source errors", () => {
       }),
     ).toEqual({ unsplash: "Timed out" });
   });
+
+  it("does not write to storage when the error is unchanged", async () => {
+    const setSpy = vi.spyOn(chrome.storage.local, "set");
+
+    // Clearing an error when none exists should not write
+    await setSourceError("unsplash", "");
+    expect(setSpy).not.toHaveBeenCalled();
+
+    // Setting a new error should write
+    await setSourceError("unsplash", "Timed out");
+    expect(setSpy).toHaveBeenCalledTimes(1);
+
+    // Setting the same error again should not write
+    await setSourceError("unsplash", "Timed out");
+    expect(setSpy).toHaveBeenCalledTimes(1);
+  });
 });

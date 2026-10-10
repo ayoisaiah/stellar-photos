@@ -252,9 +252,7 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
   });
 }
 
-async function downloadAsset(
-  asset: UncachedBackgroundAsset,
-): Promise<Response> {
+async function downloadAsset(asset: UncachedBackgroundAsset): Promise<Blob> {
   const payload = parsePayload(asset);
   if (typeof payload.imageUrl !== "string") {
     throw new Error("Unsplash asset payload has no image URL");

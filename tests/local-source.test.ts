@@ -315,7 +315,7 @@ describe("directory handle storage", () => {
     );
   });
 
-  it("selects random photos efficiently across multiple folders respecting exclusions", async () => {
+  it("selects random photos efficiently across multiple folders", async () => {
     const structureA: Record<string, string> = {};
     const structureB: Record<string, string> = {};
     for (let i = 0; i < 50; i++) {
@@ -333,12 +333,6 @@ describe("directory handle storage", () => {
       allSelections.add(selected!.relativePath);
     }
     expect(allSelections.size).toBeGreaterThan(1);
-
-    // Test exclusions
-    const excluded = ["a_0.jpg", "a_1.jpg", "a_2.jpg"];
-    const pick = await getRandomDirectoryImage(excluded);
-    expect(pick).not.toBeNull();
-    expect(excluded).not.toContain(pick!.relativePath);
   });
 });
 
@@ -359,7 +353,7 @@ describe("local source image rotation and retrieval", () => {
     });
 
     const response = await localSource.downloadAsset(asset);
-    expect(response.headers.get("content-type")).toBe("image/jpeg");
+    expect(response.type).toBe("image/jpeg");
     expect(await response.text()).toBe("image-bytes");
   });
 

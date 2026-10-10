@@ -1,5 +1,6 @@
 import type { LucideIconData } from "@lucide/icons";
 import type { BackgroundAsset, UncachedBackgroundAsset } from "./assets";
+import type { CoreSettings } from "./settings";
 import { getActiveImageSourceIds } from "./settings";
 import { earthviewSource } from "./sources/earthview";
 import { localSource } from "./sources/local";
@@ -26,7 +27,7 @@ interface ImageSource {
   getCredit?(asset: BackgroundAsset): PhotoCredit | null;
   isSupported?(): boolean;
   getRandomAsset(): Promise<UncachedBackgroundAsset>;
-  downloadAsset(asset: UncachedBackgroundAsset): Promise<Response>;
+  downloadAsset(asset: UncachedBackgroundAsset): Promise<Blob>;
   getDownloadUrl?(asset: BackgroundAsset): string;
   didDownload?(asset: BackgroundAsset): Promise<void>;
   fetchDetails?(asset: BackgroundAsset): Promise<unknown>;
@@ -57,8 +58,11 @@ function getImageSource(sourceId: string): ImageSource | null {
   return imageSources.get(sourceId) ?? null;
 }
 
-async function getActiveImageSources(): Promise<ImageSource[]> {
-  const activeIds = await getActiveImageSourceIds();
+async function getActiveImageSources(
+  settings?: CoreSettings,
+): Promise<ImageSource[]> {
+  const activeIds =
+    settings?.activeSourceIds ?? (await getActiveImageSourceIds());
   const sources = activeIds
     .map((id) => getImageSource(id))
     .filter((source): source is ImageSource => Boolean(source));

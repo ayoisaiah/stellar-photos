@@ -196,7 +196,7 @@ function getSmithsonianDownloadUrl(asset: UncachedBackgroundAsset): string {
 
 async function downloadSmithsonianAsset(
   asset: UncachedBackgroundAsset,
-): Promise<Response> {
+): Promise<Blob> {
   const imageUrl = new URL(getSmithsonianDownloadUrl(asset));
   const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 

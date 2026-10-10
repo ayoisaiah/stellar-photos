@@ -11,10 +11,9 @@ interface LocalPayload {
   folderName: string;
   relativePath: string;
   name: string;
-  size: number;
-  type: string;
-  lastModified: number;
 }
+
+const pendingFiles = new Map<string, File>();
 
 function isLocalSupported(): boolean {
   return (
@@ -70,6 +69,8 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
     photo.relativePath,
   );
 
+  pendingFiles.set(sourceAssetId, file);
+
   return makeAsset({
     sourceId: localSource.id,
     sourceAssetId,
@@ -82,29 +83,25 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
       folderName: photo.folderName,
       relativePath: photo.relativePath,
       name: photo.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified,
     } satisfies LocalPayload,
   });
 }
 
 async function downloadLocalAsset(
   asset: UncachedBackgroundAsset,
-): Promise<Response> {
+): Promise<Blob> {
+  const cachedFile = pendingFiles.get(asset.sourceAssetId);
+  if (cachedFile) {
+    pendingFiles.delete(asset.sourceAssetId);
+    return cachedFile;
+  }
+
   const payload = asset.sourcePayload as LocalPayload | undefined;
   if (!payload?.relativePath || !payload.folderId) {
     throw new Error("Local asset has no file path");
   }
 
-  const file = await readDirectoryFile(payload.relativePath, payload.folderId);
-
-  return new Response(file, {
-    headers: {
-      "content-type": file.type || "image/jpeg",
-      "content-length": String(file.size),
-    },
-  });
+  return readDirectoryFile(payload.relativePath, payload.folderId);
 }
 
 export type { LocalPayload };

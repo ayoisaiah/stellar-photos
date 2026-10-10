@@ -206,7 +206,7 @@ async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
 
 async function downloadEarthViewAsset(
   asset: UncachedBackgroundAsset,
-): Promise<Response> {
+): Promise<Blob> {
   const imageUrl = new URL(buildEarthViewImageUrl(asset.sourceAssetId));
   const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 

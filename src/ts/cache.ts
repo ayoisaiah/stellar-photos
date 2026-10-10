@@ -19,8 +19,17 @@ function assetThumbnailCacheKey(cacheKey: string): string {
   return cacheKey.replace("/asset/", "/thumbnail/");
 }
 
-async function activeCache(): Promise<Cache> {
-  return caches.open(ACTIVE_CACHE_NAME);
+let activeCachePromise: Promise<Cache> | null = null;
+
+function activeCache(): Promise<Cache> {
+  if (!activeCachePromise) {
+    activeCachePromise = caches.open(ACTIVE_CACHE_NAME).catch((error) => {
+      activeCachePromise = null;
+      throw error;
+    });
+  }
+
+  return activeCachePromise;
 }
 
 type CacheKind = "image" | "thumbnail";
@@ -102,19 +111,24 @@ async function createThumbnail(blob: Blob): Promise<ThumbnailResult | null> {
   }
 }
 
-async function readBoundedImage(response: Response): Promise<Response> {
-  if (!response.ok)
+async function readBoundedImage(response: Response): Promise<Blob> {
+  if (!response.ok) {
     throw new Error(`Image request failed (${response.status})`);
+  }
 
   const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().startsWith("image/"))
+  if (!contentType.toLowerCase().startsWith("image/")) {
     throw new Error("Remote URL did not return an image");
+  }
 
   const declaredSize = Number(response.headers.get("content-length") ?? 0);
-  if (Number.isFinite(declaredSize) && declaredSize > MAX_IMAGE_BYTES)
+  if (Number.isFinite(declaredSize) && declaredSize > MAX_IMAGE_BYTES) {
     throw new Error("Image exceeds 20 MiB limit");
+  }
 
-  if (!response.body) throw new Error("Image response has no body");
+  if (!response.body) {
+    throw new Error("Image response has no body");
+  }
 
   const reader = response.body.getReader();
   const chunks: BlobPart[] = [];
@@ -122,7 +136,9 @@ async function readBoundedImage(response: Response): Promise<Response> {
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+      break;
+    }
 
     total += value.byteLength;
     if (total > MAX_IMAGE_BYTES) {
@@ -133,13 +149,7 @@ async function readBoundedImage(response: Response): Promise<Response> {
     chunks.push(value);
   }
 
-  const body = new Blob(chunks, { type: contentType });
-
-  return new Response(body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers,
-  });
+  return new Blob(chunks, { type: contentType });
 }
 
 function validateIdentifier(id: string, label: string): string {

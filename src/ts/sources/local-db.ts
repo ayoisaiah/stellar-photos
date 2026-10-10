@@ -281,46 +281,36 @@ async function listStoredFolderRecords(): Promise<LocalFolderRecord[]> {
   );
 }
 
-async function getRandomDirectoryImage(
-  excludePaths: string[] = [],
-): Promise<RandomLocalImageResult | null> {
+async function getRandomDirectoryImage(): Promise<RandomLocalImageResult | null> {
   const records = await listStoredFolderRecords();
   if (records.length === 0) return null;
 
-  const excludedSet = new Set(excludePaths);
-  const candidates: { record: LocalFolderRecord; path: string }[] = [];
-
+  let totalImages = 0;
   for (const record of records) {
-    for (const path of record.imagePaths) {
-      if (!excludedSet.has(path)) {
-        candidates.push({ record, path });
-      }
-    }
+    totalImages += record.imagePaths.length;
   }
 
-  if (candidates.length === 0 && excludedSet.size > 0) {
-    for (const record of records) {
-      for (const path of record.imagePaths) {
-        candidates.push({ record, path });
-      }
+  if (totalImages === 0) return null;
+
+  let targetIndex = Math.floor(Math.random() * totalImages);
+  for (const record of records) {
+    if (targetIndex < record.imagePaths.length) {
+      const path = record.imagePaths[targetIndex]!;
+      const handle = await getFileHandleByPath(record.handle, path);
+
+      return {
+        handle,
+        name: path.split("/").pop() || path,
+        relativePath: path,
+        folderId: record.id,
+        folderName: record.folderName,
+      };
     }
+
+    targetIndex -= record.imagePaths.length;
   }
 
-  if (candidates.length === 0) return null;
-
-  const candidate = candidates[Math.floor(Math.random() * candidates.length)]!;
-  const fileHandle = await getFileHandleByPath(
-    candidate.record.handle,
-    candidate.path,
-  );
-
-  return {
-    handle: fileHandle,
-    name: candidate.path.split("/").pop() || candidate.path,
-    relativePath: candidate.path,
-    folderId: candidate.record.id,
-    folderName: candidate.record.folderName,
-  };
+  return null;
 }
 
 async function readDirectoryFile(

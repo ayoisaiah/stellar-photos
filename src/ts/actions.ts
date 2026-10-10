@@ -6,28 +6,43 @@ import {
   deleteCachedImage,
   putCachedImage,
 } from "./cache";
-import { getPhotoFrequency } from "./settings";
+import { coreStore } from "./settings";
 import type { ImageSource } from "./sources";
 import { getActiveImageSources, getImageSource } from "./sources";
 import { shouldRotateAtFrequency } from "./sources/photo-frequency";
 import { setSourceError } from "./sources/source-health";
-import { readHistory, readPinnedAsset, writeHistory } from "./storage";
+import {
+  HISTORY_STORAGE_KEY,
+  isBackgroundAsset,
+  PINNED_STORAGE_KEY,
+  validateHistoryState,
+  writeHistory,
+} from "./storage";
 import { serialized } from "./store";
 
 const LOCK_NAME = "stellar_actions_lock";
 
 function nextImage(): Promise<void> {
   return serialized(LOCK_NAME, async () => {
-    const pinned = await readPinnedAsset();
-    if (pinned) return;
+    const [storageData, coreSettings] = await Promise.all([
+      chrome.storage.local.get([PINNED_STORAGE_KEY, HISTORY_STORAGE_KEY]),
+      coreStore.get(),
+    ]);
 
-    const { history } = await readHistory();
+    if (isBackgroundAsset(storageData[PINNED_STORAGE_KEY])) return;
+
+    const validated = validateHistoryState(storageData[HISTORY_STORAGE_KEY]);
+    const history = validated?.history ?? [];
     const current = history[0];
-    const frequency = await getPhotoFrequency();
 
-    if (current && !shouldRotateAtFrequency(current, frequency)) return;
+    if (
+      current &&
+      !shouldRotateAtFrequency(current, coreSettings.photoFrequency)
+    ) {
+      return;
+    }
 
-    const sources = await getActiveImageSources();
+    const sources = await getActiveImageSources(coreSettings);
     let lastError: unknown;
 
     for (const source of shuffleSources(sources)) {
@@ -39,7 +54,7 @@ function nextImage(): Promise<void> {
           throw new Error("Image source returned an asset for another source");
         }
 
-        const image = await source.downloadAsset(candidate);
+        const blob = await source.downloadAsset(candidate);
         retrieved = true;
         await setSourceError(source.id, "").catch(console.error);
 
@@ -48,7 +63,7 @@ function nextImage(): Promise<void> {
           cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
         };
 
-        await cacheAndRecordImage(asset, image);
+        await cacheAndRecordImage(asset, blob, history);
 
         return;
       } catch (error) {
@@ -81,42 +96,44 @@ async function trackDownload(asset: BackgroundAsset): Promise<void> {
 
 async function cacheAndRecordImage(
   asset: BackgroundAsset,
-  image: Response,
+  blob: Blob,
+  history: readonly BackgroundAsset[],
 ): Promise<void> {
-  const imageForThumb = image.clone();
-  await putCachedImage(asset.cacheKey, image);
+  const [, thumb] = await Promise.all([
+    putCachedImage(
+      asset.cacheKey,
+      new Response(blob, { headers: { "content-type": blob.type } }),
+    ),
+    createThumbnail(blob),
+  ]);
 
   let assetWithDimensions = asset;
 
-  try {
-    const blob = await imageForThumb.blob();
-    const result = await createThumbnail(blob);
+  if (thumb) {
+    if ((!asset.width || !asset.height) && thumb.width && thumb.height) {
+      assetWithDimensions = {
+        ...asset,
+        width: thumb.width,
+        height: thumb.height,
+      };
+    }
 
-    if (result) {
-      if ((!asset.width || !asset.height) && result.width && result.height) {
-        assetWithDimensions = {
-          ...asset,
-          width: result.width,
-          height: result.height,
-        };
-      }
-
+    try {
       await putCachedImage(
         asset.cacheKey,
-        new Response(result.blob, {
+        new Response(thumb.blob, {
           headers: {
             "content-type": "image/webp",
-            "content-length": String(result.blob.size),
+            "content-length": String(thumb.blob.size),
           },
         }),
         "thumbnail",
       );
+    } catch (error) {
+      console.error(error);
     }
-  } catch (error) {
-    console.error(error);
   }
 
-  const { history } = await readHistory();
   const nextHistory = [assetWithDimensions, ...history].slice(0, HISTORY_LIMIT);
   const evicted = history.length >= HISTORY_LIMIT ? history.at(-1) : null;
   await writeHistory({ history: nextHistory });
@@ -126,8 +143,10 @@ async function cacheAndRecordImage(
     !nextHistory.some((item) => item.cacheKey === evicted.cacheKey)
   ) {
     try {
-      await deleteCachedImage(evicted.cacheKey);
-      await deleteCachedImage(evicted.cacheKey, "thumbnail");
+      await Promise.all([
+        deleteCachedImage(evicted.cacheKey),
+        deleteCachedImage(evicted.cacheKey, "thumbnail"),
+      ]);
     } catch (error) {
       console.error(error);
     }

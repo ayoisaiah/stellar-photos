@@ -73,6 +73,9 @@ class StellarApp extends LitElement {
   private accessor currentPhotoURL: string | null = null;
 
   @state()
+  private accessor currentBackdropURL: string | null = null;
+
+  @state()
   private accessor displaySettings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS;
 
   @state()
@@ -220,7 +223,11 @@ class StellarApp extends LitElement {
       >
         ${
           this.currentPhotoURL
-            ? this.renderPhotoStage(this.currentPhotoURL, this.currentAsset)
+            ? this.renderPhotoStage(
+                this.currentPhotoURL,
+                this.currentBackdropURL ?? this.currentPhotoURL,
+                this.currentAsset,
+              )
             : null
         }
         ${
@@ -464,7 +471,11 @@ class StellarApp extends LitElement {
       : this.displaySettings.landscapeMode;
   }
 
-  private renderPhotoStage(url: string, asset: BackgroundAsset | null) {
+  private renderPhotoStage(
+    url: string,
+    backdropUrl: string,
+    asset: BackgroundAsset | null,
+  ) {
     const effectiveMode = this.getEffectiveDisplayMode(asset);
     const motionEnabled = this.displaySettings.motion;
     const paused = this.openPanel === "settings" || this.openPanel === "info";
@@ -480,7 +491,7 @@ class StellarApp extends LitElement {
             effectiveMode === "contain-blur"
               ? html`<div
                   class="photo-backdrop"
-                  style="background-image: url('${url}')"
+                  style="background-image: url('${backdropUrl}')"
                 ></div>`
               : null
           }
@@ -502,15 +513,23 @@ class StellarApp extends LitElement {
       return true;
     }
 
-    const response = await readImage(asset.cacheKey);
+    const [response, thumbResponse] = await Promise.all([
+      readImage(asset.cacheKey),
+      readImage(asset.cacheKey, true),
+    ]);
 
     if (!response) return false;
 
     const blob = await response.blob();
     const nextUrl = URL.createObjectURL(blob);
 
+    const nextBackdropUrl = thumbResponse
+      ? URL.createObjectURL(await thumbResponse.blob())
+      : null;
+
     this.releaseObjectUrl();
     this.currentPhotoURL = nextUrl;
+    this.currentBackdropURL = nextBackdropUrl;
     this.currentAsset = asset;
 
     return true;
@@ -777,6 +796,11 @@ class StellarApp extends LitElement {
   };
 
   private releaseObjectUrl(): void {
+    if (this.currentBackdropURL) {
+      URL.revokeObjectURL(this.currentBackdropURL);
+    }
+    this.currentBackdropURL = null;
+
     if (this.currentPhotoURL) {
       URL.revokeObjectURL(this.currentPhotoURL);
       this.currentPhotoURL = null;
