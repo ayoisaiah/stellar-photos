@@ -78,7 +78,6 @@ const unsplashSyncStore = defineStore(
   UNSPLASH_SETTINGS_KEY,
   DEFAULT_UNSPLASH_SETTINGS,
   {
-    version: (v): v is 1 => v === 1,
     imageQuality: oneOf(RESOLUTIONS.map((option) => option.value)),
     collections: (v): v is string => typeof v === "string",
     topics: (v): v is string => typeof v === "string",
@@ -87,7 +86,6 @@ const unsplashSyncStore = defineStore(
     orientation: oneOf(ORIENTATIONS.map((option) => option.value)),
     contentFilter: oneOf(CONTENT_FILTERS.map((option) => option.value)),
   },
-  "Unsplash settings",
 );
 
 const unsplashLocalStore = defineStore(
@@ -95,10 +93,8 @@ const unsplashLocalStore = defineStore(
   UNSPLASH_SETTINGS_KEY,
   DEFAULT_UNSPLASH_LOCAL_SETTINGS,
   {
-    version: (v): v is 1 => v === 1,
     accessKeyOverride: (v): v is string => typeof v === "string",
   },
-  "local Unsplash settings",
 );
 
 const getUnsplashSettings = unsplashSyncStore.get;

@@ -18,11 +18,7 @@ import {
   listStoredFolderRecords,
   verifyHandlePermission,
 } from "../sources/local-db";
-import {
-  readFrequency,
-  renderFrequencySelector,
-  renderRadioGroup,
-} from "./settings-form";
+import { FREQUENCIES, renderRadioGroup } from "./settings-form";
 import "./local-settings";
 import "./lucide-icon";
 import "./smithsonian-settings";
@@ -183,9 +179,10 @@ class SettingsDrawer extends LitElement {
             <p class="source-help display-help">
               Choose how often Stellar Photos displays a new photo.
             </p>
-            ${renderFrequencySelector(
+            ${renderRadioGroup(
+              "frequency",
+              FREQUENCIES,
               this.photoFrequency,
-              false,
               this.changeFrequency,
             )}
           </section>
@@ -300,9 +297,10 @@ class SettingsDrawer extends LitElement {
     this.dispatchEvent(new CustomEvent("close-settings"));
   };
 
-  private changeFrequency = async (event: Event): Promise<void> => {
-    const nextFrequency = readFrequency(event);
-    if (!nextFrequency || nextFrequency === this.photoFrequency) return;
+  private changeFrequency = async (
+    nextFrequency: PhotoFrequency,
+  ): Promise<void> => {
+    if (nextFrequency === this.photoFrequency) return;
 
     await setPhotoFrequency(nextFrequency);
   };

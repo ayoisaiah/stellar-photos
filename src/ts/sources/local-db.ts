@@ -20,8 +20,6 @@ const FOLDERS_STORE = "folders";
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "avif"]);
 
 class LocalPermissionError extends Error {
-  code = "NEEDS_PAGE_CONTEXT";
-
   constructor(
     message = "Folder access needs to be re-authorized. Please re-select or rescan the folder in Settings.",
   ) {
@@ -31,16 +29,9 @@ class LocalPermissionError extends Error {
 }
 
 function isLocalPermissionError(error: unknown): boolean {
-  if (!error) return false;
-
-  if (error instanceof LocalPermissionError) return true;
-
-  const err = error as { name?: string; code?: string };
-
   return (
-    err.name === "LocalPermissionError" ||
-    err.name === "NotAllowedError" ||
-    err.code === "NEEDS_PAGE_CONTEXT"
+    error instanceof LocalPermissionError ||
+    (error as { name?: string } | null | undefined)?.name === "NotAllowedError"
   );
 }
 

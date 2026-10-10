@@ -87,7 +87,6 @@ const candidate = {
   color: null,
   description: null,
   attribution: null,
-  payloadVersion: 1,
   sourcePayload: {},
   createdAt: 2,
 };

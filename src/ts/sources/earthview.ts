@@ -216,8 +216,6 @@ async function downloadEarthViewAsset(
 async function fetchEarthViewDetails(
   asset: BackgroundAsset,
 ): Promise<EarthViewDetailsData | null> {
-  if (asset.sourceId !== earthviewSource.id) return null;
-
   try {
     const url = new URL(
       `https://www.gstatic.com/prettyearth/assets/data/v3/${encodeURIComponent(asset.sourceAssetId)}.json`,

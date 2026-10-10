@@ -11,21 +11,25 @@ function defineStore<T extends { version: 1 }>(
   area: "sync" | "local",
   key: string,
   defaults: T,
-  is: { [K in keyof T]: (v: unknown) => v is T[K] },
-  label = key,
+  is: { [K in Exclude<keyof T, "version">]: (v: unknown) => v is T[K] },
 ) {
+  const validators = {
+    version: (v: unknown): v is 1 => v === 1,
+    ...is,
+  } as { [K in keyof T]: (v: unknown) => v is T[K] };
+
   const parse = (raw: unknown): T => {
     if (!raw || typeof raw !== "object") return defaults;
 
     const r = raw as Record<string, unknown>;
     if (typeof r.version === "number" && r.version > 1) {
-      throw new Error(`Unsupported ${label} version: ${r.version}`);
+      return defaults;
     }
 
     return Object.fromEntries(
       Object.keys(defaults).map((k) => [
         k,
-        is[k as keyof T](r[k]) ? r[k] : defaults[k as keyof T],
+        validators[k as keyof T](r[k]) ? r[k] : defaults[k as keyof T],
       ]),
     ) as unknown as T;
   };

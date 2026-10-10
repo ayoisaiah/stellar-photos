@@ -35,30 +35,33 @@ function startServiceWorker(): void {
 }
 
 async function dispatch(request: unknown): Promise<WorkerResult> {
-  if (!isCommand(request)) {
-    return {
-      ok: false,
-      error: { code: "INVALID_COMMAND", message: "Unknown command" },
-    };
-  }
+  const command = request as WorkerCommand | null | undefined;
 
   try {
-    if (request.command === "read-image") {
-      const response =
-        (request.thumbnail
-          ? await readCachedImage(request.cacheKey, "thumbnail")
-          : undefined) ?? (await readCachedImage(request.cacheKey));
+    switch (command?.command) {
+      case "nextImage":
+        await nextImage();
+        return { ok: true };
 
-      return { ok: true, image: response ? await response.blob() : null };
+      case "read-image": {
+        const response =
+          (command.thumbnail
+            ? await readCachedImage(command.cacheKey, "thumbnail")
+            : undefined) ?? (await readCachedImage(command.cacheKey));
+
+        return { ok: true, image: response ? await response.blob() : null };
+      }
+
+      case "track-download":
+        await trackDownload(command.asset);
+        return { ok: true };
+
+      default:
+        return {
+          ok: false,
+          error: { code: "INVALID_COMMAND", message: "Unknown command" },
+        };
     }
-
-    if (request.command === "track-download") {
-      await trackDownload(request.asset);
-      return { ok: true };
-    }
-
-    await nextImage();
-    return { ok: true };
   } catch (error) {
     const isPageContextError = isLocalPermissionError(error);
 
@@ -73,35 +76,6 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
       },
     };
   }
-}
-
-function isCommand(value: unknown): value is WorkerCommand {
-  if (!value || typeof value !== "object") return false;
-
-  const command = (value as { command?: unknown }).command;
-
-  if (command === "nextImage") return true;
-
-  if (command === "read-image") {
-    const { cacheKey, thumbnail } = value as {
-      cacheKey?: unknown;
-      thumbnail?: unknown;
-    };
-
-    return (
-      typeof cacheKey === "string" &&
-      /^https:\/\/cache\.stellar-photos\.invalid\/asset\/[^/?#]+\/[^/?#]+$/.test(
-        cacheKey,
-      ) &&
-      (thumbnail === undefined || typeof thumbnail === "boolean")
-    );
-  }
-
-  return (
-    command === "track-download" &&
-    !!(value as { asset?: unknown }).asset &&
-    typeof (value as { asset?: unknown }).asset === "object"
-  );
 }
 
 export type { WorkerCommand, WorkerResult };

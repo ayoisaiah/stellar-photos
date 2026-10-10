@@ -115,15 +115,13 @@ describe("settings", () => {
     });
   });
 
-  it("rejects settings written by a newer schema", async () => {
+  it("falls back to defaults when settings are written by a newer schema", async () => {
     sync[CORE_SETTINGS_KEY] = {
       version: 2,
       activeSourceIds: ["future-source"],
     };
 
-    await expect(getActiveImageSourceIds()).rejects.toThrow(
-      "Unsupported core settings version: 2",
-    );
+    expect(await getCoreSettings()).toEqual(DEFAULT_CORE_SETTINGS);
 
     delete sync[CORE_SETTINGS_KEY];
     sync[UNSPLASH_SETTINGS_KEY] = {
@@ -131,9 +129,7 @@ describe("settings", () => {
       imageQuality: "future",
     };
 
-    await expect(getUnsplashSettings()).rejects.toThrow(
-      "Unsupported Unsplash settings version: 2",
-    );
+    expect(await getUnsplashSettings()).toEqual(DEFAULT_UNSPLASH_SETTINGS);
   });
 
   it("defaults invalid or missing image resolution to standard", async () => {
@@ -270,7 +266,6 @@ describe("settings", () => {
       color: null,
       description: null,
       attribution: null,
-      payloadVersion: 1,
       sourcePayload: {},
       createdAt: 1,
     };
@@ -304,7 +299,6 @@ describe("settings", () => {
       color: null,
       description: null,
       attribution: null,
-      payloadVersion: 1,
       sourcePayload: {},
       createdAt: i,
     }));

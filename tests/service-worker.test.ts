@@ -16,6 +16,8 @@ vi.mock("../src/ts/actions", () => ({
 
 vi.mock("../src/ts/cache", () => ({ readCachedImage }));
 
+import { LocalPermissionError } from "../src/ts/sources/local-db";
+
 const { dispatch } = await import("../src/ts/service-worker");
 
 beforeEach(() => {
@@ -48,8 +50,7 @@ describe("service worker commands", () => {
   });
 
   it("returns NEEDS_PAGE_CONTEXT error code when local permission is required", async () => {
-    const error = new Error("Failed to execute 'getFileHandle'");
-    error.name = "LocalPermissionError";
+    const error = new LocalPermissionError("Failed to execute 'getFileHandle'");
     nextImage.mockRejectedValue(error);
 
     await expect(dispatch({ command: "nextImage" })).resolves.toEqual({
@@ -126,13 +127,13 @@ describe("service worker commands", () => {
     ).resolves.toEqual({ ok: true, image: null });
   });
 
-  it("rejects invalid image cache keys", async () => {
+  it("returns null for an unrecognized image cache key", async () => {
     const result = await dispatch({
       command: "read-image",
       cacheKey: "https://example.com/image",
     });
 
-    expect(result.ok).toBe(false);
-    expect(readCachedImage).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: true, image: null });
+    expect(readCachedImage).toHaveBeenCalledWith("https://example.com/image");
   });
 });

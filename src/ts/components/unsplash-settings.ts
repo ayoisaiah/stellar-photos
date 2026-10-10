@@ -22,7 +22,9 @@ import { renderRadioGroup, SaveStatusController } from "./settings-form";
 import "./tag-input";
 
 import type {
+  ContentFilter,
   ImageResolution,
+  PhotoOrientation,
   UnsplashSettings as UnsplashSettingsData,
 } from "../sources/unsplash-settings";
 
@@ -273,24 +275,12 @@ class UnsplashSettings extends LitElement {
 
   private changeOrientation = (event: Event): void => {
     const target = event.currentTarget as HTMLSelectElement;
-    const nextOrientation = ORIENTATIONS.find(
-      ({ value }) => value === target.value,
-    )?.value;
-
-    if (nextOrientation === undefined) return;
-
-    void this.persist({ orientation: nextOrientation });
+    void this.persist({ orientation: target.value as PhotoOrientation | "" });
   };
 
   private changeContentFilter = (event: Event): void => {
     const target = event.currentTarget as HTMLSelectElement;
-    const nextFilter = CONTENT_FILTERS.find(
-      ({ value }) => value === target.value,
-    )?.value;
-
-    if (!nextFilter) return;
-
-    void this.persist({ contentFilter: nextFilter });
+    void this.persist({ contentFilter: target.value as ContentFilter });
   };
 
   private saveTagInput = (

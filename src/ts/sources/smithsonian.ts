@@ -182,7 +182,7 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
 }
 
 function getSmithsonianDownloadUrl(asset: UncachedBackgroundAsset): string {
-  if (asset.sourceId !== smithsonianSource.id || asset.payloadVersion !== 1) {
+  if (asset.sourceId !== smithsonianSource.id) {
     throw new Error("Unsupported Smithsonian asset payload");
   }
 

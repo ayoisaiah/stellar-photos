@@ -90,7 +90,6 @@ describe("earthview source retrieval and rotation", () => {
       color: null,
       description: "Chile",
       attribution: null,
-      payloadVersion: 1,
       sourcePayload: {},
       createdAt: Date.now(),
     };

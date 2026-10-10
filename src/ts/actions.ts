@@ -50,10 +50,6 @@ function nextImage(): Promise<void> {
 
       try {
         const candidate = await source.getRandomAsset();
-        if (candidate.sourceId !== source.id) {
-          throw new Error("Image source returned an asset for another source");
-        }
-
         const blob = await source.downloadAsset(candidate);
         retrieved = true;
         await setSourceError(source.id, "").catch(console.error);

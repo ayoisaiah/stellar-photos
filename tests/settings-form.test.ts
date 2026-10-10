@@ -1,24 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { getWebstoreReviewUrl } from "../src/ts/components/settings-drawer";
-import {
-  readFrequency,
-  SaveStatusController,
-} from "../src/ts/components/settings-form";
+import { SaveStatusController } from "../src/ts/components/settings-form";
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe("settings form", () => {
-  it("accepts only supported frequencies", () => {
-    const event = (value: string) =>
-      ({ currentTarget: { value } }) as unknown as Event;
-
-    expect(readFrequency(event("everyhour"))).toBe("everyhour");
-    expect(readFrequency(event("sometimes"))).toBeUndefined();
-  });
-
   it("formats save states", () => {
     vi.stubGlobal("window", { setTimeout, clearTimeout });
     const controller = new SaveStatusController({

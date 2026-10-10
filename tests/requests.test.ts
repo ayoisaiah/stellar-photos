@@ -135,7 +135,6 @@ describe("Unsplash image resolution", () => {
       color: null,
       description: null,
       attribution: null,
-      payloadVersion: 1,
       sourcePayload: {
         downloadLocation: "https://api.unsplash.com/photos/photo-1/download",
         imageUrl: `${raw}&w=2000&fit=max`,
@@ -208,7 +207,6 @@ describe("Unsplash image resolution", () => {
       sourceAssetId: "photo-1",
       description: "A mountain",
       attribution: { name: "Ada" },
-      payloadVersion: 1,
     });
     expect(getUnsplashPhotoInfo({ ...asset, cacheKey: "cache-key" })).toEqual({
       user: {
@@ -251,7 +249,6 @@ describe("Unsplash image resolution", () => {
       color: null,
       description: null,
       attribution: null,
-      payloadVersion: 1,
       sourcePayload: {
         downloadLocation: "https://example.com/collect",
       },

@@ -26,7 +26,6 @@ describe("photo frequency helper", () => {
       color: null,
       description: null,
       attribution: null,
-      payloadVersion: 1,
       sourcePayload: {},
       createdAt: Date.now() - 20 * 60 * 1000, // 20 minutes ago
     };

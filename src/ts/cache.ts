@@ -5,14 +5,12 @@ const CACHE_ORIGIN = "https://cache.stellar-photos.invalid";
 const THUMBNAIL_WIDTH = 480;
 const THUMBNAIL_HEIGHT = 270;
 const THUMBNAIL_QUALITY = 0.85;
-// biome-ignore lint/suspicious/noControlCharactersInRegex: IDs must reject ASCII control characters.
-const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
-
 function assetCacheKey(sourceId: string, sourceAssetId: string): string {
-  const source = encodeURIComponent(validateIdentifier(sourceId, "source"));
-  const asset = encodeURIComponent(validateIdentifier(sourceAssetId, "asset"));
+  if (!sourceId || !sourceAssetId) {
+    throw new Error("Invalid asset ID");
+  }
 
-  return `${CACHE_ORIGIN}/asset/${source}/${asset}`;
+  return `${CACHE_ORIGIN}/asset/${encodeURIComponent(sourceId)}/${encodeURIComponent(sourceAssetId)}`;
 }
 
 function assetThumbnailCacheKey(cacheKey: string): string {
@@ -150,19 +148,6 @@ async function readBoundedImage(response: Response): Promise<Blob> {
   }
 
   return new Blob(chunks, { type: contentType });
-}
-
-function validateIdentifier(id: string, label: string): string {
-  if (
-    typeof id !== "string" ||
-    id.length < 1 ||
-    id.length > 128 ||
-    CONTROL_CHARACTER.test(id)
-  ) {
-    throw new Error(`Invalid ${label} ID`);
-  }
-
-  return id;
 }
 
 export type { CacheKind, ThumbnailResult };

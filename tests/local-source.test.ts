@@ -349,7 +349,6 @@ describe("local source image rotation and retrieval", () => {
       description: "stars.jpg",
       width: 0,
       height: 0,
-      payloadVersion: 1,
     });
 
     const response = await localSource.downloadAsset(asset);

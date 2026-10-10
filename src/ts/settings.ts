@@ -47,32 +47,23 @@ const isPhotoDisplayMode = oneOf(
   DISPLAY_MODE_OPTIONS.map((option) => option.value),
 );
 
-const coreStore = defineStore(
-  "sync",
-  "coreSettings",
-  DEFAULT_CORE_SETTINGS,
-  {
-    version: (v): v is 1 => v === 1,
-    activeSourceIds: (v): v is string[] =>
-      Array.isArray(v) &&
-      v.length > 0 &&
-      v.every((id) => typeof id === "string" && Boolean(id)),
-    photoFrequency: oneOf(FREQUENCIES.map((f) => f.value)),
-  },
-  "core settings",
-);
+const coreStore = defineStore("sync", "coreSettings", DEFAULT_CORE_SETTINGS, {
+  activeSourceIds: (v): v is string[] =>
+    Array.isArray(v) &&
+    v.length > 0 &&
+    v.every((id) => typeof id === "string" && Boolean(id)),
+  photoFrequency: oneOf(FREQUENCIES.map((f) => f.value)),
+});
 
 const displayStore = defineStore(
   "sync",
   "displaySettings",
   DEFAULT_DISPLAY_SETTINGS,
   {
-    version: (v): v is 1 => v === 1,
     landscapeMode: isPhotoDisplayMode,
     portraitMode: isPhotoDisplayMode,
     motion: (v): v is boolean => typeof v === "boolean",
   },
-  "display settings",
 );
 
 const CORE_SETTINGS_KEY = coreStore.key;

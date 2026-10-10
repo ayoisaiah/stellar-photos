@@ -153,7 +153,6 @@ it("resolves source-specific credits and handles missing attribution", () => {
     color: null,
     description: null,
     attribution,
-    payloadVersion: 1,
     sourcePayload: {
       info: {
         user: {

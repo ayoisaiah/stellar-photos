@@ -142,8 +142,6 @@ function getUnsplashPhotoInfo(
 async function fetchUnsplashPhotoDetails(
   asset: BackgroundAsset,
 ): Promise<UnsplashInfoData | null> {
-  if (asset.sourceId !== unsplashSource.id) return null;
-
   try {
     const url = new URL(
       `/photos/${encodeURIComponent(asset.sourceAssetId)}`,
@@ -186,15 +184,11 @@ function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
     url.searchParams.set("username", username);
   }
 
-  if (
-    orientation === "landscape" ||
-    orientation === "portrait" ||
-    orientation === "squarish"
-  ) {
+  if (orientation) {
     url.searchParams.set("orientation", orientation);
   }
 
-  if (contentFilter === "high" || contentFilter === "low") {
+  if (contentFilter) {
     url.searchParams.set("content_filter", contentFilter);
   }
 
@@ -284,7 +278,6 @@ async function didDownload(asset: BackgroundAsset): Promise<void> {
 function parsePayload(asset: UncachedBackgroundAsset): UnsplashPayload {
   if (
     asset.sourceId !== unsplashSource.id ||
-    asset.payloadVersion !== 1 ||
     !asset.sourcePayload ||
     typeof asset.sourcePayload !== "object"
   ) {

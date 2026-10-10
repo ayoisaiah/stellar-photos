@@ -4,7 +4,6 @@ import {
   type ReactiveControllerHost,
   type TemplateResult,
 } from "lit";
-import type { PhotoFrequency } from "../sources/photo-frequency";
 import { FREQUENCIES } from "../sources/photo-frequency";
 
 type SaveState = keyof typeof STATUS_MESSAGES;
@@ -94,33 +93,5 @@ function renderRadioGroup<T extends string>(
   `;
 }
 
-function renderFrequencySelector(
-  value: PhotoFrequency,
-  disabled: boolean,
-  change: (event: Event) => void,
-  labelClass = "radio-label",
-): TemplateResult {
-  return renderRadioGroup(
-    "frequency",
-    FREQUENCIES,
-    value,
-    (_, event) => change(event),
-    disabled,
-    labelClass,
-  );
-}
-
-function readFrequency(event: Event): PhotoFrequency | undefined {
-  const value = (event.currentTarget as HTMLInputElement).value;
-
-  return FREQUENCIES.find((frequency) => frequency.value === value)?.value;
-}
-
 export type { RadioOption, SaveState };
-export {
-  FREQUENCIES,
-  readFrequency,
-  renderFrequencySelector,
-  renderRadioGroup,
-  SaveStatusController,
-};
+export { FREQUENCIES, renderRadioGroup, SaveStatusController };

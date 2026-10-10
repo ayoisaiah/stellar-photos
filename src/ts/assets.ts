@@ -13,7 +13,6 @@ interface BackgroundAsset {
   color: string | null;
   description: string | null;
   attribution: Attribution | null;
-  payloadVersion: number;
   sourcePayload: unknown;
   createdAt: number;
 }
@@ -27,18 +26,13 @@ interface HistoryState {
 const HISTORY_LIMIT = 10;
 
 function makeAsset(
-  props: Omit<
-    UncachedBackgroundAsset,
-    "color" | "payloadVersion" | "createdAt"
-  > & {
+  props: Omit<UncachedBackgroundAsset, "color" | "createdAt"> & {
     color?: string | null;
     createdAt?: number;
-    payloadVersion?: number;
   },
 ): UncachedBackgroundAsset {
   return {
     color: null,
-    payloadVersion: 1,
     createdAt: Date.now(),
     ...props,
   };

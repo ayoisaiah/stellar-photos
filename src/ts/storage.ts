@@ -15,7 +15,6 @@ function isBackgroundAsset(value: unknown): value is BackgroundAsset {
     typeof candidate.cacheKey === "string" &&
     typeof candidate.width === "number" &&
     typeof candidate.height === "number" &&
-    typeof candidate.payloadVersion === "number" &&
     typeof candidate.createdAt === "number"
   );
 }
