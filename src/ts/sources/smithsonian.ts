@@ -62,9 +62,6 @@ const smithsonianSource: ImageSource = {
   name: "Smithsonian Open Access",
   description: "High-resolution open access museum collections",
   settingsTag: "stellar-smithsonian-settings",
-  get supportsDownload() {
-    return Boolean(this.getDownloadUrl);
-  },
   getCredit(asset) {
     if (!asset.attribution) return null;
 

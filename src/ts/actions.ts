@@ -84,10 +84,7 @@ function nextImage(): Promise<void> {
 async function trackDownload(asset: BackgroundAsset): Promise<void> {
   const source = getImageSource(asset.sourceId);
 
-  if (source && source.supportsDownload === false) return;
-  await source?.didDownload?.(asset).catch((error) => {
-    console.error(error);
-  });
+  await source?.didDownload?.(asset).catch(console.error);
 }
 
 async function cacheAndRecordImage(

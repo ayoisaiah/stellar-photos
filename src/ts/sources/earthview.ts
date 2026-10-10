@@ -158,9 +158,6 @@ const earthviewSource: ImageSource = {
   name: "Google Earth View",
   description: "Satellite imagery from around the world",
   infoTitle: "About this view",
-  get supportsDownload() {
-    return Boolean(this.getDownloadUrl);
-  },
   supportsInfo: true,
   getCredit(asset) {
     if (!asset.attribution) return null;

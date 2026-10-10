@@ -148,7 +148,7 @@ class StellarApp extends LitElement {
   }
 
   private get isDownloadable(): boolean {
-    return Boolean(this.currentSource?.supportsDownload);
+    return Boolean(this.currentSource?.getDownloadUrl);
   }
 
   override connectedCallback(): void {
@@ -159,16 +159,7 @@ class StellarApp extends LitElement {
 
     void this.initializeState();
 
-    if (typeof window !== "undefined") {
-      const win = window as Window & {
-        requestIdleCallback?: (cb: () => void) => number;
-      };
-      if (typeof win.requestIdleCallback === "function") {
-        win.requestIdleCallback(() => void loadPanels());
-      } else {
-        setTimeout(() => void loadPanels(), 1000);
-      }
-    }
+    requestIdleCallback(() => void loadPanels());
   }
 
   override disconnectedCallback(): void {
@@ -568,11 +559,11 @@ class StellarApp extends LitElement {
         historyState,
         sourceHealthMap,
       ] = await Promise.all([
-        getDisplaySettings().catch(() => DEFAULT_DISPLAY_SETTINGS),
-        getCoreSettings().catch(() => DEFAULT_CORE_SETTINGS),
-        readPinnedAsset().catch(() => null),
-        readHistory().catch(() => ({ history: [] })),
-        getSourceHealthMap().catch(() => ({})),
+        getDisplaySettings(),
+        getCoreSettings(),
+        readPinnedAsset(),
+        readHistory(),
+        getSourceHealthMap(),
       ]);
 
       this.displaySettings = displaySettings;
@@ -615,11 +606,7 @@ class StellarApp extends LitElement {
       if (HISTORY_STORAGE_KEY in changes) {
         const newValue = changes[HISTORY_STORAGE_KEY]?.newValue;
         const validated = validateHistoryState(newValue);
-        if (validated) {
-          this.historyAssets = validated.history;
-        } else {
-          void this.loadHistoryAssets();
-        }
+        this.historyAssets = validated?.history ?? [];
       }
 
       if (SOURCE_HEALTH_STORAGE_KEY in changes) {
@@ -649,15 +636,6 @@ class StellarApp extends LitElement {
       }
     }
   };
-
-  private async loadHistoryAssets(): Promise<void> {
-    try {
-      const state = await readHistory();
-      this.historyAssets = state.history;
-    } catch {
-      // Graceful fallback
-    }
-  }
 
   private togglePin = async (): Promise<void> => {
     const nextPinned = this.pinnedAsset ? null : this.currentAsset;
@@ -713,7 +691,7 @@ class StellarApp extends LitElement {
     this.downloading = true;
     try {
       const source = getImageSource(asset.sourceId);
-      if (!source?.supportsDownload || !source.getDownloadUrl) {
+      if (!source?.getDownloadUrl) {
         throw new Error("This image source does not support downloads");
       }
 

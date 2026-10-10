@@ -64,19 +64,20 @@ describe("image source registry", () => {
   it("resolves compiled-in sources by id", () => {
     expect(getImageSource("unsplash")).toMatchObject({
       id: "unsplash",
-      supportsDownload: true,
     });
+    expect(getImageSource("unsplash")?.getDownloadUrl).toBeDefined();
     expect(getImageSource("earthview")).toMatchObject({
       id: "earthview",
-      supportsDownload: true,
     });
+    expect(getImageSource("earthview")?.getDownloadUrl).toBeDefined();
     expect(getImageSource("smithsonian")).toMatchObject({
       id: "smithsonian",
-      supportsDownload: true,
     });
+    expect(getImageSource("smithsonian")?.getDownloadUrl).toBeDefined();
     expect(getImageSource("local")).toMatchObject({
       id: "local",
     });
+    expect(getImageSource("local")?.getDownloadUrl).toBeUndefined();
     expect(getImageSource("future-source")).toBeNull();
   });
 

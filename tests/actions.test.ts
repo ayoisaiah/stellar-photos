@@ -230,7 +230,6 @@ describe("source activation and multi-source rotation", () => {
     const didDownload = vi.fn().mockResolvedValue(undefined);
     getImageSource.mockReturnValue({
       ...source,
-      supportsDownload: true,
       didDownload,
     });
 
@@ -239,17 +238,13 @@ describe("source activation and multi-source rotation", () => {
     expect(didDownload).toHaveBeenCalledWith(current);
   });
 
-  it("ignores download tracking when source does not support downloads", async () => {
-    const didDownload = vi.fn().mockResolvedValue(undefined);
+  it("handles missing didDownload without error", async () => {
     getImageSource.mockReturnValue({
       ...source,
-      supportsDownload: false,
-      didDownload,
+      didDownload: undefined,
     });
 
-    await trackDownload(current);
-
-    expect(didDownload).not.toHaveBeenCalled();
+    await expect(trackDownload(current)).resolves.toBeUndefined();
   });
 
   it("serializes concurrent nextImage requests", async () => {

@@ -149,25 +149,16 @@ class PhotoInfo extends LitElement {
   @state()
   private accessor loadingDetails = false;
 
-  private detailsGeneration = 0;
-
   override connectedCallback(): void {
     super.connectedCallback();
-    this.detailsGeneration += 1;
 
     if (this.open) {
       void this.loadDetailsIfNeeded();
     }
   }
 
-  override disconnectedCallback(): void {
-    this.detailsGeneration += 1;
-    super.disconnectedCallback();
-  }
-
   override updated(changedProperties: Map<string, unknown>): void {
     if (changedProperties.has("asset")) {
-      this.detailsGeneration += 1;
       this.fetchedDetails = null;
 
       if (this.open) {
@@ -305,18 +296,12 @@ class PhotoInfo extends LitElement {
     asset: BackgroundAsset,
     details: UnsplashInfoData | null,
   ) {
-    const info =
-      asset.sourceId === "unsplash"
-        ? (details ?? getUnsplashPhotoInfo(asset))
-        : null;
+    const info = details ?? getUnsplashPhotoInfo(asset);
     const attribution = asset.attribution;
     const photographerName = info?.user?.name ?? attribution?.name ?? "Unknown";
     const photographerUrl = info?.user?.link || attribution?.url || "";
     const sourceUrl = attribution?.sourceUrl ?? "https://unsplash.com";
-    const sourceName =
-      asset.sourceId === "unsplash"
-        ? "Unsplash"
-        : (attribution?.name ?? "Source");
+    const sourceName = "Unsplash";
 
     const description = info?.description ?? asset.description;
     const locationName = info?.location?.name
@@ -380,7 +365,6 @@ class PhotoInfo extends LitElement {
     if (!this.asset) return;
 
     const currentAsset = this.asset;
-    const generation = this.detailsGeneration;
     const source = getImageSource(currentAsset.sourceId);
     if (!source?.fetchDetails) return;
 
@@ -392,29 +376,14 @@ class PhotoInfo extends LitElement {
       return;
     }
 
-    await this.fetchDetails(generation, async () => {
-      const details = await source.fetchDetails!(currentAsset);
-      if (
-        details &&
-        this.isConnected &&
-        this.detailsGeneration === generation &&
-        this.asset === currentAsset
-      ) {
+    this.loadingDetails = true;
+    try {
+      const details = await source.fetchDetails(currentAsset);
+      if (details && this.isConnected && this.asset === currentAsset) {
         this.fetchedDetails = details;
       }
-    });
-  }
-
-  private async fetchDetails(
-    generation: number,
-    fetcher: () => Promise<void>,
-  ): Promise<void> {
-    this.loadingDetails = true;
-
-    try {
-      await fetcher();
     } finally {
-      if (this.detailsGeneration === generation) {
+      if (this.asset === currentAsset) {
         this.loadingDetails = false;
       }
     }

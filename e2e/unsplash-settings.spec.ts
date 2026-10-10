@@ -114,6 +114,60 @@ test.describe("Unsplash Source Settings", () => {
     await tab.close();
   });
 
+  test("reports an error and allows retry when the recovery read also fails", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab();
+    const errors: string[] = [];
+    tab.on("pageerror", (error) => errors.push(error.message));
+
+    await tab.locator("button.settings-toggle").click();
+    await tab.getByRole("button", { name: "Expand Unsplash settings" }).click();
+
+    const orientationSelect = tab.locator("#filter-orientation");
+    await expect(orientationSelect).toBeEnabled();
+
+    await tab.evaluate(() => {
+      const originalSet = chrome.storage.sync.set.bind(chrome.storage.sync);
+      const originalGet = chrome.storage.sync.get.bind(chrome.storage.sync);
+      let failWrite = true;
+      let failRecovery = false;
+
+      chrome.storage.sync.set = async (items) => {
+        if (failWrite) {
+          failWrite = false;
+          failRecovery = true;
+          throw new Error("Simulated write failure");
+        }
+
+        return originalSet(items);
+      };
+
+      chrome.storage.sync.get = async () => {
+        if (failRecovery) {
+          failRecovery = false;
+          throw new Error("Simulated recovery failure");
+        }
+
+        return originalGet("sourceSettings:unsplash");
+      };
+    });
+
+    await orientationSelect.selectOption("portrait");
+    await expect(
+      tab.locator("stellar-unsplash-settings .status"),
+    ).toContainText("Couldn’t save this setting.");
+    await expect(orientationSelect).toHaveValue("");
+    expect(errors).toEqual([]);
+
+    await orientationSelect.selectOption("portrait");
+    await expect(
+      tab.locator("stellar-unsplash-settings .status"),
+    ).toContainText("Saved");
+    await expect(orientationSelect).toHaveValue("portrait");
+    await tab.close();
+  });
+
   test("removes collection tag and persists updated tags", async ({
     openNewTab,
   }) => {
@@ -306,93 +360,5 @@ test.describe("Unsplash Source Settings", () => {
     await expect(
       tab.locator("#filter-collections .tag-label", { hasText: "317099" }),
     ).toBeHidden();
-
-    await tab.close();
-  });
-
-  test("preserves newer edit when an in-flight write fails on the same field", async ({
-    openNewTab,
-  }) => {
-    const tab = await openNewTab();
-
-    await tab.locator("button.settings-toggle").click();
-
-    const expandBtn = tab.getByRole("button", {
-      name: "Expand Unsplash settings",
-    });
-    await expandBtn.click();
-
-    const orientationSelect = tab.locator("#filter-orientation");
-
-    // Hold the first write and make it fail, while subsequent writes succeed
-    await tab.evaluate(() => {
-      const originalSet = chrome.storage.sync.set.bind(chrome.storage.sync);
-      let firstCall = true;
-      let releaseFirst: () => void;
-      const hold = new Promise<void>((resolve) => {
-        releaseFirst = resolve;
-      });
-      let notifyHeld: () => void;
-      const held = new Promise<void>((resolve) => {
-        notifyHeld = resolve;
-      });
-
-      (
-        window as unknown as { __firstWriteHeld: Promise<void> }
-      ).__firstWriteHeld = held;
-      (
-        window as unknown as { __releaseFirstWrite: () => void }
-      ).__releaseFirstWrite = releaseFirst!;
-
-      chrome.storage.sync.set = async (items) => {
-        if (firstCall) {
-          firstCall = false;
-          notifyHeld();
-          await hold;
-          throw new Error("First write simulated failure");
-        }
-        return originalSet(items);
-      };
-    });
-
-    // Write 1: portrait (will be held, then fail)
-    await orientationSelect.selectOption("portrait");
-    await tab.evaluate(
-      () =>
-        (window as unknown as { __firstWriteHeld: Promise<void> })
-          .__firstWriteHeld,
-    );
-
-    // Queue Write 2 (landscape) and Write 3 (portrait) while Write 1 is held
-    await orientationSelect.selectOption("landscape");
-    await orientationSelect.selectOption("portrait");
-
-    // Release Write 1 to fail; Write 2 and Write 3 should then proceed and persist portrait
-    await tab.evaluate(() =>
-      (
-        window as unknown as { __releaseFirstWrite: () => void }
-      ).__releaseFirstWrite(),
-    );
-
-    await expect(
-      tab.locator("stellar-unsplash-settings .status"),
-    ).toContainText("Saved");
-
-    // Verify UI holds portrait and did not roll back to initial empty string
-    await expect(orientationSelect).toHaveValue("portrait");
-
-    // Reload tab and verify portrait was saved to storage
-    await tab.reload();
-    await tab.mouse.move(100, 100);
-    await tab.locator("button.settings-toggle").click();
-
-    const expandBtnAfter = tab.getByRole("button", {
-      name: "Expand Unsplash settings",
-    });
-    await expandBtnAfter.click();
-
-    await expect(tab.locator("#filter-orientation")).toHaveValue("portrait");
-
-    await tab.close();
   });
 });

@@ -33,10 +33,7 @@ class UnsplashSettings extends LitElement {
   static override styles = [unsafeCSS(formStyles), unsafeCSS(styles)];
 
   private saveStatus = new SaveStatusController(this);
-  private confirmedSettings = DEFAULT_UNSPLASH_SETTINGS;
   private confirmedCustomAccessKey = "";
-  private editCounter = 0;
-  private fieldEditId: Partial<Record<keyof UnsplashSettingsData, number>> = {};
 
   @state()
   private accessor validatingAccessKey = false;
@@ -214,7 +211,6 @@ class UnsplashSettings extends LitElement {
       ]);
 
       this.settings = settings;
-      this.confirmedSettings = settings;
       this.confirmedCustomAccessKey = customAccessKey;
       this.customAccessKey = customAccessKey;
     } catch {
@@ -236,35 +232,15 @@ class UnsplashSettings extends LitElement {
 
     if (Object.keys(changed).length === 0) return;
 
+    const previousSettings = this.settings;
     this.settings = { ...this.settings, ...changed };
     this.saveStatus.set("saving");
 
-    const editIds: Partial<Record<keyof UnsplashSettingsData, number>> = {};
-    for (const key of Object.keys(changed) as (keyof UnsplashSettingsData)[]) {
-      const id = ++this.editCounter;
-      this.fieldEditId[key] = id;
-      editIds[key] = id;
-    }
-
     try {
       await setUnsplashSettings(changed);
-      this.confirmedSettings = { ...this.confirmedSettings, ...changed };
       this.saveStatus.set("saved");
     } catch {
-      const rollback: Partial<UnsplashSettingsData> = {};
-      for (const [key, id] of Object.entries(editIds) as [
-        keyof UnsplashSettingsData,
-        number,
-      ][]) {
-        if (this.fieldEditId[key] === id) {
-          rollback[key] = this.confirmedSettings[key] as never;
-        }
-      }
-
-      if (Object.keys(rollback).length > 0) {
-        this.settings = { ...this.settings, ...rollback };
-      }
-
+      this.settings = await getUnsplashSettings().catch(() => previousSettings);
       this.saveStatus.set("error");
     }
   };

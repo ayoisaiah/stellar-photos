@@ -22,7 +22,6 @@ interface ImageSource {
   readonly description: string;
   readonly settingsTag?: string;
   readonly infoTitle?: string;
-  readonly supportsDownload?: boolean;
   readonly supportsInfo?: boolean;
   getCredit?(asset: BackgroundAsset): PhotoCredit | null;
   isSupported?(): boolean;

@@ -81,7 +81,7 @@ class HistoryPanel extends LitElement {
     const sourceTitle = source
       ? `View on ${source.name}`
       : "View photo on source";
-    const supportsDownload = Boolean(source?.supportsDownload);
+    const supportsDownload = Boolean(source?.getDownloadUrl);
     const isActive =
       this.activeAsset !== null &&
       this.activeAsset.cacheKey === asset.cacheKey &&

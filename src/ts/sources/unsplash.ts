@@ -100,9 +100,6 @@ const unsplashSource: ImageSource = {
   description: "Photography from the Unsplash community",
   settingsTag: "stellar-unsplash-settings",
   infoTitle: "About this photo",
-  get supportsDownload() {
-    return Boolean(this.getDownloadUrl);
-  },
   supportsInfo: true,
   getCredit(asset) {
     if (!asset.attribution) return null;

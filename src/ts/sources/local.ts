@@ -28,9 +28,6 @@ const localSource: ImageSource = {
   name: "Local folder",
   description: "Photographs from your local device",
   settingsTag: "stellar-local-settings",
-  get supportsDownload() {
-    return Boolean(this.getDownloadUrl);
-  },
   isSupported: isLocalSupported,
   getRandomAsset: getRandomLocalAsset,
   downloadAsset: downloadLocalAsset,

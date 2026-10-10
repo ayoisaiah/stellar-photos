@@ -132,7 +132,7 @@ async function listDirectoryImagePaths(
 }
 
 interface FileSystemHandleWithPermissions {
-  queryPermission?: (descriptor?: {
+  queryPermission: (descriptor?: {
     mode?: "read" | "readwrite";
   }) => Promise<PermissionState>;
   requestPermission?: (descriptor?: {
@@ -147,10 +147,6 @@ async function verifyHandlePermission(
   try {
     const handleWithPerms =
       handle as unknown as FileSystemHandleWithPermissions;
-
-    if (typeof handleWithPerms.queryPermission !== "function") {
-      return true;
-    }
 
     const currentStatus = await handleWithPerms.queryPermission({ mode });
     if (currentStatus === "granted") {

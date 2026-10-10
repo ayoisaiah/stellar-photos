@@ -32,7 +32,6 @@ class KeyboardShortcutsController implements ReactiveController {
 
     const target = event.target;
     const isTyping =
-      typeof HTMLElement !== "undefined" &&
       target instanceof HTMLElement &&
       (target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||

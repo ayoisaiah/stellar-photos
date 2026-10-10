@@ -1,6 +1,28 @@
 import { expect, test } from "./fixtures";
 
 test.describe("History Panel and Photo Navigation", () => {
+  test("removes stale history cards when another tab removes the stored key", async ({
+    openNewTab,
+    context,
+  }) => {
+    const tab = await openNewTab({ photoCount: 3 });
+    await tab.locator("button.history-toggle").click();
+
+    const cards = tab.locator(".history-card");
+    await expect(cards).toHaveCount(3);
+
+    await context
+      .serviceWorkers()[0]!
+      .evaluate(() => chrome.storage.local.remove("stellarHistory"));
+
+    await expect(cards).toHaveCount(1);
+    await expect(cards).toHaveAttribute(
+      "aria-label",
+      "Set Photo description 1 as background",
+    );
+    await tab.close();
+  });
+
   test("displays history thumbnails and selects photo on card click", async ({
     openNewTab,
   }) => {
