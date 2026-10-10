@@ -109,10 +109,10 @@ beforeEach(() => {
     id: "unsplash",
     name: "Unsplash",
     description: "High quality photos",
-    getRandomAsset: vi.fn().mockResolvedValue(candidate),
-    downloadAsset: vi
-      .fn()
-      .mockResolvedValue(new Blob(["image"], { type: "image/jpeg" })),
+    fetchRandom: vi.fn().mockResolvedValue({
+      asset: candidate,
+      blob: new Blob(["image"], { type: "image/jpeg" }),
+    }),
   };
   getImageSource.mockReturnValue(source);
   getActiveImageSources.mockResolvedValue([source]);
@@ -136,14 +136,14 @@ describe("source activation and multi-source rotation", () => {
       id: "earthview",
       name: "Google Earth View",
       description: "Satellite imagery",
-      getRandomAsset: vi.fn().mockResolvedValue({
-        ...candidate,
-        sourceId: "earthview",
-        sourceAssetId: "earth-1",
+      fetchRandom: vi.fn().mockResolvedValue({
+        asset: {
+          ...candidate,
+          sourceId: "earthview",
+          sourceAssetId: "earth-1",
+        },
+        blob: new Blob(["image"], { type: "image/jpeg" }),
       }),
-      downloadAsset: vi
-        .fn()
-        .mockResolvedValue(new Blob(["image"], { type: "image/jpeg" })),
     };
     getActiveImageSources.mockResolvedValue([earthviewSource]);
 
@@ -158,7 +158,7 @@ describe("source activation and multi-source rotation", () => {
       ],
     });
 
-    expect(earthviewSource.getRandomAsset).toHaveBeenCalledOnce();
+    expect(earthviewSource.fetchRandom).toHaveBeenCalledOnce();
   });
 
   it("skips rotation on newtab when current photo is fresh and frequency is hourly", async () => {
@@ -172,7 +172,7 @@ describe("source activation and multi-source rotation", () => {
 
     await expect(nextImage()).resolves.toBeUndefined();
 
-    expect(source.getRandomAsset).not.toHaveBeenCalled();
+    expect(source.fetchRandom).not.toHaveBeenCalled();
   });
 
   it("rotates when frequency expires", async () => {
@@ -186,13 +186,13 @@ describe("source activation and multi-source rotation", () => {
 
     await expect(nextImage()).resolves.toBeUndefined();
 
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(source.fetchRandom).toHaveBeenCalledOnce();
   });
 
   it("rotates when rotation is explicitly triggered", async () => {
     await expect(nextImage()).resolves.toBeUndefined();
 
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(source.fetchRandom).toHaveBeenCalledOnce();
     expect(writeHistory).toHaveBeenCalledWith({
       history: [prepared, current],
     });
@@ -204,25 +204,27 @@ describe("source activation and multi-source rotation", () => {
       id: "local",
       name: "Local folder",
       description: "Local photos",
-      getRandomAsset: vi.fn().mockRejectedValue(new Error("Folder empty")),
-      downloadAsset: vi.fn(),
+      fetchRandom: vi.fn().mockRejectedValue(new Error("Folder empty")),
     };
     getActiveImageSources.mockResolvedValue([failingSource, source]);
 
     await expect(nextImage()).resolves.toBeUndefined();
-    expect(failingSource.getRandomAsset).toHaveBeenCalled();
-    expect(source.getRandomAsset).toHaveBeenCalled();
+    expect(failingSource.fetchRandom).toHaveBeenCalled();
+    expect(source.fetchRandom).toHaveBeenCalled();
   });
 
   it("finishes caching an in-progress download when a photo becomes pinned", async () => {
-    vi.mocked(source.downloadAsset).mockImplementation(async () => {
+    vi.mocked(source.fetchRandom).mockImplementation(async () => {
       readPinnedAsset.mockResolvedValue(current);
-      return new Blob(["image"], { type: "image/jpeg" });
+      return {
+        asset: candidate,
+        blob: new Blob(["image"], { type: "image/jpeg" }),
+      };
     });
 
     await expect(nextImage()).resolves.toBeUndefined();
 
-    expect(source.downloadAsset).toHaveBeenCalledWith(candidate);
+    expect(source.fetchRandom).toHaveBeenCalledWith();
     expect(putCachedImage).toHaveBeenCalledWith(
       prepared.cacheKey,
       expect.any(Response),
@@ -263,7 +265,7 @@ describe("source activation and multi-source rotation", () => {
 
     expect(first).toBeUndefined();
     expect(second).toBeUndefined();
-    expect(source.getRandomAsset).toHaveBeenCalledTimes(2);
+    expect(source.fetchRandom).toHaveBeenCalledTimes(2);
     expect(history).toEqual([prepared, prepared, current]);
   });
 
@@ -273,7 +275,7 @@ describe("source activation and multi-source rotation", () => {
     await expect(nextImage()).resolves.toBeUndefined();
     expect(readCachedImage).not.toHaveBeenCalled();
     expect(writePinnedAsset).not.toHaveBeenCalled();
-    expect(source.getRandomAsset).not.toHaveBeenCalled();
+    expect(source.fetchRandom).not.toHaveBeenCalled();
   });
 
   it("waits for the deadline even if the image is missing and its source is disabled", async () => {
@@ -291,11 +293,11 @@ describe("source activation and multi-source rotation", () => {
     await expect(nextImage()).resolves.toBeUndefined();
     expect(readCachedImage).not.toHaveBeenCalled();
     expect(getActiveImageSources).not.toHaveBeenCalled();
-    expect(source.downloadAsset).not.toHaveBeenCalled();
+    expect(source.fetchRandom).not.toHaveBeenCalled();
   });
 
   it("allows the next request to proceed after a failed download", async () => {
-    vi.mocked(source.downloadAsset).mockRejectedValueOnce(new Error("Offline"));
+    vi.mocked(source.fetchRandom).mockRejectedValueOnce(new Error("Offline"));
 
     await expect(nextImage()).rejects.toThrow("Offline");
     await expect(nextImage()).resolves.toBeUndefined();
@@ -365,14 +367,14 @@ describe("source status reporting without behavior changes", () => {
       id: "earthview",
       name: "Google Earth View",
       description: "Satellite imagery",
-      getRandomAsset: vi.fn().mockResolvedValue({
-        ...candidate,
-        sourceId: "earthview",
-        sourceAssetId: "earth-1",
+      fetchRandom: vi.fn().mockResolvedValue({
+        asset: {
+          ...candidate,
+          sourceId: "earthview",
+          sourceAssetId: "earth-1",
+        },
+        blob: new Blob(["image"], { type: "image/jpeg" }),
       }),
-      downloadAsset: vi
-        .fn()
-        .mockResolvedValue(new Blob(["image"], { type: "image/jpeg" })),
     };
 
     vi.spyOn(Math, "random").mockReturnValue(0.99);
@@ -380,8 +382,8 @@ describe("source status reporting without behavior changes", () => {
 
     await expect(nextImage()).resolves.toBeUndefined();
 
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
-    expect(earthviewSource.getRandomAsset).not.toHaveBeenCalled();
+    expect(source.fetchRandom).toHaveBeenCalledOnce();
+    expect(earthviewSource.fetchRandom).not.toHaveBeenCalled();
   });
 
   it("clears the warning on the next successful normal request", async () => {
@@ -393,7 +395,7 @@ describe("source status reporting without behavior changes", () => {
 
     await expect(nextImage()).resolves.toBeUndefined();
 
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(source.fetchRandom).toHaveBeenCalledOnce();
 
     const healthMap = fakeStorage[SOURCE_HEALTH_STORAGE_KEY] as Record<
       string,
@@ -409,7 +411,7 @@ describe("source status reporting without behavior changes", () => {
 
     await expect(nextImage()).rejects.toThrow("Disk full / Quota exceeded");
 
-    expect(source.getRandomAsset).toHaveBeenCalledOnce();
+    expect(source.fetchRandom).toHaveBeenCalledOnce();
 
     const healthMap = (fakeStorage[SOURCE_HEALTH_STORAGE_KEY] ?? {}) as Record<
       string,
@@ -423,7 +425,7 @@ describe("source status reporting without behavior changes", () => {
     new Error("Request failed: https://example.com?api_key=test-key"),
     "Raw failure text",
   ])("preserves the raw failure message: %s", async (error) => {
-    source.getRandomAsset = vi.fn().mockRejectedValueOnce(error);
+    source.fetchRandom = vi.fn().mockRejectedValueOnce(error);
 
     await expect(nextImage()).rejects.toBe(error);
 
@@ -477,15 +479,16 @@ describe("source status reporting without behavior changes", () => {
     const fallback = {
       ...source,
       id: "earthview",
-      getRandomAsset: vi
-        .fn()
-        .mockResolvedValue({ ...candidate, sourceId: "earthview" }),
+      fetchRandom: vi.fn().mockResolvedValue({
+        asset: { ...candidate, sourceId: "earthview" },
+        blob: new Blob(["image"], { type: "image/jpeg" }),
+      }),
     };
     getActiveImageSources.mockResolvedValue([source, fallback]);
     putCachedImage.mockRejectedValueOnce(new Error("Cache write failed"));
 
     await expect(nextImage()).resolves.toBeUndefined();
-    expect(fallback.getRandomAsset).toHaveBeenCalledOnce();
+    expect(fallback.fetchRandom).toHaveBeenCalledOnce();
     expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY] ?? {}).toEqual({});
   });
 });
@@ -495,7 +498,7 @@ it("visits every source once with uniformly shuffled orders", async () => {
   const sources: ImageSource[] = ["a", "b", "c", "d"].map((id) => ({
     ...source,
     id,
-    getRandomAsset: async () => {
+    fetchRandom: async () => {
       order.push(id);
       throw new Error("Unavailable");
     },

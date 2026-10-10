@@ -1,10 +1,10 @@
 import { nextImage, trackDownload } from "./actions";
 import type { BackgroundAsset } from "./assets";
-import { readCachedImage } from "./cache";
+import { type CacheKind, readCachedImage } from "./cache";
 
 type WorkerCommand =
   | { command: "nextImage" }
-  | { command: "read-image"; cacheKey: string; thumbnail?: boolean }
+  | { command: "read-image"; cacheKey: string; kind?: CacheKind }
   | { command: "track-download"; asset: BackgroundAsset };
 
 type WorkerResult =
@@ -43,10 +43,7 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
         return { ok: true };
 
       case "read-image": {
-        const response =
-          (command.thumbnail
-            ? await readCachedImage(command.cacheKey, "thumbnail")
-            : undefined) ?? (await readCachedImage(command.cacheKey));
+        const response = await readCachedImage(command.cacheKey, command.kind);
 
         return { ok: true, image: response ? await response.blob() : null };
       }
@@ -75,5 +72,4 @@ async function dispatch(request: unknown): Promise<WorkerResult> {
   }
 }
 
-export type { WorkerCommand, WorkerResult };
-export { dispatch, startServiceWorker };
+export { dispatch, startServiceWorker, type WorkerCommand, type WorkerResult };

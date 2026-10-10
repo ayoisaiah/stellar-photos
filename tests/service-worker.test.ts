@@ -59,22 +59,19 @@ describe("service worker commands", () => {
     });
   });
 
-  it.each([false, true])(
-    "reads cached image bytes (thumbnail: %s)",
-    async (thumbnail) => {
+  it.each(["image", "thumbnail"])(
+    "reads cached image bytes (kind: %s)",
+    async (kind) => {
       const image = new Blob(["cached image"], { type: "image/png" });
       readCachedImage.mockResolvedValueOnce(new Response(image));
 
       const result = await dispatch({
         command: "read-image",
         cacheKey: current.cacheKey,
-        thumbnail,
+        kind,
       });
 
-      expect(readCachedImage).toHaveBeenCalledWith(
-        current.cacheKey,
-        ...(thumbnail ? ["thumbnail"] : []),
-      );
+      expect(readCachedImage).toHaveBeenCalledWith(current.cacheKey, kind);
       expect(result.ok).toBe(true);
       if (!result.ok) throw new Error(result.error.message);
 
@@ -84,26 +81,20 @@ describe("service worker commands", () => {
     },
   );
 
-  it("falls back to the full image when the background thumbnail is missing", async () => {
-    readCachedImage
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(new Response("full"));
+  it("returns null when the background thumbnail is missing without reading the full image", async () => {
+    readCachedImage.mockResolvedValueOnce(undefined);
 
-    const result = await dispatch({
-      command: "read-image",
-      cacheKey: current.cacheKey,
-      thumbnail: true,
-    });
-
-    expect(readCachedImage).toHaveBeenNthCalledWith(
-      1,
+    await expect(
+      dispatch({
+        command: "read-image",
+        cacheKey: current.cacheKey,
+        kind: "thumbnail",
+      }),
+    ).resolves.toEqual({ ok: true, image: null });
+    expect(readCachedImage).toHaveBeenCalledExactlyOnceWith(
       current.cacheKey,
       "thumbnail",
     );
-    expect(readCachedImage).toHaveBeenNthCalledWith(2, current.cacheKey);
-    if (!result.ok) throw new Error(result.error.message);
-
-    expect(await result.image?.text()).toBe("full");
   });
 
   it("returns null when the background image is missing", async () => {
@@ -119,6 +110,9 @@ describe("service worker commands", () => {
     });
 
     expect(result).toEqual({ ok: true, image: null });
-    expect(readCachedImage).toHaveBeenCalledWith("https://example.com/image");
+    expect(readCachedImage).toHaveBeenCalledWith(
+      "https://example.com/image",
+      undefined,
+    );
   });
 });

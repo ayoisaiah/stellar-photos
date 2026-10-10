@@ -7,7 +7,6 @@ import {
   isImageFileName,
   listDirectoryImagePaths,
   listStoredFolderRecords,
-  readDirectoryFile,
   removeDirectoryHandle,
   rescanAllFolders,
 } from "../src/ts/sources/local-db";
@@ -232,9 +231,6 @@ describe("directory handle storage", () => {
       "mountain.webp",
       "sunset.jpg",
     ]).toContain(random?.name);
-
-    const file = await readDirectoryFile("Vacation/beach.jpg", record.id);
-    expect(await file.text()).toBe("beach-data");
   });
 
   it("supports adding and removing multiple directory handles", async () => {
@@ -343,7 +339,7 @@ describe("local source image rotation and retrieval", () => {
     });
     await addDirectoryHandle(handle);
 
-    const asset = await localSource.getRandomAsset();
+    const { asset, blob: response } = await localSource.fetchRandom();
     expect(asset).toMatchObject({
       sourceId: "local",
       description: "stars.jpg",
@@ -351,7 +347,6 @@ describe("local source image rotation and retrieval", () => {
       height: 0,
     });
 
-    const response = await localSource.downloadAsset(asset);
     expect(response.type).toBe("image/jpeg");
     expect(await response.text()).toBe("image-bytes");
   });
@@ -366,15 +361,6 @@ describe("local source image rotation and retrieval", () => {
     expect(id1.length).toBeLessThanOrEqual(60);
   });
 
-  it("throws when readDirectoryFile targets a missing folderId", async () => {
-    const handle = createMockDirHandle("FolderA", { "a.jpg": "content" });
-    await addDirectoryHandle(handle);
-
-    await expect(
-      readDirectoryFile("a.jpg", "non-existent-folder-id"),
-    ).rejects.toThrow("Target folder not found.");
-  });
-
   it("tries only one photo when the selected handle or file cannot be read", async () => {
     const handle = createMockDirHandle("TestFolder", {
       "broken.jpg": "data",
@@ -387,9 +373,7 @@ describe("local source image rotation and retrieval", () => {
 
     try {
       getHandle.mockRejectedValueOnce(new Error("File deleted"));
-      await expect(localSource.getRandomAsset()).rejects.toThrow(
-        "File deleted",
-      );
+      await expect(localSource.fetchRandom()).rejects.toThrow("File deleted");
       expect(getHandle).toHaveBeenCalledTimes(1);
 
       getHandle.mockClear();
@@ -397,7 +381,7 @@ describe("local source image rotation and retrieval", () => {
       getHandle.mockResolvedValueOnce({
         getFile,
       } as unknown as FileSystemFileHandle);
-      await expect(localSource.getRandomAsset()).rejects.toThrow(
+      await expect(localSource.fetchRandom()).rejects.toThrow(
         "File unreadable",
       );
       expect(getHandle).toHaveBeenCalledTimes(1);

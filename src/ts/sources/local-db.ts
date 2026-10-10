@@ -28,13 +28,6 @@ class LocalPermissionError extends Error {
   }
 }
 
-function isLocalPermissionError(error: unknown): boolean {
-  return (
-    error instanceof LocalPermissionError ||
-    (error as { name?: string } | null | undefined)?.name === "NotAllowedError"
-  );
-}
-
 function isImageFileName(name: string): boolean {
   const ext = name.split(".").pop()?.toLowerCase();
 
@@ -300,38 +293,16 @@ async function getRandomDirectoryImage(): Promise<RandomLocalImageResult | null>
   return null;
 }
 
-async function readDirectoryFile(
-  relativePath: string,
-  folderId: string,
-): Promise<File> {
-  const folderRecord = await withFolderStore<LocalFolderRecord | undefined>(
-    "readonly",
-    (store) => store.get(folderId) as IDBRequest<LocalFolderRecord | undefined>,
-  );
-
-  if (!folderRecord) {
-    throw new Error("Target folder not found.");
-  }
-
-  const fileHandle = await getFileHandleByPath(
-    folderRecord.handle,
-    relativePath,
-  );
-
-  return fileHandle.getFile();
-}
-
-export type { LocalFolderRecord, RandomLocalImageResult };
 export {
   addDirectoryHandle,
   getFileHandleByPath,
   getRandomDirectoryImage,
   isImageFileName,
-  isLocalPermissionError,
+  type LocalFolderRecord,
   LocalPermissionError,
   listDirectoryImagePaths,
   listStoredFolderRecords,
-  readDirectoryFile,
+  type RandomLocalImageResult,
   removeDirectoryHandle,
   rescanAllFolders,
   verifyHandlePermission,

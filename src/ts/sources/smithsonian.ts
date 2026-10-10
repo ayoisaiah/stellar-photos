@@ -67,8 +67,7 @@ const smithsonianSource: ImageSource = {
 
     return { ...asset.attribution, sourceName: smithsonianSource.name };
   },
-  getRandomAsset: getRandomSmithsonianAsset,
-  downloadAsset: downloadSmithsonianAsset,
+  fetchRandom,
   getDownloadUrl: getSmithsonianDownloadUrl,
 };
 
@@ -124,7 +123,10 @@ function recordUrl(value: string | undefined): string {
   return OPEN_ACCESS_URL;
 }
 
-async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
+async function fetchRandom(): Promise<{
+  asset: UncachedBackgroundAsset;
+  blob: Blob;
+}> {
   const category = await getSmithsonianCategory();
   const path =
     category === "all"
@@ -158,7 +160,7 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
       (item) => dimension(item.width) > 0 && dimension(item.height) > 0,
     );
 
-    return makeAsset({
+    const asset = makeAsset({
       sourceId: smithsonianSource.id,
       sourceAssetId: row.id,
       width: dimension(resource?.width ?? media.width, DEFAULT_WIDTH),
@@ -171,16 +173,18 @@ async function getRandomSmithsonianAsset(): Promise<UncachedBackgroundAsset> {
       },
       sourcePayload: { imageUrl } satisfies SmithsonianPayload,
     });
+
+    const imageResponse = await fetchWithTimeout(new URL(imageUrl), {
+      redirect: "follow",
+    });
+
+    return { asset, blob: await readBoundedImage(imageResponse) };
   }
 
   throw new Error("Smithsonian returned no usable images");
 }
 
 function getSmithsonianDownloadUrl(asset: UncachedBackgroundAsset): string {
-  if (asset.sourceId !== smithsonianSource.id) {
-    throw new Error("Unsupported Smithsonian asset payload");
-  }
-
   const payload = asset.sourcePayload as Partial<SmithsonianPayload>;
   if (typeof payload.imageUrl !== "string") {
     throw new Error("Malformed Smithsonian asset payload");
@@ -189,19 +193,10 @@ function getSmithsonianDownloadUrl(asset: UncachedBackgroundAsset): string {
   return payload.imageUrl;
 }
 
-async function downloadSmithsonianAsset(
-  asset: UncachedBackgroundAsset,
-): Promise<Blob> {
-  const imageUrl = new URL(getSmithsonianDownloadUrl(asset));
-  const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
-
-  return readBoundedImage(response);
-}
-
-export type { SmithsonianCategory };
 export {
   getSmithsonianCategory,
   SMITHSONIAN_CATEGORIES,
+  type SmithsonianCategory,
   setSmithsonianCategory,
   smithsonianSource,
 };

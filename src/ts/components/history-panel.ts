@@ -171,7 +171,9 @@ class HistoryPanel extends LitElement {
             return { key: asset.cacheKey, url: existing, isNew: false };
           }
 
-          const response = await readImage(asset.cacheKey, true);
+          const response =
+            (await readImage(asset.cacheKey, "thumbnail")) ??
+            (await readImage(asset.cacheKey));
 
           if (response) {
             const blob = await response.blob();

@@ -1,10 +1,6 @@
-import {
-  type BackgroundAsset,
-  makeAsset,
-  type UncachedBackgroundAsset,
-} from "../assets";
+import { makeAsset, type UncachedBackgroundAsset } from "../assets";
 import type { ImageSource } from "../sources";
-import { getRandomDirectoryImage, readDirectoryFile } from "./local-db";
+import { getRandomDirectoryImage } from "./local-db";
 
 interface LocalPayload {
   folderId: string;
@@ -13,7 +9,14 @@ interface LocalPayload {
   name: string;
 }
 
-const pendingFiles = new Map<string, File>();
+const localSource: ImageSource = {
+  id: "local",
+  name: "Local folder",
+  description: "Photographs from your local device",
+  settingsTag: "stellar-local-settings",
+  isSupported: isLocalSupported,
+  fetchRandom,
+};
 
 function isLocalSupported(): boolean {
   return (
@@ -22,16 +25,6 @@ function isLocalSupported(): boolean {
       "function"
   );
 }
-
-const localSource: ImageSource = {
-  id: "local",
-  name: "Local folder",
-  description: "Photographs from your local device",
-  settingsTag: "stellar-local-settings",
-  isSupported: isLocalSupported,
-  getRandomAsset: getRandomLocalAsset,
-  downloadAsset: downloadLocalAsset,
-};
 
 async function computeLocalAssetId(
   folderId: string,
@@ -51,7 +44,10 @@ async function computeLocalAssetId(
   return `${encodeURIComponent(folderId)}_${hash}`;
 }
 
-async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
+async function fetchRandom(): Promise<{
+  asset: UncachedBackgroundAsset;
+  blob: Blob;
+}> {
   const photo = await getRandomDirectoryImage();
 
   if (!photo) {
@@ -66,9 +62,7 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
     photo.relativePath,
   );
 
-  pendingFiles.set(sourceAssetId, file);
-
-  return makeAsset({
+  const asset = makeAsset({
     sourceId: localSource.id,
     sourceAssetId,
     width: 0,
@@ -82,24 +76,13 @@ async function getRandomLocalAsset(): Promise<UncachedBackgroundAsset> {
       name: photo.name,
     } satisfies LocalPayload,
   });
+
+  return { asset, blob: file };
 }
 
-async function downloadLocalAsset(
-  asset: UncachedBackgroundAsset,
-): Promise<Blob> {
-  const cachedFile = pendingFiles.get(asset.sourceAssetId);
-  if (cachedFile) {
-    pendingFiles.delete(asset.sourceAssetId);
-    return cachedFile;
-  }
-
-  const payload = asset.sourcePayload as LocalPayload | undefined;
-  if (!payload?.relativePath || !payload.folderId) {
-    throw new Error("Local asset has no file path");
-  }
-
-  return readDirectoryFile(payload.relativePath, payload.folderId);
-}
-
-export type { LocalPayload };
-export { computeLocalAssetId, isLocalSupported, localSource };
+export {
+  computeLocalAssetId,
+  isLocalSupported,
+  type LocalPayload,
+  localSource,
+};

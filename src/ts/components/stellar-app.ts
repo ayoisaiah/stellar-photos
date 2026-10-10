@@ -501,7 +501,7 @@ class StellarApp extends LitElement {
 
     const [response, thumbResponse] = await Promise.all([
       readImage(asset.cacheKey),
-      readImage(asset.cacheKey, true),
+      readImage(asset.cacheKey, "thumbnail"),
     ]);
 
     if (!response) return false;

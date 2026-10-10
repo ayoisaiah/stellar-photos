@@ -1,22 +1,19 @@
-import { readCachedImage } from "./cache";
+import { type CacheKind, readCachedImage } from "./cache";
 import type { WorkerResult } from "./service-worker";
 
 async function readImage(
   cacheKey: string,
-  thumbnail = false,
+  kind: CacheKind = "image",
 ): Promise<Response | undefined> {
-  const cached =
-    (thumbnail ? await readCachedImage(cacheKey, "thumbnail") : undefined) ??
-    (await readCachedImage(cacheKey));
+  const cached = await readCachedImage(cacheKey, kind);
 
-  if (cached) return cached;
-  if (location.protocol !== "moz-extension:") return undefined;
+  if (cached || location.protocol !== "moz-extension:") return cached;
 
   try {
     const result = (await chrome.runtime.sendMessage({
       command: "read-image",
       cacheKey,
-      thumbnail,
+      kind,
     })) as WorkerResult;
 
     return result?.ok && result.image ? new Response(result.image) : undefined;

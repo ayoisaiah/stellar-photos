@@ -117,8 +117,7 @@ const unsplashSource: ImageSource = {
       sourceName: unsplashSource.name,
     };
   },
-  getRandomAsset,
-  downloadAsset,
+  fetchRandom,
   getDownloadUrl,
   didDownload,
   fetchDetails: fetchUnsplashPhotoDetails,
@@ -145,7 +144,6 @@ async function fetchUnsplashPhotoDetails(
       API_ORIGIN,
     );
     const response = await authenticatedFetch(url);
-    if (!response.ok) return null;
 
     const data = (await response.json()) as UnsplashPhotoResponse;
 
@@ -185,9 +183,7 @@ function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
     url.searchParams.set("orientation", orientation);
   }
 
-  if (contentFilter) {
-    url.searchParams.set("content_filter", contentFilter);
-  }
+  url.searchParams.set("content_filter", contentFilter);
 
   return url;
 }
@@ -216,14 +212,17 @@ function imageUrlForResolution(
   return url.href;
 }
 
-async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
+async function fetchRandom(): Promise<{
+  asset: UncachedBackgroundAsset;
+  blob: Blob;
+}> {
   const settings = await getUnsplashSettings();
   const endpoint = buildRandomPhotoUrl(settings);
   const photo = (await (
     await authenticatedFetch(endpoint)
   ).json()) as UnsplashPhotoResponse;
 
-  return makeAsset({
+  const asset = makeAsset({
     sourceId: unsplashSource.id,
     sourceAssetId: photo.id,
     width: photo.width,
@@ -241,21 +240,13 @@ async function getRandomAsset(): Promise<UncachedBackgroundAsset> {
       info: extractPhotoInfo(photo),
     } satisfies UnsplashPayload,
   });
-}
 
-async function downloadAsset(asset: UncachedBackgroundAsset): Promise<Blob> {
-  const payload = parsePayload(asset);
-  if (typeof payload.imageUrl !== "string") {
-    throw new Error("Unsplash asset payload has no image URL");
-  }
-
-  const settings = await getUnsplashSettings();
-  const url = imageUrlForResolution(payload.imageUrl, settings.imageQuality);
+  const url = imageUrlForResolution(photo.urls.raw, settings.imageQuality);
   const response = await fetchWithTimeout(url, {
     redirect: "follow",
   });
 
-  return readBoundedImage(response);
+  return { asset, blob: await readBoundedImage(response) };
 }
 
 function getDownloadUrl(asset: BackgroundAsset): string {
@@ -522,13 +513,6 @@ async function verifyUnsplashAccessKey(
   }
 }
 
-export type {
-  UnsplashExif,
-  UnsplashInfoData,
-  UnsplashLocation,
-  UnsplashPayload,
-  UnsplashUser,
-};
 export {
   buildRandomPhotoUrl,
   cleanIdentifier,
@@ -537,6 +521,11 @@ export {
   getUnsplashPhotoInfo,
   imageUrlForResolution,
   normalizeCsv,
+  type UnsplashExif,
+  type UnsplashInfoData,
+  type UnsplashLocation,
+  type UnsplashPayload,
+  type UnsplashUser,
   unsplashSource,
   verifyUnsplashAccessKey,
   verifyUnsplashCollection,

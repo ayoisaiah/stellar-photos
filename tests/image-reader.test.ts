@@ -23,27 +23,35 @@ describe("readImage", () => {
     readCachedImage.mockResolvedValue(cached);
 
     expect(await readImage(cacheKey)).toBe(cached);
-    expect(readCachedImage).toHaveBeenCalledWith(cacheKey);
+    expect(readCachedImage).toHaveBeenCalledWith(cacheKey, "image");
   });
 
   it("returns cached thumbnail on thumbnail read hit", async () => {
     const cachedThumb = new Response("thumb");
     readCachedImage.mockResolvedValue(cachedThumb);
 
-    expect(await readImage(cacheKey, true)).toBe(cachedThumb);
+    expect(await readImage(cacheKey, "thumbnail")).toBe(cachedThumb);
     expect(readCachedImage).toHaveBeenCalledWith(cacheKey, "thumbnail");
   });
 
-  it("falls back to full image on thumbnail read miss", async () => {
-    const cachedFull = new Response("fallback-full");
-    readCachedImage
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(cachedFull);
+  it("does not read the full image when a thumbnail is missing", async () => {
+    readCachedImage.mockResolvedValue(undefined);
+    vi.stubGlobal("chrome", {
+      runtime: {
+        sendMessage: vi.fn().mockResolvedValue({ ok: true, image: null }),
+      },
+    });
 
-    expect(await readImage(cacheKey, true)).toBe(cachedFull);
-    expect(readCachedImage).toHaveBeenNthCalledWith(1, cacheKey, "thumbnail");
-    expect(readCachedImage).toHaveBeenNthCalledWith(2, cacheKey);
-    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled();
+    expect(await readImage(cacheKey, "thumbnail")).toBeUndefined();
+    expect(readCachedImage).toHaveBeenCalledExactlyOnceWith(
+      cacheKey,
+      "thumbnail",
+    );
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      command: "read-image",
+      cacheKey,
+      kind: "thumbnail",
+    });
   });
 
   it("returns undefined on cache miss when chrome runtime is unavailable", async () => {
@@ -51,7 +59,7 @@ describe("readImage", () => {
     vi.stubGlobal("chrome", undefined);
 
     expect(await readImage(cacheKey)).toBeUndefined();
-    expect(await readImage(cacheKey, true)).toBeUndefined();
+    expect(await readImage(cacheKey, "thumbnail")).toBeUndefined();
   });
 
   it("falls back to background worker read-image on cache miss (e.g. in container tabs)", async () => {
@@ -70,7 +78,7 @@ describe("readImage", () => {
     expect(sendMessage).toHaveBeenCalledWith({
       command: "read-image",
       cacheKey,
-      thumbnail: false,
+      kind: "image",
     });
     expect(response).toBeDefined();
     expect(await response?.text()).toBe("hello");

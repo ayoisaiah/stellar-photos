@@ -49,8 +49,7 @@ function nextImage(): Promise<void> {
       let retrieved = false;
 
       try {
-        const candidate = await source.getRandomAsset();
-        const blob = await source.downloadAsset(candidate);
+        const { asset: candidate, blob } = await source.fetchRandom();
         retrieved = true;
         await setSourceError(source.id, "").catch(console.error);
 

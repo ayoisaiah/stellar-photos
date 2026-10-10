@@ -35,11 +35,15 @@ function shouldRotateAtFrequency(
   current: BackgroundAsset,
   frequency: PhotoFrequency,
 ): boolean {
-  const option = FREQUENCIES.find((f) => f.value === frequency);
-  if (!option || option.ms === 0) return true;
+  const option = FREQUENCIES.find((f) => f.value === frequency)!;
+  if (option.ms === 0) return true;
 
   return Date.now() - current.createdAt >= option.ms;
 }
 
-export type { FrequencyOption, PhotoFrequency };
-export { FREQUENCIES, shouldRotateAtFrequency };
+export {
+  FREQUENCIES,
+  type FrequencyOption,
+  type PhotoFrequency,
+  shouldRotateAtFrequency,
+};

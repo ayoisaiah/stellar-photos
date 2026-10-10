@@ -19,7 +19,15 @@ describe("earthview catalog and image helper", () => {
 
 describe("earthview source retrieval and rotation", () => {
   it("retrieves a random Earth View asset", async () => {
-    const asset = await earthviewSource.getRandomAsset();
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response("image", { headers: { "content-type": "image/jpeg" } }),
+        ),
+    );
+    const { asset } = await earthviewSource.fetchRandom();
 
     expect(asset.sourceId).toBe("earthview");
     expect(asset.sourceAssetId).toMatch(/^[0-9]+$/);
@@ -39,8 +47,7 @@ describe("earthview source retrieval and rotation", () => {
     );
     vi.stubGlobal("fetch", mockFetch);
 
-    const asset = await earthviewSource.getRandomAsset();
-    const response = await earthviewSource.downloadAsset(asset);
+    const { asset, blob: response } = await earthviewSource.fetchRandom();
 
     expect(mockFetch).toHaveBeenCalledWith(
       new URL(

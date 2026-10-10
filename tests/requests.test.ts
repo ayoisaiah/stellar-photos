@@ -192,8 +192,7 @@ describe("Unsplash image resolution", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const asset = await unsplashSource.getRandomAsset();
-    const image = await unsplashSource.downloadAsset(asset);
+    const { asset, blob: image } = await unsplashSource.fetchRandom();
     const fullImageUrl = unsplashSource.getDownloadUrl?.({
       ...asset,
       cacheKey: "cache-key",

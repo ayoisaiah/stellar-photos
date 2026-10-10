@@ -25,8 +25,10 @@ interface ImageSource {
   readonly supportsInfo?: boolean;
   getCredit?(asset: BackgroundAsset): PhotoCredit | null;
   isSupported?(): boolean;
-  getRandomAsset(): Promise<UncachedBackgroundAsset>;
-  downloadAsset(asset: UncachedBackgroundAsset): Promise<Blob>;
+  fetchRandom(): Promise<{
+    asset: UncachedBackgroundAsset;
+    blob: Blob;
+  }>;
   getDownloadUrl?(asset: BackgroundAsset): string;
   didDownload?(asset: BackgroundAsset): Promise<void>;
   fetchDetails?(asset: BackgroundAsset): Promise<unknown>;

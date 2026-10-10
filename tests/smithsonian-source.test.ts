@@ -72,8 +72,7 @@ describe("smithsonian source", () => {
       );
     vi.stubGlobal("fetch", mockFetch);
 
-    const asset = await smithsonianSource.getRandomAsset();
-    const response = await smithsonianSource.downloadAsset(asset);
+    const { asset, blob: response } = await smithsonianSource.fetchRandom();
 
     expect(asset).toMatchObject({
       sourceId: "smithsonian",
@@ -107,7 +106,7 @@ describe("smithsonian source", () => {
       ),
     );
 
-    await expect(smithsonianSource.getRandomAsset()).rejects.toThrow(
+    await expect(smithsonianSource.fetchRandom()).rejects.toThrow(
       "Smithsonian returned no usable images",
     );
   });
@@ -121,7 +120,7 @@ describe("smithsonian source", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     await setSmithsonianCategory("all");
-    await expect(smithsonianSource.getRandomAsset()).rejects.toThrow(
+    await expect(smithsonianSource.fetchRandom()).rejects.toThrow(
       "Smithsonian returned no usable images",
     );
 
@@ -133,37 +132,42 @@ describe("smithsonian source", () => {
   it("falls back to default dimensions when metadata lacks width or height", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            response: {
-              rows: [
-                {
-                  id: "item-no-dimensions",
-                  content: {
-                    descriptiveNonRepeating: {
-                      online_media: {
-                        media: [
-                          {
-                            content:
-                              "https://ids.si.edu/ids/deliveryService?id=item-1",
-                            type: "Images",
-                            usage: { access: "CC0" },
-                          },
-                        ],
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              response: {
+                rows: [
+                  {
+                    id: "item-no-dimensions",
+                    content: {
+                      descriptiveNonRepeating: {
+                        online_media: {
+                          media: [
+                            {
+                              content:
+                                "https://ids.si.edu/ids/deliveryService?id=item-1",
+                              type: "Images",
+                              usage: { access: "CC0" },
+                            },
+                          ],
+                        },
                       },
                     },
                   },
-                },
-              ],
-            },
-          }),
-          { headers: { "content-type": "application/json" } },
+                ],
+              },
+            }),
+            { headers: { "content-type": "application/json" } },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response("image", { headers: { "content-type": "image/jpeg" } }),
         ),
-      ),
     );
 
-    const asset = await smithsonianSource.getRandomAsset();
+    const { asset } = await smithsonianSource.fetchRandom();
     expect(asset.width).toBeGreaterThan(0);
     expect(asset.height).toBeGreaterThan(0);
   });
@@ -171,38 +175,43 @@ describe("smithsonian source", () => {
   it("resolves relative and http record links to canonical https URLs", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            response: {
-              rows: [
-                {
-                  id: "item-relative-link",
-                  content: {
-                    descriptiveNonRepeating: {
-                      record_link: "/object/saam_1969.47.61",
-                      online_media: {
-                        media: [
-                          {
-                            content:
-                              "https://ids.si.edu/ids/deliveryService?id=item-1",
-                            type: "Images",
-                            usage: { access: "CC0" },
-                          },
-                        ],
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              response: {
+                rows: [
+                  {
+                    id: "item-relative-link",
+                    content: {
+                      descriptiveNonRepeating: {
+                        record_link: "/object/saam_1969.47.61",
+                        online_media: {
+                          media: [
+                            {
+                              content:
+                                "https://ids.si.edu/ids/deliveryService?id=item-1",
+                              type: "Images",
+                              usage: { access: "CC0" },
+                            },
+                          ],
+                        },
                       },
                     },
                   },
-                },
-              ],
-            },
-          }),
-          { headers: { "content-type": "application/json" } },
+                ],
+              },
+            }),
+            { headers: { "content-type": "application/json" } },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response("image", { headers: { "content-type": "image/jpeg" } }),
         ),
-      ),
     );
 
-    const asset = await smithsonianSource.getRandomAsset();
+    const { asset } = await smithsonianSource.fetchRandom();
     expect(asset.attribution?.sourceUrl).toBe(
       "https://www.si.edu/object/saam_1969.47.61",
     );

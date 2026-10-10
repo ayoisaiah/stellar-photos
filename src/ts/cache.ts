@@ -150,13 +150,13 @@ async function readBoundedImage(response: Response): Promise<Blob> {
   return new Blob(chunks, { type: contentType });
 }
 
-export type { CacheKind, ThumbnailResult };
 export {
-  ACTIVE_CACHE_NAME,
   assetCacheKey,
+  type CacheKind,
   createThumbnail,
   deleteCachedImage,
   putCachedImage,
   readBoundedImage,
   readCachedImage,
+  type ThumbnailResult,
 };

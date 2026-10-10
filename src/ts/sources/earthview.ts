@@ -168,8 +168,7 @@ const earthviewSource: ImageSource = {
       icon: MapPin,
     };
   },
-  getRandomAsset: getRandomEarthViewAsset,
-  downloadAsset: downloadEarthViewAsset,
+  fetchRandom,
   getDownloadUrl: (asset) => buildEarthViewImageUrl(asset.sourceAssetId),
   fetchDetails: fetchEarthViewDetails,
 };
@@ -178,11 +177,14 @@ function buildEarthViewImageUrl(id: number | string): string {
   return `https://www.gstatic.com/prettyearth/assets/full/${encodeURIComponent(String(id))}.jpg`;
 }
 
-async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
+async function fetchRandom(): Promise<{
+  asset: UncachedBackgroundAsset;
+  blob: Blob;
+}> {
   const randomIndex = Math.floor(Math.random() * EARTH_VIEW_PHOTO_IDS.length);
   const id = EARTH_VIEW_PHOTO_IDS[randomIndex]!;
 
-  return makeAsset({
+  const asset = makeAsset({
     sourceId: earthviewSource.id,
     sourceAssetId: String(id),
     width: 1800,
@@ -195,15 +197,11 @@ async function getRandomEarthViewAsset(): Promise<UncachedBackgroundAsset> {
     },
     sourcePayload: { id } satisfies EarthViewPayload,
   });
-}
 
-async function downloadEarthViewAsset(
-  asset: UncachedBackgroundAsset,
-): Promise<Blob> {
-  const imageUrl = new URL(buildEarthViewImageUrl(asset.sourceAssetId));
+  const imageUrl = new URL(buildEarthViewImageUrl(id));
   const response = await fetchWithTimeout(imageUrl, { redirect: "follow" });
 
-  return readBoundedImage(response);
+  return { asset, blob: await readBoundedImage(response) };
 }
 
 async function fetchEarthViewDetails(
@@ -235,5 +233,11 @@ async function fetchEarthViewDetails(
   }
 }
 
-export type { EarthViewDetailsData, EarthViewGeocode, EarthViewPayload };
-export { buildEarthViewImageUrl, earthviewSource, fetchEarthViewDetails };
+export {
+  buildEarthViewImageUrl,
+  type EarthViewDetailsData,
+  type EarthViewGeocode,
+  type EarthViewPayload,
+  earthviewSource,
+  fetchEarthViewDetails,
+};
