@@ -119,6 +119,13 @@ describe("browser packages", () => {
         });
       }
 
+      await expect(stat(`${root}/48.png`)).resolves.toBeTruthy();
+      await expect(stat(`${root}/64.png`)).resolves.toBeTruthy();
+      await expect(stat(`${root}/128.png`)).resolves.toBeTruthy();
+      await expect(stat(`${root}/256.png`)).rejects.toThrow();
+      await expect(stat(`${root}/map.svg`)).rejects.toThrow();
+      await expect(stat(`${root}/index.d.ts`)).rejects.toThrow();
+
       const bundle = await readFile(`${root}/background.js`, "utf8");
       expect(bundle).not.toContain('from "');
       expect(bundle).not.toContain("old/");

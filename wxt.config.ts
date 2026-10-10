@@ -10,7 +10,6 @@ export default defineConfig({
   manifestVersion: 3,
   outDir: process.env.STELLAR_OUT_DIR ?? "dist",
   outDirTemplate: "{{browser}}",
-  publicDir: "src/icons",
   manifest: ({ browser }) => ({
     name: "Stellar Photos",
     description:
