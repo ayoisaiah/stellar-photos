@@ -211,8 +211,8 @@ class HistoryPanel extends LitElement {
       }
 
       this.thumbnailUrls = nextUrls;
-    } catch {
-      // Abort gracefully
+    } catch (error) {
+      console.error(error);
     }
   }
 

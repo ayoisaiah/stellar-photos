@@ -118,7 +118,7 @@ async function listDirectoryImagePaths(
   } catch (error) {
     if (!currentPath) throw error;
 
-    // Graceful fallback for restricted subfolders
+    console.error(error);
   }
 
   return imagePaths;
@@ -204,8 +204,8 @@ async function addDirectoryHandle(
 
         return updated;
       }
-    } catch {
-      // Fallback
+    } catch (error) {
+      console.error(error);
     }
   }
 

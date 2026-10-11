@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchWithTimeout } from "../src/ts/requests";
 import {
   buildRandomPhotoUrl,
+  cleanIdentifier,
   fullResolutionImageUrl,
   getUnsplashPhotoInfo,
   imageUrlForResolution,
@@ -12,23 +13,56 @@ import {
   verifyUnsplashTopic,
 } from "../src/ts/sources/unsplash";
 
+import { setUnsplashSettings } from "../src/ts/sources/unsplash-settings";
+
 const raw = "https://images.unsplash.com/photo-example?ixid=example";
+const sync: Record<string, unknown> = {};
+const local: Record<string, unknown> = {};
 
 beforeEach(() => {
+  for (const key of Object.keys(sync)) delete sync[key];
+  for (const key of Object.keys(local)) delete local[key];
+
   vi.stubGlobal("__UNSPLASH_ACCESS_KEY__", "bundled-key");
   vi.stubGlobal("chrome", {
     runtime: { lastError: undefined },
     storage: {
       local: {
-        get: (_keys: unknown, callback?: (value: unknown) => void) => {
-          if (callback) callback({});
-          return Promise.resolve({});
+        get: (keys: unknown, callback?: (value: unknown) => void) => {
+          let result: Record<string, unknown>;
+          if (typeof keys === "string") {
+            result = { [keys]: local[keys] };
+          } else if (Array.isArray(keys)) {
+            result = Object.fromEntries(keys.map((k) => [k, local[k]]));
+          } else {
+            result = { ...local };
+          }
+          if (callback) callback(result);
+          return Promise.resolve(result);
+        },
+        set: (values: Record<string, unknown>, callback?: () => void) => {
+          Object.assign(local, values);
+          if (callback) callback();
+          return Promise.resolve();
         },
       },
       sync: {
-        get: (_keys: unknown, callback?: (value: unknown) => void) => {
-          if (callback) callback({});
-          return Promise.resolve({});
+        get: (keys: unknown, callback?: (value: unknown) => void) => {
+          let result: Record<string, unknown>;
+          if (typeof keys === "string") {
+            result = { [keys]: sync[keys] };
+          } else if (Array.isArray(keys)) {
+            result = Object.fromEntries(keys.map((k) => [k, sync[k]]));
+          } else {
+            result = { ...sync };
+          }
+          if (callback) callback(result);
+          return Promise.resolve(result);
+        },
+        set: (values: Record<string, unknown>, callback?: () => void) => {
+          Object.assign(sync, values);
+          if (callback) callback();
+          return Promise.resolve();
         },
       },
     },
@@ -40,6 +74,7 @@ describe("Unsplash random photo URL filters", () => {
     const url = buildRandomPhotoUrl({});
     expect(url.searchParams.get("collections")).toBe("998309");
     expect(url.searchParams.get("content_filter")).toBe("low");
+    expect(url.searchParams.get("count")).toBe("30");
     expect(url.searchParams.get("query")).toBeNull();
     expect(url.searchParams.get("topics")).toBeNull();
     expect(url.searchParams.get("username")).toBeNull();
@@ -99,6 +134,20 @@ describe("Unsplash random photo URL filters", () => {
   });
 });
 
+describe("Unsplash identifiers", () => {
+  it.each([
+    ["https://unsplash.com/collections/123/forest-walks", "123"],
+    ["unsplash.com/collections/123/forest-walks", "123"],
+    ["https://unsplash.com/t/nature?order=latest#photos", "nature"],
+    ["nature", "nature"],
+    ["  @ada  ", "ada"],
+    ["https://unsplash.com/@ada/photos", "ada"],
+    ["", ""],
+  ])("extracts %s as %s", (input, expected) => {
+    expect(cleanIdentifier(input)).toBe(expected);
+  });
+});
+
 describe("Unsplash image resolution", () => {
   it("requests a 2000px standard image", () => {
     const url = new URL(imageUrlForResolution(raw, "standard"));
@@ -147,31 +196,32 @@ describe("Unsplash image resolution", () => {
   it("owns its metadata payload, image download, and tracking lifecycle", async () => {
     const apiResponse = responseAt(
       "https://api.unsplash.com/photos/random",
-      JSON.stringify({
-        id: "photo-1",
-        width: 1600,
-        height: 900,
-        color: "#123456",
-        description: null,
-        alt_description: "A mountain",
-        urls: { raw, full: `${raw}&q=85&auto=format&fit=crop` },
-        links: {
-          html: "https://unsplash.com/photos/photo-1",
-          download_location: "https://api.unsplash.com/photos/photo-1/download",
+      JSON.stringify([
+        {
+          id: "photo-1",
+          width: 1600,
+          height: 900,
+          color: "#123456",
+          description: null,
+          alt_description: "A mountain",
+          urls: { raw },
+          links: {
+            html: "https://unsplash.com/photos/photo-1",
+            download_location:
+              "https://api.unsplash.com/photos/photo-1/download",
+          },
+          user: { name: "Ada", links: { html: "https://unsplash.com/@ada" } },
+          location: { name: "Mount Rainier", city: "Seattle", country: "USA" },
+          exif: {
+            make: "Canon",
+            model: "EOS R5",
+            exposure_time: "1/250",
+            aperture: "2.8",
+            focal_length: 50,
+            iso: 100,
+          },
         },
-        user: { name: "Ada", links: { html: "https://unsplash.com/@ada" } },
-        likes: 42,
-        downloads: 100,
-        location: { name: "Mount Rainier", city: "Seattle", country: "USA" },
-        exif: {
-          make: "Canon",
-          model: "EOS R5",
-          exposure_time: "1/250",
-          aperture: "2.8",
-          focal_length: 50,
-          iso: 100,
-        },
-      }),
+      ]),
       { "content-type": "application/json" },
     );
     const imageResponse = responseAt(
@@ -228,6 +278,226 @@ describe("Unsplash image resolution", () => {
     expect(await image.arrayBuffer()).toHaveProperty("byteLength", 3);
     expect(fullImageUrl).toBe(fullResolutionImageUrl(raw));
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("batches Unsplash API requests with count=30, queues metadata, and avoids API calls on subsequent rotations", async () => {
+    const makePhoto = (id: string) => ({
+      id,
+      width: 1600,
+      height: 900,
+      color: "#000000",
+      description: `Photo ${id}`,
+      alt_description: null,
+      urls: { raw: `${raw}-${id}` },
+      links: {
+        html: `https://unsplash.com/photos/${id}`,
+        download_location: `https://api.unsplash.com/photos/${id}/download`,
+      },
+      user: { name: "Author", links: { html: "https://unsplash.com/@author" } },
+    });
+
+    const apiResponse = responseAt(
+      "https://api.unsplash.com/photos/random?collections=998309&content_filter=low&count=30",
+      JSON.stringify([
+        makePhoto("photo-batch-1"),
+        makePhoto("photo-batch-2"),
+        makePhoto("photo-batch-3"),
+      ]),
+      { "content-type": "application/json" },
+    );
+    const img1Response = responseAt(
+      "https://images.unsplash.com/photo-example-photo-batch-1?fit=max&w=2000",
+      new Uint8Array([1]),
+      { "content-type": "image/jpeg" },
+    );
+    const img2Response = responseAt(
+      "https://images.unsplash.com/photo-example-photo-batch-2?fit=max&w=2000",
+      new Uint8Array([2]),
+      { "content-type": "image/jpeg" },
+    );
+
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(apiResponse)
+      .mockResolvedValueOnce(img1Response)
+      .mockResolvedValueOnce(img2Response);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const storageSet = vi.spyOn(chrome.storage.local, "set");
+    const storageGet = vi.spyOn(chrome.storage.local, "get");
+
+    const first = await unsplashSource.fetchRandom();
+    expect(first.asset.sourceAssetId).toBe("photo-batch-1");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[0].toString()).toContain("count=30");
+
+    const storedBatch = local["sourceQueue:unsplash"];
+    storageSet.mockClear();
+    storageGet.mockClear();
+
+    const second = await unsplashSource.fetchRandom();
+    expect(second.asset.sourceAssetId).toBe("photo-batch-2");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[2]?.[0].toString()).toContain("photo-batch-2");
+    expect(storageGet).toHaveBeenCalledWith([
+      "sourceQueue:unsplash",
+      "sourceQueueCursor:unsplash",
+    ]);
+    expect(storageSet).toHaveBeenCalledExactlyOnceWith({
+      "sourceQueueCursor:unsplash": 2,
+    });
+    expect(local["sourceQueue:unsplash"]).toBe(storedBatch);
+    expect(JSON.stringify(storageSet.mock.calls[0]?.[0]).length).toBeLessThan(
+      40,
+    );
+  });
+
+  it("invalidates the Unsplash queue when filter settings change", async () => {
+    const makePhoto = (id: string) => ({
+      id,
+      width: 1600,
+      height: 900,
+      color: "#000000",
+      description: `Photo ${id}`,
+      alt_description: null,
+      urls: { raw: `${raw}-${id}` },
+      links: {
+        html: `https://unsplash.com/photos/${id}`,
+        download_location: `https://api.unsplash.com/photos/${id}/download`,
+      },
+      user: { name: "Author", links: { html: "https://unsplash.com/@author" } },
+    });
+
+    const initialApiResponse = responseAt(
+      "https://api.unsplash.com/photos/random",
+      JSON.stringify([makePhoto("default-1"), makePhoto("default-2")]),
+      { "content-type": "application/json" },
+    );
+    const initialImg = responseAt(
+      "https://images.unsplash.com/photo-1",
+      new Uint8Array([1]),
+      { "content-type": "image/jpeg" },
+    );
+    const changedApiResponse = responseAt(
+      "https://api.unsplash.com/photos/random",
+      JSON.stringify([makePhoto("space-1")]),
+      { "content-type": "application/json" },
+    );
+    const changedImg = responseAt(
+      "https://images.unsplash.com/photo-2",
+      new Uint8Array([2]),
+      { "content-type": "image/jpeg" },
+    );
+
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(initialApiResponse)
+      .mockResolvedValueOnce(initialImg)
+      .mockResolvedValueOnce(changedApiResponse)
+      .mockResolvedValueOnce(changedImg);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const first = await unsplashSource.fetchRandom();
+    expect(first.asset.sourceAssetId).toBe("default-1");
+
+    await setUnsplashSettings({ orientation: "landscape" });
+
+    const second = await unsplashSource.fetchRandom();
+    expect(second.asset.sourceAssetId).toBe("space-1");
+    expect(fetchMock.mock.calls[2]?.[0].toString()).toContain(
+      "orientation=landscape",
+    );
+  });
+
+  it("refills an exhausted cursor and replaces the batch once", async () => {
+    const asset = {
+      sourceId: "unsplash",
+      sourceAssetId: "exhausted",
+      width: 1600,
+      height: 900,
+      createdAt: 0,
+      sourcePayload: { imageUrl: raw },
+    };
+    local["sourceQueue:unsplash"] = {
+      endpoint: buildRandomPhotoUrl().href,
+      items: [asset],
+    };
+    local["sourceQueueCursor:unsplash"] = 1;
+
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              id: "refilled",
+              width: 1600,
+              height: 900,
+              urls: { raw },
+              links: {
+                html: "https://unsplash.com/photos/refilled",
+                download_location:
+                  "https://api.unsplash.com/photos/refilled/download",
+              },
+              user: {
+                name: "Ada",
+                links: { html: "https://unsplash.com/@ada" },
+              },
+            },
+          ]),
+          { headers: { "content-type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response("image", { headers: { "content-type": "image/jpeg" } }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const storageSet = vi.spyOn(chrome.storage.local, "set");
+
+    const result = await unsplashSource.fetchRandom();
+
+    expect(result.asset.sourceAssetId).toBe("refilled");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(storageSet).toHaveBeenCalledExactlyOnceWith({
+      "sourceQueue:unsplash": {
+        endpoint: buildRandomPhotoUrl().href,
+        items: [expect.objectContaining({ sourceAssetId: "refilled" })],
+      },
+      "sourceQueueCursor:unsplash": 1,
+    });
+  });
+
+  it("advances the cursor before download so a broken image is skipped", async () => {
+    local["sourceQueue:unsplash"] = {
+      endpoint: buildRandomPhotoUrl().href,
+      items: ["broken", "working"].map((id) => ({
+        sourceId: "unsplash",
+        sourceAssetId: id,
+        width: 1600,
+        height: 900,
+        createdAt: 0,
+        sourcePayload: { imageUrl: `${raw}-${id}` },
+      })),
+    };
+    local["sourceQueueCursor:unsplash"] = 0;
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => {
+        expect(local["sourceQueueCursor:unsplash"]).toBe(1);
+        throw new Error("Broken image");
+      })
+      .mockResolvedValueOnce(
+        new Response("image", { headers: { "content-type": "image/jpeg" } }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(unsplashSource.fetchRandom()).rejects.toThrow("Broken image");
+    const result = await unsplashSource.fetchRandom();
+
+    expect(result.asset.sourceAssetId).toBe("working");
+    expect(result.asset.createdAt).toBeGreaterThan(0);
+    expect(local["sourceQueueCursor:unsplash"]).toBe(2);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("uses the supplied tracking URL and accepts redirects to another origin", async () => {

@@ -42,8 +42,6 @@ interface UnsplashInfoData {
   location: UnsplashLocation | null;
   exif: UnsplashExif | null;
   views: number | null;
-  downloads?: number | null;
-  likes?: number | null;
   description: string | null;
 }
 
@@ -53,6 +51,17 @@ interface UnsplashPayload {
   info?: UnsplashInfoData;
 }
 
+interface UnsplashValidationResult {
+  valid: boolean;
+  normalized?: string;
+  error?: string;
+}
+
+interface UnsplashQueueState {
+  endpoint: string;
+  items: UncachedBackgroundAsset[];
+}
+
 interface UnsplashPhotoResponse {
   id: string;
   width: number;
@@ -60,7 +69,7 @@ interface UnsplashPhotoResponse {
   color: string | null;
   description: string | null;
   alt_description: string | null;
-  urls: { raw: string; full?: string };
+  urls: { raw: string };
   links: { html: string; download_location: string };
   user: {
     name: string;
@@ -72,8 +81,6 @@ interface UnsplashPhotoResponse {
       large?: string;
     };
   };
-  likes?: number;
-  downloads?: number;
   views?: number;
   location?: {
     name?: string | null;
@@ -91,8 +98,12 @@ interface UnsplashPhotoResponse {
 }
 
 const API_ORIGIN = "https://api.unsplash.com";
-const verifiedCollections = new Set<string>([STELLAR_COLLECTION]);
-const verifiedTopics = new Map<string, string>();
+const UNSPLASH_QUEUE_KEY = "sourceQueue:unsplash";
+const UNSPLASH_CURSOR_KEY = "sourceQueueCursor:unsplash";
+const UNSPLASH_BATCH_COUNT = 30;
+const verifiedResources = new Map<string, string>([
+  [`collection:${STELLAR_COLLECTION}`, STELLAR_COLLECTION],
+]);
 
 const unsplashSource: ImageSource = {
   id: "unsplash",
@@ -123,16 +134,14 @@ const unsplashSource: ImageSource = {
   fetchDetails: fetchUnsplashPhotoDetails,
 };
 
-function getUnsplashPhotoInfo(
-  asset: BackgroundAsset | null,
-): UnsplashInfoData | null {
-  if (!asset || asset.sourceId !== unsplashSource.id) return null;
-  if (!asset.sourcePayload || typeof asset.sourcePayload !== "object")
-    return null;
+const verifyUnsplashCollection = (idOrUrl: string) =>
+  verifyUnsplashResource("collection", idOrUrl);
 
-  const payload = asset.sourcePayload as Partial<UnsplashPayload>;
+const verifyUnsplashTopic = (slugOrUrl: string) =>
+  verifyUnsplashResource("topic", slugOrUrl);
 
-  return payload.info ?? null;
+function getUnsplashPhotoInfo(asset: BackgroundAsset): UnsplashInfoData | null {
+  return (asset.sourcePayload as UnsplashPayload).info ?? null;
 }
 
 async function fetchUnsplashPhotoDetails(
@@ -151,6 +160,27 @@ async function fetchUnsplashPhotoDetails(
   } catch {
     return null;
   }
+}
+
+function photoToAsset(photo: UnsplashPhotoResponse): UncachedBackgroundAsset {
+  return makeAsset({
+    sourceId: unsplashSource.id,
+    sourceAssetId: photo.id,
+    width: photo.width,
+    height: photo.height,
+    color: typeof photo.color === "string" ? photo.color : null,
+    description: photo.description ?? photo.alt_description ?? null,
+    attribution: {
+      name: photo.user.name,
+      url: photo.user.links.html,
+      sourceUrl: photo.links.html,
+    },
+    sourcePayload: {
+      downloadLocation: photo.links.download_location,
+      imageUrl: photo.urls.raw,
+      info: extractPhotoInfo(photo),
+    } satisfies UnsplashPayload,
+  });
 }
 
 function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
@@ -184,6 +214,7 @@ function buildRandomPhotoUrl(settings: Partial<UnsplashSettings> = {}): URL {
   }
 
   url.searchParams.set("content_filter", contentFilter);
+  url.searchParams.set("count", String(UNSPLASH_BATCH_COUNT));
 
   return url;
 }
@@ -218,67 +249,52 @@ async function fetchRandom(): Promise<{
 }> {
   const settings = await getUnsplashSettings();
   const endpoint = buildRandomPhotoUrl(settings);
-  const photo = (await (
-    await authenticatedFetch(endpoint)
-  ).json()) as UnsplashPhotoResponse;
+  const stored = await chrome.storage.local.get([
+    UNSPLASH_QUEUE_KEY,
+    UNSPLASH_CURSOR_KEY,
+  ]);
+  const queue = stored[UNSPLASH_QUEUE_KEY] as UnsplashQueueState | undefined;
 
-  const asset = makeAsset({
-    sourceId: unsplashSource.id,
-    sourceAssetId: photo.id,
-    width: photo.width,
-    height: photo.height,
-    color: typeof photo.color === "string" ? photo.color : null,
-    description: photo.description ?? photo.alt_description ?? null,
-    attribution: {
-      name: photo.user.name,
-      url: photo.user.links.html,
-      sourceUrl: photo.links.html,
-    },
-    sourcePayload: {
-      downloadLocation: photo.links.download_location,
-      imageUrl: photo.urls.raw,
-      info: extractPhotoInfo(photo),
-    } satisfies UnsplashPayload,
-  });
+  let items = queue?.endpoint === endpoint.href ? queue.items : [];
+  let cursor = (stored[UNSPLASH_CURSOR_KEY] as number | undefined) ?? 0;
+  if (items.length === 0 || cursor >= items.length) {
+    const response = await authenticatedFetch(endpoint);
+    const photos = (await response.json()) as UnsplashPhotoResponse[];
+    if (photos.length === 0) throw new Error("Unsplash returned no photos");
 
-  const url = imageUrlForResolution(photo.urls.raw, settings.imageQuality);
-  const response = await fetchWithTimeout(url, {
-    redirect: "follow",
-  });
+    items = photos.map(photoToAsset);
+    cursor = 0;
+    await chrome.storage.local.set({
+      [UNSPLASH_QUEUE_KEY]: { endpoint: endpoint.href, items },
+      [UNSPLASH_CURSOR_KEY]: cursor + 1,
+    });
+  } else {
+    await chrome.storage.local.set({ [UNSPLASH_CURSOR_KEY]: cursor + 1 });
+  }
 
-  return { asset, blob: await readBoundedImage(response) };
+  const candidate = items[cursor]!;
+  const { imageUrl } = candidate.sourcePayload as UnsplashPayload;
+  const response = await fetchWithTimeout(
+    imageUrlForResolution(imageUrl, settings.imageQuality),
+    { redirect: "follow" },
+  );
+
+  return {
+    asset: { ...candidate, createdAt: Date.now() },
+    blob: await readBoundedImage(response),
+  };
 }
 
 function getDownloadUrl(asset: BackgroundAsset): string {
-  const payload = parsePayload(asset);
-  if (!payload.imageUrl)
-    throw new Error("Unsplash asset payload has no image URL");
+  const payload = asset.sourcePayload as UnsplashPayload;
 
   return fullResolutionImageUrl(payload.imageUrl);
 }
 
 async function didDownload(asset: BackgroundAsset): Promise<void> {
-  const payload = parsePayload(asset);
+  const payload = asset.sourcePayload as UnsplashPayload;
 
   await authenticatedFetch(new URL(payload.downloadLocation));
-}
-
-function parsePayload(asset: UncachedBackgroundAsset): UnsplashPayload {
-  if (
-    asset.sourceId !== unsplashSource.id ||
-    !asset.sourcePayload ||
-    typeof asset.sourcePayload !== "object"
-  ) {
-    throw new Error("Unsupported Unsplash asset payload");
-  }
-
-  const payload = asset.sourcePayload as Partial<UnsplashPayload>;
-
-  if (typeof payload.downloadLocation !== "string") {
-    throw new Error("Malformed Unsplash asset payload");
-  }
-
-  return payload as UnsplashPayload;
 }
 
 function authHeaders(key: string): HeadersInit {
@@ -364,33 +380,21 @@ function extractPhotoInfo(photo: UnsplashPhotoResponse): UnsplashInfoData {
 }
 
 function cleanIdentifier(value: string): string {
-  let cleaned = value.trim();
-  if (!cleaned) return "";
+  const parts = value
+    .trim()
+    .replace(/[?#].*$/, "")
+    .split("/")
+    .filter(Boolean);
+  const marker = parts.findIndex(
+    (part) => part === "collections" || part === "t",
+  );
+  const id =
+    (marker >= 0 ? parts[marker + 1] : undefined) ??
+    parts.find((part) => part.startsWith("@")) ??
+    parts.at(-1) ??
+    "";
 
-  if (cleaned.includes("/")) {
-    try {
-      const url = new URL(cleaned);
-      const segments = url.pathname.split("/").filter(Boolean);
-      if (segments[0] === "collections" && segments[1]) {
-        cleaned = segments[1];
-      } else if (segments[0] === "t" && segments[1]) {
-        cleaned = segments[1];
-      } else if (segments[0]?.startsWith("@")) {
-        cleaned = segments[0].slice(1);
-      } else {
-        cleaned = segments.pop() || cleaned;
-      }
-    } catch {
-      const segments = cleaned.split("/").filter(Boolean);
-      cleaned = segments.pop() || cleaned;
-    }
-  }
-
-  if (cleaned.startsWith("@")) {
-    cleaned = cleaned.slice(1);
-  }
-
-  return cleaned.trim();
+  return id.replace(/^@/, "");
 }
 
 function normalizeCsv(value?: string | null): string {
@@ -401,12 +405,6 @@ function normalizeCsv(value?: string | null): string {
     .map((item) => cleanIdentifier(item))
     .filter(Boolean)
     .join(",");
-}
-
-interface UnsplashValidationResult {
-  valid: boolean;
-  normalized?: string;
-  error?: string;
 }
 
 async function verifyUnsplashResource(
@@ -421,12 +419,8 @@ async function verifyUnsplashResource(
     return { valid: false, error: `Please enter a valid ${typeLabel}.` };
   }
 
-  const cached =
-    type === "collection"
-      ? verifiedCollections.has(id)
-        ? id
-        : undefined
-      : verifiedTopics.get(id);
+  const cacheKey = `${type}:${id}`;
+  const cached = verifiedResources.get(cacheKey);
   if (cached) {
     return { valid: true, normalized: cached };
   }
@@ -443,17 +437,15 @@ async function verifyUnsplashResource(
       total_photos?: number;
     };
 
-    if (typeof data.total_photos === "number" && data.total_photos === 0) {
+    if (data.total_photos === 0) {
       return { valid: false, error: `${name} "${id}" contains no photos.` };
     }
 
     const normalized = type === "collection" ? id : data.id || id;
-    if (type === "collection") {
-      verifiedCollections.add(id);
-    } else {
-      verifiedTopics.set(id, normalized);
-      if (data.slug) verifiedTopics.set(data.slug, normalized);
-      if (data.id) verifiedTopics.set(data.id, normalized);
+    verifiedResources.set(cacheKey, normalized);
+    if (type === "topic") {
+      if (data.slug) verifiedResources.set(`topic:${data.slug}`, normalized);
+      if (data.id) verifiedResources.set(`topic:${data.id}`, normalized);
     }
 
     return { valid: true, normalized };
@@ -463,18 +455,6 @@ async function verifyUnsplashResource(
       error: explain(error, `${name} "${id}"`),
     };
   }
-}
-
-async function verifyUnsplashCollection(
-  idOrUrl: string,
-): Promise<UnsplashValidationResult> {
-  return verifyUnsplashResource("collection", idOrUrl);
-}
-
-async function verifyUnsplashTopic(
-  slugOrUrl: string,
-): Promise<UnsplashValidationResult> {
-  return verifyUnsplashResource("topic", slugOrUrl);
 }
 
 async function verifyUnsplashAccessKey(
@@ -492,23 +472,13 @@ async function verifyUnsplashAccessKey(
 
     return { valid: true };
   } catch (error) {
-    if (error instanceof HttpError) {
-      if (error.status === 401) {
-        return { valid: false, error: "Invalid Unsplash access key." };
-      }
-
-      if (error.status === 403 || error.status === 429) {
-        return {
-          valid: false,
-          error: "API access denied or rate limit reached.",
-        };
-      }
-    }
+    const invalid = error instanceof HttpError && error.status === 401;
 
     return {
       valid: false,
-      error:
-        "Could not verify access key. Please check your network connection.",
+      error: invalid
+        ? "Invalid Unsplash access key."
+        : explain(error, "access key"),
     };
   }
 }
