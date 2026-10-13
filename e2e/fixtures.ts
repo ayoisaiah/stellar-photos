@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   type BrowserContext,
@@ -5,10 +6,12 @@ import {
   chromium,
   expect,
   type Page,
+  type Route,
   type Worker,
 } from "@playwright/test";
 
 interface OpenTabOptions {
+  orientation?: "landscape" | "portrait";
   photoCount?: number;
   seeded?: boolean;
 }
@@ -27,11 +30,13 @@ interface ExtensionFixtures {
   extensionId: string;
   getWorker: () => Promise<Worker>;
   openNewTab: (options?: OpenTabOptions) => Promise<Page>;
-  seedPhotos: (target: Page | Worker, count?: number) => Promise<void>;
+  seedPhotos: (
+    target: Page | Worker,
+    count?: number,
+    orientation?: "landscape" | "portrait",
+  ) => Promise<void>;
   setupMockPipeline: (options?: MockPipelineOptions) => Promise<void>;
 }
-
-const EXTENSION_PATH = resolve(".wxt-e2e-dist/chrome");
 
 type Evaluable = {
   evaluate: <R, Arg>(
@@ -40,229 +45,347 @@ type Evaluable = {
   ) => Promise<R>;
 };
 
-async function setupWorkerPipeline(
-  worker: Worker,
-  options: MockPipelineOptions = {},
-): Promise<void> {
-  await worker.evaluate((opts) => {
-    const REAL_JPEG_BASE64 =
-      "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
-    const binary = atob(REAL_JPEG_BASE64);
-    const jpegBytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      jpegBytes[i] = binary.charCodeAt(i);
-    }
-
-    const state = {
-      unsplashCounter: 0,
-      smithsonianCounter: 0,
-      ...opts,
-    };
-    (
-      globalThis as unknown as { __mockPipelineState: typeof state }
-    ).__mockPipelineState = state;
-
-    const nativeFetch = globalThis.fetch;
-
-    globalThis.fetch = async (input, init) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.href
-            : input.url;
-
-      if (url.startsWith("data:")) {
-        return nativeFetch(input, init);
-      }
-
-      if (
-        url.includes("images.unsplash.com") ||
-        url.includes("ids.si.edu") ||
-        url.includes("prettyearth/assets/full") ||
-        url.includes("example.com")
-      ) {
-        if (
-          state.imageFails ||
-          (state.failingImageUrls &&
-            state.failingImageUrls.some((pattern: string) =>
-              url.includes(pattern),
-            ))
-        ) {
-          return new Response("Image download failed", { status: 404 });
-        }
-        return new Response(jpegBytes, {
-          status: 200,
-          headers: { "Content-Type": "image/jpeg" },
-        });
-      }
-
-      if (url.includes("api.unsplash.com")) {
-        if (url.includes("/download")) {
-          return new Response("{}", {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        if (state.unsplashFails) {
-          return new Response(
-            JSON.stringify({ errors: ["Unsplash rate limited"] }),
-            {
-              status: 403,
-              headers: { "Content-Type": "application/json" },
-            },
-          );
-        }
-        state.unsplashCounter++;
-        const count = state.batchCount ?? 30;
-        const photos = Array.from({ length: count }, (_, i) => {
-          const id = `unsplash-real-${state.unsplashCounter}-${i + 1}`;
-          return {
-            id,
-            width: 1920,
-            height: 1080,
-            color: "#123456",
-            description: `Real photo ${id}`,
-            alt_description: `Alt for ${id}`,
-            urls: {
-              raw: `https://images.unsplash.com/${id}`,
-              full: `https://images.unsplash.com/${id}?full`,
-            },
-            links: {
-              html: `https://unsplash.com/photos/${id}`,
-              download_location: `https://api.unsplash.com/photos/${id}/download`,
-            },
-            user: {
-              name: `Photographer ${id}`,
-              username: `user_${id}`,
-              links: { html: `https://unsplash.com/@user_${id}` },
-            },
-          };
-        });
-
-        return new Response(JSON.stringify(photos), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      if (url.includes("api.si.edu")) {
-        if (state.smithsonianFails) {
-          return new Response("Smithsonian API error", { status: 500 });
-        }
-        state.smithsonianCounter++;
-        const count = state.smithsonianBatchCount ?? 10;
-        const rows = Array.from({ length: count }, (_, i) => {
-          const id = `smithsonian-real-${state.smithsonianCounter}-${i + 1}`;
-          return {
-            id,
-            title: `Artifact ${id}`,
-            url: `https://www.si.edu/object/${id}`,
-            content: {
-              descriptiveNonRepeating: {
-                record_link: `https://www.si.edu/object/${id}`,
-                online_media: {
-                  media: [
-                    {
-                      type: "Images",
-                      usage: { access: "CC0" },
-                      content: `https://ids.si.edu/${id}.jpg`,
-                      resources: [{ width: 1920, height: 1080 }],
-                    },
-                  ],
-                },
-              },
-            },
-          };
-        });
-
-        return new Response(JSON.stringify({ response: { rows } }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
-      if (url.includes("prettyearth/assets/data")) {
-        return new Response(
-          JSON.stringify({ id: "1003", lat: 0, lng: 0, zoom: 5 }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
-      }
-
-      return new Response("Not found", { status: 404 });
-    };
-  }, options);
+interface PipelineState extends MockPipelineOptions {
+  unsplashCounter: number;
+  smithsonianCounter: number;
 }
 
-async function seedTestPhotos(target: Evaluable, count = 1): Promise<void> {
-  await target.evaluate(async (photoCount) => {
-    const assets = Array.from({ length: photoCount }, (_, i) => ({
-      sourceId: "unsplash",
-      sourceAssetId: `test-photo-${i + 1}`,
-      cacheKey: `https://cache.stellar-photos.invalid/asset/unsplash/test-photo-${i + 1}`,
-      width: 1920,
-      height: 1080,
-      color: "#333333",
-      description: `Photo description ${i + 1}`,
-      attribution: {
-        name: `Photographer ${i + 1}`,
-        url: `https://unsplash.com/@photographer${i + 1}`,
-        sourceUrl: `https://unsplash.com/photos/test-photo-${i + 1}`,
-      },
-      payloadVersion: 1,
-      sourcePayload: {
-        downloadLocation: `https://api.unsplash.com/photos/test-photo-${i + 1}/download`,
-        imageUrl: `https://images.unsplash.com/photo-test-${i + 1}`,
-        info: {
-          user: {
-            name: `Photographer ${i + 1}`,
-            username: `photographer${i + 1}`,
-            profileImage: null,
-            link: `https://unsplash.com/@photographer${i + 1}`,
-          },
-          location: {
-            name: "Test Location",
-            city: "Test City",
-            country: "Test Country",
-          },
-          exif: {
-            make: "Camera",
-            model: "Model 1",
-            exposureTime: "1/500",
-            aperture: "2.8",
-            focalLength: "50",
-            iso: 100,
-          },
-          views: 1000,
-          description: `Photo description ${i + 1}`,
-        },
-      },
-      createdAt: Date.now() + i * 1000,
-    }));
+const EXTENSION_PATH = resolve(".wxt-e2e-dist/chrome");
+const LANDSCAPE_JPEG = readFileSync(resolve("e2e/fixtures/landscape.jpg"));
+const PORTRAIT_JPEG = readFileSync(resolve("e2e/fixtures/portrait.jpg"));
+const REAL_LANDSCAPE_BASE64 = LANDSCAPE_JPEG.toString("base64");
+const REAL_PORTRAIT_BASE64 = PORTRAIT_JPEG.toString("base64");
+const RECORDED_UNSPLASH = JSON.parse(
+  readFileSync(resolve("e2e/fixtures/unsplash-photos.json"), "utf8"),
+) as Array<Record<string, unknown>>;
+const RECORDED_SMITHSONIAN = JSON.parse(
+  readFileSync(resolve("e2e/fixtures/smithsonian-search.json"), "utf8"),
+) as { response?: { rows?: Array<Record<string, unknown>> } };
+const RECORDED_EARTHVIEW = JSON.parse(
+  readFileSync(resolve("e2e/fixtures/earthview-details.json"), "utf8"),
+) as Record<string, unknown>;
 
-    await chrome.storage.local.set({
-      stellarHistory: { version: 1, history: assets },
+async function syncWorkerState(
+  workerGetter: () => Promise<Worker | undefined>,
+  state: PipelineState,
+): Promise<void> {
+  const worker = await workerGetter();
+  if (!worker) {
+    return;
+  }
+
+  await worker
+    .evaluate((s) => {
+      (
+        globalThis as unknown as { __mockPipelineState: typeof s }
+      ).__mockPipelineState = { ...s };
+    }, state)
+    .catch(() => {
+      // Ignore errors if worker is restarting or unavailable
     });
+}
 
-    const cache = await caches.open("stellar-photos-images-v1");
-    const pngBase64 =
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    const binary = atob(pngBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], { type: "image/png" });
-
-    for (const asset of assets) {
-      await cache.put(
-        asset.cacheKey,
-        new Response(blob, {
-          headers: { "Content-Type": "image/png" },
+async function registerContextRoutes(
+  context: BrowserContext,
+  state: PipelineState,
+  workerGetter: () => Promise<Worker | undefined>,
+): Promise<void> {
+  await context.route(
+    "https://api.unsplash.com/photos/**/download**",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          url: "https://images.unsplash.com/download-fallback",
         }),
-      );
+      });
+    },
+  );
+
+  await context.route(
+    "https://api.unsplash.com/photos/random**",
+    async (route) => {
+      if (state.unsplashFails) {
+        await route.fulfill({
+          status: 403,
+          contentType: "application/json",
+          body: JSON.stringify({ errors: ["Unsplash rate limited"] }),
+        });
+        return;
+      }
+
+      state.unsplashCounter += 1;
+      await syncWorkerState(workerGetter, state);
+
+      const count = state.batchCount ?? 30;
+      const basePhotos = RECORDED_UNSPLASH.slice(0, count);
+      const photos = basePhotos.map((item, index) => {
+        const id = `unsplash-real-${state.unsplashCounter}-${index + 1}`;
+        const isPortrait =
+          typeof item.width === "number" &&
+          typeof item.height === "number" &&
+          item.height > item.width;
+        const imageUrl = isPortrait
+          ? `https://images.unsplash.com/${id}?portrait`
+          : `https://images.unsplash.com/${id}`;
+
+        return {
+          ...item,
+          id,
+          urls: {
+            raw: imageUrl,
+            full: `${imageUrl}${isPortrait ? "&" : "?"}full`,
+            regular: `${imageUrl}${isPortrait ? "&" : "?"}regular`,
+            small: `${imageUrl}${isPortrait ? "&" : "?"}small`,
+            thumb: `${imageUrl}${isPortrait ? "&" : "?"}thumb`,
+          },
+          links: {
+            html: `https://unsplash.com/photos/${id}`,
+            download: `https://unsplash.com/photos/${id}/download`,
+            download_location: `https://api.unsplash.com/photos/${id}/download`,
+          },
+        };
+      });
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(photos),
+      });
+    },
+  );
+
+  await context.route(
+    "https://api.unsplash.com/collections/**",
+    async (route) => {
+      const url = new URL(route.request().url());
+      const id = url.pathname.split("/").pop() ?? "test-collection";
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id,
+          title: `Collection ${id}`,
+          total_photos: 100,
+        }),
+      });
+    },
+  );
+
+  await context.route("https://api.unsplash.com/topics/**", async (route) => {
+    const url = new URL(route.request().url());
+    const slug = url.pathname.split("/").pop() ?? "test-topic";
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: slug,
+        slug,
+        title: `Topic ${slug}`,
+        total_photos: 100,
+      }),
+    });
+  });
+
+  const handleImage = async (route: Route) => {
+    const url = route.request().url();
+
+    if (
+      state.imageFails ||
+      (state.failingImageUrls &&
+        state.failingImageUrls.some((pattern) => url.includes(pattern)))
+    ) {
+      await route.fulfill({
+        status: 404,
+        body: "Image download failed",
+      });
+      return;
     }
-  }, count);
+
+    const isPortrait = url.includes("portrait");
+
+    await route.fulfill({
+      status: 200,
+      contentType: "image/jpeg",
+      body: isPortrait ? PORTRAIT_JPEG : LANDSCAPE_JPEG,
+    });
+  };
+
+  await context.route("https://images.unsplash.com/**", handleImage);
+  await context.route("https://ids.si.edu/**", handleImage);
+  await context.route(
+    "https://www.gstatic.com/prettyearth/assets/full/**",
+    handleImage,
+  );
+  await context.route("https://images.example.com/**", handleImage);
+
+  await context.route(
+    "https://api.si.edu/openaccess/api/v1.0/**",
+    async (route) => {
+      if (state.smithsonianFails) {
+        await route.fulfill({
+          status: 500,
+          body: "Smithsonian API error",
+        });
+        return;
+      }
+
+      state.smithsonianCounter += 1;
+      await syncWorkerState(workerGetter, state);
+
+      const count = state.smithsonianBatchCount ?? 10;
+      const baseRows = RECORDED_SMITHSONIAN.response?.rows ?? [];
+      const rows = baseRows.slice(0, count).map((item, index) => {
+        const id = `smithsonian-real-${state.smithsonianCounter}-${index + 1}`;
+        const itemMedia = (
+          item as {
+            content?: {
+              descriptiveNonRepeating?: {
+                online_media?: {
+                  media?: Array<{
+                    resources?: Array<{ width?: number; height?: number }>;
+                  }>;
+                };
+              };
+            };
+          }
+        ).content?.descriptiveNonRepeating?.online_media?.media?.[0];
+        const resource = itemMedia?.resources?.[0];
+        const width = resource?.width ?? 2000;
+        const height = resource?.height ?? 1333;
+        const isPortrait = height > width;
+        const imageUrl = isPortrait
+          ? `https://ids.si.edu/${id}-portrait.jpg`
+          : `https://ids.si.edu/${id}.jpg`;
+
+        return {
+          ...item,
+          id,
+          content: {
+            descriptiveNonRepeating: {
+              record_link: `https://www.si.edu/object/${id}`,
+              online_media: {
+                media: [
+                  {
+                    type: "Images",
+                    usage: { access: "CC0" },
+                    content: imageUrl,
+                    resources: [{ width, height }],
+                  },
+                ],
+              },
+            },
+          },
+        };
+      });
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ response: { rows } }),
+      });
+    },
+  );
+
+  await context.route("**/prettyearth/assets/data/**", async (route) => {
+    if (state.earthviewFails) {
+      await route.fulfill({
+        status: 500,
+        body: "Earthview API error",
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(RECORDED_EARTHVIEW),
+    });
+  });
+}
+
+async function seedTestPhotos(
+  target: Evaluable,
+  count = 1,
+  orientation: "landscape" | "portrait" = "landscape",
+): Promise<void> {
+  const isPortrait = orientation === "portrait";
+  const width = isPortrait ? 1333 : 2000;
+  const height = isPortrait ? 2000 : 1333;
+  const imageBase64 = isPortrait ? REAL_PORTRAIT_BASE64 : REAL_LANDSCAPE_BASE64;
+
+  await target.evaluate(
+    async ({ photoCount, imageBase64, isPortrait, width, height }) => {
+      const assets = Array.from({ length: photoCount }, (_, i) => ({
+        sourceId: "unsplash",
+        sourceAssetId: `test-photo-${i + 1}`,
+        cacheKey: `https://cache.stellar-photos.invalid/asset/unsplash/test-photo-${i + 1}`,
+        width,
+        height,
+        color: isPortrait ? "#134e5e" : "#333333",
+        description: `Photo description ${i + 1}`,
+        attribution: {
+          name: `Photographer ${i + 1}`,
+          url: `https://unsplash.com/@photographer${i + 1}`,
+          sourceUrl: `https://unsplash.com/photos/test-photo-${i + 1}`,
+        },
+        payloadVersion: 1,
+        sourcePayload: {
+          downloadLocation: `https://api.unsplash.com/photos/test-photo-${i + 1}/download`,
+          imageUrl: `https://images.unsplash.com/photo-test-${i + 1}${isPortrait ? "?portrait" : ""}`,
+          info: {
+            user: {
+              name: `Photographer ${i + 1}`,
+              username: `photographer${i + 1}`,
+              profileImage: null,
+              link: `https://unsplash.com/@photographer${i + 1}`,
+            },
+            location: {
+              name: "Test Location",
+              city: "Test City",
+              country: "Test Country",
+            },
+            exif: {
+              make: "Camera",
+              model: "Model 1",
+              exposureTime: "1/500",
+              aperture: "2.8",
+              focalLength: "50",
+              iso: 100,
+            },
+            views: 1000,
+            description: `Photo description ${i + 1}`,
+          },
+        },
+        createdAt: Date.now() + i * 1000,
+      }));
+
+      await chrome.storage.local.set({
+        stellarHistory: { version: 1, history: assets },
+      });
+
+      const cache = await caches.open("stellar-photos-images-v1");
+      const binary = atob(imageBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "image/jpeg" });
+
+      for (const asset of assets) {
+        await cache.put(
+          asset.cacheKey,
+          new Response(blob, {
+            headers: { "Content-Type": "image/jpeg" },
+          }),
+        );
+      }
+    },
+    { photoCount: count, imageBase64, isPortrait, width, height },
+  );
 }
 
 const test = base.extend<ExtensionFixtures>({
@@ -276,14 +399,21 @@ const test = base.extend<ExtensionFixtures>({
       ],
     });
 
-    // Intercept any page network requests to remote APIs
-    await context.route("https://api.unsplash.com/**", (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([{ id: "mock-photo" }]),
-      });
-    });
+    const pipelineState: PipelineState = {
+      unsplashCounter: 0,
+      smithsonianCounter: 0,
+    };
+    (context as unknown as { __pipelineState: PipelineState }).__pipelineState =
+      pipelineState;
+
+    const workerGetter = async () => {
+      return (
+        context.serviceWorkers()[0] ??
+        (await context.waitForEvent("serviceworker"))
+      );
+    };
+
+    await registerContextRoutes(context, pipelineState, workerGetter);
 
     try {
       await use(context);
@@ -296,26 +426,6 @@ const test = base.extend<ExtensionFixtures>({
     const worker =
       context.serviceWorkers()[0] ??
       (await context.waitForEvent("serviceworker"));
-
-    // Intercept background service worker network requests to remote APIs
-    await worker.evaluate(() => {
-      const orig = globalThis.fetch;
-      globalThis.fetch = async (input, init) => {
-        const url =
-          typeof input === "string"
-            ? input
-            : input instanceof URL
-              ? input.href
-              : input.url;
-        if (url.includes("api.unsplash.com")) {
-          return new Response(JSON.stringify({ errors: ["Offline mock"] }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        return orig(input, init);
-      };
-    });
 
     const id = new URL(worker.url()).host;
     await use(id);
@@ -336,11 +446,19 @@ const test = base.extend<ExtensionFixtures>({
 
   setupMockPipeline: async ({ context }, use) => {
     await use(async (options: MockPipelineOptions = {}) => {
+      const state = (context as unknown as { __pipelineState: PipelineState })
+        .__pipelineState;
+      Object.assign(state, {
+        unsplashCounter: 0,
+        smithsonianCounter: 0,
+        ...options,
+      });
+
       const worker =
         context.serviceWorkers()[0] ??
         (await context.waitForEvent("serviceworker"));
 
-      await setupWorkerPipeline(worker, options);
+      await syncWorkerState(async () => worker, state);
     });
   },
 
@@ -351,7 +469,11 @@ const test = base.extend<ExtensionFixtures>({
         (await context.waitForEvent("serviceworker"));
 
       if (options.seeded !== false) {
-        await seedTestPhotos(worker, options.photoCount ?? 1);
+        await seedTestPhotos(
+          worker,
+          options.photoCount ?? 1,
+          options.orientation ?? "landscape",
+        );
       } else {
         await worker.evaluate(async () => {
           await chrome.storage.local.remove([

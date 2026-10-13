@@ -1,0 +1,13 @@
+{
+  "id": "1003",
+  "lat": 31.67,
+  "lng": -106.58,
+  "zoom": 12,
+  "elevation": 1140,
+  "geocode": {
+    "country": "United States",
+    "administrative_area_level_1": "Texas",
+    "locality": "El Paso"
+  },
+  "attribution": "Google Earth"
+}

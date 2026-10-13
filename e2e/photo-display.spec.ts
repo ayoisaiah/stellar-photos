@@ -115,4 +115,39 @@ test.describe("Photo Display and Controls", () => {
 
     await tab.close();
   });
+
+  test("renders portrait photo and decodes taller than it is wide", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ orientation: "portrait" });
+    await tab.mouse.move(100, 100);
+
+    const photoStage = tab.locator(".photo-stage");
+    await expect(photoStage).toBeVisible();
+
+    const dimensions = await tab.evaluate(async () => {
+      const app = document.querySelector("stellar-app");
+      const photoMain = (app?.shadowRoot ?? document).querySelector(
+        ".photo-main",
+      ) as HTMLElement | null;
+      if (!photoMain) return null;
+      const bg = photoMain.style.backgroundImage;
+      const match = bg.match(/url\(["']?([^"')]+)["']?\)/);
+      if (!match?.[1]) return null;
+
+      const img = new Image();
+      img.src = match[1];
+      try {
+        await img.decode();
+        return { width: img.naturalWidth, height: img.naturalHeight };
+      } catch {
+        return null;
+      }
+    });
+
+    expect(dimensions).not.toBeNull();
+    expect(dimensions!.height).toBeGreaterThan(dimensions!.width);
+
+    await tab.close();
+  });
 });

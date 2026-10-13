@@ -1,6 +1,18 @@
 import { expect, test } from "./fixtures";
 
 test.describe("History Panel and Photo Navigation", () => {
+  test.beforeEach(async ({ getWorker }) => {
+    const worker = await getWorker();
+    await worker.evaluate(async () => {
+      await chrome.storage.sync.set({
+        coreSettings: {
+          version: 1,
+          activeSourceIds: ["unsplash"],
+          photoFrequency: "everyhour",
+        },
+      });
+    });
+  });
   test("removes stale history cards when another tab removes the stored key", async ({
     openNewTab,
     context,

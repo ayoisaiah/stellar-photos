@@ -4,7 +4,9 @@ test.describe("Empty State & Source Health", () => {
   test("displays empty state when unseeded and transitions to photo after seeding and retry", async ({
     openNewTab,
     seedPhotos,
+    setupMockPipeline,
   }) => {
+    await setupMockPipeline({ unsplashFails: true });
     const tab = await openNewTab({ seeded: false });
 
     const emptyState = tab.locator("stellar-empty-state");
@@ -60,7 +62,9 @@ test.describe("Empty State & Source Health", () => {
 
   test("displays all sources unavailable message in empty state when all sources are down", async ({
     openNewTab,
+    setupMockPipeline,
   }) => {
+    await setupMockPipeline({ unsplashFails: true });
     const tab = await openNewTab({ seeded: false });
 
     // Set sourceHealth and force error phase on empty state
