@@ -400,4 +400,4 @@ declare global {
   }
 }
 
-export { formatCoordinates, formatDimensions, formatElevation, PhotoInfo };
+export { PhotoInfo };

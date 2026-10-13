@@ -37,7 +37,7 @@
     "*.ts": "biome check --write --no-errors-on-unmatched"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx lint-staged && npm run typecheck && npm test"
+    "pre-commit": "npx lint-staged && npm run typecheck && npm test && npm run test:e2e"
   },
   "dependencies": {
     "@lucide/icons": "^1.53.0",

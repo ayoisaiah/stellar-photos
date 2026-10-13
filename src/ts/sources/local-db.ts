@@ -295,12 +295,9 @@ async function getRandomDirectoryImage(): Promise<RandomLocalImageResult | null>
 
 export {
   addDirectoryHandle,
-  getFileHandleByPath,
   getRandomDirectoryImage,
-  isImageFileName,
   type LocalFolderRecord,
   LocalPermissionError,
-  listDirectoryImagePaths,
   listStoredFolderRecords,
   type RandomLocalImageResult,
   removeDirectoryHandle,

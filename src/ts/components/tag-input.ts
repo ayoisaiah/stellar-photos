@@ -268,4 +268,4 @@ declare global {
 }
 
 export type { TagValidationResult, TagValidator };
-export { parseTags, StellarTagInput };
+export { StellarTagInput };

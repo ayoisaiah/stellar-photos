@@ -486,11 +486,7 @@ async function verifyUnsplashAccessKey(
 export {
   buildRandomPhotoUrl,
   cleanIdentifier,
-  fetchUnsplashPhotoDetails,
-  fullResolutionImageUrl,
   getUnsplashPhotoInfo,
-  imageUrlForResolution,
-  normalizeCsv,
   type UnsplashExif,
   type UnsplashInfoData,
   type UnsplashLocation,

@@ -234,10 +234,8 @@ async function fetchEarthViewDetails(
 }
 
 export {
-  buildEarthViewImageUrl,
   type EarthViewDetailsData,
   type EarthViewGeocode,
   type EarthViewPayload,
   earthviewSource,
-  fetchEarthViewDetails,
 };

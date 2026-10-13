@@ -78,7 +78,7 @@ test.describe("Photo Display and Controls", () => {
     await tab.close();
   });
 
-  test("renders photo stage and photographer attribution", async ({
+  test("renders photo stage, photographer attribution, and decodes photo image", async ({
     openNewTab,
   }) => {
     const tab = await openNewTab();
@@ -90,6 +90,28 @@ test.describe("Photo Display and Controls", () => {
     const photographerName = tab.locator(".bottom-credit .photographer-name");
     await expect(photographerName).toBeVisible();
     await expect(photographerName).toHaveText("Photographer 1");
+
+    // Assert the photo image decodes successfully
+    const decodes = await tab.evaluate(async () => {
+      const app = document.querySelector("stellar-app");
+      const photoMain = (app?.shadowRoot ?? document).querySelector(
+        ".photo-main",
+      ) as HTMLElement | null;
+      if (!photoMain) return false;
+      const bg = photoMain.style.backgroundImage;
+      const match = bg.match(/url\(["']?([^"')]+)["']?\)/);
+      if (!match?.[1]) return false;
+
+      const img = new Image();
+      img.src = match[1];
+      try {
+        await img.decode();
+        return img.naturalWidth > 0 && img.naturalHeight > 0;
+      } catch {
+        return false;
+      }
+    });
+    expect(decodes).toBe(true);
 
     await tab.close();
   });

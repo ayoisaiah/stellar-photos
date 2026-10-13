@@ -80,9 +80,4 @@ async function fetchRandom(): Promise<{
   return { asset, blob: file };
 }
 
-export {
-  computeLocalAssetId,
-  isLocalSupported,
-  type LocalPayload,
-  localSource,
-};
+export { isLocalSupported, type LocalPayload, localSource };

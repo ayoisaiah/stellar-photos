@@ -369,4 +369,4 @@ declare global {
   }
 }
 
-export { getWebstoreReviewUrl, SettingsDrawer };
+export { SettingsDrawer };

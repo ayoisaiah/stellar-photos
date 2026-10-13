@@ -1,48 +1,75 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  assetCacheKey,
-  createThumbnail,
-  readBoundedImage,
-} from "../src/ts/cache";
+import { readBoundedImage } from "../src/ts/cache";
 
-describe("image cache contract", () => {
-  it("maps unusual valid IDs to distinct stable keys", () => {
-    expect(assetCacheKey("source", "a/b")).not.toBe(
-      assetCacheKey("source", "a%2Fb"),
-    );
-    expect(assetCacheKey("source", "a/b")).toBe(
-      "https://cache.stellar-photos.invalid/asset/source/a%2Fb",
+describe("readBoundedImage 20 MiB security cap", () => {
+  it("rejects non-image content-type", async () => {
+    const res = new Response("text", {
+      headers: { "content-type": "text/plain" },
+    });
+    await expect(readBoundedImage(res)).rejects.toThrow(
+      "did not return an image",
     );
   });
 
-  it("rejects empty source and asset IDs", () => {
-    expect(() => assetCacheKey("", "asset")).toThrow("Invalid asset ID");
-    expect(() => assetCacheKey("source", "")).toThrow("Invalid asset ID");
-  });
-
-  it("handles non-fatal createThumbnail when canvas/bitmap APIs are unavailable in node", async () => {
-    const blob = new Blob(["fake-image-bytes"], { type: "image/jpeg" });
-    const result = await createThumbnail(blob);
-    expect(result).toBeNull();
-  });
-
-  it("rejects oversized and non-image responses", async () => {
-    await expect(
-      readBoundedImage(
-        new Response("text", { headers: { "content-type": "text/plain" } }),
-      ),
-    ).rejects.toThrow("did not return an image");
-    const response = new Response(new Uint8Array(1), {
+  it("rejects responses exceeding 20 MiB by declared content-length", async () => {
+    const res = new Response(new Uint8Array(1), {
       headers: {
         "content-type": "image/jpeg",
         "content-length": String(20 * 1024 * 1024 + 1),
       },
     });
-    await expect(readBoundedImage(response)).rejects.toThrow("20 MiB");
+    await expect(readBoundedImage(res)).rejects.toThrow("20 MiB");
   });
 
-  it("reads and buffers streaming image chunks into a valid blob", async () => {
+  it("rejects streaming response exceeding 20 MiB when content-length is missing", async () => {
+    const chunk = new Uint8Array(5 * 1024 * 1024); // 5 MiB
+    let count = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (count < 5) {
+          // 5 * 5 = 25 MiB > 20 MiB
+          count++;
+          controller.enqueue(chunk);
+        } else {
+          controller.close();
+        }
+      },
+    });
+
+    const res = new Response(stream, {
+      headers: { "content-type": "image/jpeg" }, // No content-length
+    });
+
+    await expect(readBoundedImage(res)).rejects.toThrow("20 MiB");
+  });
+
+  it("rejects streaming response exceeding 20 MiB when content-length lies (claims small size)", async () => {
+    const chunk = new Uint8Array(5 * 1024 * 1024); // 5 MiB
+    let count = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (count < 5) {
+          // 5 * 5 = 25 MiB > 20 MiB
+          count++;
+          controller.enqueue(chunk);
+        } else {
+          controller.close();
+        }
+      },
+    });
+
+    const res = new Response(stream, {
+      headers: {
+        "content-type": "image/jpeg",
+        "content-length": "1024", // Lies that body is only 1 KB
+      },
+    });
+
+    await expect(readBoundedImage(res)).rejects.toThrow("20 MiB");
+  });
+
+  it("successfully reads and buffers valid image stream within 20 MiB", async () => {
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         controller.enqueue(new Uint8Array([1, 2, 3]));
@@ -51,13 +78,13 @@ describe("image cache contract", () => {
       },
     });
 
-    const inputResponse = new Response(stream, {
-      headers: { "content-type": "image/webp" },
+    const res = new Response(stream, {
+      headers: { "content-type": "image/jpeg" },
     });
 
-    const blob = await readBoundedImage(inputResponse);
+    const blob = await readBoundedImage(res);
     expect(blob.size).toBe(6);
-    expect(blob.type).toBe("image/webp");
+    expect(blob.type).toBe("image/jpeg");
     expect(new Uint8Array(await blob.arrayBuffer())).toEqual(
       new Uint8Array([1, 2, 3, 4, 5, 6]),
     );

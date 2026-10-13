@@ -235,6 +235,7 @@ function getSmithsonianDownloadUrl(asset: UncachedBackgroundAsset): string {
 
 export {
   getSmithsonianCategory,
+  recordUrl,
   SMITHSONIAN_CATEGORIES,
   type SmithsonianCategory,
   setSmithsonianCategory,

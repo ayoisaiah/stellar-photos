@@ -13,10 +13,22 @@ interface OpenTabOptions {
   seeded?: boolean;
 }
 
+interface MockPipelineOptions {
+  unsplashFails?: boolean;
+  smithsonianFails?: boolean;
+  earthviewFails?: boolean;
+  imageFails?: boolean;
+  failingImageUrls?: string[];
+  batchCount?: number;
+  smithsonianBatchCount?: number;
+}
+
 interface ExtensionFixtures {
   extensionId: string;
+  getWorker: () => Promise<Worker>;
   openNewTab: (options?: OpenTabOptions) => Promise<Page>;
   seedPhotos: (target: Page | Worker, count?: number) => Promise<void>;
+  setupMockPipeline: (options?: MockPipelineOptions) => Promise<void>;
 }
 
 const EXTENSION_PATH = resolve(".wxt-e2e-dist/chrome");
@@ -27,6 +39,160 @@ type Evaluable = {
     arg: Arg,
   ) => Promise<R>;
 };
+
+async function setupWorkerPipeline(
+  worker: Worker,
+  options: MockPipelineOptions = {},
+): Promise<void> {
+  await worker.evaluate((opts) => {
+    const REAL_JPEG_BASE64 =
+      "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
+    const binary = atob(REAL_JPEG_BASE64);
+    const jpegBytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      jpegBytes[i] = binary.charCodeAt(i);
+    }
+
+    const state = {
+      unsplashCounter: 0,
+      smithsonianCounter: 0,
+      ...opts,
+    };
+    (
+      globalThis as unknown as { __mockPipelineState: typeof state }
+    ).__mockPipelineState = state;
+
+    const nativeFetch = globalThis.fetch;
+
+    globalThis.fetch = async (input, init) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+
+      if (url.startsWith("data:")) {
+        return nativeFetch(input, init);
+      }
+
+      if (
+        url.includes("images.unsplash.com") ||
+        url.includes("ids.si.edu") ||
+        url.includes("prettyearth/assets/full") ||
+        url.includes("example.com")
+      ) {
+        if (
+          state.imageFails ||
+          (state.failingImageUrls &&
+            state.failingImageUrls.some((pattern: string) =>
+              url.includes(pattern),
+            ))
+        ) {
+          return new Response("Image download failed", { status: 404 });
+        }
+        return new Response(jpegBytes, {
+          status: 200,
+          headers: { "Content-Type": "image/jpeg" },
+        });
+      }
+
+      if (url.includes("api.unsplash.com")) {
+        if (url.includes("/download")) {
+          return new Response("{}", {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (state.unsplashFails) {
+          return new Response(
+            JSON.stringify({ errors: ["Unsplash rate limited"] }),
+            {
+              status: 403,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+        }
+        state.unsplashCounter++;
+        const count = state.batchCount ?? 30;
+        const photos = Array.from({ length: count }, (_, i) => {
+          const id = `unsplash-real-${state.unsplashCounter}-${i + 1}`;
+          return {
+            id,
+            width: 1920,
+            height: 1080,
+            color: "#123456",
+            description: `Real photo ${id}`,
+            alt_description: `Alt for ${id}`,
+            urls: {
+              raw: `https://images.unsplash.com/${id}`,
+              full: `https://images.unsplash.com/${id}?full`,
+            },
+            links: {
+              html: `https://unsplash.com/photos/${id}`,
+              download_location: `https://api.unsplash.com/photos/${id}/download`,
+            },
+            user: {
+              name: `Photographer ${id}`,
+              username: `user_${id}`,
+              links: { html: `https://unsplash.com/@user_${id}` },
+            },
+          };
+        });
+
+        return new Response(JSON.stringify(photos), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (url.includes("api.si.edu")) {
+        if (state.smithsonianFails) {
+          return new Response("Smithsonian API error", { status: 500 });
+        }
+        state.smithsonianCounter++;
+        const count = state.smithsonianBatchCount ?? 10;
+        const rows = Array.from({ length: count }, (_, i) => {
+          const id = `smithsonian-real-${state.smithsonianCounter}-${i + 1}`;
+          return {
+            id,
+            title: `Artifact ${id}`,
+            url: `https://www.si.edu/object/${id}`,
+            content: {
+              descriptiveNonRepeating: {
+                record_link: `https://www.si.edu/object/${id}`,
+                online_media: {
+                  media: [
+                    {
+                      type: "Images",
+                      usage: { access: "CC0" },
+                      content: `https://ids.si.edu/${id}.jpg`,
+                      resources: [{ width: 1920, height: 1080 }],
+                    },
+                  ],
+                },
+              },
+            },
+          };
+        });
+
+        return new Response(JSON.stringify({ response: { rows } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (url.includes("prettyearth/assets/data")) {
+        return new Response(
+          JSON.stringify({ id: "1003", lat: 0, lng: 0, zoom: 5 }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response("Not found", { status: 404 });
+    };
+  }, options);
+}
 
 async function seedTestPhotos(target: Evaluable, count = 1): Promise<void> {
   await target.evaluate(async (photoCount) => {
@@ -80,9 +246,13 @@ async function seedTestPhotos(target: Evaluable, count = 1): Promise<void> {
 
     const cache = await caches.open("stellar-photos-images-v1");
     const pngBase64 =
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    const res = await fetch(pngBase64);
-    const blob = await res.blob();
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    const binary = atob(pngBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: "image/png" });
 
     for (const asset of assets) {
       await cache.put(
@@ -151,8 +321,27 @@ const test = base.extend<ExtensionFixtures>({
     await use(id);
   },
 
+  getWorker: async ({ context }, use) => {
+    await use(async () => {
+      return (
+        context.serviceWorkers()[0] ??
+        (await context.waitForEvent("serviceworker"))
+      );
+    });
+  },
+
   seedPhotos: async ({ context: _context }, use) => {
     await use(seedTestPhotos);
+  },
+
+  setupMockPipeline: async ({ context }, use) => {
+    await use(async (options: MockPipelineOptions = {}) => {
+      const worker =
+        context.serviceWorkers()[0] ??
+        (await context.waitForEvent("serviceworker"));
+
+      await setupWorkerPipeline(worker, options);
+    });
   },
 
   openNewTab: async ({ context, extensionId }, use) => {
@@ -182,4 +371,4 @@ const test = base.extend<ExtensionFixtures>({
   },
 });
 
-export { expect, test };
+export { expect, type MockPipelineOptions, test };
