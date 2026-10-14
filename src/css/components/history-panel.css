@@ -53,12 +53,26 @@
     0 0.25rem 0.75rem rgb(0 0 0 / 40%);
 }
 
-.history-card:focus-visible {
+.card-select-btn {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  border-radius: inherit;
+}
+
+.history-card:has(.card-select-btn:focus-visible) {
   outline: 2px solid #eee7d8;
   outline-offset: 2px;
 }
 
-.history-card:active {
+.history-card:has(.card-select-btn:active) {
   transform: scale(0.98);
 }
 
@@ -74,7 +88,7 @@
 }
 
 .history-card:hover .card-thumb,
-.history-card:focus-visible .card-thumb {
+.history-card:has(.card-select-btn:focus-visible) .card-thumb {
   transform: scale(1.04);
 }
 

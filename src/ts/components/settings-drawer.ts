@@ -79,10 +79,13 @@ class SettingsDrawer extends LitElement {
         tabindex=${this.open ? 0 : -1}
         @click=${this.close}
       ></button>
-      <aside
+      <div
+        class="drawer"
         role="dialog"
+        aria-modal="true"
         aria-hidden=${!this.open}
         aria-labelledby="settings-title"
+        ?inert=${!this.open}
       >
         <header>
           <div>
@@ -280,7 +283,7 @@ class SettingsDrawer extends LitElement {
             </div>
           </section>
         </div>
-      </aside>
+      </div>
     `;
   }
 

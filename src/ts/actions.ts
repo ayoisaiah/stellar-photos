@@ -17,6 +17,7 @@ import {
   PINNED_STORAGE_KEY,
   validateHistoryState,
   writeHistory,
+  writePinnedAsset,
 } from "./storage";
 import { serialized } from "./store";
 
@@ -29,14 +30,19 @@ function nextImage(): Promise<void> {
       coreStore.get(),
     ]);
 
-    if (isBackgroundAsset(storageData[PINNED_STORAGE_KEY])) return;
+    const storedPin = storageData[PINNED_STORAGE_KEY];
+    const pinned = isBackgroundAsset(storedPin) ? storedPin : null;
+    if (pinned && coreSettings.activeSourceIds.includes(pinned.sourceId))
+      return;
 
     const validated = validateHistoryState(storageData[HISTORY_STORAGE_KEY]);
     const history = validated?.history ?? [];
     const current = history[0];
 
     if (
+      !pinned &&
       current &&
+      coreSettings.activeSourceIds.includes(current.sourceId) &&
       !shouldRotateAtFrequency(current, coreSettings.photoFrequency)
     ) {
       return;
@@ -58,14 +64,15 @@ function nextImage(): Promise<void> {
           cacheKey: assetCacheKey(candidate.sourceId, candidate.sourceAssetId),
         };
 
-        await cacheAndRecordImage(asset, blob, history);
+        const cachedAsset = await cacheAndRecordImage(asset, blob, history);
+        if (pinned) await writePinnedAsset(cachedAsset);
 
         return;
       } catch (error) {
         console.error(error);
         lastError = error;
 
-        if (!retrieved) {
+        if (!retrieved && navigator.onLine !== false) {
           await setSourceError(
             source.id,
             error instanceof Error ? error.message : String(error),
@@ -90,7 +97,7 @@ async function cacheAndRecordImage(
   asset: BackgroundAsset,
   blob: Blob,
   history: readonly BackgroundAsset[],
-): Promise<void> {
+): Promise<BackgroundAsset> {
   const [, thumb] = await Promise.all([
     putCachedImage(
       asset.cacheKey,
@@ -143,6 +150,8 @@ async function cacheAndRecordImage(
       console.error(error);
     }
   }
+
+  return assetWithDimensions;
 }
 
 function shuffleSources(sources: readonly ImageSource[]): ImageSource[] {

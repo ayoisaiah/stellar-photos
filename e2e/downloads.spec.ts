@@ -65,8 +65,10 @@ test.describe("Photo Downloads", () => {
     const historyToggle = tab.locator("button.history-toggle");
     await historyToggle.click();
 
-    const card = tab.getByRole("button", {
-      name: "Set Photo description 1 as background",
+    const card = tab.locator(".history-card").filter({
+      has: tab.getByRole("button", {
+        name: "Set Photo description 1 as background",
+      }),
     });
     await expect(card).toBeVisible();
     await card.hover();
@@ -88,6 +90,88 @@ test.describe("Photo Downloads", () => {
         {
           url: "https://images.unsplash.com/photo-test-1",
           filename: "unsplash-test-photo-1.jpg",
+        },
+      ]);
+
+    await tab.close();
+  });
+
+  test("triggers browser download with expected filename for Smithsonian photo", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ photoCount: 1, sourceId: "smithsonian" });
+
+    await tab.evaluate(() => {
+      const g = window as unknown as {
+        __downloads: Array<chrome.downloads.DownloadOptions>;
+      };
+      g.__downloads = [];
+      chrome.downloads.download = (
+        options: chrome.downloads.DownloadOptions,
+      ) => {
+        g.__downloads.push(options);
+        return Promise.resolve(1);
+      };
+    });
+
+    const downloadButton = tab.locator("button.download-button");
+    await expect(downloadButton).toBeVisible();
+    await downloadButton.click();
+
+    await expect
+      .poll(async () => {
+        return tab.evaluate(() => {
+          const g = window as unknown as {
+            __downloads: Array<{ url: string; filename: string }>;
+          };
+          return g.__downloads;
+        });
+      })
+      .toEqual([
+        {
+          url: "https://ids.si.edu/smithsonian-test-1.jpg",
+          filename: "smithsonian-smithsonian-test-1.jpg",
+        },
+      ]);
+
+    await tab.close();
+  });
+
+  test("triggers browser download with expected filename for Earth View photo", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ photoCount: 1, sourceId: "earthview" });
+
+    await tab.evaluate(() => {
+      const g = window as unknown as {
+        __downloads: Array<chrome.downloads.DownloadOptions>;
+      };
+      g.__downloads = [];
+      chrome.downloads.download = (
+        options: chrome.downloads.DownloadOptions,
+      ) => {
+        g.__downloads.push(options);
+        return Promise.resolve(1);
+      };
+    });
+
+    const downloadButton = tab.locator("button.download-button");
+    await expect(downloadButton).toBeVisible();
+    await downloadButton.click();
+
+    await expect
+      .poll(async () => {
+        return tab.evaluate(() => {
+          const g = window as unknown as {
+            __downloads: Array<{ url: string; filename: string }>;
+          };
+          return g.__downloads;
+        });
+      })
+      .toEqual([
+        {
+          url: "https://www.gstatic.com/prettyearth/assets/full/1003.jpg",
+          filename: "earthview-1003.jpg",
         },
       ]);
 

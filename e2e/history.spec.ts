@@ -28,10 +28,11 @@ test.describe("History Panel and Photo Navigation", () => {
       .evaluate(() => chrome.storage.local.remove("stellarHistory"));
 
     await expect(cards).toHaveCount(1);
-    await expect(cards).toHaveAttribute(
-      "aria-label",
-      "Set Photo description 1 as background",
-    );
+    await expect(
+      cards.getByRole("button", {
+        name: "Set Photo description 1 as background",
+      }),
+    ).toBeVisible();
     await tab.close();
   });
 

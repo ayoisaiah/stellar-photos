@@ -150,4 +150,63 @@ test.describe("Photo Display and Controls", () => {
 
     await tab.close();
   });
+
+  test("portrait contain-blur uses thumbnail backdrop and falls back to main image URL if thumbnail is missing", async ({
+    getWorker,
+    openNewTab,
+  }) => {
+    const worker = await getWorker();
+    await worker.evaluate(async () => {
+      await chrome.storage.sync.set({
+        coreSettings: {
+          version: 1,
+          activeSourceIds: ["unsplash"],
+          photoFrequency: "everyhour",
+        },
+      });
+    });
+
+    const tab = await openNewTab({ orientation: "portrait" });
+    const photoStage = tab.locator(".photo-stage");
+    await expect(photoStage).toHaveClass(/mode-contain-blur/);
+
+    const getStageUrls = async () => {
+      return tab.evaluate(() => {
+        const app = document.querySelector("stellar-app");
+        const root = app?.shadowRoot ?? document;
+        const main = root.querySelector(".photo-main") as HTMLElement | null;
+        const backdrop = root.querySelector(
+          ".photo-backdrop",
+        ) as HTMLElement | null;
+        return {
+          main: main?.style.backgroundImage ?? "",
+          backdrop: backdrop?.style.backgroundImage ?? "",
+        };
+      });
+    };
+
+    const initialUrls = await getStageUrls();
+    expect(initialUrls.main).toBeTruthy();
+    expect(initialUrls.backdrop).toBeTruthy();
+    expect(initialUrls.backdrop).not.toEqual(initialUrls.main);
+
+    await tab.evaluate(async () => {
+      const cache = await caches.open("stellar-photos-images-v1");
+      const keys = await cache.keys();
+      for (const req of keys) {
+        if (req.url.includes("/thumbnail/")) {
+          await cache.delete(req);
+        }
+      }
+    });
+
+    await tab.reload();
+    await expect(tab.locator(".photo-stage")).toHaveClass(/mode-contain-blur/);
+
+    const fallbackUrls = await getStageUrls();
+    expect(fallbackUrls.main).toBeTruthy();
+    expect(fallbackUrls.backdrop).toEqual(fallbackUrls.main);
+
+    await tab.close();
+  });
 });

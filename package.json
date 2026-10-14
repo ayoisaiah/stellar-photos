@@ -17,11 +17,13 @@
     "pretest:e2e": "STELLAR_OUT_DIR=.wxt-e2e-dist UNSPLASH_ACCESS_KEY=test-key SMITHSONIAN_API_KEY=test-key wxt build -b chrome --mv3",
     "test:e2e": "playwright test",
     "lint": "biome lint .",
+    "lint:firefox": "web-ext lint --source-dir dist/firefox",
     "fmt": "biome format --write .",
     "check": "biome check .",
     "prepare": "wxt prepare && simple-git-hooks"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "2.5.15",
     "@playwright/test": "^1.64.0",
     "@types/chrome": "^0.3.4",
@@ -31,6 +33,7 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.3",
     "vitest": "^5.0.3",
+    "web-ext": "^10.7.0",
     "wxt": "^0.21.4"
   },
   "lint-staged": {

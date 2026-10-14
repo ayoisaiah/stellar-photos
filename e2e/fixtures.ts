@@ -14,6 +14,7 @@ interface OpenTabOptions {
   orientation?: "landscape" | "portrait";
   photoCount?: number;
   seeded?: boolean;
+  sourceId?: "unsplash" | "smithsonian" | "earthview";
 }
 
 interface MockPipelineOptions {
@@ -30,11 +31,7 @@ interface ExtensionFixtures {
   extensionId: string;
   getWorker: () => Promise<Worker>;
   openNewTab: (options?: OpenTabOptions) => Promise<Page>;
-  seedPhotos: (
-    target: Page | Worker,
-    count?: number,
-    orientation?: "landscape" | "portrait",
-  ) => Promise<void>;
+  seedPhotos: typeof seedTestPhotos;
   setupMockPipeline: (options?: MockPipelineOptions) => Promise<void>;
 }
 
@@ -311,6 +308,7 @@ async function seedTestPhotos(
   target: Evaluable,
   count = 1,
   orientation: "landscape" | "portrait" = "landscape",
+  sourceId: "unsplash" | "smithsonian" | "earthview" = "unsplash",
 ): Promise<void> {
   const isPortrait = orientation === "portrait";
   const width = isPortrait ? 1333 : 2000;
@@ -318,50 +316,103 @@ async function seedTestPhotos(
   const imageBase64 = isPortrait ? REAL_PORTRAIT_BASE64 : REAL_LANDSCAPE_BASE64;
 
   await target.evaluate(
-    async ({ photoCount, imageBase64, isPortrait, width, height }) => {
-      const assets = Array.from({ length: photoCount }, (_, i) => ({
-        sourceId: "unsplash",
-        sourceAssetId: `test-photo-${i + 1}`,
-        cacheKey: `https://cache.stellar-photos.invalid/asset/unsplash/test-photo-${i + 1}`,
-        width,
-        height,
-        color: isPortrait ? "#134e5e" : "#333333",
-        description: `Photo description ${i + 1}`,
-        attribution: {
-          name: `Photographer ${i + 1}`,
-          url: `https://unsplash.com/@photographer${i + 1}`,
-          sourceUrl: `https://unsplash.com/photos/test-photo-${i + 1}`,
-        },
-        payloadVersion: 1,
-        sourcePayload: {
-          downloadLocation: `https://api.unsplash.com/photos/test-photo-${i + 1}/download`,
-          imageUrl: `https://images.unsplash.com/photo-test-${i + 1}${isPortrait ? "?portrait" : ""}`,
-          info: {
-            user: {
-              name: `Photographer ${i + 1}`,
-              username: `photographer${i + 1}`,
-              profileImage: null,
-              link: `https://unsplash.com/@photographer${i + 1}`,
+    async ({
+      photoCount,
+      imageBase64,
+      isPortrait,
+      width,
+      height,
+      sourceId,
+    }) => {
+      const assets = Array.from({ length: photoCount }, (_, i) => {
+        if (sourceId === "earthview") {
+          const id = 1003 + i;
+          return {
+            sourceId: "earthview",
+            sourceAssetId: String(id),
+            cacheKey: `https://cache.stellar-photos.invalid/asset/earthview/${id}`,
+            width,
+            height,
+            color: "#333333",
+            description: "Earth",
+            attribution: {
+              name: "Google Earth View",
+              url: "https://earth.google.com/",
+              sourceUrl: "https://earth.google.com/",
             },
-            location: {
-              name: "Test Location",
-              city: "Test City",
-              country: "Test Country",
+            payloadVersion: 1,
+            sourcePayload: { id },
+            createdAt: Date.now() + i * 1000,
+          };
+        }
+
+        if (sourceId === "smithsonian") {
+          const id = `smithsonian-test-${i + 1}`;
+          return {
+            sourceId: "smithsonian",
+            sourceAssetId: id,
+            cacheKey: `https://cache.stellar-photos.invalid/asset/smithsonian/${id}`,
+            width,
+            height,
+            color: "#333333",
+            description: `Smithsonian Work ${i + 1}`,
+            attribution: {
+              name: "Smithsonian Open Access",
+              url: "https://www.si.edu/openaccess",
+              sourceUrl: `https://www.si.edu/object/${id}`,
             },
-            exif: {
-              make: "Camera",
-              model: "Model 1",
-              exposureTime: "1/500",
-              aperture: "2.8",
-              focalLength: "50",
-              iso: 100,
+            payloadVersion: 1,
+            sourcePayload: {
+              imageUrl: `https://ids.si.edu/${id}.jpg`,
             },
-            views: 1000,
-            description: `Photo description ${i + 1}`,
+            createdAt: Date.now() + i * 1000,
+          };
+        }
+
+        return {
+          sourceId: "unsplash",
+          sourceAssetId: `test-photo-${i + 1}`,
+          cacheKey: `https://cache.stellar-photos.invalid/asset/unsplash/test-photo-${i + 1}`,
+          width,
+          height,
+          color: isPortrait ? "#134e5e" : "#333333",
+          description: `Photo description ${i + 1}`,
+          attribution: {
+            name: `Photographer ${i + 1}`,
+            url: `https://unsplash.com/@photographer${i + 1}`,
+            sourceUrl: `https://unsplash.com/photos/test-photo-${i + 1}`,
           },
-        },
-        createdAt: Date.now() + i * 1000,
-      }));
+          payloadVersion: 1,
+          sourcePayload: {
+            downloadLocation: `https://api.unsplash.com/photos/test-photo-${i + 1}/download`,
+            imageUrl: `https://images.unsplash.com/photo-test-${i + 1}${isPortrait ? "?portrait" : ""}`,
+            info: {
+              user: {
+                name: `Photographer ${i + 1}`,
+                username: `photographer${i + 1}`,
+                profileImage: null,
+                link: `https://unsplash.com/@photographer${i + 1}`,
+              },
+              location: {
+                name: "Test Location",
+                city: "Test City",
+                country: "Test Country",
+              },
+              exif: {
+                make: "Camera",
+                model: "Model 1",
+                exposureTime: "1/500",
+                aperture: "2.8",
+                focalLength: "50",
+                iso: 100,
+              },
+              views: 1000,
+              description: `Photo description ${i + 1}`,
+            },
+          },
+          createdAt: Date.now() + i * 1000,
+        };
+      });
 
       await chrome.storage.local.set({
         stellarHistory: { version: 1, history: assets },
@@ -382,9 +433,15 @@ async function seedTestPhotos(
             headers: { "Content-Type": "image/jpeg" },
           }),
         );
+        await cache.put(
+          asset.cacheKey.replace("/asset/", "/thumbnail/"),
+          new Response(blob, {
+            headers: { "Content-Type": "image/jpeg" },
+          }),
+        );
       }
     },
-    { photoCount: count, imageBase64, isPortrait, width, height },
+    { photoCount: count, imageBase64, isPortrait, width, height, sourceId },
   );
 }
 
@@ -473,6 +530,7 @@ const test = base.extend<ExtensionFixtures>({
           worker,
           options.photoCount ?? 1,
           options.orientation ?? "landscape",
+          options.sourceId ?? "unsplash",
         );
       } else {
         await worker.evaluate(async () => {

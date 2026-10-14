@@ -579,11 +579,11 @@ class StellarApp extends LitElement {
           this.activeSourceIds,
         );
         if (!result.ok) throw new Error(result.error.message);
+      } else {
+        void sendCommand({ command: "nextImage" }, this.activeSourceIds);
       }
 
       await this.loadCurrentPhoto(current);
-
-      void sendCommand({ command: "nextImage" }, this.activeSourceIds);
     } catch {
       await this.loadCurrentPhoto();
     }
@@ -621,7 +621,20 @@ class StellarApp extends LitElement {
           this.currentAsset &&
           !core.activeSourceIds.includes(this.currentAsset.sourceId)
         ) {
-          void this.loadCurrentPhoto();
+          const activeHistoryPhoto = this.historyAssets.find((asset) =>
+            core.activeSourceIds.includes(asset.sourceId),
+          );
+
+          if (activeHistoryPhoto) {
+            void this.showHistoryAsset(activeHistoryPhoto);
+          } else {
+            void sendCommand(
+              { command: "nextImage" },
+              this.activeSourceIds,
+            ).then((res) => {
+              if (res.ok) void this.loadCurrentPhoto();
+            });
+          }
         }
       }
 

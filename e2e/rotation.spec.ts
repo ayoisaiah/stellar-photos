@@ -531,7 +531,10 @@ test.describe("nextImage rotation pipeline", () => {
       });
     });
 
-    const tab = await openNewTab({ photoCount: 1 });
+    const tab = await openNewTab({
+      photoCount: 1,
+      sourceId: "smithsonian",
+    });
 
     await worker.evaluate(async () => {
       await chrome.storage.sync.set({
@@ -754,5 +757,215 @@ test.describe("nextImage rotation pipeline", () => {
     expect(countsAfterBatch2.latestAssetId).toBe("unsplash-real-2-1");
 
     await tab.close();
+  });
+
+  test("fresh photo + hourly frequency makes zero remote network requests on tab opening", async ({
+    getWorker,
+    context,
+    openNewTab,
+  }) => {
+    const worker = await getWorker();
+    await worker.evaluate(async () => {
+      await chrome.storage.sync.set({
+        coreSettings: {
+          version: 1,
+          activeSourceIds: ["unsplash"],
+          photoFrequency: "everyhour",
+        },
+      });
+    });
+
+    const requests: string[] = [];
+    context.on("request", (req) => {
+      const url = req.url();
+      if (!url.startsWith("chrome-extension://")) {
+        requests.push(url);
+      }
+    });
+
+    const tab = await openNewTab({ photoCount: 1 });
+    await expect(
+      tab.locator(".bottom-credit .photographer-name"),
+    ).toBeVisible();
+
+    expect(requests).toEqual([]);
+    await tab.close();
+  });
+
+  test("pinned photo displays pinned image and makes zero API calls on new tab", async ({
+    getWorker,
+    context,
+    extensionId,
+    openNewTab,
+  }) => {
+    const worker = await getWorker();
+    await worker.evaluate(async () => {
+      await chrome.storage.sync.set({
+        coreSettings: {
+          version: 1,
+          activeSourceIds: ["unsplash"],
+          photoFrequency: "newtab",
+        },
+      });
+    });
+
+    const tab1 = await openNewTab({ photoCount: 1 });
+    await tab1.mouse.move(100, 100);
+    const pinBtn = tab1.getByRole("button", {
+      name: "Pin this image",
+      exact: true,
+    });
+    await pinBtn.click();
+    await expect(
+      tab1.getByRole("button", { name: "Unpin this image", exact: true }),
+    ).toBeVisible();
+
+    const apiCalls: string[] = [];
+    context.on("request", (req) => {
+      const url = req.url();
+      if (
+        url.includes("api.unsplash.com") ||
+        url.includes("api.si.edu") ||
+        url.includes("prettyearth")
+      ) {
+        apiCalls.push(url);
+      }
+    });
+
+    const tab2 = await context.newPage();
+    await tab2.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await tab2.waitForLoadState("domcontentloaded");
+    await tab2.mouse.move(100, 100);
+    await expect(
+      tab2.locator(".bottom-credit .photographer-name"),
+    ).toBeVisible();
+    await expect(
+      tab2.getByRole("button", { name: "Unpin this image", exact: true }),
+    ).toBeVisible();
+
+    expect(apiCalls).toEqual([]);
+    await tab1.close();
+    await tab2.close();
+  });
+
+  test("real failures: 500, HTML content-type, and 25MB payload record in source health, fallback to next source, banner shows only when all fail", async ({
+    getWorker,
+    context,
+    openNewTab,
+  }) => {
+    const worker = await getWorker();
+    await worker.evaluate(async () => {
+      Math.random = () => 0.99;
+      await chrome.storage.sync.set({
+        coreSettings: {
+          version: 1,
+          activeSourceIds: ["unsplash", "smithsonian", "earthview"],
+          photoFrequency: "newtab",
+        },
+      });
+    });
+
+    await context.route("https://api.unsplash.com/**", async (route) => {
+      await route.fulfill({
+        status: 500,
+        body: "Unsplash Internal Server Error",
+      });
+    });
+
+    const tab = await openNewTab({ photoCount: 1 });
+
+    await tab.evaluate(async () => {
+      return chrome.runtime.sendMessage({ command: "nextImage" });
+    });
+
+    let health = await worker.evaluate(async () => {
+      const { sourceHealth } = await chrome.storage.local.get("sourceHealth");
+      return (sourceHealth as Record<string, string>) ?? {};
+    });
+    expect(health.unsplash).toContain("500");
+    expect(health.smithsonian).toBeFalsy();
+    await expect(tab.locator(".all-sources-down-banner")).toBeHidden();
+
+    await context.route("https://ids.si.edu/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<html><body>Not an image</body></html>",
+      });
+    });
+
+    await tab.evaluate(async () => {
+      return chrome.runtime.sendMessage({ command: "nextImage" });
+    });
+
+    health = await worker.evaluate(async () => {
+      const { sourceHealth } = await chrome.storage.local.get("sourceHealth");
+      return (sourceHealth as Record<string, string>) ?? {};
+    });
+    expect(health.unsplash).toBeTruthy();
+    expect(health.smithsonian).toContain("Remote URL did not return an image");
+    expect(health.earthview).toBeFalsy();
+    await expect(tab.locator(".all-sources-down-banner")).toBeHidden();
+
+    await context.route(
+      "https://www.gstatic.com/prettyearth/assets/full/**",
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          headers: {
+            "content-type": "image/jpeg",
+            "content-length": String(25 * 1024 * 1024),
+          },
+          body: Buffer.alloc(100),
+        });
+      },
+    );
+
+    const res = await tab.evaluate(async () => {
+      return chrome.runtime.sendMessage({ command: "nextImage" });
+    });
+    expect(res.ok).toBe(false);
+
+    health = await worker.evaluate(async () => {
+      const { sourceHealth } = await chrome.storage.local.get("sourceHealth");
+      return (sourceHealth as Record<string, string>) ?? {};
+    });
+    expect(health.unsplash).toBeTruthy();
+    expect(health.smithsonian).toBeTruthy();
+    expect(health.earthview).toContain("Image exceeds 20 MiB limit");
+
+    await expect(tab.locator(".all-sources-down-banner")).toBeVisible();
+    await expect(tab.locator(".all-sources-down-banner")).toContainText(
+      "Unable to retrieve new photos",
+    );
+
+    await tab.close();
+  });
+
+  test("recovers and rotates cleanly when service worker is stopped via CDP", async ({
+    context,
+    extensionId,
+    openNewTab,
+  }) => {
+    const tab1 = await openNewTab({ photoCount: 1 });
+
+    const cdp = await context.newCDPSession(tab1);
+    await cdp.send("ServiceWorker.enable");
+    await cdp.send("ServiceWorker.stopAllWorkers");
+
+    const tab2 = await context.newPage();
+    await tab2.goto(`chrome-extension://${extensionId}/newtab.html`);
+    await tab2.waitForLoadState("domcontentloaded");
+    await expect(
+      tab2.locator(".bottom-credit .photographer-name"),
+    ).toBeVisible();
+
+    const rotateResult = await tab2.evaluate(async () => {
+      return chrome.runtime.sendMessage({ command: "nextImage" });
+    });
+    expect(rotateResult).toEqual({ ok: true });
+
+    await tab1.close();
+    await tab2.close();
   });
 });

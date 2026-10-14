@@ -53,6 +53,9 @@ jobs:
           SMITHSONIAN_API_KEY: ${{ secrets.SMITHSONIAN_API_KEY || 'test-smithsonian-key' }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY || 'test-ci-key' }}
 
+      - name: Lint Firefox extension
+        run: npm run lint:firefox
+
   publish:
     name: Build & Submit to Webstores
     needs: test

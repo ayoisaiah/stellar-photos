@@ -76,4 +76,71 @@ test.describe("Keyboard Shortcuts", () => {
 
     await tab.close();
   });
+
+  test("ArrowLeft and ArrowRight keys navigate backward and forward through history", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ photoCount: 3 });
+
+    const photographer = tab.locator(".bottom-credit .photographer-name");
+    await expect(photographer).toHaveText("Photographer 1");
+
+    await tab.keyboard.press("ArrowLeft");
+    await expect(photographer).toHaveText("Photographer 2");
+
+    await tab.keyboard.press("ArrowLeft");
+    await expect(photographer).toHaveText("Photographer 3");
+
+    await tab.keyboard.press("ArrowRight");
+    await expect(photographer).toHaveText("Photographer 2");
+
+    await tab.close();
+  });
+
+  test("wheel event opens and closes history panel", async ({ openNewTab }) => {
+    const tab = await openNewTab();
+    const viewport = tab.locator(".app-viewport");
+    await expect(viewport).not.toHaveClass(/history-open/);
+
+    // Negative deltaY (scrolling up) opens history panel
+    await tab.mouse.wheel(0, -60);
+    await expect(viewport).toHaveClass(/history-open/);
+
+    // Positive deltaY (scrolling down) closes history panel
+    await tab.mouse.wheel(0, 60);
+    await expect(viewport).not.toHaveClass(/history-open/);
+
+    await tab.close();
+  });
+
+  test("wheel event on history panel navigates history photos", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ photoCount: 3 });
+    const historyToggle = tab.locator("button.history-toggle");
+    await historyToggle.click();
+    await expect(tab.locator(".app-viewport")).toHaveClass(/history-open/);
+
+    const photographer = tab.locator(".bottom-credit .photographer-name");
+    await expect(photographer).toHaveText("Photographer 1");
+
+    // Wheel event on history panel with deltaY > 15 triggers navigateHistory(1)
+    await tab.locator("stellar-history-panel").dispatchEvent("wheel", {
+      deltaX: 0,
+      deltaY: 30,
+    });
+    await expect(photographer).toHaveText("Photographer 2");
+
+    // Wait for the 200ms wheel throttle
+    await tab.waitForTimeout(250);
+
+    // Wheel event on history panel with deltaY < -15 triggers navigateHistory(-1)
+    await tab.locator("stellar-history-panel").dispatchEvent("wheel", {
+      deltaX: 0,
+      deltaY: -30,
+    });
+    await expect(photographer).toHaveText("Photographer 1");
+
+    await tab.close();
+  });
 });

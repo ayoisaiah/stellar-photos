@@ -42,6 +42,54 @@ test.describe("Panels and Overlays", () => {
     await tab.close();
   });
 
+  test("displays Earth View info modal with satellite and elevation details", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ photoCount: 1, sourceId: "earthview" });
+    const infoToggle = tab.getByRole("button", {
+      name: "Photo info",
+      exact: true,
+    });
+
+    await expect(infoToggle).toBeVisible();
+    await infoToggle.click();
+
+    const infoDialog = tab.getByRole("dialog");
+    await expect(infoDialog).toBeVisible();
+    await expect(infoDialog.locator("#info-title")).toHaveText(
+      "About this view",
+    );
+    await expect(infoDialog.locator(".photographer-name")).toHaveText(
+      "El Paso, Texas, United States",
+    );
+    await expect(infoDialog.locator(".specs-grid")).toContainText("1,140 m");
+    await expect(infoDialog.locator(".specs-grid")).toContainText(
+      "31.6700° N, 106.5800° W",
+    );
+    await expect(infoDialog.locator(".specs-grid")).toContainText("12z");
+
+    await tab.close();
+  });
+
+  test("Smithsonian photo shows correct credit and omits info button", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ photoCount: 1, sourceId: "smithsonian" });
+    const infoToggle = tab.getByRole("button", {
+      name: "Photo info",
+      exact: true,
+    });
+    await expect(infoToggle).not.toBeVisible();
+
+    const credit = tab.locator(".bottom-credit");
+    await expect(credit).toBeVisible();
+    await expect(credit.locator(".photographer-meta")).toContainText(
+      "Smithsonian Open Access",
+    );
+
+    await tab.close();
+  });
+
   test("closes settings drawer when backdrop is clicked", async ({
     openNewTab,
   }) => {

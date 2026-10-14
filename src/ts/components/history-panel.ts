@@ -65,7 +65,6 @@ class HistoryPanel extends LitElement {
     return html`
       <ul
         class="history-list"
-        role="region"
         aria-label="Photo history"
       >
         ${reversedAssets.map((asset) => this.renderCard(asset))}
@@ -91,26 +90,27 @@ class HistoryPanel extends LitElement {
       <li
         class="history-card ${isActive ? "active" : ""}"
         data-cache-key="${asset.cacheKey}"
-        tabindex="0"
-        role="button"
-        aria-label="Set ${description} as background"
-        @click=${() => this.selectAsset(asset)}
-        @keydown=${(event: KeyboardEvent) =>
-          this.handleCardKeydown(event, asset)}
       >
-        ${
-          thumbnailUrl
-            ? html`<img
-                class="card-thumb"
-                src="${thumbnailUrl}"
-                alt="${description}"
-                loading="lazy"
-                decoding="async"
-              />`
-            : html`<div class="card-thumb-placeholder">
-                <stellar-icon .icon=${Image}></stellar-icon>
-              </div>`
-        }
+        <button
+          class="card-select-btn"
+          type="button"
+          aria-label="Set ${description} as background"
+          @click=${() => this.selectAsset(asset)}
+        >
+          ${
+            thumbnailUrl
+              ? html`<img
+                  class="card-thumb"
+                  src="${thumbnailUrl}"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />`
+              : html`<div class="card-thumb-placeholder">
+                  <stellar-icon .icon=${Image}></stellar-icon>
+                </div>`
+          }
+        </button>
         <div class="card-actions">
           ${
             supportsDownload
@@ -242,16 +242,6 @@ class HistoryPanel extends LitElement {
         composed: true,
       }),
     );
-  }
-
-  private handleCardKeydown(
-    event: KeyboardEvent,
-    asset: BackgroundAsset,
-  ): void {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      this.selectAsset(asset);
-    }
   }
 }
 

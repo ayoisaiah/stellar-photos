@@ -33,7 +33,7 @@
   opacity: 1;
 }
 
-aside {
+.drawer {
   position: absolute;
   inset: 0 0 0 auto;
   display: flex;
@@ -50,7 +50,7 @@ aside {
   backdrop-filter: blur(24px);
 }
 
-:host([open]) aside {
+:host([open]) .drawer {
   transform: translateX(0);
 }
 
@@ -408,7 +408,7 @@ label.checkbox-label small {
 @media (prefers-reduced-motion: reduce) {
   :host,
   .backdrop,
-  aside {
+  .drawer {
     transition-duration: 1ms;
   }
 }

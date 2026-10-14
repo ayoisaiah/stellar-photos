@@ -1,6 +1,41 @@
 import { expect, test } from "./fixtures";
 
 test.describe("Empty State & Source Health", () => {
+  test("first run automatically fetches photo, populates history and cache", async ({
+    openNewTab,
+  }) => {
+    const tab = await openNewTab({ seeded: false });
+    const emptyState = tab.locator("stellar-empty-state");
+
+    await expect(emptyState).toHaveAttribute("phase", "ready", {
+      timeout: 10000,
+    });
+    await expect(
+      tab.locator(".bottom-credit .photographer-name"),
+    ).toBeVisible();
+
+    const history = await tab.evaluate(async () => {
+      const data = (await chrome.storage.local.get("stellarHistory")) as {
+        stellarHistory?: { history?: unknown[] };
+      };
+      return data.stellarHistory?.history ?? [];
+    });
+    expect(history).toHaveLength(1);
+
+    const cacheStatus = await tab.evaluate(async () => {
+      const cache = await caches.open("stellar-photos-images-v1");
+      const requests = await cache.keys();
+      const urls = requests.map((r) => r.url);
+      return {
+        hasImage: urls.some((url) => url.includes("/asset/")),
+        hasThumb: urls.some((url) => url.includes("/thumbnail/")),
+      };
+    });
+    expect(cacheStatus.hasImage).toBe(true);
+    expect(cacheStatus.hasThumb).toBe(true);
+
+    await tab.close();
+  });
   test("displays empty state when unseeded and transitions to photo after seeding and retry", async ({
     openNewTab,
     seedPhotos,
