@@ -33,7 +33,7 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.3",
     "vitest": "^5.0.3",
-    "web-ext": "^10.7.0",
+    "web-ext": "^10.8.0",
     "wxt": "^0.21.4"
   },
   "lint-staged": {
