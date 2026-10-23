@@ -10,7 +10,11 @@ import { coreStore } from "./settings";
 import type { ImageSource } from "./sources";
 import { getActiveImageSources, getImageSource } from "./sources";
 import { shouldRotateAtFrequency } from "./sources/photo-frequency";
-import { setSourceError } from "./sources/source-health";
+import {
+  parseSourceHealth,
+  SOURCE_HEALTH_STORAGE_KEY,
+  setSourceError,
+} from "./sources/source-health";
 import {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
@@ -26,7 +30,11 @@ const LOCK_NAME = "stellar_actions_lock";
 function nextImage(): Promise<void> {
   return serialized(LOCK_NAME, async () => {
     const [storageData, coreSettings] = await Promise.all([
-      chrome.storage.local.get([PINNED_STORAGE_KEY, HISTORY_STORAGE_KEY]),
+      chrome.storage.local.get([
+        PINNED_STORAGE_KEY,
+        HISTORY_STORAGE_KEY,
+        SOURCE_HEALTH_STORAGE_KEY,
+      ]),
       coreStore.get(),
     ]);
 
@@ -48,6 +56,9 @@ function nextImage(): Promise<void> {
       return;
     }
 
+    const sourceHealth = parseSourceHealth(
+      storageData[SOURCE_HEALTH_STORAGE_KEY],
+    );
     const sources = await getActiveImageSources(coreSettings);
     let lastError: unknown;
 
@@ -57,7 +68,10 @@ function nextImage(): Promise<void> {
       try {
         const { asset: candidate, blob } = await source.fetchRandom();
         retrieved = true;
-        await setSourceError(source.id, "").catch(console.error);
+
+        if (sourceHealth[source.id]) {
+          await setSourceError(source.id, "").catch(console.error);
+        }
 
         const asset: BackgroundAsset = {
           ...candidate,

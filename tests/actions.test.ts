@@ -188,4 +188,12 @@ describe("nextImage core invariants", () => {
     await expect(nextImage()).rejects.toThrow("History unavailable");
     expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY] ?? {}).toEqual({});
   });
+
+  it("reads local storage only once during image rotation", async () => {
+    const getSpy = vi.spyOn(chrome.storage.local, "get");
+
+    await nextImage();
+
+    expect(getSpy).toHaveBeenCalledOnce();
+  });
 });
