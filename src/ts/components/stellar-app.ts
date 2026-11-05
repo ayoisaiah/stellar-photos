@@ -25,7 +25,6 @@ import {
 } from "../settings";
 import { getImageSource } from "../sources";
 import {
-  getSourceHealthMap,
   parseSourceHealth,
   SOURCE_HEALTH_STORAGE_KEY,
 } from "../sources/source-health";
@@ -33,8 +32,6 @@ import {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
   PINNED_STORAGE_KEY,
-  readHistory,
-  readPinnedAsset,
   validateHistoryState,
   writePinnedAsset,
 } from "../storage";
@@ -526,10 +523,15 @@ class StellarApp extends LitElement {
   ): Promise<void> => {
     try {
       if (!current) {
-        const [pinned, { history }] = await Promise.all([
-          readPinnedAsset(),
-          readHistory(),
+        const localData = await chrome.storage.local.get([
+          PINNED_STORAGE_KEY,
+          HISTORY_STORAGE_KEY,
         ]);
+        const rawPinned = localData[PINNED_STORAGE_KEY];
+        const pinned = isBackgroundAsset(rawPinned) ? rawPinned : null;
+        const history =
+          validateHistoryState(localData[HISTORY_STORAGE_KEY])?.history ?? [];
+
         this.pinnedAsset = pinned;
         this.historyAssets = history;
         current = pinned ?? history[0];
@@ -548,28 +550,31 @@ class StellarApp extends LitElement {
 
   private async initializeState(): Promise<void> {
     try {
-      const [
-        displaySettings,
-        coreSettings,
-        pinned,
-        historyState,
-        sourceHealthMap,
-      ] = await Promise.all([
-        displayStore.get(),
-        coreStore.get(),
-        readPinnedAsset(),
-        readHistory(),
-        getSourceHealthMap(),
+      const [syncData, localData] = await Promise.all([
+        chrome.storage.sync.get([displayStore.key, coreStore.key]),
+        chrome.storage.local.get([
+          PINNED_STORAGE_KEY,
+          HISTORY_STORAGE_KEY,
+          SOURCE_HEALTH_STORAGE_KEY,
+        ]),
       ]);
 
-      this.displaySettings = displaySettings;
+      const coreSettings = coreStore.parse(syncData[coreStore.key]);
+      const rawPinned = localData[PINNED_STORAGE_KEY];
+      const pinned = isBackgroundAsset(rawPinned) ? rawPinned : null;
+      const history =
+        validateHistoryState(localData[HISTORY_STORAGE_KEY])?.history ?? [];
+
+      this.displaySettings = displayStore.parse(syncData[displayStore.key]);
       this.activeSourceIds = coreSettings.activeSourceIds;
       this.photoFrequency = coreSettings.photoFrequency;
       this.pinnedAsset = pinned;
-      this.historyAssets = historyState.history;
-      this.sourceHealthMap = sourceHealthMap;
+      this.historyAssets = history;
+      this.sourceHealthMap = parseSourceHealth(
+        localData[SOURCE_HEALTH_STORAGE_KEY],
+      );
 
-      const current = pinned ?? historyState.history[0];
+      const current = pinned ?? history[0];
 
       if (!current) {
         this.photoLoadState = "loading";

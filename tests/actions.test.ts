@@ -4,11 +4,9 @@ import type { BackgroundAsset } from "../src/ts/assets";
 import type { ImageSource } from "../src/ts/sources";
 
 const putCachedImage = vi.fn();
-const readHistory = vi.fn();
 const writeHistory = vi.fn();
 const getActiveImageSources = vi.fn();
 const getImageSource = vi.fn();
-const readPinnedAsset = vi.fn();
 const createThumbnail = vi.fn().mockResolvedValue(null);
 const coreStore = {
   get: vi.fn(),
@@ -30,27 +28,16 @@ vi.mock("../src/ts/sources", () => ({
 vi.mock("../src/ts/storage", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/ts/storage")>()),
   HISTORY_LIMIT: 10,
-  readHistory,
   writeHistory,
-  readPinnedAsset,
 }));
 
 let fakeStorage: Record<string, unknown> = {};
 
 const defaultStorageGet = async (key: string | string[]) => {
-  const result: Record<string, unknown> = { ...fakeStorage };
-  if (result.stellarPinned === undefined) {
-    const pinned = await readPinnedAsset();
-    if (pinned !== undefined) result.stellarPinned = pinned;
-  }
-  if (result.stellarHistory === undefined) {
-    const historyState = await readHistory();
-    if (historyState !== undefined) result.stellarHistory = historyState;
-  }
   if (Array.isArray(key)) {
-    return Object.fromEntries(key.map((k) => [k, result[k]]));
+    return Object.fromEntries(key.map((k) => [k, fakeStorage[k]]));
   }
-  return { [key]: result[key] };
+  return { [key]: fakeStorage[key] };
 };
 
 const defaultStorageSet = async (items: Record<string, unknown>) => {
@@ -97,7 +84,10 @@ let source: ImageSource;
 
 beforeEach(() => {
   vi.resetAllMocks();
-  fakeStorage = {};
+  fakeStorage = {
+    stellarHistory: { history: [current] },
+    stellarPinned: null,
+  };
   createThumbnail.mockResolvedValue(null);
   source = {
     id: "unsplash",
@@ -116,17 +106,15 @@ beforeEach(() => {
     photoFrequency: "newtab",
   });
   putCachedImage.mockResolvedValue(undefined);
-  readHistory.mockResolvedValue({ history: [current] });
   writeHistory.mockResolvedValue(undefined);
-  readPinnedAsset.mockResolvedValue(null);
 });
 
 describe("nextImage core invariants", () => {
   it("serializes concurrent nextImage requests", async () => {
     let history = [current];
-    readHistory.mockImplementation(async () => ({ history: [...history] }));
     writeHistory.mockImplementation(async (state) => {
       history = state.history;
+      fakeStorage.stellarHistory = { history: [...history] };
     });
 
     const [first, second] = await Promise.all([nextImage(), nextImage()]);
@@ -153,34 +141,20 @@ describe("nextImage core invariants", () => {
     expect(healthMap.unsplash).toBeUndefined();
   });
 
-  it.each(["get", "set"] as const)(
-    "ignores status storage %s failures",
-    async (operation) => {
-      fakeStorage[SOURCE_HEALTH_STORAGE_KEY] = { unsplash: "Timed out" };
-      const original = vi.mocked(chrome.storage.local[operation]);
-      original.mockImplementation(async (arg: unknown) => {
-        if (
-          arg === SOURCE_HEALTH_STORAGE_KEY ||
-          (typeof arg === "object" &&
-            arg !== null &&
-            SOURCE_HEALTH_STORAGE_KEY in arg)
-        ) {
-          original.mockImplementation(
-            operation === "get"
-              ? (defaultStorageGet as never)
-              : (defaultStorageSet as never),
-          );
-          throw new Error("Status storage unavailable");
-        }
-        return operation === "get"
-          ? defaultStorageGet(arg as string | string[])
-          : defaultStorageSet(arg as Record<string, unknown>);
-      });
+  it("ignores status storage set failures", async () => {
+    fakeStorage[SOURCE_HEALTH_STORAGE_KEY] = { unsplash: "Timed out" };
+    const original = vi.mocked(chrome.storage.local.set);
+    original.mockImplementation(async (arg: Record<string, unknown>) => {
+      if (SOURCE_HEALTH_STORAGE_KEY in arg) {
+        original.mockImplementation(defaultStorageSet as never);
+        throw new Error("Status storage unavailable");
+      }
+      return defaultStorageSet(arg);
+    });
 
-      await expect(nextImage()).resolves.toBeUndefined();
-      expect(writeHistory).toHaveBeenCalled();
-    },
-  );
+    await expect(nextImage()).resolves.toBeUndefined();
+    expect(writeHistory).toHaveBeenCalled();
+  });
 
   it("propagates history errors without marking the source as failed", async () => {
     writeHistory.mockRejectedValueOnce(new Error("History unavailable"));
@@ -190,10 +164,12 @@ describe("nextImage core invariants", () => {
   });
 
   it("reads local storage only once during image rotation", async () => {
+    fakeStorage[SOURCE_HEALTH_STORAGE_KEY] = { unsplash: "Timed out" };
     const getSpy = vi.spyOn(chrome.storage.local, "get");
 
     await nextImage();
 
     expect(getSpy).toHaveBeenCalledOnce();
+    expect(fakeStorage[SOURCE_HEALTH_STORAGE_KEY]).toEqual({});
   });
 });

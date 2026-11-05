@@ -32,22 +32,8 @@ function validateHistoryState(raw: unknown): HistoryState | null {
   };
 }
 
-async function readHistory(): Promise<HistoryState> {
-  const result = await chrome.storage.local.get(HISTORY_STORAGE_KEY);
-  const validated = validateHistoryState(result[HISTORY_STORAGE_KEY]);
-
-  return validated ?? { history: [] };
-}
-
 async function writeHistory(state: HistoryState): Promise<void> {
   await chrome.storage.local.set({ [HISTORY_STORAGE_KEY]: state });
-}
-
-async function readPinnedAsset(): Promise<BackgroundAsset | null> {
-  const result = await chrome.storage.local.get(PINNED_STORAGE_KEY);
-  const pinned = result[PINNED_STORAGE_KEY];
-
-  return isBackgroundAsset(pinned) ? pinned : null;
 }
 
 async function writePinnedAsset(asset: BackgroundAsset | null): Promise<void> {
@@ -58,8 +44,6 @@ export {
   HISTORY_STORAGE_KEY,
   isBackgroundAsset,
   PINNED_STORAGE_KEY,
-  readHistory,
-  readPinnedAsset,
   validateHistoryState,
   writeHistory,
   writePinnedAsset,

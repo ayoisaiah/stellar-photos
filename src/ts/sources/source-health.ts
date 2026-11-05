@@ -1,5 +1,3 @@
-import { serialized } from "../store";
-
 type SourceHealthMap = Record<string, string>;
 
 const SOURCE_HEALTH_STORAGE_KEY = "sourceHealth";
@@ -15,31 +13,4 @@ function parseSourceHealth(value: unknown): SourceHealthMap {
   );
 }
 
-async function getSourceHealthMap(): Promise<SourceHealthMap> {
-  const values = await chrome.storage.local.get(SOURCE_HEALTH_STORAGE_KEY);
-
-  return parseSourceHealth(values[SOURCE_HEALTH_STORAGE_KEY]);
-}
-
-function setSourceError(sourceId: string, message: string): Promise<void> {
-  return serialized(SOURCE_HEALTH_STORAGE_KEY, async () => {
-    const errors = await getSourceHealthMap();
-    if ((errors[sourceId] ?? "") === message) return;
-
-    if (message) {
-      errors[sourceId] = message;
-    } else {
-      delete errors[sourceId];
-    }
-
-    await chrome.storage.local.set({ [SOURCE_HEALTH_STORAGE_KEY]: errors });
-  });
-}
-
-export {
-  getSourceHealthMap,
-  parseSourceHealth,
-  SOURCE_HEALTH_STORAGE_KEY,
-  type SourceHealthMap,
-  setSourceError,
-};
+export { parseSourceHealth, SOURCE_HEALTH_STORAGE_KEY, type SourceHealthMap };

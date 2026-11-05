@@ -13,7 +13,6 @@ import { shouldRotateAtFrequency } from "./sources/photo-frequency";
 import {
   parseSourceHealth,
   SOURCE_HEALTH_STORAGE_KEY,
-  setSourceError,
 } from "./sources/source-health";
 import {
   HISTORY_STORAGE_KEY,
@@ -70,7 +69,10 @@ function nextImage(): Promise<void> {
         retrieved = true;
 
         if (sourceHealth[source.id]) {
-          await setSourceError(source.id, "").catch(console.error);
+          delete sourceHealth[source.id];
+          await chrome.storage.local
+            .set({ [SOURCE_HEALTH_STORAGE_KEY]: sourceHealth })
+            .catch(console.error);
         }
 
         const asset: BackgroundAsset = {
@@ -87,10 +89,15 @@ function nextImage(): Promise<void> {
         lastError = error;
 
         if (!retrieved && navigator.onLine !== false) {
-          await setSourceError(
-            source.id,
-            error instanceof Error ? error.message : String(error),
-          ).catch(console.error);
+          const message =
+            error instanceof Error ? error.message : String(error);
+
+          if (sourceHealth[source.id] !== message) {
+            sourceHealth[source.id] = message;
+            await chrome.storage.local
+              .set({ [SOURCE_HEALTH_STORAGE_KEY]: sourceHealth })
+              .catch(console.error);
+          }
         }
       }
     }
